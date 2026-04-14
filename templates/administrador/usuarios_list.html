@@ -28,16 +28,19 @@
     <div class="card-body">
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
         <div>
-          <div class="fw-semibold">Backup</div>
-          <div class="text-muted small">Descargar o restaurar la base de datos (SQLite)</div>
+          <div class="fw-semibold">Backup completo de datos</div>
+          <div class="text-muted small">
+            Descargá un ZIP con <code>datos.json</code> (toda la información cargada) y, si usás SQLite en este servidor, también el archivo <code>sqlite/sirona.sqlite3</code>.
+            Instrucciones en <code>INSTALACION_Y_BACKUP.md</code> del proyecto.
+          </div>
         </div>
-        <a class="btn btn-sm btn-outline-primary" href="{% url 'admin_backup_descargar' %}">Descargar backup</a>
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'admin_backup_descargar' %}">Descargar backup (ZIP)</a>
       </div>
       <hr class="my-3" />
       <form method="post" action="{% url 'admin_backup_restaurar' %}" enctype="multipart/form-data" class="row g-2 align-items-end">
         {% csrf_token %}
         <div class="col-12 col-lg-6">
-          <label class="form-label small text-muted mb-0">Restaurar desde archivo</label>
+          <label class="form-label small text-muted mb-0">Restaurar base SQLite desde archivo</label>
           <input type="file" name="archivo" class="form-control form-control-sm" accept=".sqlite3,.db,.sqlite" required />
         </div>
         <div class="col-12 col-lg-4">
@@ -51,6 +54,45 @@
         </div>
         <div class="col-12 col-lg-2 d-flex justify-content-end">
           <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Restaurar backup y reemplazar la base actual?');">Restaurar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-3 border-danger border-opacity-25">
+    <div class="card-body">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+          <div class="fw-semibold text-danger">Resetear datos (pruebas)</div>
+          <div class="text-muted small">
+            Vuelve el sistema a cero (no borra usuarios). Requiere confirmación.
+          </div>
+        </div>
+      </div>
+      <hr class="my-3" />
+      <form method="post" action="{% url 'admin_reset_datos' %}" class="row g-2 align-items-end">
+        {% csrf_token %}
+        <div class="col-12 col-lg-5">
+          <label class="form-label small text-muted mb-0">Escribí RESET para confirmar</label>
+          <input type="text" name="confirm_text" class="form-control form-control-sm" placeholder="RESET" required />
+        </div>
+        <div class="col-12 col-lg-5">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="1" id="id_borrar_productos" name="borrar_productos" />
+            <label class="form-check-label" for="id_borrar_productos">Borrar también productos</label>
+          </div>
+          <div class="small text-muted">
+            Si no marcás, se conservan productos pero se deja stock en 0 y se limpian listas.
+          </div>
+        </div>
+        <div class="col-12 col-lg-2 d-flex justify-content-end">
+          <button
+            type="submit"
+            class="btn btn-sm btn-danger"
+            onclick="return confirm('¿Resetear datos? Esta acción borra movimientos/ventas/compras/presupuestos/caja/calendario.');"
+          >
+            Resetear
+          </button>
         </div>
       </form>
     </div>

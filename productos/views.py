@@ -1,4 +1,6 @@
-from decimal import Decimal
+import math
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from io import BytesIO
 
 from django.contrib import messages
@@ -17,6 +19,50 @@ from reportlab.pdfgen import canvas
 
 from .forms import ProductoForm
 from .models import ListaPrecios, Producto
+
+
+def _celda_texto(v) -> str:
+    if v is None:
+        return ""
+    if isinstance(v, bool):
+        return str(v)
+    if isinstance(v, int):
+        return str(v)
+    if isinstance(v, float):
+        if math.isfinite(v) and abs(v - round(v)) < 1e-9:
+            return str(int(round(v)))
+        return str(v).strip()
+    return str(v).strip()
+
+
+def _codigo_desde_celda(v) -> str:
+    return _celda_texto(v)[:6]
+
+
+def _parse_decimal_celda(v, *, default: Decimal) -> Decimal:
+    if v is None:
+        return default
+    s = _celda_texto(v)
+    if s == "":
+        return default
+    s = s.replace(",", ".")
+    try:
+        return Decimal(s)
+    except InvalidOperation as exc:
+        raise ValueError(f"valor numérico inválido ({s!r})") from exc
+
+
+def _parse_opcional_decimal(v) -> Decimal | None:
+    if v is None:
+        return None
+    s = _celda_texto(v)
+    if s == "":
+        return None
+    s = s.replace(",", ".")
+    try:
+        return Decimal(s)
+    except InvalidOperation as exc:
+        raise ValueError(f"valor numérico inválido ({s!r})") from exc
 
 
 @login_required
@@ -201,7 +247,28 @@ def productos_import_excel(request):
     if not f:
         return HttpResponseBadRequest("Falta archivo.")
 
-    wb = load_workbook(filename=f, data_only=True)
+    name = (getattr(f, "name", "") or "").lower()
+    if not name.endswith(".xlsx"):
+        messages.error(
+            request,
+            "El archivo debe ser Excel en formato .xlsx (Excel 2007 o posterior). "
+            "Si tenés .xls, abrilo en Excel y guardalo como .xlsx.",
+        )
+        return redirect("productos_import_excel")
+
+    try:
+        raw = f.read()
+        if not raw:
+            messages.error(request, "El archivo está vacío.")
+            return redirect("productos_import_excel")
+        wb = load_workbook(filename=BytesIO(raw), data_only=True)
+    except Exception as exc:
+        messages.error(
+            request,
+            f"No se pudo leer el archivo. Comprobá que sea un .xlsx válido. Detalle: {exc}",
+        )
+        return redirect("productos_import_excel")
+
     ws = wb.active
 
     # Espera columnas: codigo(opcional), descripcion, tipo, costo, porcentaje_ganancia(opcional), precio_venta(opcional), stock(opcional), fecha_vencimiento(opcional)
@@ -209,88 +276,117 @@ def productos_import_excel(request):
     creados = 0
     actualizados = 0
 
-    with transaction.atomic():
-        for i, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
-            if not row or all(v is None or str(v).strip() == "" for v in row):
-                continue
+    tipo_map = {
+        "MEDICAMENTOS": Producto.Tipo.MEDICAMENTOS,
+        "MED": Producto.Tipo.MEDICAMENTOS,
+        "ME": Producto.Tipo.MEDICAMENTOS,
+        "ACCESORIOS": Producto.Tipo.ACCESORIOS,
+        "AC": Producto.Tipo.ACCESORIOS,
+        "OTROS": Producto.Tipo.OTROS,
+        "OT": Producto.Tipo.OTROS,
+    }
 
-            codigo = (str(row[0]).strip() if len(row) > 0 and row[0] is not None else "")[:6]
-            descripcion = str(row[1]).strip() if len(row) > 1 and row[1] is not None else ""
-            tipo_raw = str(row[2]).strip() if len(row) > 2 and row[2] is not None else ""
-            costo = Decimal(str(row[3]).strip()) if len(row) > 3 and row[3] is not None else Decimal("0")
-            pct = (
-                Decimal(str(row[4]).strip())
-                if len(row) > 4 and row[4] is not None and str(row[4]).strip() != ""
-                else Decimal("30.00")
-            )
-            precio = (
-                Decimal(str(row[5]).strip())
-                if len(row) > 5 and row[5] is not None and str(row[5]).strip() != ""
-                else None
-            )
-            stock = 0
-            if len(row) > 6 and row[6] is not None and str(row[6]).strip() != "":
-                stock = int(Decimal(str(row[6]).strip()))
-            fecha_vencimiento = None
-            if len(row) > 7 and row[7] is not None and str(row[7]).strip() != "":
-                # openpyxl puede devolver date/datetime o string
-                v = row[7]
-                if hasattr(v, "date"):
-                    fecha_vencimiento = v.date() if hasattr(v, "hour") else v
+    try:
+        with transaction.atomic():
+            for i, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+                if not row:
+                    continue
+                if all(v is None or _celda_texto(v) == "" for v in row):
+                    continue
+
+                codigo = _codigo_desde_celda(row[0]) if len(row) > 0 else ""
+                descripcion = _celda_texto(row[1]) if len(row) > 1 else ""
+                tipo_raw = _celda_texto(row[2]) if len(row) > 2 else ""
+
+                costo = _parse_decimal_celda(
+                    row[3] if len(row) > 3 else None, default=Decimal("0")
+                )
+                pct = (
+                    _parse_decimal_celda(row[4], default=Decimal("30.00"))
+                    if len(row) > 4
+                    else Decimal("30.00")
+                )
+                precio = (
+                    _parse_opcional_decimal(row[5]) if len(row) > 5 else None
+                )
+                stock = 0
+                if len(row) > 6 and _celda_texto(row[6]) != "":
+                    try:
+                        stock = int(_parse_decimal_celda(row[6], default=Decimal("0")))
+                    except ValueError:
+                        raise ValueError(
+                            f"Fila {i}: stock debe ser un número entero (recibido: {_celda_texto(row[6])!r})."
+                        ) from None
+
+                fecha_vencimiento = None
+                if len(row) > 7 and _celda_texto(row[7]) != "":
+                    v = row[7]
+                    if hasattr(v, "date") and hasattr(v, "hour"):
+                        fecha_vencimiento = v.date()
+                    elif hasattr(v, "year") and hasattr(v, "month") and hasattr(v, "day"):
+                        fecha_vencimiento = v
+                    else:
+                        s = _celda_texto(v)
+                        for fmt in ("%d/%m/%y", "%d/%m/%Y", "%Y-%m-%d"):
+                            try:
+                                fecha_vencimiento = datetime.strptime(s, fmt).date()
+                                break
+                            except ValueError:
+                                continue
+                        if fecha_vencimiento is None:
+                            raise ValueError(
+                                f"Fila {i}: fecha de vencimiento no reconocida ({s!r}). "
+                                "Usá dd/mm/aaaa o el formato de fecha del modelo."
+                            )
+
+                if not descripcion:
+                    continue
+
+                if not tipo_raw:
+                    raise ValueError(
+                        f"Fila {i}: la columna «tipo» está vacía (tercera columna: MED, AC u OT). "
+                        "Revisá que la fila 1 tenga encabezados y los datos empiecen en la fila 2, "
+                        "sin columnas desplazadas. Podés descargar el modelo desde esta pantalla."
+                    )
+
+                tipo = tipo_map.get(tipo_raw.upper())
+                if not tipo:
+                    raise ValueError(
+                        f"Fila {i}: tipo no reconocido ({tipo_raw!r}). "
+                        "Usá Medicamentos, Accesorios, Otros o MED, AC, OT."
+                    )
+
+                defaults = {
+                    "descripcion": descripcion,
+                    "tipo": tipo,
+                    "costo": costo,
+                    "stock": stock,
+                    "fecha_vencimiento": fecha_vencimiento,
+                    "porcentaje_ganancia": pct,
+                }
+
+                if precio is None:
+                    defaults["precio_venta_editado"] = False
                 else:
-                    s = str(v).strip()
-                    # formatos aceptados: dd/mm/aa o dd/mm/aaaa
-                    from datetime import datetime
+                    defaults["precio_venta"] = precio
+                    defaults["precio_venta_editado"] = True
 
-                    for fmt in ("%d/%m/%y", "%d/%m/%Y"):
-                        try:
-                            fecha_vencimiento = datetime.strptime(s, fmt).date()
-                            break
-                        except ValueError:
-                            continue
+                if codigo:
+                    _obj, created = Producto.objects.update_or_create(
+                        codigo=codigo, defaults=defaults
+                    )
+                else:
+                    obj = Producto(**defaults)
+                    obj.save()
+                    created = True
 
-            if not descripcion:
-                continue
-
-            tipo_map = {
-                "MEDICAMENTOS": Producto.Tipo.MEDICAMENTOS,
-                "MED": Producto.Tipo.MEDICAMENTOS,
-                "ME": Producto.Tipo.MEDICAMENTOS,
-                "ACCESORIOS": Producto.Tipo.ACCESORIOS,
-                "AC": Producto.Tipo.ACCESORIOS,
-                "OTROS": Producto.Tipo.OTROS,
-                "OT": Producto.Tipo.OTROS,
-            }
-            tipo = tipo_map.get(tipo_raw.upper())
-            if not tipo:
-                raise ValueError(f"Fila {i}: tipo inválido: {tipo_raw}")
-
-            defaults = {
-                "descripcion": descripcion,
-                "tipo": tipo,
-                "costo": costo,
-                "stock": stock,
-                "fecha_vencimiento": fecha_vencimiento,
-                "porcentaje_ganancia": pct,
-            }
-
-            if precio is None:
-                defaults["precio_venta_editado"] = False
-            else:
-                defaults["precio_venta"] = precio
-                defaults["precio_venta_editado"] = True
-
-            if codigo:
-                obj, created = Producto.objects.update_or_create(codigo=codigo, defaults=defaults)
-            else:
-                obj = Producto(**defaults)
-                obj.save()
-                created = True
-
-            if created:
-                creados += 1
-            else:
-                actualizados += 1
+                if created:
+                    creados += 1
+                else:
+                    actualizados += 1
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect("productos_import_excel")
 
     messages.success(request, f"Importación OK. Creados: {creados}. Actualizados: {actualizados}.")
     return redirect("productos_list")

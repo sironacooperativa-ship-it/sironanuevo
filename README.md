@@ -31,6 +31,11 @@ Abrí `http://127.0.0.1:8000/` y logueate.
   - Acciones por ítem: editar, eliminar, deshabilitar, marcar para lista de precios.
   - Exportación a PDF de lista de precios (productos marcados).
 
+## Copia de seguridad e instalación desde un .zip
+
+Instalación paso a paso, restauración de backups y empaquetado del código: **`INSTALACION_Y_BACKUP.md`**.  
+Para generar un `.zip` del programa (sin la base local): **`empaquetar.ps1`** en PowerShell.
+
 ## Notas de despliegue (internet)
 
 Para acceso por internet se recomienda desplegar en un VPS o servicio PaaS (p.ej. Render/Fly/Heroku) o en tu servidor con IIS + reverse proxy.

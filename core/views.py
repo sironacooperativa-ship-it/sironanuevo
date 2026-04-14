@@ -1,13 +1,16 @@
 from datetime import timedelta
 from decimal import Decimal
 
-from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.db.models import Case, Count, DecimalField, ExpressionWrapper, F, Q, Sum, Value, When
 from django.db.models.functions import Coalesce
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
+
+from .forms import SironaPasswordChangeForm
 
 from calendario.models import Evento
 from caja.models import MovimientoCaja
@@ -131,4 +134,20 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect("login")
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def cambiar_password(request):
+    if request.method == "POST":
+        form = SironaPasswordChangeForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, "Tu contraseña fue actualizada.")
+            return redirect("home")
+    else:
+        form = SironaPasswordChangeForm(user=request.user)
+
+    return render(request, "core/cambiar_password.html", {"form": form})
 

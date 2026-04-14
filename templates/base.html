@@ -40,6 +40,7 @@
         <div class="d-flex align-items-center gap-2">
           {% if user.is_authenticated %}
             <span class="text-white-50 small d-none d-md-inline">Hola, {{ user.username }}</span>
+            <a class="btn btn-outline-light btn-sm" href="{% url 'cambiar_password' %}">Contraseña</a>
             <a class="btn btn-outline-light btn-sm" href="{% url 'logout' %}">Salir</a>
           {% else %}
             <a class="btn btn-outline-light btn-sm" href="{% url 'login' %}">Ingresar</a>
@@ -65,17 +66,20 @@
         <nav class="list-group list-group-flush app-sidebar-nav">
           <a class="list-group-item list-group-item-action" href="{% url 'home' %}">Inicio</a>
           <a class="list-group-item list-group-item-action" href="{% url 'productos_list' %}">Productos</a>
-          <a class="list-group-item list-group-item-action" href="{% url 'compra_historial' %}">Compras</a>
           <a class="list-group-item list-group-item-action" href="{% url 'stock_home' %}">Stock</a>
           <a class="list-group-item list-group-item-action" href="{% url 'caja_list' %}">Caja</a>
-          <a class="list-group-item list-group-item-action" href="{% url 'bancos_cuentas' %}">Bancos</a>
+          <a class="list-group-item list-group-item-action" href="{% url 'compra_historial' %}">Compras</a>
           <a class="list-group-item list-group-item-action" href="{% url 'ventas_historial' %}">Ventas</a>
           <a class="list-group-item list-group-item-action" href="{% url 'presupuesto_lista' %}">Presupuestos</a>
           <a class="list-group-item list-group-item-action" href="{% url 'vendedores_list' %}">Vendedores</a>
-          <a class="list-group-item list-group-item-action" href="{% url 'proveedores_list' %}">Proveedores</a>
           <a class="list-group-item list-group-item-action" href="{% url 'compradores_list' %}">Compradores</a>
-          <a class="list-group-item list-group-item-action" href="{% url 'calendario_home' %}">Calendario</a>
+          <a class="list-group-item list-group-item-action" href="{% url 'proveedores_list' %}">Proveedores</a>
           <a class="list-group-item list-group-item-action" href="{% url 'reportes_dashboard' %}">Reportes</a>
+          <a class="list-group-item list-group-item-action" href="{% url 'calendario_home' %}">Calendario</a>
+          <a class="list-group-item list-group-item-action" href="{% url 'bancos_cuentas' %}">Bancos</a>
+          {% if user.is_authenticated %}
+            <a class="list-group-item list-group-item-action" href="{% url 'cambiar_password' %}">Cambiar contraseña</a>
+          {% endif %}
           {% if user.is_authenticated and user.is_staff %}
             <a class="list-group-item list-group-item-action" href="{% url 'admin_usuarios_list' %}">Administrador</a>
           {% endif %}

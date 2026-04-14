@@ -13,5 +13,6 @@ urlpatterns = [
     ),
     path("backup/descargar/", views.backup_descargar, name="admin_backup_descargar"),
     path("backup/restaurar/", views.backup_restaurar, name="admin_backup_restaurar"),
+    path("reset/", views.reset_datos, name="admin_reset_datos"),
 ]
 
