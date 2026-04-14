@@ -64,48 +64,14 @@
   }
 }
 
-/* Barra superior fija + colapsar */
-.app-navbar-wrap {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1040;
-  transition: transform 0.22s ease;
-}
-
 .app-navbar-inner {
   min-height: var(--app-navbar-h);
+  width: 100%;
 }
 
-html.app-nav-collapsed .app-navbar-wrap {
-  transform: translateY(-100%);
-}
-
-.app-nav-showbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1039;
-  min-height: 2.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--sirona-teal-deep);
-  box-shadow: var(--app-shadow-nav);
-}
-
-html.app-nav-collapsed .app-body {
-  padding-top: 2.35rem;
-}
-
-html:not(.app-nav-collapsed) .app-nav-showbar[hidden] {
-  display: none !important;
-}
-
-html.app-nav-collapsed .app-nav-showbar {
-  display: flex !important;
+/* Nav superior fija (sin colapsar hacia arriba; el menú lateral se cierra con ◀) */
+.navbar-sirona.fixed-top {
+  z-index: 1040;
 }
 
 /* Nav */
@@ -475,28 +441,50 @@ h2.h6 {
   padding-right: max(1.35rem, env(safe-area-inset-right));
 }
 
-/* Tablas con pocas columnas: ancho al contenido y centradas (evita hueco gigante entre columnas) */
-.app-table-fit {
-  display: flex;
-  justify-content: center;
-  overflow-x: auto;
+/* Tablas producto: ancho completo (sin banda blanca vacía al centro); columnas fijas razonables */
+.app-table-productos-resumen-3 {
+  table-layout: fixed;
+  width: 100%;
 }
 
-.app-table-fit > .table {
-  width: auto !important;
-  max-width: 100%;
-  table-layout: auto;
+.app-table-productos-resumen-3 th:nth-child(1),
+.app-table-productos-resumen-3 td:nth-child(1) {
+  width: 9rem;
 }
 
-.app-table-fit > .table th,
-.app-table-fit > .table td {
-  white-space: nowrap;
+.app-table-productos-resumen-3 th:nth-child(3),
+.app-table-productos-resumen-3 td:nth-child(3) {
+  width: 5rem;
 }
 
-/* Penúltima columna = nombre de producto en listas tipo código / producto / stock */
-.app-table-fit > .table td:nth-last-child(2) {
-  white-space: normal;
-  max-width: 28rem;
+.app-table-productos-resumen-3 td:nth-child(2) {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.app-table-productos-resumen-4 {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.app-table-productos-resumen-4 th:nth-child(1),
+.app-table-productos-resumen-4 td:nth-child(1) {
+  width: 6.5rem;
+}
+
+.app-table-productos-resumen-4 th:nth-child(2),
+.app-table-productos-resumen-4 td:nth-child(2) {
+  width: 9rem;
+}
+
+.app-table-productos-resumen-4 th:nth-child(4),
+.app-table-productos-resumen-4 td:nth-child(4) {
+  width: 5rem;
+}
+
+.app-table-productos-resumen-4 td:nth-child(3) {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .app-page-title {
