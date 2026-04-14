@@ -209,7 +209,7 @@ def productos_list(request):
     q = (request.GET.get("q") or "").strip()
     tipo = (request.GET.get("tipo") or "").strip()
 
-    productos = Producto.objects.all()
+    productos = Producto.objects.all().order_by("descripcion", "codigo")
     if q:
         productos = productos.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
     if tipo:
@@ -230,7 +230,7 @@ def productos_list(request):
             "Fecha vencimiento",
         ]
         rows = []
-        for p in productos.order_by("codigo"):
+        for p in productos:
             rows.append(
                 [
                     p.codigo,
@@ -576,7 +576,7 @@ def productos_export_pdf(request):
     incluir_stock = request.GET.get("stock") == "1"
     productos = (
         Producto.objects.filter(en_lista_precios=True, habilitado=True)
-        .order_by("tipo", "descripcion", "codigo")
+        .order_by("descripcion", "codigo")
         .all()
     )
 

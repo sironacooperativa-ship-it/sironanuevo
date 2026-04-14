@@ -181,7 +181,7 @@ def reportes_dashboard(request):
         "chart": chart,
         "vendedores_filtro": Vendedor.objects.order_by("apellido", "nombre", "codigo"),
         "compradores_filtro": Comprador.objects.order_by("apellido", "nombre", "codigo"),
-        "productos_filtro": Producto.objects.filter(habilitado=True).order_by("codigo"),
+        "productos_filtro": Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo"),
     }
     return render(request, "reportes/dashboard.html", ctx)
 

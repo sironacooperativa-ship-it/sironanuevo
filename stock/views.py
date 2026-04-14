@@ -51,7 +51,7 @@ def stock_home(request):
 
     exp = parse_export(request)
     if exp in ("xlsx", "pdf"):
-        productos_qs = Producto.objects.all().order_by("codigo")
+        productos_qs = Producto.objects.all().order_by("descripcion", "codigo")
         hp = ["Código", "Descripción", "Tipo", "Stock", "Costo", "Precio venta"]
         rp = [
             [
@@ -91,7 +91,7 @@ def stock_home(request):
             [("Productos", hp, rp), ("Movimientos (últimos registros)", hm, rm)],
         )
 
-    productos = Producto.objects.all()
+    productos = Producto.objects.all().order_by("descripcion", "codigo")
     movimientos = MovimientoStock.objects.select_related("producto", "usuario").all()[:30]
 
     return render(

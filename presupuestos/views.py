@@ -17,7 +17,7 @@ from .models import Presupuesto, PresupuestoLinea
 
 
 def _productos_payload():
-    qs = Producto.objects.filter(habilitado=True).order_by("codigo")
+    qs = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
     return [
         {
             "id": p.id,

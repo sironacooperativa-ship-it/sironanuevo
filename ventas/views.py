@@ -62,7 +62,7 @@ def _venta_detalle_queryset():
 
 
 def _productos_payload():
-    qs = Producto.objects.filter(habilitado=True).order_by("codigo")
+    qs = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
     return [
         {
             "id": p.id,
@@ -275,7 +275,7 @@ def venta_historial(request):
             return xlsx_response("ventas", [("Ventas", headers, rows)])
         return pdf_response("ventas", "Historial de ventas", [("Ventas", headers, rows)])
 
-    productos = Producto.objects.filter(habilitado=True).order_by("codigo")
+    productos = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
     vendedores = Vendedor.objects.order_by("apellido", "nombre", "codigo")
     compradores = Comprador.objects.order_by("apellido", "nombre", "codigo")
     return render(

@@ -83,10 +83,10 @@ def home(request):
         .order_by("id")[:50]
     )
 
-    stock_critico = Producto.objects.filter(habilitado=True, stock__lte=0).order_by("codigo")[:30]
+    stock_critico = Producto.objects.filter(habilitado=True, stock__lte=0).order_by("descripcion", "codigo")[:30]
     vencimientos_prod = (
         Producto.objects.filter(habilitado=True, fecha_vencimiento__isnull=False, fecha_vencimiento__lte=prox_30)
-        .order_by("fecha_vencimiento", "codigo")[:30]
+        .order_by("fecha_vencimiento", "descripcion", "codigo")[:30]
     )
 
     _tipo_labels = dict(Producto.Tipo.choices)

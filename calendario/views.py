@@ -42,7 +42,7 @@ def calendario_home(request):
 
     vencimientos = Producto.objects.filter(
         fecha_vencimiento__isnull=False, fecha_vencimiento__range=(desde, hasta)
-    ).order_by("fecha_vencimiento", "codigo")
+    ).order_by("fecha_vencimiento", "descripcion", "codigo")
 
     eventos = Evento.objects.filter(fecha__range=(desde, hasta)).order_by("fecha", "id")
 

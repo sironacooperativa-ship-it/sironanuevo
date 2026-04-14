@@ -10,45 +10,69 @@
       rel="stylesheet"
     />
     <link href="{% static 'css/theme.css' %}" rel="stylesheet" />
+    <script>
+      try {
+        if (localStorage.getItem("sironaNavHidden") === "1") {
+          document.documentElement.classList.add("app-nav-collapsed");
+        }
+      } catch (e) {}
+    </script>
     {% block extra_head %}{% endblock %}
   </head>
   <body class="app-body">
-    <nav class="navbar navbar-dark navbar-sirona sticky-top">
-      <div class="app-shell d-flex align-items-center justify-content-between">
-        <div class="d-flex align-items-center gap-2">
-          <button
-            class="btn btn-sm btn-outline-light"
-            type="button"
-            data-bs-toggle="offcanvas"
-            data-bs-target="#appSidebar"
-            aria-controls="appSidebar"
-            aria-label="Abrir menú"
-            title="Menú"
-          >
-            ☰
-          </button>
-          <a class="navbar-brand d-flex align-items-center py-1" href="{% url 'home' %}">
-            <img
-              class="brand-logo"
-              src="{% static 'img/sirona-logo.png' %}"
-              alt="SIRONA"
-              width="160"
-              height="48"
-            />
-          </a>
-        </div>
+    <div class="app-nav-showbar" id="appNavShowbar" hidden>
+      <button type="button" class="btn btn-sm btn-link text-white text-decoration-none" id="btnNavShow" aria-label="Mostrar barra superior">
+        ▼ Mostrar barra superior
+      </button>
+    </div>
 
-        <div class="d-flex align-items-center gap-2">
-          {% if user.is_authenticated %}
-            <span class="text-white-50 small d-none d-md-inline">Hola, {{ user.username }}</span>
-            <a class="btn btn-outline-light btn-sm" href="{% url 'cambiar_password' %}">Contraseña</a>
-            <a class="btn btn-outline-light btn-sm" href="{% url 'logout' %}">Salir</a>
-          {% else %}
-            <a class="btn btn-outline-light btn-sm" href="{% url 'login' %}">Ingresar</a>
-          {% endif %}
+    <header class="app-navbar-wrap" id="appNavbarWrap">
+      <nav class="navbar navbar-dark navbar-sirona">
+        <div class="app-shell app-navbar-inner d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <button
+              class="btn btn-sm btn-outline-light"
+              type="button"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#appSidebar"
+              aria-controls="appSidebar"
+              aria-label="Abrir menú"
+              title="Menú"
+            >
+              ☰
+            </button>
+            <a class="navbar-brand d-flex align-items-center py-1" href="{% url 'home' %}">
+              <img
+                class="brand-logo"
+                src="{% static 'img/sirona-logo.png' %}"
+                alt="SIRONA"
+                width="160"
+                height="48"
+              />
+            </a>
+          </div>
+
+          <div class="d-flex align-items-center gap-1 gap-md-2">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-light border-0 px-2"
+              id="btnNavHide"
+              title="Ocultar barra superior"
+              aria-label="Ocultar barra superior"
+            >
+              ▲
+            </button>
+            {% if user.is_authenticated %}
+              <span class="text-white-50 small d-none d-md-inline">Hola, {{ user.username }}</span>
+              <a class="btn btn-outline-light btn-sm" href="{% url 'cambiar_password' %}">Contraseña</a>
+              <a class="btn btn-outline-light btn-sm" href="{% url 'logout' %}">Salir</a>
+            {% else %}
+              <a class="btn btn-outline-light btn-sm" href="{% url 'login' %}">Ingresar</a>
+            {% endif %}
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </header>
 
     <div
       class="offcanvas offcanvas-start app-sidebar"
@@ -163,6 +187,39 @@
             contentEl.innerHTML = "";
           });
         }
+      })();
+    </script>
+    <script>
+      (function () {
+        var root = document.documentElement;
+        var KEY = "sironaNavHidden";
+        var showbar = document.getElementById("appNavShowbar");
+        function syncShowbar() {
+          if (!showbar) return;
+          if (root.classList.contains("app-nav-collapsed")) {
+            showbar.hidden = false;
+          } else {
+            showbar.hidden = true;
+          }
+        }
+        function setCollapsed(on) {
+          if (on) {
+            root.classList.add("app-nav-collapsed");
+          } else {
+            root.classList.remove("app-nav-collapsed");
+          }
+          try {
+            localStorage.setItem(KEY, on ? "1" : "0");
+          } catch (e) {}
+          syncShowbar();
+        }
+        document.getElementById("btnNavHide")?.addEventListener("click", function () {
+          setCollapsed(true);
+        });
+        document.getElementById("btnNavShow")?.addEventListener("click", function () {
+          setCollapsed(false);
+        });
+        syncShowbar();
       })();
     </script>
     <script>

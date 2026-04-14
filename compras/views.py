@@ -87,7 +87,7 @@ def compra_historial(request):
             return xlsx_response("compras", [("Compras", headers, rows)])
         return pdf_response("compras", "Historial de compras", [("Compras", headers, rows)])
 
-    productos = Producto.objects.filter(habilitado=True).order_by("codigo")
+    productos = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
     proveedores = Proveedor.objects.order_by("apellido", "nombre", "codigo")
     return render(
         request,
