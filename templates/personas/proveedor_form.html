@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{% if modo == "nuevo" %}Nuevo proveedor{% else %}Editar proveedor{% endif %}{% endblock %}
 {% block content %}
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <div>
       <h1 class="h3 mb-1">{% if modo == "nuevo" %}Nuevo proveedor{% else %}Editar proveedor{% endif %}</h1>
       {% if proveedor %}

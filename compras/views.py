@@ -10,7 +10,7 @@ from django.views.decorators.http import require_http_methods
 from calendario.models import Evento
 from caja.models import MovimientoCaja
 from core.export_utils import parse_export, pdf_response, xlsx_response
-from core.fecha_filtros import parse_fecha_dashboard, rango_periodo
+from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_dashboard, rango_periodo
 from personas.models import Proveedor
 from productos.models import Producto
 
@@ -45,8 +45,8 @@ def _filtrar_compras_queryset(request):
 
     return qs, {
         "periodo": periodo,
-        "fecha_desde": (request.GET.get("fecha_desde") or "").strip(),
-        "fecha_hasta": (request.GET.get("fecha_hasta") or "").strip(),
+        "fecha_desde": fecha_filtro_value_iso(request.GET.get("fecha_desde")),
+        "fecha_hasta": fecha_filtro_value_iso(request.GET.get("fecha_hasta")),
         "proveedor": prid,
         "producto": pid,
     }
@@ -115,7 +115,7 @@ def compra_registrar(request):
                         tipo=cd["tipo_producto"],
                         costo=cd["costo_unitario"],
                         stock=cd["cantidad"],
-                        fecha_vencimiento=cd["fecha_vencimiento_pedido"],
+                        fecha_vencimiento=cd.get("fecha_vencimiento_pedido"),
                     )
                     producto.save()
 
@@ -140,7 +140,7 @@ def compra_registrar(request):
                         proveedor=cd["proveedor"],
                         producto=producto,
                         fecha_compra=cd["fecha_compra"],
-                        fecha_vencimiento_pedido=cd["fecha_vencimiento_pedido"],
+                        fecha_vencimiento_pedido=cd.get("fecha_vencimiento_pedido"),
                         cantidad=cd["cantidad"],
                         costo_unitario=cd["costo_unitario"],
                         monto=cd["monto"],
@@ -153,15 +153,16 @@ def compra_registrar(request):
                         actualizado_por=request.user,
                     )
 
-                    Evento.objects.create(
-                        fecha=cd["fecha_vencimiento_pedido"],
-                        titulo=f"Vencimiento compra — {producto.codigo}",
-                        tipo=Evento.Tipo.COMPRA,
-                        descripcion=(
-                            f"Proveedor: {cd['proveedor']}. Producto: {producto.descripcion}. "
-                            f"Pedido/compra #{compra.pk}. Cantidad: {cd['cantidad']}."
-                        ),
-                    )
+                    if cd.get("fecha_vencimiento_pedido"):
+                        Evento.objects.create(
+                            fecha=cd["fecha_vencimiento_pedido"],
+                            titulo=f"Vencimiento compra — {producto.codigo}",
+                            tipo=Evento.Tipo.COMPRA,
+                            descripcion=(
+                                f"Proveedor: {cd['proveedor']}. Producto: {producto.descripcion}. "
+                                f"Pedido/compra #{compra.pk}. Cantidad: {cd['cantidad']}."
+                            ),
+                        )
             except ValidationError as exc:
                 msgs = []
                 if getattr(exc, "error_dict", None):
@@ -183,7 +184,7 @@ def compra_registrar(request):
     else:
         form = CompraRegistrarForm(
             initial={
-                "fecha_compra": datetime.now().strftime("%d/%m/%y"),
+                "fecha_compra": datetime.now().strftime("%Y-%m-%d"),
                 "medio_pago": MovimientoCaja.MedioPago.EFECTIVO,
             }
         )

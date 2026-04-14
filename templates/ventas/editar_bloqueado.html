@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Editar pedido #{{ venta.pk }}{% endblock %}
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Editar pedido #{{ venta.pk }}</h1>
+  </div>
+
+  <div class="alert alert-info">
+    Este pedido ya está <strong>pagado</strong>. No se pueden cambiar comprador, vencimiento ni montos desde esta pantalla.
+  </div>
+
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-primary" href="{% url 'venta_detalle' venta.pk %}">Ver comprobante</a>
+    <a class="btn btn-outline-secondary" href="{% url 'ventas_historial' %}">Volver al historial</a>
+  </div>
+{% endblock %}

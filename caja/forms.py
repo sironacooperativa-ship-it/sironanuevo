@@ -3,6 +3,7 @@ from decimal import Decimal
 from django import forms
 
 from bancos.models import CuentaBancaria
+from core.date_fields import DATE_INPUT_FORMATS, date_input_widget
 from personas.models import Vendedor
 
 from .models import MovimientoCaja
@@ -10,8 +11,13 @@ from .models import MovimientoCaja
 
 class MovimientoCajaForm(forms.ModelForm):
     fecha = forms.DateField(
-        input_formats=["%d/%m/%y", "%d/%m/%Y"],
-        widget=forms.DateInput(attrs={"class": "form-control", "placeholder": "dd/mm/aa"}),
+        input_formats=list(DATE_INPUT_FORMATS),
+        widget=date_input_widget(),
+    )
+    fecha_vencimiento_cheque = forms.DateField(
+        required=False,
+        input_formats=list(DATE_INPUT_FORMATS),
+        widget=date_input_widget(),
     )
 
     class Meta:
@@ -36,9 +42,6 @@ class MovimientoCajaForm(forms.ModelForm):
             "cuenta_bancaria": forms.Select(attrs={"class": "form-select", "id": "id_cuenta_bancaria"}),
             "banco": forms.TextInput(attrs={"class": "form-control"}),
             "numero_cheque": forms.TextInput(attrs={"class": "form-control"}),
-            "fecha_vencimiento_cheque": forms.DateInput(
-                attrs={"class": "form-control", "placeholder": "dd/mm/aa"}
-            ),
             "vendedor": forms.Select(attrs={"class": "form-select"}),
         }
 

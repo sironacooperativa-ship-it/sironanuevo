@@ -1,12 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Administrador{% endblock %}
 {% block content %}
-  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <div>
       <h1 class="h3 mb-0">Administrador</h1>
       <div class="text-muted small">Usuarios</div>
     </div>
     <a class="btn btn-primary btn-sm" href="{% url 'admin_usuario_create' %}">Nuevo usuario</a>
+    <a class="btn btn-outline-primary btn-sm" href="{% url 'admin_actividad_list' %}">Historial de actividad</a>
   </div>
 
   <div class="card shadow-sm mb-3">
@@ -26,7 +27,7 @@
 
   <div class="card shadow-sm mb-3">
     <div class="card-body">
-      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div class="d-flex flex-wrap align-items-center gap-2">
         <div>
           <div class="fw-semibold">Backup completo de datos</div>
           <div class="text-muted small">
@@ -61,7 +62,7 @@
 
   <div class="card shadow-sm mb-3 border-danger border-opacity-25">
     <div class="card-body">
-      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div class="d-flex flex-wrap align-items-center gap-2">
         <div>
           <div class="fw-semibold text-danger">Resetear datos (pruebas)</div>
           <div class="text-muted small">

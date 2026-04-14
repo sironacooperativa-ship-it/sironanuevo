@@ -3,6 +3,7 @@ from decimal import Decimal
 from django import forms
 
 from caja.models import MovimientoCaja
+from core.date_fields import DATE_INPUT_FORMATS, date_input_widget
 
 from .models import CuentaBancaria, Gasto
 
@@ -21,8 +22,8 @@ class CuentaBancariaForm(forms.ModelForm):
 
 class AjusteCuentaForm(forms.Form):
     fecha = forms.DateField(
-        input_formats=["%d/%m/%y", "%d/%m/%Y"],
-        widget=forms.DateInput(attrs={"class": "form-control", "placeholder": "dd/mm/aa"}),
+        input_formats=list(DATE_INPUT_FORMATS),
+        widget=date_input_widget(),
     )
     monto = forms.DecimalField(
         min_value=Decimal("0.01"),
@@ -43,8 +44,8 @@ class AjusteCuentaForm(forms.Form):
 
 class GastoTransferenciaForm(forms.Form):
     fecha = forms.DateField(
-        input_formats=["%d/%m/%y", "%d/%m/%Y"],
-        widget=forms.DateInput(attrs={"class": "form-control", "placeholder": "dd/mm/aa"}),
+        input_formats=list(DATE_INPUT_FORMATS),
+        widget=date_input_widget(),
     )
     descripcion = forms.CharField(max_length=255, widget=forms.TextInput(attrs={"class": "form-control"}))
     monto = forms.DecimalField(

@@ -1,6 +1,6 @@
-from decimal import Decimal, ROUND_HALF_UP
-
 from django import template
+
+from core.money_decimal import q2
 
 register = template.Library()
 
@@ -8,17 +8,10 @@ register = template.Library()
 @register.filter
 def ars(value):
     """
-    Formato monetario AR: $ 1.234.567,89
+    Formato monetario AR: $ 1.234.567,89 (máx. 2 decimales).
     """
-    if value is None:
-        return "$ 0,00"
-    if not isinstance(value, Decimal):
-        try:
-            value = Decimal(str(value))
-        except Exception:
-            return str(value)
-    value = value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    us = f"{value:,.2f}"  # 1,234,567.89
+    d = q2(value)
+    us = f"{d:,.2f}"  # 1,234,567.89
     ar = us.replace(",", "X").replace(".", ",").replace("X", ".")
     return f"$ {ar}"
 

@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% load money %}
 {% block title %}Ventas{% endblock %}
 {% block content %}
-  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Historial de ventas</h1>
     <div class="d-flex gap-2 align-items-center flex-wrap">
       {% include "includes/export_buttons.html" %}
@@ -25,20 +26,18 @@
         <div class="col-6 col-md-3 col-lg-2">
           <label class="form-label small text-muted mb-0">Desde (registro)</label>
           <input
-            type="text"
+            type="date"
             name="fecha_desde"
             class="form-control form-control-sm"
-            placeholder="dd/mm/aa"
             value="{{ filtros.fecha_desde }}"
           />
         </div>
         <div class="col-6 col-md-3 col-lg-2">
           <label class="form-label small text-muted mb-0">Hasta (registro)</label>
           <input
-            type="text"
+            type="date"
             name="fecha_hasta"
             class="form-control form-control-sm"
-            placeholder="dd/mm/aa"
             value="{{ filtros.fecha_hasta }}"
           />
         </div>
@@ -99,7 +98,7 @@
             <th class="text-end">Neto</th>
             <th class="text-end">Comisión (%)</th>
             <th>Estado</th>
-            <th class="text-center">Acciones</th>
+            <th class="text-end">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -115,9 +114,9 @@
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td>{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}</td>
-              <td class="text-end">$ {{ v.neto }}</td>
-              <td class="text-end">{{ v.comision_porcentaje }}% <span class="text-muted small">($ {{ v.monto_comision }})</span></td>
+              <td>{% if v.fecha_vencimiento_pago %}{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+              <td class="text-end">{{ v.neto|ars }}</td>
+              <td class="text-end">{{ v.comision_porcentaje }}% <span class="text-muted small">({{ v.monto_comision|ars }})</span></td>
               <td>
                 {% if v.estado == "PEN" %}
                   <span class="badge text-bg-warning text-dark">Pendiente</span>
@@ -125,13 +124,13 @@
                   <span class="badge text-bg-success">Pagada</span>
                 {% endif %}
               </td>
-              <td class="text-center">
+              <td class="text-end text-nowrap">
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'venta_detalle' v.pk %}">Ver</a>
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'venta_editar' v.pk %}">Editar</a>
                 {% if v.estado == "PEN" %}
-                  <a class="btn btn-sm btn-outline-primary" href="{% url 'venta_registrar_pago' v.pk %}">Pago</a>
+                  <a class="btn btn-sm btn-primary" href="{% url 'venta_registrar_pago' v.pk %}">Pago</a>
                 {% elif v.pago_movimiento %}
-                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'caja_detail' v.pago_movimiento.pk %}">Ver caja</a>
-                {% else %}
-                  <span class="text-muted small">—</span>
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'caja_detail' v.pago_movimiento.pk %}">Caja</a>
                 {% endif %}
               </td>
             </tr>

@@ -2,7 +2,7 @@
 {% load money %}
 {% block title %}Caja{% endblock %}
 {% block content %}
-  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Caja (Libro diario)</h1>
     <div class="d-flex gap-2 align-items-center flex-wrap">
       {% include "includes/export_buttons.html" %}
@@ -10,50 +10,105 @@
     </div>
   </div>
 
-  <div class="card shadow-sm mb-3">
-    <div class="card-body">
-      <form class="row g-2 align-items-end" method="get">
-        <div class="col-12 col-md-4">
-          <label class="form-label mb-1">Operación</label>
-          <input class="form-control" name="operacion" value="{{ f.operacion }}" />
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small mb-1">Saldo al día de la fecha</div>
+          <div class="fs-4 fw-semibold text-body">{{ resumen_caja.saldo_al_dia|ars }}</div>
+          <div class="small text-muted mt-1">Suma de ingresos menos egresos hasta el {{ resumen_caja.fecha_resumen|date:"d/m/Y" }}</div>
         </div>
-        <div class="col-6 col-md-2">
-          <label class="form-label mb-1">Tipo</label>
-          <select class="form-select" name="tipo">
-            <option value="">Todos</option>
-            {% for v, label in tipos %}
-              <option value="{{ v }}" {% if f.tipo == v %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card border-0 shadow-sm h-100 border-start border-success border-3">
+        <div class="card-body">
+          <div class="text-muted small mb-1">Ingresos del mes</div>
+          <div class="fs-4 fw-semibold text-success">{{ resumen_caja.ingresos_mes|ars }}</div>
+          <div class="small text-muted mt-1">{{ resumen_caja.mes_etiqueta }} (del 1 al {{ resumen_caja.fecha_resumen|date:"d/m/Y" }})</div>
         </div>
-        <div class="col-6 col-md-3">
-          <label class="form-label mb-1">Medio de pago</label>
-          <select class="form-select" name="medio_pago">
-            <option value="">Todos</option>
-            {% for v, label in medios %}
-              <option value="{{ v }}" {% if f.medio_pago == v %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card border-0 shadow-sm h-100 border-start border-danger border-3">
+        <div class="card-body">
+          <div class="text-muted small mb-1">Egresos del mes</div>
+          <div class="fs-4 fw-semibold text-danger">{{ resumen_caja.egresos_mes|ars }}</div>
+          <div class="small text-muted mt-1">{{ resumen_caja.mes_etiqueta }} (del 1 al {{ resumen_caja.fecha_resumen|date:"d/m/Y" }})</div>
         </div>
-        <div class="col-6 col-md-3">
-          <label class="form-label mb-1">Vendedor</label>
-          <input class="form-control" name="vendedor" value="{{ f.vendedor }}" placeholder="ID vendedor (opcional)" />
+      </div>
+    </div>
+  </div>
+
+  <p class="d-flex flex-wrap align-items-center gap-2 mb-2">
+    <button
+      class="btn btn-outline-secondary btn-sm"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#cajaFiltros"
+      aria-expanded="{% if filtros_activos %}true{% else %}false{% endif %}"
+      aria-controls="cajaFiltros"
+    >
+      Filtrar
+    </button>
+    {% if filtros_activos %}
+      <span class="badge text-bg-secondary">Filtros activos</span>
+    {% endif %}
+  </p>
+
+  <div class="collapse {% if filtros_activos %}show{% endif %}" id="cajaFiltros">
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <form class="row g-2 align-items-end" method="get">
+          <div class="col-12 col-md-4">
+            <label class="form-label mb-1">Operación</label>
+            <input class="form-control" name="operacion" value="{{ f.operacion }}" />
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label mb-1">Tipo</label>
+            <select class="form-select" name="tipo">
+              <option value="">Todos</option>
+              {% for v, label in tipos %}
+                <option value="{{ v }}" {% if f.tipo == v %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label mb-1">Medio de pago</label>
+            <select class="form-select" name="medio_pago">
+              <option value="">Todos</option>
+              {% for v, label in medios %}
+                <option value="{{ v }}" {% if f.medio_pago == v %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label mb-1">Vendedor</label>
+            <select class="form-select" name="vendedor">
+              <option value="">Todos</option>
+              {% for v in vendedores_filtro %}
+                <option value="{{ v.pk }}" {% if f.vendedor == v.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ v.codigo }} — {{ v.apellido }}, {{ v.nombre }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label mb-1">Desde</label>
+            <input type="date" class="form-control" name="desde" value="{{ f.desde }}" />
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label mb-1">Hasta</label>
+            <input type="date" class="form-control" name="hasta" value="{{ f.hasta }}" />
+          </div>
+          <div class="col-12 col-md-2 d-flex gap-2">
+            <button class="btn btn-outline-dark w-100" type="submit">Buscar</button>
+            <a class="btn btn-outline-secondary w-100" href="{% url 'caja_list' %}">Limpiar</a>
+          </div>
+        </form>
+        <div class="text-muted small mt-2 mb-0">
+          En esta búsqueda: ingresos {{ totales.total_ingreso|ars }} · egresos {{ totales.total_egreso|ars }}
         </div>
-        <div class="col-6 col-md-2">
-          <label class="form-label mb-1">Desde</label>
-          <input class="form-control" name="desde" value="{{ f.desde }}" placeholder="dd/mm/aa" />
-        </div>
-        <div class="col-6 col-md-2">
-          <label class="form-label mb-1">Hasta</label>
-          <input class="form-control" name="hasta" value="{{ f.hasta }}" placeholder="dd/mm/aa" />
-        </div>
-        <div class="col-12 col-md-2 d-flex gap-2">
-          <button class="btn btn-outline-dark w-100" type="submit">Buscar</button>
-          <a class="btn btn-outline-secondary w-100" href="{% url 'caja_list' %}">Limpiar</a>
-        </div>
-      </form>
-      <div class="text-muted small mt-2">
-        Totales: Ingresos {{ totales.total_ingreso|ars }} | Egresos {{ totales.total_egreso|ars }}
       </div>
     </div>
   </div>
@@ -107,4 +162,3 @@
     <div class="text-muted text-center py-5">No hay movimientos.</div>
   {% endfor %}
 {% endblock %}
-

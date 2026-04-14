@@ -1,11 +1,10 @@
 {% extends "base.html" %}
+{% load money %}
 {% block title %}Inicio{% endblock %}
 {% block content %}
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <div>
-      <h1 class="h3 mb-0">Inicio</h1>
-      <div class="text-muted small">Resumen general y recordatorios</div>
-    </div>
+  <div class="mb-3">
+    <h1 class="h3 mb-1">Inicio</h1>
+    <div class="text-muted small mb-2">Resumen general y recordatorios</div>
     <div class="d-flex gap-2 flex-wrap">
       <a class="btn btn-primary btn-sm" href="{% url 'venta_nueva' %}">Nueva venta</a>
       <a class="btn btn-outline-primary btn-sm" href="{% url 'presupuesto_nuevo' %}">Nuevo presupuesto</a>
@@ -32,7 +31,7 @@
               {% for v in hoy_pagos %}
                 <tr>
                   <td class="small">Pago pedido</td>
-                  <td>#{{ v.pk }} — {{ v.vendedor.apellido }}, {{ v.vendedor.nombre }} — $ {{ v.neto }}</td>
+                  <td>#{{ v.pk }} — {{ v.vendedor.apellido }}, {{ v.vendedor.nombre }} — {{ v.neto|ars }}</td>
                   <td class="text-end">
                     <a class="btn btn-sm btn-outline-primary" href="{% url 'venta_registrar_pago' v.pk %}">Pago</a>
                   </td>
@@ -41,7 +40,7 @@
               {% for m in hoy_cheques %}
                 <tr>
                   <td class="small">Cheque</td>
-                  <td><code>{{ m.numero_cheque }}</code> — {{ m.operacion }} — $ {{ m.monto }}</td>
+                  <td><code>{{ m.numero_cheque }}</code> — {{ m.operacion }} — {{ m.monto|ars }}</td>
                   <td class="text-end">
                     <a class="btn btn-sm btn-outline-secondary" href="{% url 'caja_detail' m.pk %}">Ver</a>
                   </td>
@@ -68,7 +67,7 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <div class="text-muted small">Ventas (30 días)</div>
-          <div class="display-6">$ {{ kpis_ventas.neto_total }}</div>
+          <div class="display-6">{{ kpis_ventas.neto_total|ars }}</div>
           <div class="small text-muted mt-1">{{ kpis_ventas.pedidos }} pedidos — {{ kpis_ventas.pendientes }} pendientes</div>
         </div>
       </div>
@@ -77,7 +76,7 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <div class="text-muted small">Compras (30 días)</div>
-          <div class="display-6">$ {{ kpis_compras.monto_total }}</div>
+          <div class="display-6">{{ kpis_compras.monto_total|ars }}</div>
           <div class="small text-muted mt-1">{{ kpis_compras.compras }} compras registradas</div>
         </div>
       </div>
@@ -122,8 +121,8 @@
                 <tr>
                   <td class="fw-semibold">#{{ v.pk }}</td>
                   <td>{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}</td>
-                  <td class="text-end">$ {{ v.neto }}</td>
-                  <td>{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}</td>
+                  <td class="text-end">{{ v.neto|ars }}</td>
+                  <td>{% if v.fecha_vencimiento_pago %}{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
                   <td class="text-center">
                     <a class="btn btn-sm btn-outline-primary py-0" href="{% url 'venta_registrar_pago' v.pk %}">Pago</a>
                   </td>
@@ -189,7 +188,7 @@
                     <td class="text-muted small">{{ m.fecha_vencimiento_cheque|date:"d/m/Y" }}</td>
                     <td><code>{{ m.numero_cheque }}</code></td>
                     <td class="small">{{ m.operacion }}</td>
-                    <td class="text-end">$ {{ m.monto }}</td>
+                    <td class="text-end">{{ m.monto|ars }}</td>
                   </tr>
                 {% empty %}
                   <tr><td colspan="4" class="text-center text-muted py-4">No hay cheques próximos.</td></tr>
@@ -276,7 +275,7 @@
         {% for t in resumen.por_tipo %}
           <div class="col-12 col-md-4">
             <div class="border rounded p-3 bg-white">
-              <div class="text-muted small">{{ t.tipo }}</div>
+              <div class="text-muted small">{{ t.tipo_nombre }}</div>
               <div class="h4 mb-0">{{ t.total }}</div>
             </div>
           </div>

@@ -1,0 +1,61 @@
+{# Campos del formulario de producto (sin <form> ni botones de envío) #}
+<div class="row g-2 g-md-3">
+  <div class="col-12">
+    <label class="form-label small text-muted mb-1">Descripción</label>
+    {{ form.descripcion }}
+    {% if form.descripcion.errors %}<div class="text-danger small">{{ form.descripcion.errors }}</div>{% endif %}
+  </div>
+
+  <div class="col-12 col-sm-6">
+    <label class="form-label small text-muted mb-1">Tipo</label>
+    {{ form.tipo }}
+    {% if form.tipo.errors %}<div class="text-danger small">{{ form.tipo.errors }}</div>{% endif %}
+  </div>
+
+  <div class="col-12 col-sm-6">
+    <label class="form-label small text-muted mb-1">Costo</label>
+    {{ form.costo }}
+    {% if form.costo.errors %}<div class="text-danger small">{{ form.costo.errors }}</div>{% endif %}
+  </div>
+
+  <div class="col-12 col-sm-6">
+    <label class="form-label small text-muted mb-1">Stock</label>
+    {{ form.stock }}
+    {% if form.stock.errors %}<div class="text-danger small">{{ form.stock.errors }}</div>{% endif %}
+  </div>
+
+  <div class="col-12 col-sm-6">
+    <label class="form-label small text-muted mb-1">Fecha de vencimiento</label>
+    {{ form.fecha_vencimiento }}
+    {% if form.fecha_vencimiento.errors %}<div class="text-danger small">{{ form.fecha_vencimiento.errors }}</div>{% endif %}
+  </div>
+
+  <div class="col-12 col-sm-6">
+    <label class="form-label small text-muted mb-1">% Ganancia</label>
+    {{ form.porcentaje_ganancia }}
+    {% if form.porcentaje_ganancia.errors %}<div class="text-danger small">{{ form.porcentaje_ganancia.errors }}</div>{% endif %}
+  </div>
+
+  <div class="col-12 col-sm-6">
+    <label class="form-label small text-muted mb-1">Precio de venta</label>
+    {{ form.precio_venta }}
+    <div class="form-text small">Vacío = calculado (30% por defecto).</div>
+    {% if form.precio_venta.errors %}<div class="text-danger small">{{ form.precio_venta.errors }}</div>{% endif %}
+  </div>
+
+  <div class="col-12 col-sm-6">
+    <div class="form-check form-switch sirona-switch mt-2 mt-sm-3">
+      {{ form.habilitado }}
+      <label class="form-check-label small" for="{{ form.habilitado.id_for_label }}">Habilitado</label>
+    </div>
+    {% if form.habilitado.errors %}<div class="text-danger small">{{ form.habilitado.errors }}</div>{% endif %}
+  </div>
+
+  <div class="col-12 col-sm-6">
+    <div class="form-check form-switch sirona-switch mt-2 mt-sm-3">
+      {{ form.en_lista_precios }}
+      <label class="form-check-label small" for="{{ form.en_lista_precios.id_for_label }}">En lista (PDF)</label>
+    </div>
+    {% if form.en_lista_precios.errors %}<div class="text-danger small">{{ form.en_lista_precios.errors }}</div>{% endif %}
+  </div>
+</div>

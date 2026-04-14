@@ -11,12 +11,15 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from .forms import SironaPasswordChangeForm
+from .money_decimal import q2
 
 from calendario.models import Evento
 from caja.models import MovimientoCaja
 from compras.models import Compra
 from productos.models import Producto
 from ventas.models import Venta
+
+from administrador.models import RegistroActividad
 
 
 @login_required
@@ -48,11 +51,13 @@ def home(request):
         pagadas=Count("id", filter=Q(estado=Venta.Estado.PAGADA)),
         pendientes=Count("id", filter=Q(estado=Venta.Estado.PENDIENTE)),
     )
+    kpis_ventas["neto_total"] = q2(kpis_ventas["neto_total"])
     compras_30 = Compra.objects.filter(fecha_compra__gte=ult_30)
     kpis_compras = compras_30.aggregate(
         compras=Count("id"),
         monto_total=Coalesce(Sum("monto"), Value(Decimal("0.00"))),
     )
+    kpis_compras["monto_total"] = q2(kpis_compras["monto_total"])
 
     recordatorios = Evento.objects.filter(fecha__gte=today, fecha__lte=prox_7).order_by("fecha", "id")[:30]
     hoy_recordatorios = Evento.objects.filter(fecha=today).order_by("tipo", "id")[:50]
@@ -84,14 +89,23 @@ def home(request):
         .order_by("fecha_vencimiento", "codigo")[:30]
     )
 
+    _tipo_labels = dict(Producto.Tipo.choices)
+    por_tipo_rows = (
+        Producto.objects.values("tipo").annotate(total=Count("id")).order_by("tipo")
+    )
     resumen = {
         "productos_total": Producto.objects.count(),
         "productos_habilitados": Producto.objects.filter(habilitado=True).count(),
         "productos_deshabilitados": Producto.objects.filter(habilitado=False).count(),
         "productos_en_lista": Producto.objects.filter(en_lista_precios=True, habilitado=True).count(),
-        "por_tipo": list(
-            Producto.objects.values("tipo").annotate(total=Count("id")).order_by("tipo")
-        ),
+        "por_tipo": [
+            {
+                "tipo": row["tipo"],
+                "tipo_nombre": _tipo_labels.get(row["tipo"], row["tipo"]),
+                "total": row["total"],
+            }
+            for row in por_tipo_rows
+        ],
     }
     return render(
         request,
@@ -132,6 +146,8 @@ def login_view(request):
 
 
 def logout_view(request):
+    if request.user.is_authenticated:
+        RegistroActividad.registrar_cierre_sesion(request.user, request)
     logout(request)
     return redirect("login")
 

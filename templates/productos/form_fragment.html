@@ -1,0 +1,20 @@
+{# Respuesta solo para modal (fetch ?modal=1). Sin {% extends %}. #}
+<form method="post" action="{{ form_action_url }}" class="sirona-modal-form">
+  {% csrf_token %}
+  <div class="modal-header border-0 pb-2 align-items-center">
+    <div>
+      <h5 class="modal-title fw-semibold mb-0">{{ modal_title }}</h5>
+      {% if producto %}
+        <div class="text-muted small mt-1">Código <code>{{ producto.codigo }}</code></div>
+      {% endif %}
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+  </div>
+  <div class="modal-body pt-0 px-3 px-md-4">
+    {% include "productos/includes/product_form_fields.html" %}
+  </div>
+  <div class="modal-footer border-0 bg-transparent pt-0 px-3 px-md-4 pb-3">
+    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+    <button type="submit" class="btn btn-primary rounded-pill px-4">Guardar</button>
+  </div>
+</form>

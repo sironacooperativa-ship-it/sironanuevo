@@ -1,15 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Nueva venta{% endblock %}
 {% block content %}
-  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Nueva venta</h1>
-    <div class="d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2">
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'ventas_historial' %}">Historial</a>
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedores_list' %}">Vendedores</a>
     </div>
   </div>
 
   {{ productos_catalogo|json_script:"ventas-productos" }}
+  {{ lineas_iniciales|json_script:"ventas-lineas-iniciales" }}
 
   <form method="post" novalidate id="ventaForm">
     {% csrf_token %}
@@ -20,7 +21,7 @@
           <select name="vendedor" class="form-select" required id="id_vendedor">
             <option value="">— Elegir —</option>
             {% for v in vendedores %}
-              <option value="{{ v.pk }}">{{ v.codigo }} — {{ v.apellido }}, {{ v.nombre }}</option>
+              <option value="{{ v.pk }}" {% if repoblar and repoblar.vendedor_id == v.pk %}selected{% endif %}>{{ v.codigo }} — {{ v.apellido }}, {{ v.nombre }}</option>
             {% endfor %}
           </select>
         </div>
@@ -29,19 +30,19 @@
           <select name="comprador" class="form-select" id="id_comprador">
             <option value="">— Sin asignar —</option>
             {% for c in compradores %}
-              <option value="{{ c.pk }}">{{ c.codigo }} — {{ c.apellido }}, {{ c.nombre }}</option>
+              <option value="{{ c.pk }}" {% if repoblar and repoblar.comprador_id == c.pk %}selected{% endif %}>{{ c.codigo }} — {{ c.apellido }}, {{ c.nombre }}</option>
             {% endfor %}
           </select>
         </div>
         <div class="col-12 col-md-6 col-lg-4">
           <label class="form-label">Fecha límite de pago (orden de pago)</label>
           <input
-            type="text"
+            type="date"
             name="fecha_vencimiento_pago"
             class="form-control"
-            placeholder="dd/mm/aa"
             required
             id="id_fecha_vencimiento_pago"
+            value="{% if repoblar %}{{ repoblar.fecha_vencimiento_pago }}{% endif %}"
           />
         </div>
       </div>
@@ -49,7 +50,7 @@
 
     <div class="card shadow-sm mb-3">
       <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
           <h2 class="h6 mb-0">Productos</h2>
           <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddLinea" title="Agregar línea">+ Agregar producto</button>
         </div>
@@ -78,7 +79,7 @@
             type="text"
             name="descuento_monto"
             class="form-control"
-            value="0"
+            value="{% if repoblar %}{{ repoblar.descuento_monto }}{% else %}0{% endif %}"
             inputmode="decimal"
             id="id_descuento_monto"
           />
@@ -89,7 +90,7 @@
             type="text"
             name="comision_porcentaje"
             class="form-control"
-            value="4"
+            value="{% if repoblar %}{{ repoblar.comision_porcentaje }}{% else %}4{% endif %}"
             inputmode="decimal"
             id="id_comision_porcentaje"
           />
@@ -116,6 +117,8 @@
       const el = document.getElementById("ventas-productos");
       const productos = el ? JSON.parse(el.textContent) : [];
       const byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
+      const iniEl = document.getElementById("ventas-lineas-iniciales");
+      const iniciales = iniEl ? JSON.parse(iniEl.textContent) : [];
 
       const tbody = document.getElementById("lineasBody");
       const btnAdd = document.getElementById("btnAddLinea");
@@ -181,7 +184,7 @@
         sumComision.textContent = fmtMoney(com);
       }
 
-      function buildSelect() {
+      function buildSelect(tr) {
         const sel = document.createElement("select");
         sel.name = "linea_producto";
         sel.className = "form-select form-select-sm";
@@ -193,9 +196,16 @@
                 `<option value="${p.id}">${p.codigo} — ${p.descripcion} (stock ${p.stock})</option>`
             )
             .join("");
+        sel.dataset.prevEmpty = sel.value ? "0" : "1";
         sel.addEventListener("change", () => {
-          refreshRow(sel.closest("tr"));
+          const wasEmpty = sel.dataset.prevEmpty === "1";
+          const nowEmpty = !sel.value;
+          sel.dataset.prevEmpty = nowEmpty ? "1" : "0";
+          refreshRow(tr);
           totals();
+          if (wasEmpty && !nowEmpty && tr === tbody.lastElementChild) {
+            addRow();
+          }
         });
         return sel;
       }
@@ -208,7 +218,7 @@
           '<td class="text-end js-precio-unit">—</td>' +
           '<td class="text-end fw-semibold js-subtotal">—</td>' +
           '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger py-0 js-remove" title="Quitar">×</button></td>';
-        tr.children[0].appendChild(buildSelect());
+        tr.children[0].appendChild(buildSelect(tr));
         tr.querySelector('input[name="linea_cantidad"]').addEventListener("input", () => {
           refreshRow(tr);
           totals();
@@ -226,10 +236,38 @@
       inpDesc.addEventListener("input", totals);
       inpCom.addEventListener("input", totals);
 
+      document.getElementById("ventaForm").addEventListener("submit", function () {
+        tbody.querySelectorAll("tr").forEach((tr) => {
+          const sel = tr.querySelector('select[name="linea_producto"]');
+          if (sel && !String(sel.value || "").trim()) {
+            tr.remove();
+          }
+        });
+      });
+
       if (productos.length === 0) {
         btnAdd.disabled = true;
         tbody.innerHTML =
           '<tr><td colspan="5" class="text-muted text-center py-3">No hay productos habilitados para vender.</td></tr>';
+      } else if (iniciales.length > 0) {
+        iniciales.forEach((L) => {
+          addRow();
+          const tr = tbody.lastElementChild;
+          const sel = tr.querySelector('select[name="linea_producto"]');
+          const qIn = tr.querySelector('input[name="linea_cantidad"]');
+          sel.value = String(L.producto_id);
+          sel.dataset.prevEmpty = "0";
+          qIn.value = String(L.cantidad);
+          refreshRow(tr);
+        });
+        const last = tbody.lastElementChild;
+        if (last) {
+          const s = last.querySelector('select[name="linea_producto"]');
+          if (s && s.value) {
+            addRow();
+          }
+        }
+        totals();
       } else {
         addRow();
       }

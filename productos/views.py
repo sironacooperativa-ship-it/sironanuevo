@@ -1,5 +1,6 @@
 import math
-from datetime import datetime
+import unicodedata
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
 
@@ -7,8 +8,10 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Q
+from django.utils import timezone
 from django.http import FileResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 from openpyxl import load_workbook
 
@@ -63,6 +66,142 @@ def _parse_opcional_decimal(v) -> Decimal | None:
         return Decimal(s)
     except InvalidOperation as exc:
         raise ValueError(f"valor numérico inválido ({s!r})") from exc
+
+
+def _sin_acentos(s: str) -> str:
+    nfkd = unicodedata.normalize("NFKD", s)
+    return "".join(c for c in nfkd if not unicodedata.combining(c))
+
+
+def _resolver_tipo_producto(tipo_raw: str) -> str | None:
+    """
+    Acepta mayúsculas/minúsculas, acentos y palabras parecidas
+    (p. ej. medicamento/medicamentos, accesorio, otros).
+    Devuelve Producto.Tipo.* o None.
+    """
+    s = _sin_acentos(tipo_raw.strip()).lower()
+    s = " ".join(s.split())
+    if not s:
+        return None
+
+    if s in ("med", "me"):
+        return Producto.Tipo.MEDICAMENTOS
+    if s == "ac":
+        return Producto.Tipo.ACCESORIOS
+    if s == "ot":
+        return Producto.Tipo.OTROS
+
+    if s.startswith("medic"):
+        return Producto.Tipo.MEDICAMENTOS
+    if s.startswith("acces"):
+        return Producto.Tipo.ACCESORIOS
+
+    if s in ("otros", "otro", "otr"):
+        return Producto.Tipo.OTROS
+    if s.startswith("otr") and not s.startswith("otra"):
+        return Producto.Tipo.OTROS
+
+    return None
+
+
+# Importación Excel: índices por defecto (fila 1 = encabezados del modelo) y aliases de columnas
+_IMPORT_COL_FIXED = {
+    "codigo": 0,
+    "descripcion": 1,
+    "tipo": 2,
+    "costo": 3,
+    "porcentaje_ganancia": 4,
+    "precio_venta": 5,
+    "stock": 6,
+    "fecha_vencimiento": 7,
+}
+
+_COLUMN_ALIAS_ORDER: list[tuple[str, frozenset[str]]] = [
+    ("codigo", frozenset({"codigo", "code"})),
+    ("descripcion", frozenset({"descripcion", "desc", "producto", "nombre"})),
+    ("tipo", frozenset({"tipo", "type", "categoria", "rubro"})),
+    ("costo", frozenset({"costo", "cost"})),
+    (
+        "porcentaje_ganancia",
+        frozenset({"porcentaje_ganancia", "porcentaje", "ganancia", "margen", "%_gan", "%"}),
+    ),
+    ("precio_venta", frozenset({"precio_venta", "pvp", "precio"})),
+    ("stock", frozenset({"stock", "cantidad", "unidades", "inv", "existencia"})),
+    ("fecha_vencimiento", frozenset({"fecha_vencimiento", "vencimiento", "fecha_vto", "fecha"})),
+]
+
+_ALL_IMPORT_ALIASES: frozenset[str] = frozenset().union(*(a for _, a in _COLUMN_ALIAS_ORDER))
+
+
+def _norm_encabezado_excel(cell) -> str:
+    if cell is None:
+        return ""
+    s = str(cell).strip()
+    if not s:
+        return ""
+    return _sin_acentos(s).lower().replace(" ", "_")
+
+
+def _es_fila_encabezado_productos(cells: tuple) -> bool:
+    """True si la fila parece títulos de columnas (no datos)."""
+    hits = 0
+    for c in cells:
+        n = _norm_encabezado_excel(c)
+        if n and n in _ALL_IMPORT_ALIASES:
+            hits += 1
+    return hits >= 2
+
+
+def _construir_mapa_columnas_import(header_row: tuple) -> dict[str, int]:
+    """Nombre lógico -> índice 0-based, según textos de la fila de encabezado."""
+    colmap: dict[str, int] = {}
+    for idx, cell in enumerate(header_row):
+        n = _norm_encabezado_excel(cell)
+        if not n:
+            continue
+        for key, aliases in _COLUMN_ALIAS_ORDER:
+            if n in aliases and key not in colmap:
+                colmap[key] = idx
+                break
+    return colmap
+
+
+def _celda_import(row: tuple, key: str, colmap: dict[str, int] | None):
+    if colmap and key in colmap:
+        i = colmap[key]
+    else:
+        i = _IMPORT_COL_FIXED[key]
+    if len(row) <= i:
+        return None
+    return row[i]
+
+
+def _parse_stock_importacion(v, fila_num: int) -> int:
+    """
+    Stock entero >= 0. No interpreta fechas ni números-serie de Excel como stock
+    (evita cifras enormes si las columnas están desalineadas).
+    """
+    if v is None:
+        return 0
+    if isinstance(v, date):
+        return 0
+    if isinstance(v, bool):
+        return 0
+    if isinstance(v, (int, float)):
+        fv = float(v)
+        # Rango típico de serial de fecha (Excel): no usar como stock
+        if 20000 < fv < 80000 and abs(fv - round(fv)) < 1e-9:
+            return 0
+    s = _celda_texto(v)
+    if s == "":
+        return 0
+    try:
+        n = int(_parse_decimal_celda(v, default=Decimal("0")))
+    except ValueError as exc:
+        raise ValueError(f"Fila {fila_num}: stock inválido ({s!r}).") from exc
+    if n < 0:
+        raise ValueError(f"Fila {fila_num}: el stock no puede ser negativo ({n}).")
+    return n
 
 
 @login_required
@@ -167,6 +306,25 @@ def lista_precios_aplicar(request):
     return redirect("productos_list")
 
 
+def _render_producto_form(request, *, template_full: str, modo: str, form, producto=None):
+    ctx = {
+        "form": form,
+        "modo": modo,
+        "producto": producto,
+        "form_action_url": (
+            reverse("producto_update", args=[producto.pk])
+            if producto
+            else reverse("producto_create")
+        ),
+        "modal_title": (
+            f"Editar · {producto.codigo}" if producto else "Nuevo producto"
+        ),
+    }
+    if request.GET.get("modal") == "1":
+        return render(request, "productos/form_fragment.html", ctx)
+    return render(request, template_full, ctx)
+
+
 @login_required
 @require_http_methods(["GET", "POST"])
 def producto_create(request):
@@ -180,7 +338,7 @@ def producto_create(request):
             return redirect("productos_list")
     else:
         form = ProductoForm()
-    return render(request, "productos/form.html", {"form": form, "modo": "nuevo"})
+    return _render_producto_form(request, template_full="productos/form.html", modo="nuevo", form=form)
 
 
 @login_required
@@ -197,10 +355,12 @@ def producto_update(request, pk: int):
             return redirect("productos_list")
     else:
         form = ProductoForm(instance=producto)
-    return render(
+    return _render_producto_form(
         request,
-        "productos/form.html",
-        {"form": form, "producto": producto, "modo": "editar"},
+        template_full="productos/form.html",
+        modo="editar",
+        form=form,
+        producto=producto,
     )
 
 
@@ -230,10 +390,10 @@ def producto_toggle_habilitado(request, pk: int):
 def producto_toggle_lista(request, pk: int):
     producto = get_object_or_404(Producto, pk=pk)
     if not producto.habilitado:
-        messages.warning(request, "No podés agregar a la lista un producto deshabilitado.")
+        messages.warning(request, "No podés poner en lista un producto deshabilitado.")
         return redirect("productos_list")
-    producto.en_lista_precios = not producto.en_lista_precios
-    producto.save()
+    producto.en_lista_precios = request.POST.get("set_lista") == "1"
+    producto.save(update_fields=["en_lista_precios"])
     return redirect("productos_list")
 
 
@@ -271,59 +431,50 @@ def productos_import_excel(request):
 
     ws = wb.active
 
-    # Espera columnas: codigo(opcional), descripcion, tipo, costo, porcentaje_ganancia(opcional), precio_venta(opcional), stock(opcional), fecha_vencimiento(opcional)
-    # Tipo acepta: Medicamentos/Accesorios/Otros (o MED/AC/OT)
+    row1 = next(ws.iter_rows(min_row=1, max_row=1, values_only=True), None)
+    colmap: dict[str, int] | None = None
+    data_start_row = 1
+    if row1 and _es_fila_encabezado_productos(row1):
+        colmap = _construir_mapa_columnas_import(row1)
+        data_start_row = 2
+
+    # Columnas: codigo(opcional), descripcion, tipo, costo, porcentaje_ganancia(opcional), precio_venta(opcional), stock(opcional), fecha_vencimiento(opcional)
+    # Si la fila 1 tiene encabezados reconocidos, las columnas se ubican por título (orden libre).
+    # Tipo: flexible — ver _resolver_tipo_producto
     creados = 0
     actualizados = 0
 
-    tipo_map = {
-        "MEDICAMENTOS": Producto.Tipo.MEDICAMENTOS,
-        "MED": Producto.Tipo.MEDICAMENTOS,
-        "ME": Producto.Tipo.MEDICAMENTOS,
-        "ACCESORIOS": Producto.Tipo.ACCESORIOS,
-        "AC": Producto.Tipo.ACCESORIOS,
-        "OTROS": Producto.Tipo.OTROS,
-        "OT": Producto.Tipo.OTROS,
-    }
-
     try:
         with transaction.atomic():
-            for i, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+            for i, row in enumerate(
+                ws.iter_rows(min_row=data_start_row, values_only=True),
+                start=data_start_row,
+            ):
                 if not row:
                     continue
                 if all(v is None or _celda_texto(v) == "" for v in row):
                     continue
 
-                codigo = _codigo_desde_celda(row[0]) if len(row) > 0 else ""
-                descripcion = _celda_texto(row[1]) if len(row) > 1 else ""
-                tipo_raw = _celda_texto(row[2]) if len(row) > 2 else ""
+                codigo = _codigo_desde_celda(_celda_import(row, "codigo", colmap))
+                descripcion = _celda_texto(_celda_import(row, "descripcion", colmap))
+                tipo_raw = _celda_texto(_celda_import(row, "tipo", colmap))
 
-                costo = _parse_decimal_celda(
-                    row[3] if len(row) > 3 else None, default=Decimal("0")
+                costo = _parse_decimal_celda(_celda_import(row, "costo", colmap), default=Decimal("0"))
+                pct = _parse_decimal_celda(
+                    _celda_import(row, "porcentaje_ganancia", colmap),
+                    default=Decimal("30.00"),
                 )
-                pct = (
-                    _parse_decimal_celda(row[4], default=Decimal("30.00"))
-                    if len(row) > 4
-                    else Decimal("30.00")
-                )
-                precio = (
-                    _parse_opcional_decimal(row[5]) if len(row) > 5 else None
-                )
-                stock = 0
-                if len(row) > 6 and _celda_texto(row[6]) != "":
-                    try:
-                        stock = int(_parse_decimal_celda(row[6], default=Decimal("0")))
-                    except ValueError:
-                        raise ValueError(
-                            f"Fila {i}: stock debe ser un número entero (recibido: {_celda_texto(row[6])!r})."
-                        ) from None
+                precio = _parse_opcional_decimal(_celda_import(row, "precio_venta", colmap))
+
+                stock = _parse_stock_importacion(_celda_import(row, "stock", colmap), i)
 
                 fecha_vencimiento = None
-                if len(row) > 7 and _celda_texto(row[7]) != "":
-                    v = row[7]
+                fv_cell = _celda_import(row, "fecha_vencimiento", colmap)
+                if fv_cell is not None and _celda_texto(fv_cell) != "":
+                    v = fv_cell
                     if hasattr(v, "date") and hasattr(v, "hour"):
                         fecha_vencimiento = v.date()
-                    elif hasattr(v, "year") and hasattr(v, "month") and hasattr(v, "day"):
+                    elif isinstance(v, date) and not hasattr(v, "hour"):
                         fecha_vencimiento = v
                     else:
                         s = _celda_texto(v)
@@ -349,11 +500,11 @@ def productos_import_excel(request):
                         "sin columnas desplazadas. Podés descargar el modelo desde esta pantalla."
                     )
 
-                tipo = tipo_map.get(tipo_raw.upper())
+                tipo = _resolver_tipo_producto(tipo_raw)
                 if not tipo:
                     raise ValueError(
                         f"Fila {i}: tipo no reconocido ({tipo_raw!r}). "
-                        "Usá Medicamentos, Accesorios, Otros o MED, AC, OT."
+                        "Ejemplos: medicamento(s), accesorio(s), otros; o MED, AC, OT."
                     )
 
                 defaults = {
@@ -471,5 +622,7 @@ def productos_export_pdf(request):
     c.showPage()
     c.save()
     buffer.seek(0)
-    return FileResponse(buffer, as_attachment=True, filename="lista_precios.pdf")
+    fecha = timezone.localdate().strftime("%Y-%m-%d")
+    filename = f"Lista_Precios_Sirona_{fecha}.pdf"
+    return FileResponse(buffer, as_attachment=True, filename=filename)
 

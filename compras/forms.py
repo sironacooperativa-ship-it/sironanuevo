@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 
 from bancos.models import CuentaBancaria
 from caja.models import MovimientoCaja
+from core.date_fields import DATE_INPUT_FORMATS, date_input_widget
 from personas.models import Proveedor
 from productos.models import Producto
 
@@ -23,8 +24,8 @@ class CompraRegistrarForm(forms.Form):
         widget=forms.Select(attrs={"class": "form-select"}),
     )
     fecha_compra = forms.DateField(
-        input_formats=["%d/%m/%y", "%d/%m/%Y"],
-        widget=forms.DateInput(attrs={"class": "form-control", "placeholder": "dd/mm/aa"}),
+        input_formats=list(DATE_INPUT_FORMATS),
+        widget=date_input_widget("form-control rounded-3"),
     )
     cantidad = forms.IntegerField(
         min_value=1,
@@ -38,9 +39,11 @@ class CompraRegistrarForm(forms.Form):
     )
 
     fecha_vencimiento_pedido = forms.DateField(
-        input_formats=["%d/%m/%y", "%d/%m/%Y"],
-        widget=forms.DateInput(attrs={"class": "form-control", "placeholder": "dd/mm/aa"}),
-        label="Fecha de vencimiento del pedido / lote",
+        required=False,
+        input_formats=list(DATE_INPUT_FORMATS),
+        widget=date_input_widget("form-control rounded-3"),
+        label="Vencimiento del pedido / lote (opcional)",
+        help_text="Si la cargás, se agrega un recordatorio en Calendario. No confundir con el vencimiento del cheque.",
     )
 
     monto = forms.DecimalField(
@@ -64,8 +67,10 @@ class CompraRegistrarForm(forms.Form):
     )
     fecha_vencimiento_cheque = forms.DateField(
         required=False,
-        input_formats=["%d/%m/%y", "%d/%m/%Y"],
-        widget=forms.DateInput(attrs={"class": "form-control", "placeholder": "dd/mm/aa"}),
+        input_formats=list(DATE_INPUT_FORMATS),
+        widget=date_input_widget("form-control rounded-3"),
+        label="Vencimiento del cheque",
+        help_text="Obligatorio solo si el medio de pago es Cheque.",
     )
     cuenta_bancaria = forms.ModelChoiceField(
         queryset=CuentaBancaria.objects.none(),

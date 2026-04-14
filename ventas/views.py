@@ -9,28 +9,56 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from core.export_utils import parse_export, pdf_response, xlsx_response
-from core.fecha_filtros import parse_fecha_dashboard, rango_periodo
+from core.money_decimal import q2
+from core.repoblar_lineas import lineas_iniciales_desde_post, repoblar_campos_cabecera_desde_post
+from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_dashboard, parse_fecha_param, rango_periodo
 
 from calendario.models import Evento
 from caja.models import MovimientoCaja
 from personas.models import Comprador, Vendedor
 from productos.models import Producto
 
-from .forms import VentaPagoForm
+from .forms import VentaCabeceraEditForm, VentaPagoForm
 from .models import Venta, VentaLinea
+from .remito_pdf import remito_venta_pdf_response
 from .servicios import crear_venta_confirmada
 
 
-def _parse_date(s: str):
-    s = (s or "").strip()
-    if not s:
-        return None
-    for fmt in ("%d/%m/%y", "%d/%m/%Y"):
-        try:
-            return datetime.strptime(s, fmt).date()
-        except ValueError:
-            continue
-    return None
+def _sync_evento_pedido_pendiente(venta: Venta) -> None:
+    """Crea, actualiza o elimina el evento de calendario según la fecha de vencimiento del pedido."""
+    titulo = f"Pago pendiente — Pedido #{venta.pk}"
+    qs = Evento.objects.filter(tipo=Evento.Tipo.PEDIDO, titulo=titulo)
+    extra = f" Comprador: {venta.comprador}." if venta.comprador_id else ""
+    desc = (
+        f"Vendedor: {venta.vendedor}. "
+        f"Monto orden: ${venta.neto}. "
+        f"Comisión sugerida ({venta.comision_porcentaje}%): ${venta.monto_comision}.{extra}"
+    )
+    if venta.fecha_vencimiento_pago is None:
+        qs.delete()
+        return
+    if qs.exists():
+        qs.update(fecha=venta.fecha_vencimiento_pago, descripcion=desc)
+    else:
+        Evento.objects.create(
+            fecha=venta.fecha_vencimiento_pago,
+            titulo=titulo,
+            tipo=Evento.Tipo.PEDIDO,
+            descripcion=desc,
+        )
+
+
+def _venta_detalle_queryset():
+    return (
+        Venta.objects.select_related(
+            "vendedor",
+            "comprador",
+            "pago_movimiento",
+            "pago_movimiento__cuenta_bancaria",
+            "creado_por",
+        )
+        .prefetch_related("lineas__producto")
+    )
 
 
 def _productos_payload():
@@ -68,7 +96,7 @@ def venta_nueva(request):
             except ValueError:
                 err = "Comprador no válido."
                 comprador_id = None
-        fecha_v = _parse_date(request.POST.get("fecha_vencimiento_pago") or "")
+        fecha_v = parse_fecha_param(request.POST.get("fecha_vencimiento_pago") or "")
         try:
             descuento = Decimal(str(request.POST.get("descuento_monto") or "0").replace(",", "."))
         except InvalidOperation:
@@ -84,7 +112,7 @@ def venta_nueva(request):
         if err is None and not vid:
             err = "Elegí un vendedor."
         elif err is None and not fecha_v:
-            err = "Indicá la fecha de vencimiento del pago (dd/mm/aa)."
+            err = "Indicá la fecha de vencimiento del pago."
         elif err is None and (descuento is None or descuento < 0):
             err = "El descuento no es válido."
         elif err is None and (comision_pct is None or comision_pct < 0):
@@ -141,7 +169,8 @@ def venta_nueva(request):
                 messages.success(request, f"Venta #{venta.pk} registrada. Orden de pago y evento en calendario.")
                 return redirect("ventas_historial")
 
-        messages.error(request, err)
+        if err:
+            messages.error(request, err)
         return render(
             request,
             "ventas/nueva.html",
@@ -149,6 +178,8 @@ def venta_nueva(request):
                 "vendedores": vendedores,
                 "compradores": compradores,
                 "productos_catalogo": productos_catalogo,
+                "lineas_iniciales": lineas_iniciales_desde_post(request),
+                "repoblar": repoblar_campos_cabecera_desde_post(request),
             },
         )
 
@@ -159,6 +190,8 @@ def venta_nueva(request):
             "vendedores": vendedores,
             "compradores": compradores,
             "productos_catalogo": productos_catalogo,
+            "lineas_iniciales": [],
+            "repoblar": None,
         },
     )
 
@@ -195,8 +228,8 @@ def _filtrar_ventas_queryset(request):
 
     return qs, {
         "periodo": periodo,
-        "fecha_desde": (request.GET.get("fecha_desde") or "").strip(),
-        "fecha_hasta": (request.GET.get("fecha_hasta") or "").strip(),
+        "fecha_desde": fecha_filtro_value_iso(request.GET.get("fecha_desde")),
+        "fecha_hasta": fecha_filtro_value_iso(request.GET.get("fecha_hasta")),
         "vendedor": vid,
         "comprador": cid,
         "producto": pid,
@@ -229,12 +262,12 @@ def venta_historial(request):
                     v.creado_en.strftime("%d/%m/%Y %H:%M"),
                     str(v.vendedor),
                     str(v.comprador) if v.comprador_id else "",
-                    v.fecha_vencimiento_pago.strftime("%d/%m/%Y"),
-                    str(v.subtotal_lineas),
-                    str(v.descuento_monto),
-                    str(v.neto),
+                    v.fecha_vencimiento_pago.strftime("%d/%m/%Y") if v.fecha_vencimiento_pago else "",
+                    str(q2(v.subtotal_lineas)),
+                    str(q2(v.descuento_monto)),
+                    str(q2(v.neto)),
                     str(v.comision_porcentaje),
-                    str(v.monto_comision),
+                    str(q2(v.monto_comision)),
                     v.get_estado_display(),
                 ]
             )
@@ -256,6 +289,36 @@ def venta_historial(request):
             "compradores_filtro": compradores,
         },
     )
+
+
+@login_required
+def venta_detalle(request, pk: int):
+    venta = get_object_or_404(_venta_detalle_queryset(), pk=pk)
+    if parse_export(request) == "pdf":
+        return remito_venta_pdf_response(venta)
+    return render(request, "ventas/detalle.html", {"venta": venta})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def venta_editar(request, pk: int):
+    venta = get_object_or_404(Venta.objects.select_related("vendedor", "comprador"), pk=pk)
+    if venta.estado != Venta.Estado.PENDIENTE:
+        return render(request, "ventas/editar_bloqueado.html", {"venta": venta})
+
+    if request.method == "POST":
+        form = VentaCabeceraEditForm(request.POST, instance=venta)
+        if form.is_valid():
+            v = form.save(commit=False)
+            v.actualizado_por = request.user
+            v.save()
+            _sync_evento_pedido_pendiente(v)
+            messages.success(request, "Pedido actualizado.")
+            return redirect("venta_detalle", pk=v.pk)
+    else:
+        form = VentaCabeceraEditForm(instance=venta)
+
+    return render(request, "ventas/editar.html", {"venta": venta, "form": form})
 
 
 @login_required
@@ -301,11 +364,11 @@ def venta_registrar_pago(request, pk: int):
                 venta.actualizado_por = request.user
                 venta.save(update_fields=["estado", "pago_movimiento", "actualizado_por"])
             messages.success(request, "Pago registrado en caja.")
-            return redirect("ventas_historial")
+            return redirect("venta_detalle", pk=venta.pk)
     else:
         form = VentaPagoForm(
             initial={
-                "fecha": datetime.now().strftime("%d/%m/%y"),
+                "fecha": datetime.now().strftime("%Y-%m-%d"),
                 "medio_pago": MovimientoCaja.MedioPago.EFECTIVO,
             }
         )

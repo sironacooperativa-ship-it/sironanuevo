@@ -73,7 +73,7 @@ def stock_home(request):
             rm.append(
                 [
                     mv.creado_en.strftime("%d/%m/%Y %H:%M"),
-                    mv.producto.codigo,
+                    mv.producto.descripcion,
                     mv.get_tipo_display(),
                     mv.cantidad,
                     mv.numero_boleta or "",

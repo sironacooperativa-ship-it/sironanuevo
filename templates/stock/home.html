@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% load money %}
 {% block title %}Stock{% endblock %}
 {% block content %}
-  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Stock</h1>
     {% include "includes/export_buttons.html" %}
   </div>
@@ -83,7 +84,7 @@
                   <tr>
                     <td class="text-muted small">{{ m.creado_en|date:"d/m H:i" }}</td>
                     <td>{{ m.get_tipo_display }}</td>
-                    <td><code>{{ m.producto.codigo }}</code></td>
+                    <td class="small">{{ m.producto.descripcion }}</td>
                     <td class="text-end">{{ m.cantidad }}</td>
                   </tr>
                 {% empty %}
@@ -119,7 +120,7 @@
                   <td><code>{{ p.codigo }}</code></td>
                   <td>{{ p.descripcion }}</td>
                   <td>{{ p.get_tipo_display }}</td>
-                  <td class="text-end">$ {{ p.costo }}</td>
+                  <td class="text-end">{{ p.costo|ars }}</td>
                   <td class="text-end">
                     <span class="{% if p.stock == 0 %}fw-semibold{% endif %}">{{ p.stock }}</span>
                     {% if p.stock == 0 %}
@@ -127,7 +128,7 @@
                     {% endif %}
                   </td>
                   <td class="text-end">{{ p.porcentaje_ganancia }}%</td>
-                  <td class="text-end">$ {{ p.precio_venta }}</td>
+                  <td class="text-end">{{ p.precio_venta|ars }}</td>
                   <td class="text-center">
                     {% if p.habilitado %}
                       <span class="badge text-bg-success">Sí</span>

@@ -23,7 +23,7 @@ class Producto(models.Model):
     precio_venta = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     precio_venta_editado = models.BooleanField(default=False)
     habilitado = models.BooleanField(default=True)
-    en_lista_precios = models.BooleanField(default=False)
+    en_lista_precios = models.BooleanField(default=True)
 
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)

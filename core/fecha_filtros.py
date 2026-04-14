@@ -7,16 +7,28 @@ from datetime import date, datetime, timedelta
 from django.utils import timezone
 
 
-def parse_fecha_dashboard(s: str | None):
+def parse_fecha_param(s: str | None):
+    """Parsea fechas desde query string o POST: ISO (yyyy-mm-dd) o dd/mm/aa."""
     s = (s or "").strip()
     if not s:
         return None
-    for fmt in ("%d/%m/%y", "%d/%m/%Y"):
+    for fmt in ("%Y-%m-%d", "%d/%m/%y", "%d/%m/%Y"):
         try:
             return datetime.strptime(s, fmt).date()
         except ValueError:
             continue
     return None
+
+
+def parse_fecha_dashboard(s: str | None):
+    """Alias usado en filtros de listados (compat.)."""
+    return parse_fecha_param(s)
+
+
+def fecha_filtro_value_iso(raw: str | None) -> str:
+    """Valor para `input type=date`: ISO o cadena vacía."""
+    d = parse_fecha_param(raw)
+    return d.strftime("%Y-%m-%d") if d else ""
 
 
 def rango_periodo(codigo: str) -> tuple[date | None, date | None]:

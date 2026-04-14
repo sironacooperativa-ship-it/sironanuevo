@@ -2,7 +2,7 @@
 {% load money %}
 {% block title %}Movimiento {{ mov.id }}{% endblock %}
 {% block content %}
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h4 mb-0">Detalles del movimiento</h1>
     <a class="btn btn-outline-secondary" href="{% url 'caja_list' %}">Volver</a>
   </div>

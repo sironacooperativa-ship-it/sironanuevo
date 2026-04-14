@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Compras{% endblock %}
 {% block content %}
-  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Registrar compra</h1>
-    <div class="d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2">
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'compra_historial' %}">Historial</a>
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'proveedores_list' %}">Proveedores</a>
     </div>
@@ -37,6 +37,7 @@
         <div class="col-12 col-md-6">
           <label class="form-label">Fecha de la compra</label>
           {{ form.fecha_compra }}
+          <div class="form-text">Calendario (día/mes/año según tu navegador).</div>
           {% if form.fecha_compra.errors %}<div class="text-danger small">{{ form.fecha_compra.errors }}</div>{% endif %}
         </div>
         <div class="col-6 col-md-3">
@@ -56,13 +57,15 @@
       <div class="card-header fw-semibold bg-primary bg-opacity-10">2. Vencimiento del pedido y pago al proveedor</div>
       <div class="card-body row g-3">
         <p class="small text-muted mb-0">
-          Completá el vencimiento del lote o del pedido: se creará un recordatorio en <strong>Calendario</strong> (tipo Compra).
-          El pago se registra como <strong>egreso en Caja</strong> (efectivo, transferencia, cheque, etc.). Si es cheque, el vencimiento
-          del cheque también aparece en Calendario como el resto de movimientos de caja.
+          El pago se registra como <strong>egreso en Caja</strong>. Si elegís <strong>Cheque</strong>, el <strong>vencimiento del cheque</strong> es obligatorio y usa el calendario.
+          El <strong>vencimiento del pedido/lote</strong> es opcional: solo si lo cargás se crea un recordatorio en <strong>Calendario</strong> (tipo Compra).
         </p>
         <div class="col-12 col-md-4">
           <label class="form-label">{{ form.fecha_vencimiento_pedido.label }}</label>
           {{ form.fecha_vencimiento_pedido }}
+          {% if form.fecha_vencimiento_pedido.help_text %}
+            <div class="form-text">{{ form.fecha_vencimiento_pedido.help_text }}</div>
+          {% endif %}
           {% if form.fecha_vencimiento_pedido.errors %}
             <div class="text-danger small">{{ form.fecha_vencimiento_pedido.errors }}</div>
           {% endif %}
@@ -100,8 +103,11 @@
               {% if form.numero_cheque.errors %}<div class="text-danger small">{{ form.numero_cheque.errors }}</div>{% endif %}
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label">Vencimiento del cheque</label>
+              <label class="form-label">{{ form.fecha_vencimiento_cheque.label }}</label>
               {{ form.fecha_vencimiento_cheque }}
+              {% if form.fecha_vencimiento_cheque.help_text %}
+                <div class="form-text">{{ form.fecha_vencimiento_cheque.help_text }}</div>
+              {% endif %}
               {% if form.fecha_vencimiento_cheque.errors %}
                 <div class="text-danger small">{{ form.fecha_vencimiento_cheque.errors }}</div>
               {% endif %}

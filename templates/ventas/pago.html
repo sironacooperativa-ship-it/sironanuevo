@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% load money %}
 {% block title %}Registrar pago — Pedido #{{ venta.pk }}{% endblock %}
 {% block content %}
-  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Registrar pago</h1>
     <a class="btn btn-outline-secondary btn-sm" href="{% url 'ventas_historial' %}">Volver al historial</a>
   </div>
@@ -11,7 +12,7 @@
       <div class="row g-2 small">
         <div class="col-md-4"><span class="text-muted">Pedido</span><div class="fw-semibold">#{{ venta.pk }}</div></div>
         <div class="col-md-4"><span class="text-muted">Vendedor</span><div>{{ venta.vendedor.apellido }}, {{ venta.vendedor.nombre }}</div></div>
-        <div class="col-md-4"><span class="text-muted">Monto a ingresar en caja</span><div class="fw-semibold fs-5">$ {{ venta.neto }}</div></div>
+        <div class="col-md-4"><span class="text-muted">Monto a ingresar en caja</span><div class="fw-semibold fs-5">{{ venta.neto|ars }}</div></div>
       </div>
       <hr />
       <div class="small text-muted mb-0">El movimiento se registrará como ingreso. Si el medio es cheque, el vencimiento quedará en Calendario (como en Caja).</div>

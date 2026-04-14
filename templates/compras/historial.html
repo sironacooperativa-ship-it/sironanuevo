@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% load money %}
 {% block title %}Compras{% endblock %}
 {% block content %}
-  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Historial de compras</h1>
     <div class="d-flex gap-2 align-items-center flex-wrap">
       {% include "includes/export_buttons.html" %}
@@ -25,20 +26,18 @@
         <div class="col-6 col-md-3 col-lg-2">
           <label class="form-label small text-muted mb-0">Desde</label>
           <input
-            type="text"
+            type="date"
             name="fecha_desde"
             class="form-control form-control-sm"
-            placeholder="dd/mm/aa"
             value="{{ filtros.fecha_desde }}"
           />
         </div>
         <div class="col-6 col-md-3 col-lg-2">
           <label class="form-label small text-muted mb-0">Hasta</label>
           <input
-            type="text"
+            type="date"
             name="fecha_hasta"
             class="form-control form-control-sm"
-            placeholder="dd/mm/aa"
             value="{{ filtros.fecha_hasta }}"
           />
         </div>
@@ -98,7 +97,7 @@
               <td>{{ c.proveedor.apellido }}, {{ c.proveedor.nombre }}</td>
               <td><span class="text-muted">{{ c.producto.codigo }}</span> {{ c.producto.descripcion|truncatechars:40 }}</td>
               <td class="text-end">{{ c.cantidad }}</td>
-              <td class="text-end">$ {{ c.monto }}</td>
+              <td class="text-end">{{ c.monto|ars }}</td>
               <td class="small">{{ c.get_medio_pago_display }}</td>
               <td class="text-center">
                 {% if c.movimiento_caja %}

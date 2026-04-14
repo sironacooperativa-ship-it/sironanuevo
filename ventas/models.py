@@ -1,11 +1,9 @@
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import models
 
-
-def _q2(value: Decimal) -> Decimal:
-    return Decimal(value).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+from core.money_decimal import q2 as _q2
 
 
 class Venta(models.Model):
@@ -26,7 +24,7 @@ class Venta(models.Model):
     estado = models.CharField(
         max_length=3, choices=Estado.choices, default=Estado.PENDIENTE, db_index=True
     )
-    fecha_vencimiento_pago = models.DateField()
+    fecha_vencimiento_pago = models.DateField(null=True, blank=True)
     subtotal_lineas = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     descuento_monto = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     comision_porcentaje = models.DecimalField(

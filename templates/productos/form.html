@@ -1,91 +1,28 @@
 {% extends "base.html" %}
 {% block title %}{% if modo == "nuevo" %}Nuevo producto{% else %}Editar producto{% endif %}{% endblock %}
 {% block content %}
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="app-page-header d-flex flex-wrap align-items-center gap-2 mb-3">
     <div>
-      <h1 class="h3 mb-1">
+      <h1 class="app-page-title mb-1">
         {% if modo == "nuevo" %}Nuevo producto{% else %}Editar producto{% endif %}
       </h1>
       {% if producto %}
         <div class="text-muted small">Código: <code>{{ producto.codigo }}</code></div>
       {% endif %}
     </div>
-    <a class="btn btn-outline-secondary" href="{% url 'productos_list' %}">Volver</a>
+    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'productos_list' %}">Volver</a>
   </div>
 
-  <div class="card shadow-sm">
-    <div class="card-body">
+  <div class="card app-card border-0 shadow-sm">
+    <div class="card-body p-3 p-md-4">
       <form method="post">
         {% csrf_token %}
-        <div class="row g-3">
-          <div class="col-12">
-            <label class="form-label">Descripción</label>
-            {{ form.descripcion }}
-            {% if form.descripcion.errors %}<div class="text-danger small">{{ form.descripcion.errors }}</div>{% endif %}
-          </div>
-
-          <div class="col-12 col-md-4">
-            <label class="form-label">Tipo</label>
-            {{ form.tipo }}
-            {% if form.tipo.errors %}<div class="text-danger small">{{ form.tipo.errors }}</div>{% endif %}
-          </div>
-
-          <div class="col-12 col-md-4">
-            <label class="form-label">Costo</label>
-            {{ form.costo }}
-            {% if form.costo.errors %}<div class="text-danger small">{{ form.costo.errors }}</div>{% endif %}
-          </div>
-
-          <div class="col-12 col-md-4">
-            <label class="form-label">Stock</label>
-            {{ form.stock }}
-            {% if form.stock.errors %}<div class="text-danger small">{{ form.stock.errors }}</div>{% endif %}
-          </div>
-
-          <div class="col-12 col-md-4">
-            <label class="form-label">Fecha de vencimiento</label>
-            {{ form.fecha_vencimiento }}
-            {% if form.fecha_vencimiento.errors %}<div class="text-danger small">{{ form.fecha_vencimiento.errors }}</div>{% endif %}
-          </div>
-
-          <div class="col-12 col-md-4">
-            <label class="form-label">% Ganancia</label>
-            {{ form.porcentaje_ganancia }}
-            {% if form.porcentaje_ganancia.errors %}<div class="text-danger small">{{ form.porcentaje_ganancia.errors }}</div>{% endif %}
-          </div>
-
-          <div class="col-12 col-md-4">
-            <label class="form-label">Precio de venta</label>
-            {{ form.precio_venta }}
-            <div class="form-text">
-              Si lo dejás vacío, se calcula automáticamente (por defecto 30%).
-            </div>
-            {% if form.precio_venta.errors %}<div class="text-danger small">{{ form.precio_venta.errors }}</div>{% endif %}
-          </div>
-
-          <div class="col-12 col-md-4">
-            <div class="form-check mt-4">
-              {{ form.habilitado }}
-              <label class="form-check-label">Habilitado</label>
-            </div>
-            {% if form.habilitado.errors %}<div class="text-danger small">{{ form.habilitado.errors }}</div>{% endif %}
-          </div>
-
-          <div class="col-12 col-md-4">
-            <div class="form-check mt-4">
-              {{ form.en_lista_precios }}
-              <label class="form-check-label">En lista de precios (exportable a PDF)</label>
-            </div>
-            {% if form.en_lista_precios.errors %}<div class="text-danger small">{{ form.en_lista_precios.errors }}</div>{% endif %}
-          </div>
-        </div>
-
+        {% include "productos/includes/product_form_fields.html" %}
         <div class="d-flex justify-content-end gap-2 mt-4">
-          <a class="btn btn-outline-secondary" href="{% url 'productos_list' %}">Cancelar</a>
-          <button class="btn btn-primary" type="submit">Guardar</button>
+          <a class="btn btn-outline-secondary rounded-pill px-4" href="{% url 'productos_list' %}">Cancelar</a>
+          <button class="btn btn-primary rounded-pill px-4" type="submit">Guardar</button>
         </div>
       </form>
     </div>
   </div>
 {% endblock %}
-

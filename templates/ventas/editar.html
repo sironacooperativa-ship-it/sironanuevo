@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Editar pedido #{{ venta.pk }}{% endblock %}
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Editar pedido #{{ venta.pk }}</h1>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'venta_detalle' venta.pk %}">Ver comprobante</a>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'ventas_historial' %}">Historial</a>
+  </div>
+
+  <p class="text-muted small">
+    Solo podés modificar datos de cabecera (comprador, vencimiento, descuento y comisión). Las líneas de productos no se editan desde aquí.
+  </p>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label">Comprador</label>
+            {{ form.comprador }}
+            {% if form.comprador.errors %}<div class="text-danger small">{{ form.comprador.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Vencimiento pago (orden) <span class="text-muted fw-normal">(opcional)</span></label>
+            {{ form.fecha_vencimiento_pago }}
+            {% if form.fecha_vencimiento_pago.errors %}
+              <div class="text-danger small">{{ form.fecha_vencimiento_pago.errors }}</div>
+            {% endif %}
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label">Descuento ($)</label>
+            {{ form.descuento_monto }}
+            {% if form.descuento_monto.errors %}<div class="text-danger small">{{ form.descuento_monto.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label">Comisión (%)</label>
+            {{ form.comision_porcentaje }}
+            {% if form.comision_porcentaje.errors %}
+              <div class="text-danger small">{{ form.comision_porcentaje.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <a class="btn btn-outline-secondary" href="{% url 'venta_detalle' venta.pk %}">Cancelar</a>
+          <button class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

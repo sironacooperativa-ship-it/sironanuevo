@@ -12,13 +12,17 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.conf import settings
 from django.core.management import call_command
+from django.core.paginator import Paginator
 from django.db import connections, transaction
 from django.http import FileResponse, HttpResponseBadRequest
 from django.utils import timezone
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
+from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_param
+
 from .forms import UsuarioCrearForm, UsuarioEditarForm, UsuarioPasswordForm
+from .models import RegistroActividad
 
 
 User = get_user_model()
@@ -30,6 +34,43 @@ def _es_admin(user) -> bool:
 
 def admin_required(view):
     return login_required(user_passes_test(_es_admin)(view))
+
+
+@admin_required
+def actividad_list(request):
+    qs = RegistroActividad.objects.select_related("usuario").all()
+    uid = (request.GET.get("usuario") or "").strip()
+    if uid.isdigit():
+        qs = qs.filter(usuario_id=int(uid))
+    desde = parse_fecha_param(request.GET.get("desde") or "")
+    hasta = parse_fecha_param(request.GET.get("hasta") or "")
+    if desde:
+        qs = qs.filter(fecha_hora__date__gte=desde)
+    if hasta:
+        qs = qs.filter(fecha_hora__date__lte=hasta)
+    qpath = (request.GET.get("q") or "").strip()
+    if qpath:
+        qs = qs.filter(ruta__icontains=qpath)
+    paginator = Paginator(qs, 50)
+    page = paginator.get_page(request.GET.get("page") or 1)
+    qcopy = request.GET.copy()
+    qcopy.pop("page", None)
+    querystring = qcopy.urlencode()
+    return render(
+        request,
+        "administrador/actividad_list.html",
+        {
+            "page_obj": page,
+            "usuarios_filtro": User.objects.order_by("username"),
+            "filtros": {
+                "usuario": uid,
+                "desde": fecha_filtro_value_iso(request.GET.get("desde")),
+                "hasta": fecha_filtro_value_iso(request.GET.get("hasta")),
+                "q": qpath,
+            },
+            "querystring": querystring,
+        },
+    )
 
 
 @admin_required

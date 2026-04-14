@@ -13,7 +13,7 @@ class Compra(models.Model):
         "productos.Producto", on_delete=models.PROTECT, related_name="compras_origen"
     )
     fecha_compra = models.DateField()
-    fecha_vencimiento_pedido = models.DateField()
+    fecha_vencimiento_pedido = models.DateField(null=True, blank=True)
     cantidad = models.PositiveIntegerField()
     costo_unitario = models.DecimalField(max_digits=12, decimal_places=2)
     monto = models.DecimalField(max_digits=14, decimal_places=2)

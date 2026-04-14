@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% load static %}
+{% load money %}
+{% block title %}Pedido #{{ venta.pk }}{% endblock %}
+{% block extra_head %}
+  <style>
+    @media print {
+      .no-print,
+      nav,
+      .offcanvas,
+      .app-scroll-top,
+      .app-messages {
+        display: none !important;
+      }
+      body.app-body {
+        background: #fff !important;
+      }
+      main.app-main {
+        padding-top: 0.5rem !important;
+      }
+      .remito-doc {
+        border: none !important;
+        box-shadow: none !important;
+      }
+    }
+  </style>
+{% endblock %}
+{% block content %}
+  <div class="no-print d-flex flex-wrap align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Pedido #{{ venta.pk }}</h1>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'ventas_historial' %}">Volver al historial</a>
+      {% if venta.estado == "PEN" %}
+        <a class="btn btn-primary btn-sm" href="{% url 'venta_editar' venta.pk %}">Editar</a>
+        <a class="btn btn-primary btn-sm" href="{% url 'venta_registrar_pago' venta.pk %}">Registrar pago</a>
+      {% endif %}
+      <button type="button" class="btn btn-outline-dark btn-sm" onclick="window.print()">Imprimir</button>
+      <a
+        class="btn btn-outline-danger btn-sm"
+        href="{% url 'venta_detalle' venta.pk %}?export=pdf"
+      >Exportar PDF</a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border remito-doc">
+    <div class="card-body p-4 p-md-5">
+      <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 border-bottom pb-3 mb-4">
+        <div>
+          <img src="{% static 'img/sirona-logo.png' %}" alt="SIRONA" class="mb-2" style="max-height: 52px; width: auto" />
+          <div class="text-muted small">Remito / comprobante de pedido</div>
+        </div>
+        <div class="text-end">
+          <div class="fs-5 fw-semibold">Remito N.º {{ venta.pk|stringformat:"08d" }}</div>
+          <div class="small text-muted">Pedido #{{ venta.pk }}</div>
+          <div class="small text-muted">
+            Carga: {{ venta.creado_en|date:"d/m/Y" }} · {{ venta.creado_en|date:"H:i" }}
+          </div>
+          {% if venta.creado_por %}
+            <div class="small text-muted">Registrado por: {{ venta.creado_por.username }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-12 col-md-6">
+          <h2 class="h6 text-uppercase text-muted mb-2">Vendedor</h2>
+          <p class="mb-1"><span class="text-muted">Código:</span> {{ venta.vendedor.codigo }}</p>
+          <p class="mb-1 fw-semibold">{{ venta.vendedor.apellido }}, {{ venta.vendedor.nombre }}</p>
+          {% if venta.vendedor.telefono %}<p class="mb-1 small">Tel. {{ venta.vendedor.telefono }}</p>{% endif %}
+          {% if venta.vendedor.mail %}<p class="mb-1 small">{{ venta.vendedor.mail }}</p>{% endif %}
+          {% if venta.vendedor.direccion %}<p class="mb-0 small text-muted">{{ venta.vendedor.direccion }}</p>{% endif %}
+        </div>
+        <div class="col-12 col-md-6">
+          <h2 class="h6 text-uppercase text-muted mb-2">Comprador</h2>
+          {% if venta.comprador %}
+            <p class="mb-1"><span class="text-muted">Código:</span> {{ venta.comprador.codigo }}</p>
+            <p class="mb-1 fw-semibold">{{ venta.comprador.apellido }}, {{ venta.comprador.nombre }}</p>
+            {% if venta.comprador.telefono %}<p class="mb-1 small">Tel. {{ venta.comprador.telefono }}</p>{% endif %}
+            {% if venta.comprador.mail %}<p class="mb-1 small">{{ venta.comprador.mail }}</p>{% endif %}
+            {% if venta.comprador.direccion %}<p class="mb-0 small text-muted">{{ venta.comprador.direccion }}</p>{% endif %}
+          {% else %}
+            <p class="text-muted mb-0">Sin asignar</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <h2 class="h6 text-uppercase text-muted mb-2">Productos</h2>
+      <div class="table-responsive mb-4">
+        <table class="table table-sm align-middle">
+          <thead class="table-light">
+            <tr>
+              <th class="text-center" style="width: 3rem">N.º</th>
+              <th>Código</th>
+              <th>Descripción</th>
+              <th class="text-end">Cant.</th>
+              <th class="text-end">P. unit.</th>
+              <th class="text-end">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ln in venta.lineas.all %}
+              <tr>
+                <td class="text-center text-muted">{{ forloop.counter }}</td>
+                <td>{{ ln.producto.codigo }}</td>
+                <td>{{ ln.producto.descripcion }}</td>
+                <td class="text-end">{{ ln.cantidad }}</td>
+                <td class="text-end">{{ ln.precio_unitario|ars }}</td>
+                <td class="text-end">{{ ln.subtotal|ars }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-muted text-center">Sin líneas</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="row justify-content-end mb-4">
+        <div class="col-12 col-md-6 col-lg-5">
+          <table class="table table-sm mb-0">
+            <tbody>
+              <tr>
+                <td>Subtotal líneas</td>
+                <td class="text-end">{{ venta.subtotal_lineas|ars }}</td>
+              </tr>
+              <tr>
+                <td>Descuento</td>
+                <td class="text-end">{{ venta.descuento_monto|ars }}</td>
+              </tr>
+              <tr class="fw-semibold table-light">
+                <td>Neto (orden de pago)</td>
+                <td class="text-end">{{ venta.neto|ars }}</td>
+              </tr>
+              <tr>
+                <td>Comisión ({{ venta.comision_porcentaje }} %)</td>
+                <td class="text-end">{{ venta.monto_comision|ars }}</td>
+              </tr>
+              <tr>
+                <td>Vencimiento pago (orden)</td>
+                <td class="text-end">{% if venta.fecha_vencimiento_pago %}{{ venta.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">Sin indicar</span>{% endif %}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="border rounded p-3 bg-light">
+        <h2 class="h6 mb-3">Estado de pago</h2>
+        {% if venta.estado == "PAG" and venta.pago_movimiento %}
+          <p class="mb-2">
+            <span class="badge text-bg-success">Pagada</span>
+          </p>
+          <ul class="list-unstyled small mb-0">
+            <li><strong>Fecha de cobro:</strong> {{ venta.pago_movimiento.fecha|date:"d/m/Y" }}</li>
+            <li><strong>Medio:</strong> {{ venta.pago_movimiento.get_medio_pago_display }}</li>
+            <li><strong>Monto:</strong> {{ venta.pago_movimiento.monto|ars }}</li>
+            {% if venta.pago_movimiento.banco %}
+              <li><strong>Banco / texto:</strong> {{ venta.pago_movimiento.banco }}</li>
+            {% endif %}
+            {% if venta.pago_movimiento.cuenta_bancaria %}
+              <li>
+                <strong>Cuenta:</strong>
+                {{ venta.pago_movimiento.cuenta_bancaria.banco }} — {{ venta.pago_movimiento.cuenta_bancaria.cuenta }}
+              </li>
+            {% endif %}
+            {% if venta.pago_movimiento.numero_cheque %}
+              <li><strong>N.º cheque:</strong> {{ venta.pago_movimiento.numero_cheque }}</li>
+            {% endif %}
+            {% if venta.pago_movimiento.fecha_vencimiento_cheque %}
+              <li>
+                <strong>Venc. cheque:</strong> {{ venta.pago_movimiento.fecha_vencimiento_cheque|date:"d/m/Y" }}
+              </li>
+            {% endif %}
+            <li class="mt-2">
+              <a href="{% url 'caja_detail' venta.pago_movimiento.pk %}">Ver movimiento en caja #{{ venta.pago_movimiento.pk }}</a>
+            </li>
+          </ul>
+        {% else %}
+          <p class="mb-2"><span class="badge text-bg-warning text-dark">Pendiente de pago</span></p>
+          <p class="small text-muted mb-0">
+            {% if venta.fecha_vencimiento_pago %}
+              La orden de pago vence el <strong>{{ venta.fecha_vencimiento_pago|date:"d/m/Y" }}</strong>.
+            {% else %}
+              <span class="text-muted">Sin fecha límite de pago indicada.</span>
+            {% endif %}
+            {% if venta.estado == "PEN" %}
+              <a href="{% url 'venta_registrar_pago' venta.pk %}">Registrar cobro en caja</a>
+            {% endif %}
+          </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

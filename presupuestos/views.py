@@ -1,4 +1,3 @@
-from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
@@ -8,23 +7,13 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 
+from core.fecha_filtros import parse_fecha_param
+from core.repoblar_lineas import lineas_iniciales_desde_post, repoblar_campos_cabecera_desde_post
 from personas.models import Comprador, Vendedor
 from productos.models import Producto
 from ventas.servicios import crear_venta_confirmada
 
 from .models import Presupuesto, PresupuestoLinea
-
-
-def _parse_date(s: str):
-    s = (s or "").strip()
-    if not s:
-        return None
-    for fmt in ("%d/%m/%y", "%d/%m/%Y"):
-        try:
-            return datetime.strptime(s, fmt).date()
-        except ValueError:
-            continue
-    return None
 
 
 def _productos_payload():
@@ -44,7 +33,7 @@ def _productos_payload():
 def _validar_lineas_post(request):
     """Valida POST de líneas (igual que venta). Devuelve (error_msg|None, line_specs, subtotal, extras)."""
     vid = request.POST.get("vendedor")
-    fecha_v = _parse_date(request.POST.get("fecha_vencimiento_pago") or "")
+    fecha_v = parse_fecha_param(request.POST.get("fecha_vencimiento_pago") or "")
     try:
         descuento = Decimal(str(request.POST.get("descuento_monto") or "0").replace(",", "."))
     except InvalidOperation:
@@ -69,8 +58,6 @@ def _validar_lineas_post(request):
 
     if not vid:
         return "Elegí un vendedor.", None, None, None
-    if not fecha_v:
-        return "Indicá la fecha de vencimiento del pago (dd/mm/aa).", None, None, None
     if descuento is None or descuento < 0:
         return "El descuento no es válido.", None, None, None
     if comision_pct is None or comision_pct < 0:
@@ -165,6 +152,8 @@ def presupuesto_detalle(request, pk: int):
 def presupuesto_nuevo(request):
     vendedores = Vendedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
     productos_catalogo = _productos_payload()
+    lineas_iniciales: list = []
+    repoblar = None
 
     if request.method == "POST":
         err, line_specs, subtotal, meta = _validar_lineas_post(request)
@@ -192,6 +181,8 @@ def presupuesto_nuevo(request):
             messages.success(request, f"Presupuesto #{pr.pk} guardado.")
             return redirect("presupuesto_lista")
         messages.error(request, err)
+        lineas_iniciales = lineas_iniciales_desde_post(request)
+        repoblar = repoblar_campos_cabecera_desde_post(request)
 
     return render(
         request,
@@ -202,7 +193,8 @@ def presupuesto_nuevo(request):
             "compradores": Comprador.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo"),
             "productos_catalogo": productos_catalogo,
             "presupuesto": None,
-            "lineas_iniciales": [],
+            "lineas_iniciales": lineas_iniciales,
+            "repoblar": repoblar,
         },
     )
 
@@ -220,6 +212,7 @@ def presupuesto_editar(request, pk: int):
     lineas_iniciales = [
         {"producto_id": ln.producto_id, "cantidad": ln.cantidad} for ln in presupuesto.lineas.all()
     ]
+    repoblar = None
 
     if request.method == "POST":
         err, line_specs, subtotal, meta = _validar_lineas_post(request)
@@ -241,6 +234,8 @@ def presupuesto_editar(request, pk: int):
             messages.success(request, "Presupuesto actualizado.")
             return redirect("presupuesto_lista")
         messages.error(request, err)
+        lineas_iniciales = lineas_iniciales_desde_post(request)
+        repoblar = repoblar_campos_cabecera_desde_post(request)
 
     return render(
         request,
@@ -252,6 +247,7 @@ def presupuesto_editar(request, pk: int):
             "productos_catalogo": productos_catalogo,
             "presupuesto": presupuesto,
             "lineas_iniciales": lineas_iniciales,
+            "repoblar": repoblar,
         },
     )
 

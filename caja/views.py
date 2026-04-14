@@ -9,9 +9,66 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from core.export_utils import parse_export, pdf_response, xlsx_response
+from core.money_decimal import q2
+from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_param
+from personas.models import Vendedor
 
 from .forms import MovimientoCajaForm
 from .models import MovimientoCaja
+
+
+_MESES_ES = (
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre",
+)
+
+
+def _resumen_caja_dashboard(hoy: date) -> dict:
+    """Saldo acumulado hasta hoy e ingresos/egresos del mes calendario (del 1.º al día indicado)."""
+    ing_hasta = (
+        MovimientoCaja.objects.filter(fecha__lte=hoy, tipo=MovimientoCaja.Tipo.INGRESO).aggregate(
+            s=Sum("monto")
+        )["s"]
+        or Decimal("0.00")
+    )
+    egr_hasta = (
+        MovimientoCaja.objects.filter(fecha__lte=hoy, tipo=MovimientoCaja.Tipo.EGRESO).aggregate(
+            s=Sum("monto")
+        )["s"]
+        or Decimal("0.00")
+    )
+    saldo_al_dia = q2(ing_hasta - egr_hasta)
+
+    inicio_mes = hoy.replace(day=1)
+    ing_mes = (
+        MovimientoCaja.objects.filter(
+            fecha__gte=inicio_mes, fecha__lte=hoy, tipo=MovimientoCaja.Tipo.INGRESO
+        ).aggregate(s=Sum("monto"))["s"]
+        or Decimal("0.00")
+    )
+    egr_mes = (
+        MovimientoCaja.objects.filter(
+            fecha__gte=inicio_mes, fecha__lte=hoy, tipo=MovimientoCaja.Tipo.EGRESO
+        ).aggregate(s=Sum("monto"))["s"]
+        or Decimal("0.00")
+    )
+    return {
+        "saldo_al_dia": saldo_al_dia,
+        "ingresos_mes": q2(ing_mes),
+        "egresos_mes": q2(egr_mes),
+        "fecha_resumen": hoy,
+        "mes_etiqueta": f"{_MESES_ES[hoy.month - 1]} {hoy.year}",
+    }
 
 
 @login_required
@@ -31,22 +88,13 @@ def caja_list(request):
         qs = qs.filter(tipo=tipo)
     if medio_pago:
         qs = qs.filter(medio_pago=medio_pago)
-    if vendedor:
-        qs = qs.filter(vendedor_id=vendedor)
+    if vendedor and vendedor.isdigit():
+        qs = qs.filter(vendedor_id=int(vendedor))
+    elif vendedor and not vendedor.isdigit():
+        vendedor = ""
 
-    # filtros por fecha (dd/mm/aa)
-    def parse_fecha(s: str):
-        from datetime import datetime
-
-        for fmt in ("%d/%m/%y", "%d/%m/%Y"):
-            try:
-                return datetime.strptime(s, fmt).date()
-            except ValueError:
-                continue
-        return None
-
-    d_desde = parse_fecha(desde) if desde else None
-    d_hasta = parse_fecha(hasta) if hasta else None
+    d_desde = parse_fecha_param(desde) if desde else None
+    d_hasta = parse_fecha_param(hasta) if hasta else None
     if d_desde:
         qs = qs.filter(fecha__gte=d_desde)
     if d_hasta:
@@ -58,7 +106,7 @@ def caja_list(request):
     saldo = Decimal("0.00")
     rows = []
     for m in movimientos:
-        saldo += m.delta
+        saldo = q2(saldo + m.delta)
         rows.append({"m": m, "saldo": saldo})
 
     # agrupar por periodo (YYYY-MM)
@@ -70,13 +118,24 @@ def caja_list(request):
     periodos = []
     for key in sorted(grupos.keys()):
         items = grupos[key]
-        total_periodo = sum((it["m"].delta for it in items), Decimal("0.00"))
+        total_periodo = q2(sum((it["m"].delta for it in items), Decimal("0.00")))
         periodos.append({"periodo": key, "items": items, "total": total_periodo})
 
     totales = qs.aggregate(total_ingreso=Sum("monto", filter=Q(tipo=MovimientoCaja.Tipo.INGRESO)),
                            total_egreso=Sum("monto", filter=Q(tipo=MovimientoCaja.Tipo.EGRESO)))
+    totales = {
+        "total_ingreso": q2(totales.get("total_ingreso")),
+        "total_egreso": q2(totales.get("total_egreso")),
+    }
 
     exp = parse_export(request)
+    hoy = date.today()
+    resumen_caja = _resumen_caja_dashboard(hoy)
+    filtros_activos = any(
+        (request.GET.get(k) or "").strip()
+        for k in ("operacion", "tipo", "medio_pago", "vendedor", "desde", "hasta")
+    )
+
     if exp in ("xlsx", "pdf"):
         movs = list(qs.order_by("fecha", "id"))
         saldo = Decimal("0.00")
@@ -93,7 +152,7 @@ def caja_list(request):
         ]
         rows = []
         for m in movs:
-            saldo += m.delta
+            saldo = q2(saldo + m.delta)
             cb = ""
             if m.cuenta_bancaria_id:
                 cb = f"{m.cuenta_bancaria.banco} — {m.cuenta_bancaria.cuenta}"
@@ -102,7 +161,7 @@ def caja_list(request):
                     m.fecha.strftime("%d/%m/%Y"),
                     m.operacion,
                     m.get_tipo_display(),
-                    str(m.monto),
+                    str(q2(m.monto)),
                     m.get_medio_pago_display(),
                     m.banco or "",
                     cb,
@@ -124,13 +183,15 @@ def caja_list(request):
                 "tipo": tipo,
                 "medio_pago": medio_pago,
                 "vendedor": vendedor,
-                "desde": desde,
-                "hasta": hasta,
+                "desde": fecha_filtro_value_iso(request.GET.get("desde")),
+                "hasta": fecha_filtro_value_iso(request.GET.get("hasta")),
             },
             "tipos": MovimientoCaja.Tipo.choices,
             "medios": MovimientoCaja.MedioPago.choices,
-            "vendedores": list({r["m"].vendedor for r in rows if r["m"].vendedor}),
+            "vendedores_filtro": Vendedor.objects.order_by("apellido", "nombre", "codigo"),
             "totales": totales,
+            "resumen_caja": resumen_caja,
+            "filtros_activos": filtros_activos,
         },
     )
 
@@ -145,7 +206,7 @@ def caja_create(request):
             messages.success(request, f"Movimiento cargado: {mov.id}")
             return redirect("caja_list")
     else:
-        form = MovimientoCajaForm(initial={"fecha": date.today().strftime("%d/%m/%y")})
+        form = MovimientoCajaForm(initial={"fecha": date.today().strftime("%Y-%m-%d")})
 
     return render(request, "caja/form.html", {"form": form, "modo": "nuevo"})
 

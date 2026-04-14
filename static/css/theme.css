@@ -386,3 +386,115 @@ h2.h6 {
   font-weight: 500;
   font-size: 0.75rem !important;
 }
+
+/* Productos: columnas de montos al ancho del contenido (sin partir números) */
+.table-productos th.col-monto,
+.table-productos td.col-monto {
+  white-space: nowrap;
+  width: 0.1%;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Interruptor estilo iOS (refuerzo sobre Bootstrap form-switch) */
+.form-check.form-switch.sirona-switch .form-check-input {
+  width: 2.75em;
+  height: 1.45em;
+  margin-top: 0.1em;
+  cursor: pointer;
+}
+
+.form-check.form-switch.sirona-switch .form-check-input:checked {
+  background-color: var(--sirona-teal);
+  border-color: var(--sirona-teal);
+}
+
+.form-check.form-switch.sirona-switch .form-check-input:focus {
+  box-shadow: 0 0 0 0.2rem rgba(0, 151, 178, 0.25);
+}
+
+.form-check.form-switch.sirona-switch .form-check-input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Contenedor principal estrecho — estética tipo iPhone / sheet */
+.app-shell {
+  width: 100%;
+  max-width: 52rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+.app-page-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--sirona-text);
+}
+
+.app-card {
+  border-radius: 1rem !important;
+  background: #fff;
+}
+
+.app-table {
+  font-size: 0.8125rem;
+}
+
+.app-table thead th {
+  font-weight: 600;
+  border-bottom-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+.app-table tbody td {
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
+}
+
+.app-table-row:hover td {
+  background-color: rgba(0, 151, 178, 0.035);
+}
+
+.app-pill {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.42rem;
+  border-radius: 999px;
+}
+
+.app-pill-success {
+  background: rgba(25, 135, 84, 0.14);
+  color: #146c43;
+}
+
+.app-pill-muted {
+  background: rgba(108, 117, 125, 0.14);
+  color: #495057;
+}
+
+/* Modal tipo panel / hoja */
+.sirona-modal .modal-content {
+  border-radius: 1.15rem;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(16, 24, 40, 0.18);
+}
+
+.sirona-modal-dialog {
+  max-width: min(32rem, calc(100vw - 1.5rem));
+}
+
+.sirona-modal-form .form-control,
+.sirona-modal-form .form-select {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 576px) {
+  .sirona-modal-dialog {
+    margin: 0.35rem auto;
+  }
+}

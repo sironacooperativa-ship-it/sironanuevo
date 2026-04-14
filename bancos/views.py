@@ -88,7 +88,7 @@ def banco_cuenta_detalle(request, pk: int):
         return pdf_response(base, tit, [("Movimientos", headers, er)])
 
     ajuste_form = AjusteCuentaForm(
-        initial={"fecha": datetime.now().strftime("%d/%m/%y")},
+        initial={"fecha": datetime.now().strftime("%Y-%m-%d")},
     )
     return render(
         request,
@@ -192,7 +192,7 @@ def banco_gasto_nuevo(request):
             return redirect("bancos_gastos")
     else:
         form = GastoTransferenciaForm(
-            initial={"fecha": datetime.now().strftime("%d/%m/%y")},
+            initial={"fecha": datetime.now().strftime("%Y-%m-%d")},
         )
     return render(request, "bancos/gasto_form.html", {"form": form})
 

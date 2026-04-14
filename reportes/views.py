@@ -17,11 +17,33 @@ from django.db.models import (
 from django.db.models.functions import Coalesce, TruncDate, TruncMonth
 from django.shortcuts import render
 
-from core.fecha_filtros import parse_fecha_dashboard, rango_periodo
+from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_dashboard, rango_periodo
+from core.money_decimal import q2
 from personas.models import Comprador, Vendedor
 from productos.models import Producto
 from compras.models import Compra
 from ventas.models import Venta
+
+
+def _chart_label_producto(row: dict) -> str:
+    """Etiqueta para gráficos: descripción del producto (no el código)."""
+    desc = (row.get("lineas__producto__descripcion") or "").strip()
+    if not desc:
+        return row.get("lineas__producto__codigo") or "—"
+    if len(desc) > 80:
+        return desc[:77] + "…"
+    return desc
+
+
+def _chart_label_vendedor(row: dict) -> str:
+    """Etiqueta para gráficos: apellido y nombre (no el código)."""
+    ap = (row.get("vendedor__apellido") or "").strip()
+    nom = (row.get("vendedor__nombre") or "").strip()
+    if ap and nom:
+        return f"{ap}, {nom}"
+    if ap or nom:
+        return ap or nom
+    return row.get("vendedor__codigo") or "—"
 
 
 def _rango_fechas(request):
@@ -81,11 +103,14 @@ def reportes_dashboard(request):
         pagadas=Count("id", filter=Q(estado=Venta.Estado.PAGADA)),
         pendientes=Count("id", filter=Q(estado=Venta.Estado.PENDIENTE)),
     )
+    kpis["neto_total"] = q2(kpis["neto_total"])
+    kpis["comision_total"] = q2(kpis["comision_total"])
     compras_kpis = compras.aggregate(
         compras=Count("id"),
         compras_total=Coalesce(Sum("monto"), Value(Decimal("0.00"))),
     )
-    margen = (kpis["neto_total"] or Decimal("0.00")) - (compras_kpis["compras_total"] or Decimal("0.00"))
+    compras_kpis["compras_total"] = q2(compras_kpis["compras_total"])
+    margen = q2((kpis["neto_total"] or Decimal("0.00")) - (compras_kpis["compras_total"] or Decimal("0.00")))
 
     ventas_por_dia = (
         ventas.annotate(dia=TruncDate("creado_en"))
@@ -125,27 +150,27 @@ def reportes_dashboard(request):
 
     chart = {
         "labels_ventas_dia": [v["dia"].strftime("%d/%m") for v in ventas_por_dia],
-        "ventas_dia_neto": [str(v["neto"]) for v in ventas_por_dia],
+        "ventas_dia_neto": [str(q2(v["neto"])) for v in ventas_por_dia],
         "ventas_dia_pedidos": [v["pedidos"] for v in ventas_por_dia],
         "labels_compras_dia": [c["fecha_compra"].strftime("%d/%m") for c in compras_por_dia],
-        "compras_dia_monto": [str(c["monto"]) for c in compras_por_dia],
+        "compras_dia_monto": [str(q2(c["monto"])) for c in compras_por_dia],
         "labels_ventas_mes": [v["mes"].strftime("%m/%Y") for v in ventas_por_mes],
-        "ventas_mes_neto": [str(v["neto"]) for v in ventas_por_mes],
+        "ventas_mes_neto": [str(q2(v["neto"])) for v in ventas_por_mes],
         "labels_compras_mes": [c["mes"].strftime("%m/%Y") for c in compras_por_mes],
-        "compras_mes_monto": [str(c["monto"]) for c in compras_por_mes],
+        "compras_mes_monto": [str(q2(c["monto"])) for c in compras_por_mes],
         "estado_labels": ["Pendiente", "Pagada"],
         "estado_counts": [kpis["pendientes"], kpis["pagadas"]],
-        "labels_top_productos": [p["lineas__producto__codigo"] for p in top_productos],
+        "labels_top_productos": [_chart_label_producto(p) for p in top_productos],
         "top_productos_unidades": [p["unidades"] for p in top_productos],
-        "labels_top_vendedores": [v["vendedor__codigo"] for v in top_vendedores],
-        "top_vendedores_neto": [str(v["neto"]) for v in top_vendedores],
+        "labels_top_vendedores": [_chart_label_vendedor(v) for v in top_vendedores],
+        "top_vendedores_neto": [str(q2(v["neto"])) for v in top_vendedores],
     }
 
     ctx = {
         "filtros": {
             "periodo": periodo,
-            "fecha_desde": (request.GET.get("fecha_desde") or "").strip(),
-            "fecha_hasta": (request.GET.get("fecha_hasta") or "").strip(),
+            "fecha_desde": fecha_filtro_value_iso(request.GET.get("fecha_desde")),
+            "fecha_hasta": fecha_filtro_value_iso(request.GET.get("fecha_hasta")),
             "vendedor": vid,
             "comprador": cid,
             "producto": pid,

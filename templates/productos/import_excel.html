@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Importar Excel{% endblock %}
 {% block content %}
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Importar productos desde Excel</h1>
     <a class="btn btn-outline-secondary" href="{% url 'productos_list' %}">Volver</a>
   </div>
@@ -9,13 +9,15 @@
   <div class="card shadow-sm">
     <div class="card-body">
       <p class="text-muted mb-3">
-        Formato esperado (fila 1 encabezados, datos desde fila 2):
-        <code>codigo</code> (opcional),
-        <code>descripcion</code>,
-        <code>tipo</code> (Medicamentos/Accesorios/Otros o MED/AC/OT),
-        <code>costo</code>,
-        <code>porcentaje_ganancia</code> (opcional),
-        <code>precio_venta</code> (opcional).
+        <strong>Fila 1:</strong> títulos de columnas (como en el modelo descargable). <strong>Desde la fila 2:</strong> datos.
+        Si la primera fila no parece encabezados, se asume el orden fijo A–H del modelo.
+      </p>
+      <p class="text-muted small mb-3">
+        Columnas reconocidas por nombre: <code>codigo</code>, <code>descripcion</code>, <code>tipo</code>,
+        <code>costo</code>, <code>porcentaje_ganancia</code>, <code>precio_venta</code> (o <code>precio</code>),
+        <code>stock</code>, <code>fecha_vencimiento</code> (o <code>fecha</code>). Podés cambiar el orden de las columnas
+        siempre que los títulos coincidan.
+        <strong>Stock vacío = 0.</strong> Los números que Excel guarda como fecha (o fechas en celda) no se cargan como stock.
       </p>
 
       <form method="post" enctype="multipart/form-data">

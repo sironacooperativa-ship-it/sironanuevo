@@ -1,5 +1,9 @@
 """Lógica compartida para confirmar un pedido (venta) con stock y calendario."""
+from __future__ import annotations
+
+from datetime import date
 from decimal import Decimal
+from typing import Optional
 
 from django.db import transaction
 from django.db.models import F
@@ -12,7 +16,7 @@ from .models import Venta, VentaLinea
 
 def crear_venta_confirmada(
     vendedor_id: int,
-    fecha_vencimiento_pago,
+    fecha_vencimiento_pago: Optional[date],
     descuento_monto: Decimal,
     comision_porcentaje: Decimal,
     line_specs: list[tuple],
@@ -48,15 +52,16 @@ def crear_venta_confirmada(
         extra_comprador = (
             f" Comprador: {venta.comprador}." if getattr(venta, "comprador_id", None) else ""
         )
-        Evento.objects.create(
-            fecha=venta.fecha_vencimiento_pago,
-            titulo=f"Pago pendiente — Pedido #{venta.pk}",
-            tipo=Evento.Tipo.PEDIDO,
-            descripcion=(
-                f"Vendedor: {venta.vendedor}. "
-                f"Monto orden: ${venta.neto}. "
-                f"Comisión sugerida ({venta.comision_porcentaje}%): ${venta.monto_comision}."
-                f"{extra_comprador}"
-            ),
-        )
+        if venta.fecha_vencimiento_pago is not None:
+            Evento.objects.create(
+                fecha=venta.fecha_vencimiento_pago,
+                titulo=f"Pago pendiente — Pedido #{venta.pk}",
+                tipo=Evento.Tipo.PEDIDO,
+                descripcion=(
+                    f"Vendedor: {venta.vendedor}. "
+                    f"Monto orden: ${venta.neto}. "
+                    f"Comisión sugerida ({venta.comision_porcentaje}%): ${venta.monto_comision}."
+                    f"{extra_comprador}"
+                ),
+            )
     return venta

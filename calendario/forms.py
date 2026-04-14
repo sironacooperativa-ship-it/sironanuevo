@@ -1,12 +1,14 @@
 from django import forms
 
+from core.date_fields import DATE_INPUT_FORMATS, date_input_widget
+
 from .models import Evento
 
 
 class EventoForm(forms.ModelForm):
     fecha = forms.DateField(
-        input_formats=["%d/%m/%y", "%d/%m/%Y"],
-        widget=forms.DateInput(attrs={"class": "form-control", "placeholder": "dd/mm/aa"}),
+        input_formats=list(DATE_INPUT_FORMATS),
+        widget=date_input_widget(),
     )
 
     class Meta:

@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% load money %}
 {% block title %}Reportes{% endblock %}
 {% block content %}
-  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Reportes</h1>
     <div class="text-muted small">Estadísticas filtrables</div>
   </div>
@@ -23,11 +24,11 @@
         </div>
         <div class="col-6 col-md-3 col-lg-2">
           <label class="form-label small text-muted mb-0">Desde</label>
-          <input type="text" name="fecha_desde" class="form-control form-control-sm" placeholder="dd/mm/aa" value="{{ filtros.fecha_desde }}" />
+          <input type="date" name="fecha_desde" class="form-control form-control-sm" value="{{ filtros.fecha_desde }}" />
         </div>
         <div class="col-6 col-md-3 col-lg-2">
           <label class="form-label small text-muted mb-0">Hasta</label>
-          <input type="text" name="fecha_hasta" class="form-control form-control-sm" placeholder="dd/mm/aa" value="{{ filtros.fecha_hasta }}" />
+          <input type="date" name="fecha_hasta" class="form-control form-control-sm" value="{{ filtros.fecha_hasta }}" />
         </div>
         <div class="col-12 col-md-6 col-lg-2">
           <label class="form-label small text-muted mb-0">Vendedor</label>
@@ -86,7 +87,7 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <div class="text-muted small">Neto ventas</div>
-          <div class="display-6">$ {{ kpis.neto_total }}</div>
+          <div class="display-6">{{ kpis.neto_total|ars }}</div>
         </div>
       </div>
     </div>
@@ -94,7 +95,7 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <div class="text-muted small">Comisión total</div>
-          <div class="display-6">$ {{ kpis.comision_total }}</div>
+          <div class="display-6">{{ kpis.comision_total|ars }}</div>
         </div>
       </div>
     </div>
@@ -102,7 +103,7 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <div class="text-muted small">Compras (monto)</div>
-          <div class="display-6">$ {{ compras_kpis.compras_total }}</div>
+          <div class="display-6">{{ compras_kpis.compras_total|ars }}</div>
         </div>
       </div>
     </div>
@@ -110,7 +111,7 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <div class="text-muted small">Margen estimado</div>
-          <div class="display-6">$ {{ margen }}</div>
+          <div class="display-6">{{ margen|ars }}</div>
           <div class="small text-muted mt-1">ventas netas − compras</div>
         </div>
       </div>
@@ -187,6 +188,52 @@
         return (arr || []).map((x) => parseFloat(String(x).replace(",", ".")) || 0);
       }
 
+      /** Coincide con el filtro Django `ars`: $ 1.234.567,89 */
+      function fmtArs(n) {
+        const v = parseFloat(String(n).replace(",", "."));
+        if (!Number.isFinite(v)) return "$ 0,00";
+        const neg = v < 0;
+        const abs = Math.abs(v);
+        const [intPart, dec] = abs.toFixed(2).split(".");
+        const withDots = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        return neg ? "$ -" + withDots + "," + dec : "$ " + withDots + "," + dec;
+      }
+
+      /** Enteros con separador de miles (sin $), p. ej. cantidades */
+      function fmtEnteroDots(n) {
+        const v = Math.trunc(Number(n) || 0);
+        const neg = v < 0;
+        const s = String(Math.abs(v));
+        const withDots = s.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        return neg ? "-" + withDots : withDots;
+      }
+
+      const pluginsMoney = {
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              const raw = ctx.raw;
+              const num = typeof raw === "number" ? raw : parseFloat(String(raw).replace(",", ".")) || 0;
+              const prefix = ctx.dataset.label ? ctx.dataset.label + ": " : "";
+              return prefix + fmtArs(num);
+            },
+          },
+        },
+      };
+
+      const pluginsUnidades = {
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              const raw = ctx.raw;
+              const num = typeof raw === "number" ? raw : parseFloat(String(raw).replace(",", ".")) || 0;
+              const prefix = ctx.dataset.label ? ctx.dataset.label + ": " : "";
+              return prefix + fmtEnteroDots(num);
+            },
+          },
+        },
+      };
+
       const ctx1 = document.getElementById("chartVentasDia");
       if (ctx1) {
         new Chart(ctx1, {
@@ -206,8 +253,16 @@
           },
           options: {
             responsive: true,
-            plugins: { legend: { display: true } },
-            scales: { y: { ticks: { callback: (v) => "$ " + v } } },
+            plugins: Object.assign({ legend: { display: true } }, pluginsMoney),
+            scales: {
+              y: {
+                ticks: {
+                  callback: function (v) {
+                    return fmtArs(v);
+                  },
+                },
+              },
+            },
           },
         });
       }
@@ -222,7 +277,19 @@
               { label: "Monto", data: toNums(payload.compras_dia_monto), backgroundColor: teal2, borderColor: teal },
             ],
           },
-          options: { responsive: true, plugins: { legend: { display: false } } },
+          options: {
+            responsive: true,
+            plugins: Object.assign({ legend: { display: false } }, pluginsMoney),
+            scales: {
+              y: {
+                ticks: {
+                  callback: function (v) {
+                    return fmtArs(v);
+                  },
+                },
+              },
+            },
+          },
         });
       }
 
@@ -240,7 +307,24 @@
               },
             ],
           },
-          options: { responsive: true, plugins: { legend: { position: "bottom" } } },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: "bottom" },
+              tooltip: {
+                callbacks: {
+                  label: function (ctx) {
+                    const n = Number(ctx.raw) || 0;
+                    const total = ctx.dataset.data.reduce(function (a, b) {
+                      return a + b;
+                    }, 0);
+                    const pct = total ? Math.round((n / total) * 100) : 0;
+                    return (ctx.label ? ctx.label + ": " : "") + fmtEnteroDots(n) + " (" + pct + "%)";
+                  },
+                },
+              },
+            },
+          },
         });
       }
 
@@ -252,7 +336,19 @@
             labels: payload.labels_ventas_mes || [],
             datasets: [{ label: "Neto", data: toNums(payload.ventas_mes_neto), borderColor: teal, tension: 0.25 }],
           },
-          options: { responsive: true, plugins: { legend: { display: true } } },
+          options: {
+            responsive: true,
+            plugins: Object.assign({ legend: { display: true } }, pluginsMoney),
+            scales: {
+              y: {
+                ticks: {
+                  callback: function (v) {
+                    return fmtArs(v);
+                  },
+                },
+              },
+            },
+          },
         });
       }
 
@@ -264,7 +360,19 @@
             labels: payload.labels_compras_mes || [],
             datasets: [{ label: "Monto", data: toNums(payload.compras_mes_monto), borderColor: teal, tension: 0.25 }],
           },
-          options: { responsive: true, plugins: { legend: { display: true } } },
+          options: {
+            responsive: true,
+            plugins: Object.assign({ legend: { display: true } }, pluginsMoney),
+            scales: {
+              y: {
+                ticks: {
+                  callback: function (v) {
+                    return fmtArs(v);
+                  },
+                },
+              },
+            },
+          },
         });
       }
 
@@ -274,9 +382,22 @@
           type: "bar",
           data: {
             labels: payload.labels_top_productos || [],
-            datasets: [{ label: "Unidades", data: (payload.top_productos_unidades || []), backgroundColor: teal2, borderColor: teal }],
+            datasets: [{ label: "Unidades", data: payload.top_productos_unidades || [], backgroundColor: teal2, borderColor: teal }],
           },
-          options: { indexAxis: "y", responsive: true, plugins: { legend: { display: false } } },
+          options: {
+            indexAxis: "y",
+            responsive: true,
+            plugins: Object.assign({ legend: { display: false } }, pluginsUnidades),
+            scales: {
+              x: {
+                ticks: {
+                  callback: function (v) {
+                    return fmtEnteroDots(v);
+                  },
+                },
+              },
+            },
+          },
         });
       }
 
@@ -288,7 +409,20 @@
             labels: payload.labels_top_vendedores || [],
             datasets: [{ label: "Neto", data: toNums(payload.top_vendedores_neto), backgroundColor: teal2, borderColor: teal }],
           },
-          options: { indexAxis: "y", responsive: true, plugins: { legend: { display: false } } },
+          options: {
+            indexAxis: "y",
+            responsive: true,
+            plugins: Object.assign({ legend: { display: false } }, pluginsMoney),
+            scales: {
+              x: {
+                ticks: {
+                  callback: function (v) {
+                    return fmtArs(v);
+                  },
+                },
+              },
+            },
+          },
         });
       }
     })();

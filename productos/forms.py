@@ -2,14 +2,16 @@ from decimal import Decimal
 
 from django import forms
 
+from core.date_fields import DATE_INPUT_FORMATS, date_input_widget
+
 from .models import Producto
 
 
 class ProductoForm(forms.ModelForm):
     fecha_vencimiento = forms.DateField(
         required=False,
-        input_formats=["%d/%m/%y", "%d/%m/%Y"],
-        widget=forms.DateInput(attrs={"class": "form-control", "placeholder": "dd/mm/aa"}),
+        input_formats=list(DATE_INPUT_FORMATS),
+        widget=date_input_widget("form-control form-control-sm rounded-3"),
     )
 
     class Meta:
@@ -26,18 +28,26 @@ class ProductoForm(forms.ModelForm):
             "en_lista_precios",
         ]
         widgets = {
-            "tipo": forms.Select(attrs={"class": "form-select"}),
-            "descripcion": forms.TextInput(attrs={"class": "form-control"}),
-            "costo": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
-            "stock": forms.NumberInput(attrs={"class": "form-control", "step": "1", "min": "0"}),
+            "tipo": forms.Select(attrs={"class": "form-select form-select-sm rounded-3"}),
+            "descripcion": forms.TextInput(attrs={"class": "form-control form-control-sm rounded-3"}),
+            "costo": forms.NumberInput(
+                attrs={"class": "form-control form-control-sm rounded-3", "step": "0.01"}
+            ),
+            "stock": forms.NumberInput(
+                attrs={"class": "form-control form-control-sm rounded-3", "step": "1", "min": "0"}
+            ),
             "porcentaje_ganancia": forms.NumberInput(
-                attrs={"class": "form-control", "step": "0.01"}
+                attrs={"class": "form-control form-control-sm rounded-3", "step": "1", "min": "0"}
             ),
             "precio_venta": forms.NumberInput(
-                attrs={"class": "form-control", "step": "0.01"}
+                attrs={"class": "form-control form-control-sm rounded-3", "step": "0.01"}
             ),
-            "habilitado": forms.CheckboxInput(attrs={"class": "form-check-input"}),
-            "en_lista_precios": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "habilitado": forms.CheckboxInput(
+                attrs={"class": "form-check-input", "role": "switch"}
+            ),
+            "en_lista_precios": forms.CheckboxInput(
+                attrs={"class": "form-check-input", "role": "switch"}
+            ),
         }
 
     def clean(self):
