@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Nueva cuenta bancaria{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h3 mb-0">Nueva cuenta bancaria</h1>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'bancos_cuentas' %}">Volver</a>
+  </div>
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label">Banco</label>
+            {{ form.banco }}
+            {% if form.banco.errors %}<div class="text-danger small">{{ form.banco.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Cuenta (número, CBU, alias…)</label>
+            {{ form.cuenta }}
+            {% if form.cuenta.errors %}<div class="text-danger small">{{ form.cuenta.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label">Saldo inicial</label>
+            {{ form.saldo_inicial }}
+            {% if form.saldo_inicial.errors %}<div class="text-danger small">{{ form.saldo_inicial.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-4 d-flex align-items-end">
+            <div class="form-check">
+              {{ form.activa }}
+              <label class="form-check-label" for="{{ form.activa.id_for_label }}">Activa</label>
+            </div>
+          </div>
+        </div>
+        <div class="mt-4 d-flex justify-content-end gap-2">
+          <a class="btn btn-outline-secondary" href="{% url 'bancos_cuentas' %}">Cancelar</a>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

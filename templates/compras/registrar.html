@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Compras{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Registrar compra</h1>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'compra_historial' %}">Historial</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'proveedores_list' %}">Proveedores</a>
+    </div>
+  </div>
+
+  <form method="post" novalidate id="formCompra">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-header fw-semibold">1. Producto y datos de la compra</div>
+      <div class="card-body row g-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label">Nombre del producto</label>
+          {{ form.nombre_producto }}
+          {% if form.nombre_producto.errors %}<div class="text-danger small">{{ form.nombre_producto.errors }}</div>{% endif %}
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Tipo (define el prefijo del código automático)</label>
+          {{ form.tipo_producto }}
+          <div class="form-text">Al guardar se genera el código (ME…, AC… u OT…) como en Productos.</div>
+          {% if form.tipo_producto.errors %}<div class="text-danger small">{{ form.tipo_producto.errors }}</div>{% endif %}
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Proveedor</label>
+          {{ form.proveedor }}
+          {% if form.proveedor.errors %}<div class="text-danger small">{{ form.proveedor.errors }}</div>{% endif %}
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Fecha de la compra</label>
+          {{ form.fecha_compra }}
+          {% if form.fecha_compra.errors %}<div class="text-danger small">{{ form.fecha_compra.errors }}</div>{% endif %}
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label">Cantidad</label>
+          {{ form.cantidad }}
+          {% if form.cantidad.errors %}<div class="text-danger small">{{ form.cantidad.errors }}</div>{% endif %}
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label">Costo unitario</label>
+          {{ form.costo_unitario }}
+          {% if form.costo_unitario.errors %}<div class="text-danger small">{{ form.costo_unitario.errors }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-3 border-primary border-opacity-25" id="bloqueVencimientoPago">
+      <div class="card-header fw-semibold bg-primary bg-opacity-10">2. Vencimiento del pedido y pago al proveedor</div>
+      <div class="card-body row g-3">
+        <p class="small text-muted mb-0">
+          Completá el vencimiento del lote o del pedido: se creará un recordatorio en <strong>Calendario</strong> (tipo Compra).
+          El pago se registra como <strong>egreso en Caja</strong> (efectivo, transferencia, cheque, etc.). Si es cheque, el vencimiento
+          del cheque también aparece en Calendario como el resto de movimientos de caja.
+        </p>
+        <div class="col-12 col-md-4">
+          <label class="form-label">{{ form.fecha_vencimiento_pedido.label }}</label>
+          {{ form.fecha_vencimiento_pedido }}
+          {% if form.fecha_vencimiento_pedido.errors %}
+            <div class="text-danger small">{{ form.fecha_vencimiento_pedido.errors }}</div>
+          {% endif %}
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">{{ form.monto.label }}</label>
+          {{ form.monto }}
+          <div class="form-text" id="hintMonto">Sugerido: cantidad × costo unitario (podés ajustar).</div>
+          {% if form.monto.errors %}<div class="text-danger small">{{ form.monto.errors }}</div>{% endif %}
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">Medio de pago</label>
+          {{ form.medio_pago }}
+          {% if form.medio_pago.errors %}<div class="text-danger small">{{ form.medio_pago.errors }}</div>{% endif %}
+        </div>
+
+        <div id="trfFieldsCompra" class="col-12 border rounded p-3 bg-light">
+          <div class="fw-semibold mb-2">Transferencia / MercadoPago</div>
+          <div class="mb-3">
+            <label class="form-label">{{ form.cuenta_bancaria.label }}</label>
+            {{ form.cuenta_bancaria }}
+            {% if form.cuenta_bancaria.errors %}<div class="text-danger small">{{ form.cuenta_bancaria.errors }}</div>{% endif %}
+          </div>
+          <label class="form-label">Banco / MP (texto libre)</label>
+          {{ form.banco }}
+          {% if form.banco.errors %}<div class="text-danger small">{{ form.banco.errors }}</div>{% endif %}
+        </div>
+
+        <div id="chqFieldsCompra" class="col-12 border rounded p-3 bg-light">
+          <div class="fw-semibold mb-2">Cheque</div>
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label">Número de cheque</label>
+              {{ form.numero_cheque }}
+              {% if form.numero_cheque.errors %}<div class="text-danger small">{{ form.numero_cheque.errors }}</div>{% endif %}
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Vencimiento del cheque</label>
+              {{ form.fecha_vencimiento_cheque }}
+              {% if form.fecha_vencimiento_cheque.errors %}
+                <div class="text-danger small">{{ form.fecha_vencimiento_cheque.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+      <button type="submit" class="btn btn-primary">Confirmar compra</button>
+    </div>
+  </form>
+
+  <script>
+    (function () {
+      const medio = document.getElementById("id_medio_pago_compra");
+      const trf = document.getElementById("trfFieldsCompra");
+      const chq = document.getElementById("chqFieldsCompra");
+      function refreshMedio() {
+        if (!medio) return;
+        const v = medio.value;
+        trf.style.display = v === "TRF" || v === "MP" ? "block" : "none";
+        chq.style.display = v === "CHQ" ? "block" : "none";
+      }
+      if (medio) {
+        medio.addEventListener("change", refreshMedio);
+        refreshMedio();
+      }
+
+      const q = document.querySelector("#id_cantidad");
+      const cu = document.querySelector("#id_costo_unitario");
+      const monto = document.querySelector("#id_monto");
+      const hint = document.getElementById("hintMonto");
+      function sugMonto() {
+        if (!q || !cu || !monto) return;
+        const n = parseInt(q.value, 10);
+        const c = parseFloat(String(cu.value).replace(",", "."));
+        if (n > 0 && c > 0) {
+          const s = (n * c).toFixed(2);
+          if (!monto.dataset.touched) monto.value = s;
+          hint.textContent = "Sugerido: " + s.replace(".", ",") + " (cantidad × costo). Podés modificar el monto.";
+        }
+      }
+      if (monto) {
+        monto.addEventListener("input", function () {
+          monto.dataset.touched = "1";
+        });
+      }
+      if (q) q.addEventListener("input", sugMonto);
+      if (cu) cu.addEventListener("input", sugMonto);
+      sugMonto();
+    })();
+  </script>
+{% endblock %}

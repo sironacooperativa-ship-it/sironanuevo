@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}{% if modo == "nuevo" %}Nuevo usuario{% else %}Editar usuario{% endif %}{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h3 mb-0">{% if modo == "nuevo" %}Nuevo usuario{% else %}Editar usuario{% endif %}</h1>
+      {% if usuario %}<div class="text-muted small">{{ usuario.username }}</div>{% endif %}
+    </div>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'admin_usuarios_list' %}">Volver</a>
+  </div>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="card shadow-sm">
+      <div class="card-body row g-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label">Usuario</label>
+          {{ form.username }}
+          {% if form.username.errors %}<div class="text-danger small">{{ form.username.errors }}</div>{% endif %}
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Email</label>
+          {{ form.email }}
+          {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors }}</div>{% endif %}
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Apellido</label>
+          {{ form.last_name }}
+          {% if form.last_name.errors %}<div class="text-danger small">{{ form.last_name.errors }}</div>{% endif %}
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Nombre</label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}<div class="text-danger small">{{ form.first_name.errors }}</div>{% endif %}
+        </div>
+
+        <div class="col-12 col-md-6">
+          <div class="form-check">
+            {{ form.is_active }}
+            <label class="form-check-label" for="{{ form.is_active.id_for_label }}">Activo</label>
+          </div>
+          {% if form.is_active.errors %}<div class="text-danger small">{{ form.is_active.errors }}</div>{% endif %}
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-check">
+            {{ form.is_staff }}
+            <label class="form-check-label" for="{{ form.is_staff.id_for_label }}">Puede administrar (staff)</label>
+          </div>
+          {% if form.is_staff.errors %}<div class="text-danger small">{{ form.is_staff.errors }}</div>{% endif %}
+        </div>
+
+        {% if modo == "nuevo" %}
+          <div class="col-12 col-md-6">
+            <label class="form-label">{{ form.password1.label }}</label>
+            {{ form.password1 }}
+            {% if form.password1.errors %}<div class="text-danger small">{{ form.password1.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">{{ form.password2.label }}</label>
+            {{ form.password2 }}
+            {% if form.password2.errors %}<div class="text-danger small">{{ form.password2.errors }}</div>{% endif %}
+          </div>
+        {% else %}
+          <div class="col-12">
+            <div class="alert alert-info mb-0">
+              Para cambiar la contraseña usá el botón <strong>Contraseña</strong> desde la lista.
+            </div>
+          </div>
+        {% endif %}
+      </div>
+      <div class="card-body border-top d-flex justify-content-end gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'admin_usuarios_list' %}">Cancelar</a>
+        <button type="submit" class="btn btn-primary">{% if modo == "nuevo" %}Crear{% else %}Guardar{% endif %}</button>
+      </div>
+    </div>
+  </form>
+{% endblock %}
+

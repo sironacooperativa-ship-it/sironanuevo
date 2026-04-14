@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Nueva venta{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Nueva venta</h1>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'ventas_historial' %}">Historial</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedores_list' %}">Vendedores</a>
+    </div>
+  </div>
+
+  {{ productos_catalogo|json_script:"ventas-productos" }}
+
+  <form method="post" novalidate id="ventaForm">
+    {% csrf_token %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-body row g-3">
+        <div class="col-12 col-md-6 col-lg-4">
+          <label class="form-label">Vendedor</label>
+          <select name="vendedor" class="form-select" required id="id_vendedor">
+            <option value="">— Elegir —</option>
+            {% for v in vendedores %}
+              <option value="{{ v.pk }}">{{ v.codigo }} — {{ v.apellido }}, {{ v.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-6 col-lg-4">
+          <label class="form-label">Comprador <span class="text-muted fw-normal">(opcional)</span></label>
+          <select name="comprador" class="form-select" id="id_comprador">
+            <option value="">— Sin asignar —</option>
+            {% for c in compradores %}
+              <option value="{{ c.pk }}">{{ c.codigo }} — {{ c.apellido }}, {{ c.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-6 col-lg-4">
+          <label class="form-label">Fecha límite de pago (orden de pago)</label>
+          <input
+            type="text"
+            name="fecha_vencimiento_pago"
+            class="form-control"
+            placeholder="dd/mm/aa"
+            required
+            id="id_fecha_vencimiento_pago"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h2 class="h6 mb-0">Productos</h2>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddLinea" title="Agregar línea">+ Agregar producto</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle" id="tablaLineas">
+            <thead class="table-light">
+              <tr>
+                <th>Producto</th>
+                <th class="text-end" style="width: 7rem">Cantidad</th>
+                <th class="text-end" style="width: 8rem">Precio unit.</th>
+                <th class="text-end" style="width: 8rem">Subtotal</th>
+                <th style="width: 3rem"></th>
+              </tr>
+            </thead>
+            <tbody id="lineasBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-body row g-3">
+        <div class="col-12 col-md-4">
+          <label class="form-label">Aplicar descuento ($)</label>
+          <input
+            type="text"
+            name="descuento_monto"
+            class="form-control"
+            value="0"
+            inputmode="decimal"
+            id="id_descuento_monto"
+          />
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">Comisión (%)</label>
+          <input
+            type="text"
+            name="comision_porcentaje"
+            class="form-control"
+            value="4"
+            inputmode="decimal"
+            id="id_comision_porcentaje"
+          />
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="border rounded p-3 bg-light small">
+            <div class="d-flex justify-content-between"><span>Subtotal líneas</span><span id="sumSubtotal">$ 0,00</span></div>
+            <div class="d-flex justify-content-between"><span>Descuento</span><span id="sumDesc">$ 0,00</span></div>
+            <div class="d-flex justify-content-between fw-semibold"><span>Neto (orden de pago)</span><span id="sumNeto">$ 0,00</span></div>
+            <div class="d-flex justify-content-between text-muted"><span>Comisión estimada</span><span id="sumComision">$ 0,00</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'ventas_historial' %}">Cancelar</a>
+      <button type="submit" class="btn btn-primary">Confirmar venta</button>
+    </div>
+  </form>
+
+  <script>
+    (function () {
+      const el = document.getElementById("ventas-productos");
+      const productos = el ? JSON.parse(el.textContent) : [];
+      const byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
+
+      const tbody = document.getElementById("lineasBody");
+      const btnAdd = document.getElementById("btnAddLinea");
+      const inpDesc = document.getElementById("id_descuento_monto");
+      const inpCom = document.getElementById("id_comision_porcentaje");
+      const sumSubtotal = document.getElementById("sumSubtotal");
+      const sumDesc = document.getElementById("sumDesc");
+      const sumNeto = document.getElementById("sumNeto");
+      const sumComision = document.getElementById("sumComision");
+
+      function fmtMoney(n) {
+        return (
+          "$ " +
+          n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        );
+      }
+
+      function parseNum(s) {
+        const t = String(s || "").replace(",", ".").trim();
+        const v = parseFloat(t);
+        return Number.isFinite(v) ? v : 0;
+      }
+
+      function rowSubtotal(row) {
+        const sel = row.querySelector('select[name="linea_producto"]');
+        const q = row.querySelector('input[name="linea_cantidad"]');
+        const pid = sel.value;
+        const qty = parseInt(q.value, 10) || 0;
+        if (!pid || qty <= 0) return 0;
+        const p = byId[pid];
+        if (!p) return 0;
+        return qty * parseFloat(p.precio);
+      }
+
+      function refreshRow(row) {
+        const sel = row.querySelector('select[name="linea_producto"]');
+        const pid = sel.value;
+        const p = pid ? byId[pid] : null;
+        const unitEl = row.querySelector(".js-precio-unit");
+        const subEl = row.querySelector(".js-subtotal");
+        const q = parseInt(row.querySelector('input[name="linea_cantidad"]').value, 10) || 0;
+        if (p && q > 0) {
+          unitEl.textContent = fmtMoney(parseFloat(p.precio));
+          subEl.textContent = fmtMoney(q * parseFloat(p.precio));
+        } else {
+          unitEl.textContent = "—";
+          subEl.textContent = "—";
+        }
+      }
+
+      function totals() {
+        let sub = 0;
+        tbody.querySelectorAll("tr").forEach((tr) => {
+          sub += rowSubtotal(tr);
+        });
+        const desc = Math.max(0, parseNum(inpDesc.value));
+        const neto = Math.max(0, sub - desc);
+        const pct = Math.max(0, parseNum(inpCom.value));
+        const com = neto * (pct / 100);
+        sumSubtotal.textContent = fmtMoney(sub);
+        sumDesc.textContent = fmtMoney(desc);
+        sumNeto.textContent = fmtMoney(neto);
+        sumComision.textContent = fmtMoney(com);
+      }
+
+      function buildSelect() {
+        const sel = document.createElement("select");
+        sel.name = "linea_producto";
+        sel.className = "form-select form-select-sm";
+        sel.innerHTML =
+          '<option value="">— Producto —</option>' +
+          productos
+            .map(
+              (p) =>
+                `<option value="${p.id}">${p.codigo} — ${p.descripcion} (stock ${p.stock})</option>`
+            )
+            .join("");
+        sel.addEventListener("change", () => {
+          refreshRow(sel.closest("tr"));
+          totals();
+        });
+        return sel;
+      }
+
+      function addRow() {
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          '<td></td>' +
+          '<td class="text-end"><input type="number" name="linea_cantidad" class="form-control form-control-sm text-end" min="1" step="1" value="1" /></td>' +
+          '<td class="text-end js-precio-unit">—</td>' +
+          '<td class="text-end fw-semibold js-subtotal">—</td>' +
+          '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger py-0 js-remove" title="Quitar">×</button></td>';
+        tr.children[0].appendChild(buildSelect());
+        tr.querySelector('input[name="linea_cantidad"]').addEventListener("input", () => {
+          refreshRow(tr);
+          totals();
+        });
+        tr.querySelector(".js-remove").addEventListener("click", () => {
+          tr.remove();
+          totals();
+        });
+        tbody.appendChild(tr);
+        refreshRow(tr);
+        totals();
+      }
+
+      btnAdd.addEventListener("click", addRow);
+      inpDesc.addEventListener("input", totals);
+      inpCom.addEventListener("input", totals);
+
+      if (productos.length === 0) {
+        btnAdd.disabled = true;
+        tbody.innerHTML =
+          '<tr><td colspan="5" class="text-muted text-center py-3">No hay productos habilitados para vender.</td></tr>';
+      } else {
+        addRow();
+      }
+    })();
+  </script>
+{% endblock %}

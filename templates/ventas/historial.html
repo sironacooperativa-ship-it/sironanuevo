@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Ventas{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Historial de ventas</h1>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      {% include "includes/export_buttons.html" %}
+      <a class="btn btn-primary btn-sm" href="{% url 'venta_nueva' %}">Nueva venta</a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-12 col-md-6 col-lg-2">
+          <label class="form-label small text-muted mb-0">Período</label>
+          <select name="periodo" class="form-select form-select-sm">
+            <option value="" {% if not filtros.periodo %}selected{% endif %}>Personalizado / todos</option>
+            <option value="7d" {% if filtros.periodo == "7d" %}selected{% endif %}>Últimos 7 días</option>
+            <option value="30d" {% if filtros.periodo == "30d" %}selected{% endif %}>Últimos 30 días</option>
+            <option value="mes" {% if filtros.periodo == "mes" %}selected{% endif %}>Mes actual (calendario)</option>
+            <option value="mes_ant" {% if filtros.periodo == "mes_ant" %}selected{% endif %}>Mes anterior</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <label class="form-label small text-muted mb-0">Desde (registro)</label>
+          <input
+            type="text"
+            name="fecha_desde"
+            class="form-control form-control-sm"
+            placeholder="dd/mm/aa"
+            value="{{ filtros.fecha_desde }}"
+          />
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <label class="form-label small text-muted mb-0">Hasta (registro)</label>
+          <input
+            type="text"
+            name="fecha_hasta"
+            class="form-control form-control-sm"
+            placeholder="dd/mm/aa"
+            value="{{ filtros.fecha_hasta }}"
+          />
+        </div>
+        <div class="col-12 col-md-6 col-lg-2">
+          <label class="form-label small text-muted mb-0">Vendedor</label>
+          <select name="vendedor" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for v in vendedores_filtro %}
+              <option value="{{ v.pk }}" {% if filtros.vendedor == v.pk|stringformat:"s" %}selected{% endif %}>
+                {{ v.codigo }} — {{ v.apellido }}, {{ v.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-6 col-lg-2">
+          <label class="form-label small text-muted mb-0">Comprador</label>
+          <select name="comprador" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for c in compradores_filtro %}
+              <option value="{{ c.pk }}" {% if filtros.comprador == c.pk|stringformat:"s" %}selected{% endif %}>
+                {{ c.codigo }} — {{ c.apellido }}, {{ c.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-6 col-lg-2">
+          <label class="form-label small text-muted mb-0">Producto (en el pedido)</label>
+          <select name="producto" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for p in productos_filtro %}
+              <option value="{{ p.pk }}" {% if filtros.producto == p.pk|stringformat:"s" %}selected{% endif %}>
+                {{ p.codigo }} — {{ p.descripcion|truncatechars:28 }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 d-flex gap-1 flex-wrap">
+          <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'ventas_historial' %}">Limpiar filtros</a>
+        </div>
+      </form>
+      <p class="small text-muted mb-0 mt-2">
+        Fechas según <strong>fecha de registro</strong> del pedido. Si elegís un período predefinido, reemplaza desde/hasta al aplicar el filtro.
+      </p>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Pedido</th>
+            <th>Fecha registro</th>
+            <th>Vendedor</th>
+            <th>Comprador</th>
+            <th>Venc. pago</th>
+            <th class="text-end">Neto</th>
+            <th class="text-end">Comisión (%)</th>
+            <th>Estado</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in ventas %}
+            <tr>
+              <td><span class="fw-semibold">#{{ v.pk }}</span></td>
+              <td class="text-muted small">{{ v.creado_en|date:"d/m/Y H:i" }}</td>
+              <td>{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}</td>
+              <td class="small">
+                {% if v.comprador %}
+                  {{ v.comprador.apellido }}, {{ v.comprador.nombre }}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}</td>
+              <td class="text-end">$ {{ v.neto }}</td>
+              <td class="text-end">{{ v.comision_porcentaje }}% <span class="text-muted small">($ {{ v.monto_comision }})</span></td>
+              <td>
+                {% if v.estado == "PEN" %}
+                  <span class="badge text-bg-warning text-dark">Pendiente</span>
+                {% else %}
+                  <span class="badge text-bg-success">Pagada</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if v.estado == "PEN" %}
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'venta_registrar_pago' v.pk %}">Pago</a>
+                {% elif v.pago_movimiento %}
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'caja_detail' v.pago_movimiento.pk %}">Ver caja</a>
+                {% else %}
+                  <span class="text-muted small">—</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="9" class="text-center text-muted py-5">No hay ventas con los filtros actuales.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

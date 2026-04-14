@@ -1,0 +1,10 @@
+{# Preserva filtros GET actuales (excepto export). Uso: {% include "includes/export_buttons.html" %} #}
+<form class="d-inline-flex gap-1 align-items-center flex-wrap" method="get" action="{{ request.path }}">
+  {% for key, value in request.GET.items %}
+    {% if key != "export" %}
+      <input type="hidden" name="{{ key }}" value="{{ value }}" />
+    {% endif %}
+  {% endfor %}
+  <button type="submit" name="export" value="xlsx" class="btn btn-sm btn-outline-primary">Excel</button>
+  <button type="submit" name="export" value="pdf" class="btn btn-sm btn-outline-danger">PDF</button>
+</form>

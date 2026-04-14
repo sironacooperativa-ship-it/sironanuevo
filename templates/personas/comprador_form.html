@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{% if modo == "nuevo" %}Nuevo comprador{% else %}Editar comprador{% endif %}{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h1 class="h3 mb-1">{% if modo == "nuevo" %}Nuevo comprador{% else %}Editar comprador{% endif %}</h1>
+      {% if comprador %}
+        <div class="text-muted small">Código: <code>{{ comprador.codigo }}</code></div>
+      {% endif %}
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'compradores_list' %}">Volver</a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label">Nombre</label>
+            {{ form.nombre }}
+            {% if form.nombre.errors %}<div class="text-danger small">{{ form.nombre.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Apellido</label>
+            {{ form.apellido }}
+            {% if form.apellido.errors %}<div class="text-danger small">{{ form.apellido.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label">DNI</label>
+            {{ form.dni }}
+            {% if form.dni.errors %}<div class="text-danger small">{{ form.dni.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label">Teléfono</label>
+            {{ form.telefono }}
+            {% if form.telefono.errors %}<div class="text-danger small">{{ form.telefono.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label">Mail</label>
+            {{ form.mail }}
+            {% if form.mail.errors %}<div class="text-danger small">{{ form.mail.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12">
+            <label class="form-label">Dirección</label>
+            {{ form.direccion }}
+            {% if form.direccion.errors %}<div class="text-danger small">{{ form.direccion.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12">
+            <div class="form-check">
+              {{ form.habilitado }}
+              <label class="form-check-label" for="{{ form.habilitado.id_for_label }}">Habilitado</label>
+            </div>
+            {% if form.habilitado.errors %}<div class="text-danger small">{{ form.habilitado.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <a class="btn btn-outline-secondary" href="{% url 'compradores_list' %}">Cancelar</a>
+          <button class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+

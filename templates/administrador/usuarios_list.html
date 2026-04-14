@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Administrador{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h3 mb-0">Administrador</h1>
+      <div class="text-muted small">Usuarios</div>
+    </div>
+    <a class="btn btn-primary btn-sm" href="{% url 'admin_usuario_create' %}">Nuevo usuario</a>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-12 col-md-6">
+          <label class="form-label small text-muted mb-0">Buscar</label>
+          <input type="text" name="q" class="form-control form-control-sm" placeholder="usuario o email" value="{{ q }}" />
+        </div>
+        <div class="col-12 col-md-6 d-flex gap-2">
+          <button class="btn btn-sm btn-primary" type="submit">Buscar</button>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'admin_usuarios_list' %}">Limpiar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+          <div class="fw-semibold">Backup</div>
+          <div class="text-muted small">Descargar o restaurar la base de datos (SQLite)</div>
+        </div>
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'admin_backup_descargar' %}">Descargar backup</a>
+      </div>
+      <hr class="my-3" />
+      <form method="post" action="{% url 'admin_backup_restaurar' %}" enctype="multipart/form-data" class="row g-2 align-items-end">
+        {% csrf_token %}
+        <div class="col-12 col-lg-6">
+          <label class="form-label small text-muted mb-0">Restaurar desde archivo</label>
+          <input type="file" name="archivo" class="form-control form-control-sm" accept=".sqlite3,.db,.sqlite" required />
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="1" id="id_confirm_restore" name="confirm" />
+            <label class="form-check-label" for="id_confirm_restore">
+              Confirmo restaurar (reemplaza la base actual)
+            </label>
+          </div>
+          <div class="small text-muted">Se guarda una copia previa como <code>db.before_restore.sqlite3</code>.</div>
+        </div>
+        <div class="col-12 col-lg-2 d-flex justify-content-end">
+          <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Restaurar backup y reemplazar la base actual?');">Restaurar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Usuario</th>
+            <th>Email</th>
+            <th>Nombre</th>
+            <th class="text-center">Activo</th>
+            <th class="text-center">Staff</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in usuarios %}
+            <tr>
+              <td class="fw-semibold">{{ u.username }}</td>
+              <td class="text-muted small">{{ u.email|default:"—" }}</td>
+              <td>{{ u.last_name }}{% if u.first_name %}, {{ u.first_name }}{% endif %}</td>
+              <td class="text-center">
+                {% if u.is_active %}
+                  <span class="badge text-bg-success">Sí</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">No</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if u.is_staff %}
+                  <span class="badge text-bg-primary">Sí</span>
+                {% else %}
+                  <span class="badge text-bg-light text-dark border">No</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'admin_usuario_update' u.pk %}">Editar</a>
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'admin_usuario_password' u.pk %}">Contraseña</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-5">No hay usuarios.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+

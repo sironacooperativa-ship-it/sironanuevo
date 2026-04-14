@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Productos{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Productos</h1>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      {% include "includes/export_buttons.html" %}
+      <a class="btn btn-outline-secondary" href="{% url 'productos_import_excel' %}">Importar Excel</a>
+      <form class="d-flex align-items-center gap-2" method="post" action="{% url 'lista_precios_guardar' %}">
+        {% csrf_token %}
+        <input class="form-control form-control-sm" style="max-width: 220px" name="nombre" placeholder="Nombre de lista" />
+        <button class="btn btn-outline-primary btn-sm" type="submit">Guardar selección</button>
+      </form>
+
+      <form class="d-flex align-items-center gap-2" method="post" action="{% url 'lista_precios_aplicar' %}">
+        {% csrf_token %}
+        <select class="form-select form-select-sm" style="max-width: 240px" name="lista_id">
+          <option value="">Aplicar lista guardada…</option>
+          {% for l in listas %}
+            <option value="{{ l.id }}">{{ l.nombre }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn btn-outline-secondary btn-sm" type="submit">Aplicar</button>
+      </form>
+
+      <form class="d-flex align-items-center gap-2" method="get" action="{% url 'productos_export_pdf' %}">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" value="1" id="pdfStock" name="stock" />
+          <label class="form-check-label" for="pdfStock">Incluir stock</label>
+        </div>
+        <button class="btn btn-outline-success" type="submit">Exportar PDF</button>
+      </form>
+      <a class="btn btn-primary" href="{% url 'producto_create' %}">Nuevo</a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <form class="row g-2 align-items-end" method="get">
+        <div class="col-12 col-md-6">
+          <label class="form-label mb-1">Buscar (código o descripción)</label>
+          <input class="form-control" name="q" value="{{ q }}" placeholder="Ej: paracetamol / ME0001" />
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label mb-1">Tipo</label>
+          <select class="form-select" name="tipo">
+            <option value="">Todos</option>
+            {% for v, label in tipos %}
+              <option value="{{ v }}" {% if tipo == v %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-2">
+          <button class="btn btn-outline-dark w-100" type="submit">Filtrar</button>
+          <a class="btn btn-outline-secondary w-100" href="{% url 'productos_list' %}">Limpiar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th>Tipo</th>
+            <th class="text-end">Costo</th>
+            <th class="text-end">Stock</th>
+            <th class="text-end">% Gan.</th>
+            <th class="text-end">Precio venta</th>
+            <th class="text-center">Habilitado</th>
+            <th class="text-center">Lista</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in productos %}
+            <tr class="{% if not p.habilitado %}table-secondary{% endif %}">
+              <td><code>{{ p.codigo }}</code></td>
+              <td>{{ p.descripcion }}</td>
+              <td>{{ p.get_tipo_display }}</td>
+              <td class="text-end">$ {{ p.costo }}</td>
+              <td class="text-end">{{ p.stock }}</td>
+              <td class="text-end">{{ p.porcentaje_ganancia }}%</td>
+              <td class="text-end">$ {{ p.precio_venta }}</td>
+              <td class="text-center">
+                {% if p.habilitado %}
+                  <span class="badge text-bg-success">Sí</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">No</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if p.en_lista_precios %}
+                  <span class="badge text-bg-primary">Sí</span>
+                {% else %}
+                  <span class="badge text-bg-light text-dark">No</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <div class="d-flex justify-content-end gap-2">
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'producto_update' p.id %}">Editar</a>
+                  <form method="post" action="{% url 'producto_toggle_habilitado' p.id %}">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-warning" type="submit">
+                      {% if p.habilitado %}Deshabilitar{% else %}Habilitar{% endif %}
+                    </button>
+                  </form>
+                  <form method="post" action="{% url 'producto_toggle_lista' p.id %}">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-success" type="submit" {% if not p.habilitado %}disabled{% endif %}>
+                      {% if p.en_lista_precios %}Quitar lista{% else %}A lista{% endif %}
+                    </button>
+                  </form>
+                  <form method="post" action="{% url 'producto_delete' p.id %}" onsubmit="return confirm('¿Eliminar {{ p.codigo }}?');">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-danger" type="submit">Eliminar</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="10" class="text-center text-muted py-5">No hay productos cargados.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="text-muted small mt-3 mb-0">
+    El código se autogenera: <code>ME/AC/OT</code> + 4 dígitos incrementales.
+  </p>
+{% endblock %}
+

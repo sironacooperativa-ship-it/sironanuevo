@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Caja{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Caja (Libro diario)</h1>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      {% include "includes/export_buttons.html" %}
+      <a class="btn btn-primary" href="{% url 'caja_create' %}">Nuevo movimiento</a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <form class="row g-2 align-items-end" method="get">
+        <div class="col-12 col-md-4">
+          <label class="form-label mb-1">Operación</label>
+          <input class="form-control" name="operacion" value="{{ f.operacion }}" />
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label mb-1">Tipo</label>
+          <select class="form-select" name="tipo">
+            <option value="">Todos</option>
+            {% for v, label in tipos %}
+              <option value="{{ v }}" {% if f.tipo == v %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label mb-1">Medio de pago</label>
+          <select class="form-select" name="medio_pago">
+            <option value="">Todos</option>
+            {% for v, label in medios %}
+              <option value="{{ v }}" {% if f.medio_pago == v %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label mb-1">Vendedor</label>
+          <input class="form-control" name="vendedor" value="{{ f.vendedor }}" placeholder="ID vendedor (opcional)" />
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label mb-1">Desde</label>
+          <input class="form-control" name="desde" value="{{ f.desde }}" placeholder="dd/mm/aa" />
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label mb-1">Hasta</label>
+          <input class="form-control" name="hasta" value="{{ f.hasta }}" placeholder="dd/mm/aa" />
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-2">
+          <button class="btn btn-outline-dark w-100" type="submit">Buscar</button>
+          <a class="btn btn-outline-secondary w-100" href="{% url 'caja_list' %}">Limpiar</a>
+        </div>
+      </form>
+      <div class="text-muted small mt-2">
+        Totales: Ingresos {{ totales.total_ingreso|ars }} | Egresos {{ totales.total_egreso|ars }}
+      </div>
+    </div>
+  </div>
+
+  {% for g in periodos %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="fw-semibold">Periodo: {{ g.periodo }}</div>
+        <div class="text-muted small">Resultado del periodo: {{ g.total|ars }}</div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Fecha</th>
+              <th>Operación</th>
+              <th>Tipo</th>
+              <th>Medio</th>
+              <th>Vendedor</th>
+              <th class="text-end">Monto</th>
+              <th class="text-end">Saldo</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in g.items %}
+              <tr>
+                <td>{{ r.m.fecha|date:"d/m/y" }}</td>
+                <td>{{ r.m.operacion }}</td>
+                <td>{{ r.m.get_tipo_display }}</td>
+                <td>{{ r.m.get_medio_pago_display }}</td>
+                <td>{% if r.m.vendedor %}{{ r.m.vendedor.apellido }}, {{ r.m.vendedor.nombre }}{% else %}-{% endif %}</td>
+                <td class="text-end">{{ r.m.delta|ars }}</td>
+                <td class="text-end">{{ r.saldo|ars }}</td>
+                <td class="text-end">
+                  <div class="d-flex justify-content-end gap-2">
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'caja_detail' r.m.id %}">Detalles</a>
+                    <form method="post" action="{% url 'caja_delete' r.m.id %}" onsubmit="return confirm('¿Eliminar movimiento?');">
+                      {% csrf_token %}
+                      <button class="btn btn-sm btn-outline-danger" type="submit">Eliminar</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% empty %}
+    <div class="text-muted text-center py-5">No hay movimientos.</div>
+  {% endfor %}
+{% endblock %}
+

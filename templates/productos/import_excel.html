@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Importar Excel{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h3 mb-0">Importar productos desde Excel</h1>
+    <a class="btn btn-outline-secondary" href="{% url 'productos_list' %}">Volver</a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <p class="text-muted mb-3">
+        Formato esperado (fila 1 encabezados, datos desde fila 2):
+        <code>codigo</code> (opcional),
+        <code>descripcion</code>,
+        <code>tipo</code> (Medicamentos/Accesorios/Otros o MED/AC/OT),
+        <code>costo</code>,
+        <code>porcentaje_ganancia</code> (opcional),
+        <code>precio_venta</code> (opcional).
+      </p>
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Archivo (.xlsx)</label>
+          <input type="file" name="archivo" class="form-control" accept=".xlsx" required />
+        </div>
+        <button class="btn btn-primary" type="submit">Importar</button>
+      </form>
+      <div class="mt-2">
+        <a class="small" href="{% url 'productos_import_excel_modelo' %}">Descargar modelo</a>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

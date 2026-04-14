@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Nuevo movimiento{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h3 mb-0">Nuevo movimiento</h1>
+    <a class="btn btn-outline-secondary" href="{% url 'caja_list' %}">Volver</a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-12 col-md-3">
+            <label class="form-label">Fecha</label>
+            {{ form.fecha }}
+            {% if form.fecha.errors %}<div class="text-danger small">{{ form.fecha.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Operación</label>
+            {{ form.operacion }}
+            {% if form.operacion.errors %}<div class="text-danger small">{{ form.operacion.errors }}</div>{% endif %}
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label">Tipo</label>
+            {{ form.tipo }}
+            {% if form.tipo.errors %}<div class="text-danger small">{{ form.tipo.errors }}</div>{% endif %}
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label">Monto</label>
+            {{ form.monto }}
+            {% if form.monto.errors %}<div class="text-danger small">{{ form.monto.errors }}</div>{% endif %}
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label">Medio de pago</label>
+            {{ form.medio_pago }}
+            {% if form.medio_pago.errors %}<div class="text-danger small">{{ form.medio_pago.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Vendedor (si corresponde)</label>
+            {{ form.vendedor }}
+            {% if form.vendedor.errors %}<div class="text-danger small">{{ form.vendedor.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div id="trfFields" class="border rounded p-3 mt-3 bg-light">
+          <div class="fw-semibold mb-2">Transferencia / MercadoPago</div>
+          <div class="mb-3">
+            <label class="form-label">Cuenta bancaria afectada</label>
+            {{ form.cuenta_bancaria }}
+            {% if form.cuenta_bancaria.errors %}<div class="text-danger small">{{ form.cuenta_bancaria.errors }}</div>{% endif %}
+            <div class="form-text">Obligatorio para impactar el saldo en Bancos.</div>
+          </div>
+          <label class="form-label">Banco / MP (texto libre)</label>
+          {{ form.banco }}
+          {% if form.banco.errors %}<div class="text-danger small">{{ form.banco.errors }}</div>{% endif %}
+        </div>
+
+        <div id="chqFields" class="border rounded p-3 mt-3 bg-light">
+          <div class="fw-semibold mb-2">Cheque</div>
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label">Número de cheque</label>
+              {{ form.numero_cheque }}
+              {% if form.numero_cheque.errors %}<div class="text-danger small">{{ form.numero_cheque.errors }}</div>{% endif %}
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Vencimiento</label>
+              {{ form.fecha_vencimiento_cheque }}
+              {% if form.fecha_vencimiento_cheque.errors %}<div class="text-danger small">{{ form.fecha_vencimiento_cheque.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <a class="btn btn-outline-secondary" href="{% url 'caja_list' %}">Cancelar</a>
+          <button class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const medio = document.getElementById("id_medio_pago");
+      const trf = document.getElementById("trfFields");
+      const chq = document.getElementById("chqFields");
+      function refresh() {
+        const v = medio.value;
+        trf.style.display = (v === "TRF" || v === "MP") ? "block" : "none";
+        chq.style.display = (v === "CHQ") ? "block" : "none";
+      }
+      if (medio) {
+        medio.addEventListener("change", refresh);
+        refresh();
+      }
+    })();
+  </script>
+{% endblock %}
+

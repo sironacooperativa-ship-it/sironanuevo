@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Ingresar · SIRONA{% endblock %}
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-5 col-lg-4 login-card-wrap">
+      <div class="login-brand">
+        <img
+          class="brand-logo"
+          src="{% static 'img/sirona-logo.png' %}"
+          alt="SIRONA"
+          width="220"
+          height="90"
+        />
+      </div>
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h1 class="h4 mb-3">Ingresar</h1>
+          {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+          {% endif %}
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label">Usuario</label>
+              <input name="username" class="form-control" autocomplete="username" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Contraseña</label>
+              <input
+                name="password"
+                type="password"
+                class="form-control"
+                autocomplete="current-password"
+                required
+              />
+            </div>
+            <button class="btn btn-primary w-100" type="submit">Entrar</button>
+          </form>
+        </div>
+      </div>
+      <p class="text-muted small mt-3 mb-0">
+        Tip: creá el primer usuario con <code>python manage.py createsuperuser</code>.
+      </p>
+    </div>
+  </div>
+{% endblock %}
+

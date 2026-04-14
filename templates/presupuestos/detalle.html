@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Presupuesto #{{ presupuesto.pk }}{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Presupuesto #{{ presupuesto.pk }}</h1>
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'presupuesto_lista' %}">Volver</a>
+      {% if presupuesto.estado == "ACT" %}
+        <a class="btn btn-outline-primary btn-sm" href="{% url 'presupuesto_editar' presupuesto.pk %}">Editar</a>
+        <form method="post" action="{% url 'presupuesto_aprobar' presupuesto.pk %}" class="d-inline" onsubmit="return confirm('¿Aprobar y generar el pedido?');">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-success btn-sm">Aprobar</button>
+        </form>
+        <form method="post" action="{% url 'presupuesto_eliminar' presupuesto.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar?');">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar</button>
+        </form>
+      {% elif presupuesto.venta_id %}
+        <a class="btn btn-primary btn-sm" href="{% url 'venta_registrar_pago' presupuesto.venta_id %}">Registrar pago (pedido)</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body row g-2 small">
+      <div class="col-md-4"><span class="text-muted">Vendedor</span><div>{{ presupuesto.vendedor }}</div></div>
+      <div class="col-md-4"><span class="text-muted">Comprador</span><div>{% if presupuesto.comprador %}{{ presupuesto.comprador }}{% else %}<span class="text-muted">—</span>{% endif %}</div></div>
+      <div class="col-md-4"><span class="text-muted">Estado</span><div>{{ presupuesto.get_estado_display }}</div></div>
+      <div class="col-md-4"><span class="text-muted">Venc. pago (pedido)</span><div>{{ presupuesto.fecha_vencimiento_pago|date:"d/m/Y" }}</div></div>
+      <div class="col-md-4"><span class="text-muted">Subtotal</span><div>$ {{ presupuesto.subtotal_lineas }}</div></div>
+      <div class="col-md-4"><span class="text-muted">Descuento</span><div>$ {{ presupuesto.descuento_monto }}</div></div>
+      <div class="col-md-4"><span class="text-muted">Neto</span><div class="fw-semibold">$ {{ presupuesto.neto }}</div></div>
+      <div class="col-md-4"><span class="text-muted">Comisión</span><div>{{ presupuesto.comision_porcentaje }}% ($ {{ presupuesto.monto_comision }})</div></div>
+      {% if presupuesto.venta_id %}
+        <div class="col-md-4"><span class="text-muted">Pedido generado</span><div><a href="{% url 'ventas_historial' %}">#{{ presupuesto.venta_id }}</a> — {{ presupuesto.venta.get_estado_display }}</div></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-header fw-semibold">Líneas</div>
+    <div class="table-responsive">
+      <table class="table table-sm mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th class="text-end">Cantidad</th>
+            <th class="text-end">P. unit.</th>
+            <th class="text-end">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in presupuesto.lineas.all %}
+            <tr>
+              <td><code>{{ l.producto.codigo }}</code></td>
+              <td>{{ l.producto.descripcion }}</td>
+              <td class="text-end">{{ l.cantidad }}</td>
+              <td class="text-end">$ {{ l.precio_unitario }}</td>
+              <td class="text-end">$ {{ l.subtotal }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

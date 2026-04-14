@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}Stock{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Stock</h1>
+    {% include "includes/export_buttons.html" %}
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="h5 mb-3">Cargar stock</h2>
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label class="form-label">Producto</label>
+              {{ form.producto }}
+              {% if form.producto.errors %}<div class="text-danger small">{{ form.producto.errors }}</div>{% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Movimiento</label>
+              {{ form.tipo }}
+              {% if form.tipo.errors %}<div class="text-danger small">{{ form.tipo.errors }}</div>{% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Cantidad</label>
+              {{ form.cantidad }}
+              {% if form.cantidad.errors %}<div class="text-danger small">{{ form.cantidad.errors }}</div>{% endif %}
+            </div>
+
+            <div id="entradaFields" class="border rounded p-3 mb-3 bg-light">
+              <div class="fw-semibold mb-2">Agregar stock</div>
+              <div class="mb-2">
+                <label class="form-label">Nº Boleta</label>
+                {{ form.numero_boleta }}
+                {% if form.numero_boleta.errors %}<div class="text-danger small">{{ form.numero_boleta.errors }}</div>{% endif %}
+              </div>
+              <div>
+                <label class="form-label">Proveedor</label>
+                {{ form.proveedor }}
+                {% if form.proveedor.errors %}<div class="text-danger small">{{ form.proveedor.errors }}</div>{% endif %}
+              </div>
+            </div>
+
+            <div id="salidaFields" class="border rounded p-3 mb-3 bg-light">
+              <div class="fw-semibold mb-2">Quitar stock</div>
+              <div class="mb-2">
+                <label class="form-label">Nº Factura</label>
+                {{ form.numero_factura }}
+                {% if form.numero_factura.errors %}<div class="text-danger small">{{ form.numero_factura.errors }}</div>{% endif %}
+              </div>
+              <div>
+                <label class="form-label">Destinatario (vendedor)</label>
+                {{ form.destinatario }}
+                {% if form.destinatario.errors %}<div class="text-danger small">{{ form.destinatario.errors }}</div>{% endif %}
+              </div>
+            </div>
+
+            <button class="btn btn-primary w-100" type="submit">Guardar movimiento</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card shadow-sm mt-3">
+        <div class="card-body">
+          <h2 class="h6 mb-3">Últimos movimientos</h2>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Fecha</th>
+                  <th>Tipo</th>
+                  <th>Producto</th>
+                  <th class="text-end">Cant.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for m in movimientos %}
+                  <tr>
+                    <td class="text-muted small">{{ m.creado_en|date:"d/m H:i" }}</td>
+                    <td>{{ m.get_tipo_display }}</td>
+                    <td><code>{{ m.producto.codigo }}</code></td>
+                    <td class="text-end">{{ m.cantidad }}</td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="4" class="text-muted text-center py-3">Sin movimientos aún.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-8">
+      <div class="card shadow-sm">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Código</th>
+                <th>Descripción</th>
+                <th>Tipo</th>
+                <th class="text-end">Costo</th>
+                <th class="text-end">Stock</th>
+                <th class="text-end">% Gan.</th>
+                <th class="text-end">Precio venta</th>
+                <th class="text-center">Habilitado</th>
+                <th class="text-center">Lista</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in productos %}
+                <tr class="{% if p.stock == 0 %}table-warning{% elif not p.habilitado %}table-secondary{% endif %}">
+                  <td><code>{{ p.codigo }}</code></td>
+                  <td>{{ p.descripcion }}</td>
+                  <td>{{ p.get_tipo_display }}</td>
+                  <td class="text-end">$ {{ p.costo }}</td>
+                  <td class="text-end">
+                    <span class="{% if p.stock == 0 %}fw-semibold{% endif %}">{{ p.stock }}</span>
+                    {% if p.stock == 0 %}
+                      <span class="badge text-bg-warning text-dark ms-1">Atención: sin stock</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">{{ p.porcentaje_ganancia }}%</td>
+                  <td class="text-end">$ {{ p.precio_venta }}</td>
+                  <td class="text-center">
+                    {% if p.habilitado %}
+                      <span class="badge text-bg-success">Sí</span>
+                    {% else %}
+                      <span class="badge text-bg-secondary">No</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-center">
+                    {% if p.en_lista_precios %}
+                      <span class="badge text-bg-primary">Sí</span>
+                    {% else %}
+                      <span class="badge text-bg-light text-dark">No</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="9" class="text-center text-muted py-5">No hay productos cargados.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const tipo = document.getElementById("id_tipo");
+      const entrada = document.getElementById("entradaFields");
+      const salida = document.getElementById("salidaFields");
+
+      function refresh() {
+        const v = tipo.value;
+        if (v === "IN") {
+          entrada.style.display = "block";
+          salida.style.display = "none";
+        } else {
+          entrada.style.display = "none";
+          salida.style.display = "block";
+        }
+      }
+
+      if (tipo) {
+        tipo.addEventListener("change", refresh);
+        refresh();
+      }
+    })();
+  </script>
+{% endblock %}
+

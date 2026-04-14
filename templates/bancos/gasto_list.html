@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Gastos por transferencia{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Gastos (transferencia)</h1>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      {% include "includes/export_buttons.html" %}
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'bancos_cuentas' %}">Cuentas</a>
+      <a class="btn btn-primary btn-sm" href="{% url 'banco_gasto_nuevo' %}">Nuevo gasto</a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Fecha</th>
+            <th>Descripción</th>
+            <th>Cuenta</th>
+            <th class="text-end">Monto</th>
+            <th class="text-center">Caja</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for g in gastos %}
+            <tr>
+              <td>{{ g.fecha|date:"d/m/Y" }}</td>
+              <td>{{ g.descripcion }}</td>
+              <td class="small">{{ g.cuenta_bancaria.banco }}</td>
+              <td class="text-end">$ {{ g.monto }}</td>
+              <td class="text-center">
+                <a class="btn btn-sm btn-outline-secondary py-0" href="{% url 'caja_detail' g.movimiento_caja_id %}">Ver</a>
+              </td>
+              <td class="text-end">
+                <form method="post" action="{% url 'banco_gasto_eliminar' g.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar este gasto y el movimiento de caja?');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-danger py-0">Eliminar</button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-muted text-center py-4">No hay gastos registrados.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

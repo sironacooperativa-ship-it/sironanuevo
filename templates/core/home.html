@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+{% block title %}Inicio{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h1 class="h3 mb-0">Inicio</h1>
+      <div class="text-muted small">Resumen general y recordatorios</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn btn-primary btn-sm" href="{% url 'venta_nueva' %}">Nueva venta</a>
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'presupuesto_nuevo' %}">Nuevo presupuesto</a>
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'compra_registrar' %}">Nueva compra</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'reportes_dashboard' %}">Ver reportes</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'productos_list' %}">Productos</a>
+    </div>
+  </div>
+
+  {% if hoy_recordatorios or hoy_pagos or hoy_cheques %}
+    <div class="card shadow-sm mb-3 border-primary border-opacity-25">
+      <div class="card-header fw-semibold">Hoy vence</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Tipo</th>
+                <th>Detalle</th>
+                <th class="text-end">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for v in hoy_pagos %}
+                <tr>
+                  <td class="small">Pago pedido</td>
+                  <td>#{{ v.pk }} — {{ v.vendedor.apellido }}, {{ v.vendedor.nombre }} — $ {{ v.neto }}</td>
+                  <td class="text-end">
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'venta_registrar_pago' v.pk %}">Pago</a>
+                  </td>
+                </tr>
+              {% endfor %}
+              {% for m in hoy_cheques %}
+                <tr>
+                  <td class="small">Cheque</td>
+                  <td><code>{{ m.numero_cheque }}</code> — {{ m.operacion }} — $ {{ m.monto }}</td>
+                  <td class="text-end">
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'caja_detail' m.pk %}">Ver</a>
+                  </td>
+                </tr>
+              {% endfor %}
+              {% for e in hoy_recordatorios %}
+                <tr>
+                  <td class="small">{{ e.get_tipo_display }}</td>
+                  <td>{{ e.titulo }}</td>
+                  <td class="text-end">
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'calendario_home' %}">Calendario</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-md-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Ventas (30 días)</div>
+          <div class="display-6">$ {{ kpis_ventas.neto_total }}</div>
+          <div class="small text-muted mt-1">{{ kpis_ventas.pedidos }} pedidos — {{ kpis_ventas.pendientes }} pendientes</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Compras (30 días)</div>
+          <div class="display-6">$ {{ kpis_compras.monto_total }}</div>
+          <div class="small text-muted mt-1">{{ kpis_compras.compras }} compras registradas</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Productos habilitados</div>
+          <div class="display-6">{{ resumen.productos_habilitados }}</div>
+          <div class="small text-muted mt-1">{{ resumen.productos_en_lista }} en lista de precios</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Alertas</div>
+          <div class="display-6">{{ stock_critico|length }}</div>
+          <div class="small text-muted mt-1">stock \(≤ 0\)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if ventas_pendientes %}
+    <div class="card shadow-sm border-warning mb-3">
+      <div class="card-header bg-warning bg-opacity-25 fw-semibold">Pagos pendientes (órdenes de venta)</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Pedido</th>
+                <th>Vendedor</th>
+                <th class="text-end">Monto</th>
+                <th>Vencimiento</th>
+                <th class="text-center">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for v in ventas_pendientes %}
+                <tr>
+                  <td class="fw-semibold">#{{ v.pk }}</td>
+                  <td>{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}</td>
+                  <td class="text-end">$ {{ v.neto }}</td>
+                  <td>{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}</td>
+                  <td class="text-center">
+                    <a class="btn btn-sm btn-outline-primary py-0" href="{% url 'venta_registrar_pago' v.pk %}">Pago</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header fw-semibold">Recordatorios (próximos 7 días)</div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Fecha</th>
+                  <th>Tipo</th>
+                  <th>Título</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for e in recordatorios %}
+                  <tr>
+                    <td class="text-muted small">{{ e.fecha|date:"d/m/Y" }}</td>
+                    <td class="small">{{ e.get_tipo_display }}</td>
+                    <td>{{ e.titulo }}</td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="3" class="text-center text-muted py-4">No hay recordatorios próximos.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-body border-top d-flex justify-content-end">
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'calendario_home' %}">Ver calendario</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header fw-semibold">Cheques (próximos 7 días)</div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Vencimiento</th>
+                  <th>Nº</th>
+                  <th>Operación</th>
+                  <th class="text-end">Monto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for m in cheques_proximos %}
+                  <tr>
+                    <td class="text-muted small">{{ m.fecha_vencimiento_cheque|date:"d/m/Y" }}</td>
+                    <td><code>{{ m.numero_cheque }}</code></td>
+                    <td class="small">{{ m.operacion }}</td>
+                    <td class="text-end">$ {{ m.monto }}</td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="4" class="text-center text-muted py-4">No hay cheques próximos.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-body border-top d-flex justify-content-end">
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'caja_list' %}">Ver caja</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if stock_critico %}
+    <div class="card shadow-sm border-danger mb-3">
+      <div class="card-header fw-semibold bg-danger bg-opacity-10">Stock crítico</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Código</th>
+                <th>Producto</th>
+                <th class="text-end">Stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in stock_critico %}
+                <tr>
+                  <td><code>{{ p.codigo }}</code></td>
+                  <td>{{ p.descripcion }}</td>
+                  <td class="text-end fw-semibold">{{ p.stock }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-body border-top d-flex justify-content-end">
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'stock_home' %}">Ver stock</a>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if vencimientos_prod %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header fw-semibold">Vencimientos de productos (próximos 30 días)</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Fecha</th>
+                <th>Código</th>
+                <th>Producto</th>
+                <th class="text-end">Stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in vencimientos_prod %}
+                <tr>
+                  <td class="text-muted small">{{ p.fecha_vencimiento|date:"d/m/Y" }}</td>
+                  <td><code>{{ p.codigo }}</code></td>
+                  <td>{{ p.descripcion }}</td>
+                  <td class="text-end">{{ p.stock }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-body border-top d-flex justify-content-end">
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'productos_list' %}">Ver productos</a>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="card shadow-sm mt-3">
+    <div class="card-body">
+      <h2 class="h5 mb-3">Productos por tipo</h2>
+      <div class="row g-2">
+        {% for t in resumen.por_tipo %}
+          <div class="col-12 col-md-4">
+            <div class="border rounded p-3 bg-white">
+              <div class="text-muted small">{{ t.tipo }}</div>
+              <div class="h4 mb-0">{{ t.total }}</div>
+            </div>
+          </div>
+        {% empty %}
+          <div class="text-muted">Todavía no hay productos cargados.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}{{ cuenta.banco }}{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h3 mb-0">{{ cuenta.banco }}</h1>
+      <p class="text-muted font-monospace small mb-0">{{ cuenta.cuenta }}</p>
+    </div>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      {% include "includes/export_buttons.html" %}
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'bancos_cuentas' %}">Volver</a>
+    </div>
+  </div>
+
+  <p class="lead">Saldo actual: <strong class="{% if saldo_final < 0 %}text-danger{% endif %}">$ {{ saldo_final }}</strong></p>
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-header fw-semibold">Ajuste de cuenta</div>
+    <div class="card-body">
+      <p class="small text-muted">Para impuestos, comisiones bancarias u otros movimientos que no pasan por caja.</p>
+      <form method="post" action="{% url 'banco_cuenta_ajuste' cuenta.pk %}" class="row g-3 align-items-end">
+        {% csrf_token %}
+        <div class="col-12 col-md-3">
+          <label class="form-label">Fecha</label>
+          {{ ajuste_form.fecha }}
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label">Monto</label>
+          {{ ajuste_form.monto }}
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">Tipo</label>
+          {{ ajuste_form.tipo }}
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Concepto</label>
+          {{ ajuste_form.concepto }}
+        </div>
+        <div class="col-12 col-md-2">
+          <button type="submit" class="btn btn-primary w-100">Registrar ajuste</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-header fw-semibold">Movimientos</div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Fecha</th>
+            <th>Origen</th>
+            <th>Concepto</th>
+            <th class="text-end">Debe / Haber</th>
+            <th class="text-end">Saldo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="table-light">
+            <td>—</td>
+            <td>—</td>
+            <td>Saldo inicial</td>
+            <td class="text-end">—</td>
+            <td class="text-end fw-semibold">$ {{ cuenta.saldo_inicial }}</td>
+          </tr>
+          {% for r in rows %}
+            <tr>
+              <td>{{ r.m.fecha|date:"d/m/Y" }}</td>
+              <td><span class="badge text-bg-light text-dark">{{ r.m.get_origen_display }}</span></td>
+              <td>
+                {{ r.m.concepto }}
+                {% if r.m.movimiento_caja_id %}
+                  <a class="small ms-1" href="{% url 'caja_detail' r.m.movimiento_caja_id %}">caja</a>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                {% if r.m.credito %}
+                  <span class="text-success">+ $ {{ r.m.monto }}</span>
+                {% else %}
+                  <span class="text-danger">− $ {{ r.m.monto }}</span>
+                {% endif %}
+              </td>
+              <td class="text-end fw-semibold">$ {{ r.saldo }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-muted text-center py-4">Sin movimientos aún.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

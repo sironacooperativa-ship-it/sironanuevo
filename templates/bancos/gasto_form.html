@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Nuevo gasto{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h3 mb-0">Gasto abonado por transferencia</h1>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'bancos_gastos' %}">Volver</a>
+  </div>
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <p class="small text-muted">Se registra un egreso en <strong>Caja</strong> (transferencia) y descuenta el saldo de la cuenta elegida.</p>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-12 col-md-4">
+            <label class="form-label">Fecha</label>
+            {{ form.fecha }}
+            {% if form.fecha.errors %}<div class="text-danger small">{{ form.fecha.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-8">
+            <label class="form-label">Descripción</label>
+            {{ form.descripcion }}
+            {% if form.descripcion.errors %}<div class="text-danger small">{{ form.descripcion.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label">Monto</label>
+            {{ form.monto }}
+            {% if form.monto.errors %}<div class="text-danger small">{{ form.monto.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-8">
+            <label class="form-label">Cuenta bancaria</label>
+            {{ form.cuenta_bancaria }}
+            {% if form.cuenta_bancaria.errors %}<div class="text-danger small">{{ form.cuenta_bancaria.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12">
+            <label class="form-label">{{ form.banco_detalle.label }}</label>
+            {{ form.banco_detalle }}
+          </div>
+        </div>
+        <div class="mt-4 d-flex justify-content-end gap-2">
+          <a class="btn btn-outline-secondary" href="{% url 'bancos_gastos' %}">Cancelar</a>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

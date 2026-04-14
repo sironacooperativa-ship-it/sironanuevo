@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+{% block title %}Reportes{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Reportes</h1>
+    <div class="text-muted small">Estadísticas filtrables</div>
+  </div>
+
+  {{ chart|json_script:"reportes-chart" }}
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-12 col-md-6 col-lg-2">
+          <label class="form-label small text-muted mb-0">Período</label>
+          <select name="periodo" class="form-select form-select-sm">
+            <option value="" {% if not filtros.periodo %}selected{% endif %}>Personalizado / todos</option>
+            <option value="7d" {% if filtros.periodo == "7d" %}selected{% endif %}>Últimos 7 días</option>
+            <option value="30d" {% if filtros.periodo == "30d" %}selected{% endif %}>Últimos 30 días</option>
+            <option value="mes" {% if filtros.periodo == "mes" %}selected{% endif %}>Mes actual</option>
+            <option value="mes_ant" {% if filtros.periodo == "mes_ant" %}selected{% endif %}>Mes anterior</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <label class="form-label small text-muted mb-0">Desde</label>
+          <input type="text" name="fecha_desde" class="form-control form-control-sm" placeholder="dd/mm/aa" value="{{ filtros.fecha_desde }}" />
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <label class="form-label small text-muted mb-0">Hasta</label>
+          <input type="text" name="fecha_hasta" class="form-control form-control-sm" placeholder="dd/mm/aa" value="{{ filtros.fecha_hasta }}" />
+        </div>
+        <div class="col-12 col-md-6 col-lg-2">
+          <label class="form-label small text-muted mb-0">Vendedor</label>
+          <select name="vendedor" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for v in vendedores_filtro %}
+              <option value="{{ v.pk }}" {% if filtros.vendedor == v.pk|stringformat:"s" %}selected{% endif %}>
+                {{ v.codigo }} — {{ v.apellido }}, {{ v.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-6 col-lg-2">
+          <label class="form-label small text-muted mb-0">Comprador</label>
+          <select name="comprador" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for c in compradores_filtro %}
+              <option value="{{ c.pk }}" {% if filtros.comprador == c.pk|stringformat:"s" %}selected{% endif %}>
+                {{ c.codigo }} — {{ c.apellido }}, {{ c.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-6 col-lg-2">
+          <label class="form-label small text-muted mb-0">Producto</label>
+          <select name="producto" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for p in productos_filtro %}
+              <option value="{{ p.pk }}" {% if filtros.producto == p.pk|stringformat:"s" %}selected{% endif %}>
+                {{ p.codigo }} — {{ p.descripcion|truncatechars:28 }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 d-flex gap-1 flex-wrap">
+          <button type="submit" class="btn btn-sm btn-primary">Aplicar</button>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'reportes_dashboard' %}">Limpiar</a>
+        </div>
+      </form>
+      <p class="small text-muted mb-0 mt-2">
+        Si elegís un <strong>período</strong>, el sistema usa ese rango (las fechas desde/hasta no se aplican).
+      </p>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-md-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Pedidos</div>
+          <div class="display-6">{{ kpis.pedidos }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Neto ventas</div>
+          <div class="display-6">$ {{ kpis.neto_total }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Comisión total</div>
+          <div class="display-6">$ {{ kpis.comision_total }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Compras (monto)</div>
+          <div class="display-6">$ {{ compras_kpis.compras_total }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Margen estimado</div>
+          <div class="display-6">$ {{ margen }}</div>
+          <div class="small text-muted mt-1">ventas netas − compras</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header fw-semibold">Ventas por día (neto)</div>
+        <div class="card-body">
+          <canvas id="chartVentasDia" height="110"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-header fw-semibold">Estado de pedidos</div>
+        <div class="card-body">
+          <canvas id="chartEstadoPedidos" height="160"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-header fw-semibold">Compras por día</div>
+        <div class="card-body">
+          <canvas id="chartComprasDia" height="160"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header fw-semibold">Ventas por mes (neto)</div>
+        <div class="card-body">
+          <canvas id="chartVentasMes" height="160"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header fw-semibold">Compras por mes</div>
+        <div class="card-body">
+          <canvas id="chartComprasMes" height="160"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header fw-semibold">Top productos (unidades vendidas)</div>
+        <div class="card-body">
+          <canvas id="chartTopProductos" height="160"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header fw-semibold">Top vendedores (neto)</div>
+        <div class="card-body">
+          <canvas id="chartTopVendedores" height="160"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    (function () {
+      const payload = JSON.parse(document.getElementById("reportes-chart").textContent || "{}");
+      const teal = "#0097B2";
+      const teal2 = "rgba(0,151,178,0.25)";
+
+      function toNums(arr) {
+        return (arr || []).map((x) => parseFloat(String(x).replace(",", ".")) || 0);
+      }
+
+      const ctx1 = document.getElementById("chartVentasDia");
+      if (ctx1) {
+        new Chart(ctx1, {
+          type: "line",
+          data: {
+            labels: payload.labels_ventas_dia || [],
+            datasets: [
+              {
+                label: "Neto",
+                data: toNums(payload.ventas_dia_neto),
+                borderColor: teal,
+                backgroundColor: teal2,
+                fill: true,
+                tension: 0.25,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: true } },
+            scales: { y: { ticks: { callback: (v) => "$ " + v } } },
+          },
+        });
+      }
+
+      const ctx2 = document.getElementById("chartComprasDia");
+      if (ctx2) {
+        new Chart(ctx2, {
+          type: "bar",
+          data: {
+            labels: payload.labels_compras_dia || [],
+            datasets: [
+              { label: "Monto", data: toNums(payload.compras_dia_monto), backgroundColor: teal2, borderColor: teal },
+            ],
+          },
+          options: { responsive: true, plugins: { legend: { display: false } } },
+        });
+      }
+
+      const ctxEstado = document.getElementById("chartEstadoPedidos");
+      if (ctxEstado) {
+        new Chart(ctxEstado, {
+          type: "doughnut",
+          data: {
+            labels: payload.estado_labels || [],
+            datasets: [
+              {
+                data: payload.estado_counts || [],
+                backgroundColor: ["rgba(255,193,7,0.35)", "rgba(25,135,84,0.35)"],
+                borderColor: ["#ffc107", "#198754"],
+              },
+            ],
+          },
+          options: { responsive: true, plugins: { legend: { position: "bottom" } } },
+        });
+      }
+
+      const ctxMesV = document.getElementById("chartVentasMes");
+      if (ctxMesV) {
+        new Chart(ctxMesV, {
+          type: "line",
+          data: {
+            labels: payload.labels_ventas_mes || [],
+            datasets: [{ label: "Neto", data: toNums(payload.ventas_mes_neto), borderColor: teal, tension: 0.25 }],
+          },
+          options: { responsive: true, plugins: { legend: { display: true } } },
+        });
+      }
+
+      const ctxMesC = document.getElementById("chartComprasMes");
+      if (ctxMesC) {
+        new Chart(ctxMesC, {
+          type: "line",
+          data: {
+            labels: payload.labels_compras_mes || [],
+            datasets: [{ label: "Monto", data: toNums(payload.compras_mes_monto), borderColor: teal, tension: 0.25 }],
+          },
+          options: { responsive: true, plugins: { legend: { display: true } } },
+        });
+      }
+
+      const ctx3 = document.getElementById("chartTopProductos");
+      if (ctx3) {
+        new Chart(ctx3, {
+          type: "bar",
+          data: {
+            labels: payload.labels_top_productos || [],
+            datasets: [{ label: "Unidades", data: (payload.top_productos_unidades || []), backgroundColor: teal2, borderColor: teal }],
+          },
+          options: { indexAxis: "y", responsive: true, plugins: { legend: { display: false } } },
+        });
+      }
+
+      const ctx4 = document.getElementById("chartTopVendedores");
+      if (ctx4) {
+        new Chart(ctx4, {
+          type: "bar",
+          data: {
+            labels: payload.labels_top_vendedores || [],
+            datasets: [{ label: "Neto", data: toNums(payload.top_vendedores_neto), backgroundColor: teal2, borderColor: teal }],
+          },
+          options: { indexAxis: "y", responsive: true, plugins: { legend: { display: false } } },
+        });
+      }
+    })();
+  </script>
+{% endblock %}
+

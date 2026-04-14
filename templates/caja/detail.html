@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Movimiento {{ mov.id }}{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 mb-0">Detalles del movimiento</h1>
+    <a class="btn btn-outline-secondary" href="{% url 'caja_list' %}">Volver</a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <dl class="row mb-0">
+        <dt class="col-sm-3">Fecha</dt><dd class="col-sm-9">{{ mov.fecha|date:"d/m/y" }}</dd>
+        <dt class="col-sm-3">Operación</dt><dd class="col-sm-9">{{ mov.operacion }}</dd>
+        <dt class="col-sm-3">Tipo</dt><dd class="col-sm-9">{{ mov.get_tipo_display }}</dd>
+        <dt class="col-sm-3">Monto</dt><dd class="col-sm-9">{{ mov.monto|ars }}</dd>
+        <dt class="col-sm-3">Medio de pago</dt><dd class="col-sm-9">{{ mov.get_medio_pago_display }}</dd>
+        {% if mov.cuenta_bancaria %}
+          <dt class="col-sm-3">Cuenta bancaria</dt>
+          <dd class="col-sm-9">{{ mov.cuenta_bancaria.banco }} — {{ mov.cuenta_bancaria.cuenta }}</dd>
+        {% endif %}
+        <dt class="col-sm-3">Vendedor</dt><dd class="col-sm-9">{% if mov.vendedor %}{{ mov.vendedor }}{% else %}-{% endif %}</dd>
+        {% if mov.venta_id %}
+          <dt class="col-sm-3">Venta</dt>
+          <dd class="col-sm-9">Pedido #{{ mov.venta_id }} (historial de ventas)</dd>
+        {% endif %}
+        {% if mov.compra_registro %}
+          <dt class="col-sm-3">Compra</dt>
+          <dd class="col-sm-9">Registro #{{ mov.compra_registro.pk }} — {{ mov.compra_registro.producto.codigo }}</dd>
+        {% endif %}
+
+        {% if mov.medio_pago == "TRF" or mov.medio_pago == "MP" %}
+          <dt class="col-sm-3">Banco / MP</dt><dd class="col-sm-9">{{ mov.banco }}</dd>
+        {% endif %}
+
+        {% if mov.medio_pago == "CHQ" %}
+          <dt class="col-sm-3">Número de cheque</dt><dd class="col-sm-9">{{ mov.numero_cheque }}</dd>
+          <dt class="col-sm-3">Vencimiento cheque</dt><dd class="col-sm-9">{{ mov.fecha_vencimiento_cheque|date:"d/m/y" }}</dd>
+        {% endif %}
+      </dl>
+    </div>
+  </div>
+{% endblock %}
+
