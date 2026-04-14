@@ -62,13 +62,24 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "coop_manager.wsgi.application"
 
-DATABASES = {
-    "default": dj_database_url.config(
-        default=f"sqlite:///{(BASE_DIR / 'db.sqlite3').as_posix()}",
-        conn_max_age=600,
-        ssl_require=not DEBUG,
-    )
-}
+_database_url = os.environ.get("DATABASE_URL", "").strip()
+if _database_url:
+    # Postgres en producción (Neon/Supabase/Render Postgres, etc.)
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=_database_url,
+            conn_max_age=600,
+            ssl_require=not DEBUG,
+        )
+    }
+else:
+    # Fallback local: SQLite (no soporta sslmode)
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=f"sqlite:///{(BASE_DIR / 'db.sqlite3').as_posix()}",
+            conn_max_age=600,
+        )
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -90,9 +101,10 @@ TIME_ZONE = "America/Argentina/Buenos_Aires"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 if not DEBUG:
     CSRF_TRUSTED_ORIGINS = [
