@@ -13,8 +13,8 @@
     {% block extra_head %}{% endblock %}
   </head>
   <body class="app-body">
-    <nav class="navbar navbar-dark navbar-sirona fixed-top">
-      <div class="app-shell app-navbar-inner d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <nav class="navbar navbar-dark navbar-sirona sticky-top">
+      <div class="app-shell d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center gap-2">
           <button
             class="btn btn-sm btn-outline-light"
@@ -22,7 +22,7 @@
             data-bs-toggle="offcanvas"
             data-bs-target="#appSidebar"
             aria-controls="appSidebar"
-            aria-label="Abrir menú lateral"
+            aria-label="Abrir menú"
             title="Menú"
           >
             ☰
@@ -38,7 +38,7 @@
           </a>
         </div>
 
-        <div class="d-flex align-items-center gap-1 gap-md-2">
+        <div class="d-flex align-items-center gap-2">
           {% if user.is_authenticated %}
             <span class="text-white-50 small d-none d-md-inline">Hola, {{ user.username }}</span>
             <a class="btn btn-outline-light btn-sm" href="{% url 'cambiar_password' %}">Contraseña</a>
@@ -61,18 +61,7 @@
           <img class="brand-logo brand-logo-sm" src="{% static 'img/sirona-logo.png' %}" alt="SIRONA" />
           <h5 class="offcanvas-title mb-0" id="appSidebarLabel">Menú</h5>
         </div>
-        <div class="d-flex align-items-center gap-1">
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-secondary border-0"
-            data-bs-dismiss="offcanvas"
-            aria-label="Ocultar menú"
-            title="Ocultar menú"
-          >
-            ◀
-          </button>
-          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
-        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
       </div>
       <div class="offcanvas-body p-0">
         <nav class="list-group list-group-flush app-sidebar-nav">
