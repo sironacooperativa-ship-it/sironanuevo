@@ -96,6 +96,19 @@
   max-height: 26px;
 }
 
+/* Barra superior (menú offcanvas) */
+.sirona-topbar {
+  z-index: 1030;
+}
+
+.sirona-topbar .navbar-brand {
+  padding: 0;
+}
+
+.sirona-topbar .brand-logo {
+  max-height: 28px;
+}
+
 /* Botón icono (menú / cerrar lateral) */
 .app-icon-btn {
   color: var(--cg-text);
@@ -348,9 +361,7 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   transition: margin-left 0.22s ease;
 }
 
-body.app-has-sidebar .app-content-area {
-  margin-left: var(--app-sidebar-w);
-}
+/* Menú offcanvas: sin margen lateral fijo */
 
 @media (max-width: 991.98px) {
   .app-content-area {
