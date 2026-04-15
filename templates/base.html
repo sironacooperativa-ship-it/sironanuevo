@@ -18,18 +18,19 @@
     <link href="{% static 'css/theme.css' %}?v=sidebar-fixed-4" rel="stylesheet" />
     {% block extra_head %}{% endblock %}
   </head>
-  <body class="app-body">
-    <aside
-      class="app-sidebar-fixed"
-      id="appSidebar"
-      aria-label="Navegación principal"
-    >
-      <div class="app-sidebar-header">
-        <a class="app-sidebar-brand" href="{% url 'home' %}" aria-label="Inicio">
-          <img class="brand-logo app-sidebar-logo" src="{% static 'img/sirona-logo.png' %}" alt="SIRONA" />
-        </a>
-      </div>
-      <div class="app-sidebar-nav" role="navigation" aria-labelledby="appSidebarLabel">
+  <body class="app-body{% if user.is_authenticated %} app-has-sidebar{% endif %}">
+    {% if user.is_authenticated %}
+      <aside
+        class="app-sidebar-fixed"
+        id="appSidebar"
+        aria-label="Navegación principal"
+      >
+        <div class="app-sidebar-header">
+          <a class="app-sidebar-brand" href="{% url 'home' %}" aria-label="Inicio">
+            <img class="app-sidebar-logo" src="{% static 'img/sirona-logo.png' %}" alt="SIRONA" />
+          </a>
+        </div>
+        <div class="app-sidebar-nav" role="navigation" aria-labelledby="appSidebarLabel">
         <a class="app-sidebar-link" href="{% url 'home' %}">
           <span class="app-sidebar-icon-wrap"><i data-lucide="home"></i></span>
           <span class="app-sidebar-label">Inicio</span>
@@ -98,14 +99,13 @@
             <span class="app-sidebar-label">Historial de actividad</span>
           </a>
         {% endif %}
-        {% if user.is_authenticated %}
           <a class="app-sidebar-link" href="{% url 'logout' %}">
             <span class="app-sidebar-icon-wrap"><i data-lucide="log-out"></i></span>
             <span class="app-sidebar-label">Salir</span>
           </a>
-        {% endif %}
-      </div>
-    </aside>
+        </div>
+      </aside>
+    {% endif %}
 
     <div class="app-content-area">
       <main class="container-xl py-4 py-md-5 app-main">

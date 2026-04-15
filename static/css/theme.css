@@ -216,6 +216,7 @@ aside#appSidebar.app-sidebar-fixed,
   width: 90%;
   max-width: 320px;
   height: auto;
+  max-height: 240px;
 }
 
 body.app-sidebar-collapsed .app-sidebar-fixed {
@@ -342,12 +343,12 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
 
 /* Contenido principal: deja lugar al rail fijo en escritorio */
 .app-content-area {
-  margin-left: var(--app-sidebar-w);
+  margin-left: 0;
   min-width: 0;
   transition: margin-left 0.22s ease;
 }
 
-body.app-sidebar-collapsed .app-content-area {
+body.app-has-sidebar .app-content-area {
   margin-left: var(--app-sidebar-w);
 }
 
