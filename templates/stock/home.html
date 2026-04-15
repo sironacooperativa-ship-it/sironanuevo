@@ -7,151 +7,121 @@
     {% include "includes/export_buttons.html" %}
   </div>
 
-  <div class="row g-3">
-    <div class="col-12 col-lg-4">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h2 class="h5 mb-3">Cargar stock</h2>
-          <form method="post" novalidate>
-            {% csrf_token %}
-
-            <div class="mb-3">
-              <label class="form-label">Producto</label>
-              {{ form.producto }}
-              {% if form.producto.errors %}<div class="text-danger small">{{ form.producto.errors }}</div>{% endif %}
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label">Movimiento</label>
-              {{ form.tipo }}
-              {% if form.tipo.errors %}<div class="text-danger small">{{ form.tipo.errors }}</div>{% endif %}
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label">Cantidad</label>
-              {{ form.cantidad }}
-              {% if form.cantidad.errors %}<div class="text-danger small">{{ form.cantidad.errors }}</div>{% endif %}
-            </div>
-
-            <div id="entradaFields" class="border rounded p-3 mb-3 bg-light">
-              <div class="fw-semibold mb-2">Agregar stock</div>
-              <div class="mb-2">
-                <label class="form-label">Nº Boleta</label>
-                {{ form.numero_boleta }}
-                {% if form.numero_boleta.errors %}<div class="text-danger small">{{ form.numero_boleta.errors }}</div>{% endif %}
-              </div>
-              <div>
-                <label class="form-label">Proveedor</label>
-                {{ form.proveedor }}
-                {% if form.proveedor.errors %}<div class="text-danger small">{{ form.proveedor.errors }}</div>{% endif %}
-              </div>
-            </div>
-
-            <div id="salidaFields" class="border rounded p-3 mb-3 bg-light">
-              <div class="fw-semibold mb-2">Quitar stock</div>
-              <div class="mb-2">
-                <label class="form-label">Nº Factura</label>
-                {{ form.numero_factura }}
-                {% if form.numero_factura.errors %}<div class="text-danger small">{{ form.numero_factura.errors }}</div>{% endif %}
-              </div>
-              <div>
-                <label class="form-label">Destinatario (vendedor)</label>
-                {{ form.destinatario }}
-                {% if form.destinatario.errors %}<div class="text-danger small">{{ form.destinatario.errors }}</div>{% endif %}
-              </div>
-            </div>
-
-            <button class="btn btn-primary w-100" type="submit">Guardar movimiento</button>
-          </form>
-        </div>
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+        <h2 class="h5 mb-0">Cargar stock</h2>
+        <div class="text-muted small">Actualiza el stock disponible del producto.</div>
       </div>
+      <form method="post" novalidate class="row g-2 g-md-3 align-items-end">
+        {% csrf_token %}
 
-      <div class="card shadow-sm mt-3">
-        <div class="card-body">
-          <h2 class="h6 mb-3">Últimos movimientos</h2>
-          <div class="table-responsive">
-            <table class="table table-sm align-middle mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th>Fecha</th>
-                  <th>Tipo</th>
-                  <th>Producto</th>
-                  <th class="text-end">Cant.</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for m in movimientos %}
-                  <tr>
-                    <td class="text-muted small">{{ m.creado_en|date:"d/m H:i" }}</td>
-                    <td>{{ m.get_tipo_display }}</td>
-                    <td class="small">{{ m.producto.descripcion }}</td>
-                    <td class="text-end">{{ m.cantidad }}</td>
-                  </tr>
-                {% empty %}
-                  <tr><td colspan="4" class="text-muted text-center py-3">Sin movimientos aún.</td></tr>
-                {% endfor %}
-              </tbody>
-            </table>
+        <div class="col-12 col-lg-4">
+          <label class="form-label">Producto</label>
+          {{ form.producto }}
+          {% if form.producto.errors %}<div class="text-danger small">{{ form.producto.errors }}</div>{% endif %}
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-2">
+          <label class="form-label">Movimiento</label>
+          {{ form.tipo }}
+          {% if form.tipo.errors %}<div class="text-danger small">{{ form.tipo.errors }}</div>{% endif %}
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-2">
+          <label class="form-label">Cantidad</label>
+          {{ form.cantidad }}
+          {% if form.cantidad.errors %}<div class="text-danger small">{{ form.cantidad.errors }}</div>{% endif %}
+        </div>
+
+        <div class="col-12 col-lg-3">
+          <div id="entradaFields">
+            <label class="form-label">Nº Boleta</label>
+            {{ form.numero_boleta }}
+            {% if form.numero_boleta.errors %}<div class="text-danger small">{{ form.numero_boleta.errors }}</div>{% endif %}
+          </div>
+          <div id="salidaFields">
+            <label class="form-label">Nº Factura</label>
+            {{ form.numero_factura }}
+            {% if form.numero_factura.errors %}<div class="text-danger small">{{ form.numero_factura.errors }}</div>{% endif %}
           </div>
         </div>
-      </div>
-    </div>
 
-    <div class="col-12 col-lg-8">
-      <div class="card shadow-sm">
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th>Código</th>
-                <th>Descripción</th>
-                <th>Tipo</th>
-                <th class="text-end">Costo</th>
-                <th class="text-end">Stock</th>
-                <th class="text-end">% Gan.</th>
-                <th class="text-end">Precio venta</th>
-                <th class="text-center">Habilitado</th>
-                <th class="text-center">Lista</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for p in productos %}
-                <tr class="{% if p.stock == 0 %}table-warning{% elif not p.habilitado %}table-secondary{% endif %}">
-                  <td><code>{{ p.codigo }}</code></td>
-                  <td>{{ p.descripcion }}</td>
-                  <td>{{ p.get_tipo_display }}</td>
-                  <td class="text-end">{{ p.costo|ars }}</td>
-                  <td class="text-end">
-                    <span class="{% if p.stock == 0 %}fw-semibold{% endif %}">{{ p.stock }}</span>
-                    {% if p.stock == 0 %}
-                      <span class="badge text-bg-warning text-dark ms-1">Atención: sin stock</span>
-                    {% endif %}
-                  </td>
-                  <td class="text-end">{{ p.porcentaje_ganancia }}%</td>
-                  <td class="text-end">{{ p.precio_venta|ars }}</td>
-                  <td class="text-center">
-                    {% if p.habilitado %}
-                      <span class="badge text-bg-success">Sí</span>
-                    {% else %}
-                      <span class="badge text-bg-secondary">No</span>
-                    {% endif %}
-                  </td>
-                  <td class="text-center">
-                    {% if p.en_lista_precios %}
-                      <span class="badge text-bg-primary">Sí</span>
-                    {% else %}
-                      <span class="badge text-bg-light text-dark">No</span>
-                    {% endif %}
-                  </td>
-                </tr>
-              {% empty %}
-                <tr>
-                  <td colspan="9" class="text-center text-muted py-5">No hay productos cargados.</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        <div class="col-12 col-lg-3">
+          <div id="entradaFields2">
+            <label class="form-label">Proveedor</label>
+            {{ form.proveedor }}
+            {% if form.proveedor.errors %}<div class="text-danger small">{{ form.proveedor.errors }}</div>{% endif %}
+          </div>
+          <div id="salidaFields2">
+            <label class="form-label">Destinatario (vendedor)</label>
+            {{ form.destinatario }}
+            {% if form.destinatario.errors %}<div class="text-danger small">{{ form.destinatario.errors }}</div>{% endif %}
+          </div>
         </div>
+
+        <div class="col-12 col-lg-2 d-grid">
+          <button class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th>Tipo</th>
+            <th class="text-end">Stock disponible</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in productos %}
+            <tr>
+              <td><code>{{ p.codigo }}</code></td>
+              <td>{{ p.descripcion }}</td>
+              <td class="text-muted">{{ p.get_tipo_display }}</td>
+              <td class="text-end fw-semibold">{{ p.stock }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="text-center text-muted py-5">No hay productos con stock disponible.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h2 class="h6 mb-3">Últimos movimientos</h2>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Producto</th>
+              <th class="text-end">Cant.</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in movimientos %}
+              <tr>
+                <td class="text-muted small">{{ m.creado_en|date:"d/m H:i" }}</td>
+                <td>{{ m.get_tipo_display }}</td>
+                <td class="small">{{ m.producto.descripcion }}</td>
+                <td class="text-end">{{ m.cantidad }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="text-muted text-center py-3">Sin movimientos aún.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -161,15 +131,21 @@
       const tipo = document.getElementById("id_tipo");
       const entrada = document.getElementById("entradaFields");
       const salida = document.getElementById("salidaFields");
+      const entrada2 = document.getElementById("entradaFields2");
+      const salida2 = document.getElementById("salidaFields2");
 
       function refresh() {
         const v = tipo.value;
         if (v === "IN") {
           entrada.style.display = "block";
           salida.style.display = "none";
+          if (entrada2) entrada2.style.display = "block";
+          if (salida2) salida2.style.display = "none";
         } else {
           entrada.style.display = "none";
           salida.style.display = "block";
+          if (entrada2) entrada2.style.display = "none";
+          if (salida2) salida2.style.display = "block";
         }
       }
 

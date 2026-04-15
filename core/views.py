@@ -132,17 +132,27 @@ def login_view(request):
     if request.user.is_authenticated:
         return redirect("home")
 
+    next_url = _safe_relative_next(request.GET.get("next") or "")
+    idle_timeout = request.GET.get("idle") == "1" or request.POST.get("idle") == "1"
+
     error = None
     if request.method == "POST":
+        next_url = _safe_relative_next(request.POST.get("next") or "") or next_url
         username = request.POST.get("username", "").strip()
         password = request.POST.get("password", "")
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
+            if next_url:
+                return redirect(next_url)
             return redirect("home")
         error = "Usuario o contraseña incorrectos."
 
-    return render(request, "core/login.html", {"error": error})
+    return render(
+        request,
+        "core/login.html",
+        {"error": error, "idle_timeout": idle_timeout, "next": next_url},
+    )
 
 
 def logout_view(request):

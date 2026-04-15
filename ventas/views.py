@@ -8,6 +8,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
+from core.comision_agg import comisiones_acumuladas_por_mes
 from core.export_utils import parse_export, pdf_response, xlsx_response
 from core.money_decimal import q2
 from core.repoblar_lineas import lineas_iniciales_desde_post, repoblar_campos_cabecera_desde_post
@@ -29,10 +30,15 @@ def _sync_evento_pedido_pendiente(venta: Venta) -> None:
     titulo = f"Pago pendiente — Pedido #{venta.pk}"
     qs = Evento.objects.filter(tipo=Evento.Tipo.PEDIDO, titulo=titulo)
     extra = f" Comprador: {venta.comprador}." if venta.comprador_id else ""
+    com_txt = (
+        f"Comisión ({venta.comision_porcentaje}%): ${venta.monto_comision}."
+        if venta.aplica_comision
+        else "Sin comisión al vendedor."
+    )
     desc = (
         f"Vendedor: {venta.vendedor}. "
-        f"Monto orden: ${venta.neto}. "
-        f"Comisión sugerida ({venta.comision_porcentaje}%): ${venta.monto_comision}.{extra}"
+        f"Monto neto pedido: ${venta.neto}. {com_txt} "
+        f"Ingreso en caja al cobrar: ${venta.monto_ingreso_caja}.{extra}"
     )
     if venta.fecha_vencimiento_pago is None:
         qs.delete()
@@ -157,6 +163,7 @@ def venta_nueva(request):
                     err = "El descuento no puede superar el subtotal de las líneas."
 
             if err is None:
+                aplica_comision = request.POST.get("aplica_comision") == "1"
                 venta = crear_venta_confirmada(
                     int(vid),
                     fecha_v,
@@ -165,6 +172,7 @@ def venta_nueva(request):
                     line_specs,
                     comprador_id=comprador_id,
                     creado_por_id=request.user.id,
+                    aplica_comision=aplica_comision,
                 )
                 messages.success(request, f"Venta #{venta.pk} registrada. Orden de pago y evento en calendario.")
                 return redirect("ventas_historial")
@@ -250,8 +258,10 @@ def venta_historial(request):
             "Subtotal líneas",
             "Descuento",
             "Neto",
+            "Aplica comisión",
             "Comisión %",
             "Monto comisión",
+            "Ingreso caja",
             "Estado",
         ]
         rows = []
@@ -266,8 +276,10 @@ def venta_historial(request):
                     str(q2(v.subtotal_lineas)),
                     str(q2(v.descuento_monto)),
                     str(q2(v.neto)),
+                    "Sí" if v.aplica_comision else "No",
                     str(v.comision_porcentaje),
                     str(q2(v.monto_comision)),
+                    str(q2(v.monto_ingreso_caja)),
                     v.get_estado_display(),
                 ]
             )
@@ -278,6 +290,7 @@ def venta_historial(request):
     productos = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
     vendedores = Vendedor.objects.order_by("apellido", "nombre", "codigo")
     compradores = Comprador.objects.order_by("apellido", "nombre", "codigo")
+    comisiones_por_mes = comisiones_acumuladas_por_mes(ventas)
     return render(
         request,
         "ventas/historial.html",
@@ -287,6 +300,7 @@ def venta_historial(request):
             "productos_filtro": productos,
             "vendedores_filtro": vendedores,
             "compradores_filtro": compradores,
+            "comisiones_por_mes": comisiones_por_mes,
         },
     )
 
@@ -336,7 +350,7 @@ def venta_registrar_pago(request, pk: int):
         if form.is_valid():
             mov = form.save(commit=False)
             mov.tipo = MovimientoCaja.Tipo.INGRESO
-            mov.monto = venta.neto
+            mov.monto = venta.monto_ingreso_caja
             mov.operacion = f"Cobro pedido #{venta.pk}"
             mov.vendedor = venta.vendedor
             mov.venta = venta

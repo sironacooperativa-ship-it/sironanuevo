@@ -91,8 +91,13 @@ def reportes_dashboard(request):
         default=Value(Decimal("0.00")),
         output_field=DecimalField(max_digits=14, decimal_places=2),
     )
-    comision_expr = ExpressionWrapper(
+    comision_bruta = ExpressionWrapper(
         neto_nonneg * (F("comision_porcentaje") / Value(Decimal("100.00"))),
+        output_field=DecimalField(max_digits=14, decimal_places=2),
+    )
+    comision_expr = Case(
+        When(aplica_comision=True, then=comision_bruta),
+        default=Value(Decimal("0.00")),
         output_field=DecimalField(max_digits=14, decimal_places=2),
     )
 

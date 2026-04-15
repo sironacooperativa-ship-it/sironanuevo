@@ -1,6 +1,51 @@
 {% extends "base.html" %}
 {% load money %}
 {% block title %}Inicio{% endblock %}
+{% block extra_head %}
+  <style>
+    .home-kpi-row {
+      --home-kpi-card-min-h: 10.75rem;
+    }
+    .home-kpi-card {
+      min-height: var(--home-kpi-card-min-h);
+      display: flex;
+      flex-direction: column;
+    }
+    .home-kpi-card .card-body {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 0;
+    }
+    .home-kpi-monto-wrap {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+    }
+    .home-kpi-monto-fluid {
+      font-weight: 600;
+      line-height: 1.12;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      font-size: clamp(0.8rem, 2.2vw + 0.55rem, 2.75rem);
+    }
+    @media (min-width: 992px) {
+      .home-kpi-monto-fluid {
+        font-size: clamp(0.85rem, 1.35vw + 0.7rem, 2.75rem);
+      }
+    }
+    .home-kpi-monto-compact {
+      font-weight: 600;
+      line-height: 1.12;
+      max-width: 100%;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      font-size: clamp(1.15rem, 2.4vw + 0.45rem, 2.35rem);
+    }
+  </style>
+{% endblock %}
 {% block content %}
   <div class="mb-3">
     <h1 class="h3 mb-1">Inicio</h1>
@@ -62,40 +107,50 @@
     </div>
   {% endif %}
 
-  <div class="row g-3 mb-3">
-    <div class="col-12 col-md-3">
-      <div class="card shadow-sm">
-        <div class="card-body">
+  <div class="row g-3 mb-3 align-items-stretch home-kpi-row">
+    <div class="col-12 col-lg-4 order-3 order-lg-1 h-100 d-flex flex-column">
+      <div class="row g-3 flex-grow-1 w-100 mx-0 align-items-stretch flex-fill">
+        <div class="col-6 d-flex align-items-stretch">
+          <div class="card shadow-sm home-kpi-card w-100 h-100">
+            <div class="card-body py-3">
+              <div class="text-muted small">Productos habilitados</div>
+              <div class="home-kpi-monto-compact mt-1">{{ resumen.productos_habilitados }}</div>
+              <div class="small text-muted mt-2 mb-0">{{ resumen.productos_en_lista }} en lista de precios</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 d-flex align-items-stretch">
+          <div class="card shadow-sm home-kpi-card w-100 h-100">
+            <div class="card-body py-3">
+              <div class="text-muted small">Alertas</div>
+              <div class="home-kpi-monto-compact mt-1">{{ stock_critico|length }}</div>
+              <div class="small text-muted mt-2 mb-0">stock ≤ 0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-4 order-1 order-lg-2 h-100 d-flex flex-column">
+      <div class="card shadow-sm home-kpi-card w-100 flex-grow-1">
+        <div class="card-body py-3">
           <div class="text-muted small">Ventas (30 días)</div>
-          <div class="display-6">{{ kpis_ventas.neto_total|ars }}</div>
-          <div class="small text-muted mt-1">{{ kpis_ventas.pedidos }} pedidos — {{ kpis_ventas.pendientes }} pendientes</div>
+          <div class="home-kpi-monto-wrap mt-1">
+            <div class="home-kpi-monto-fluid">{{ kpis_ventas.neto_total|ars }}</div>
+          </div>
+          <div class="small text-muted mt-2 mb-0">
+            {{ kpis_ventas.pedidos }} pedidos — {{ kpis_ventas.pendientes }} pendientes
+          </div>
         </div>
       </div>
     </div>
-    <div class="col-12 col-md-3">
-      <div class="card shadow-sm">
-        <div class="card-body">
+    <div class="col-12 col-lg-4 order-2 order-lg-3 h-100 d-flex flex-column">
+      <div class="card shadow-sm home-kpi-card w-100 flex-grow-1">
+        <div class="card-body py-3">
           <div class="text-muted small">Compras (30 días)</div>
-          <div class="display-6">{{ kpis_compras.monto_total|ars }}</div>
-          <div class="small text-muted mt-1">{{ kpis_compras.compras }} compras registradas</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-3">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="text-muted small">Productos habilitados</div>
-          <div class="display-6">{{ resumen.productos_habilitados }}</div>
-          <div class="small text-muted mt-1">{{ resumen.productos_en_lista }} en lista de precios</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-3">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="text-muted small">Alertas</div>
-          <div class="display-6">{{ stock_critico|length }}</div>
-          <div class="small text-muted mt-1">stock \(≤ 0\)</div>
+          <div class="home-kpi-monto-wrap mt-1">
+            <div class="home-kpi-monto-fluid">{{ kpis_compras.monto_total|ars }}</div>
+          </div>
+          <div class="small text-muted mt-2 mb-0">{{ kpis_compras.compras }} compras registradas</div>
         </div>
       </div>
     </div>

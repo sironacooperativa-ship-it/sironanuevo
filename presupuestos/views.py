@@ -38,10 +38,6 @@ def _validar_lineas_post(request):
         descuento = Decimal(str(request.POST.get("descuento_monto") or "0").replace(",", "."))
     except InvalidOperation:
         descuento = None
-    try:
-        comision_pct = Decimal(str(request.POST.get("comision_porcentaje") or "4").replace(",", "."))
-    except InvalidOperation:
-        comision_pct = None
 
     pids = request.POST.getlist("linea_producto")
     qtys = request.POST.getlist("linea_cantidad")
@@ -60,8 +56,12 @@ def _validar_lineas_post(request):
         return "Elegí un vendedor.", None, None, None
     if descuento is None or descuento < 0:
         return "El descuento no es válido.", None, None, None
-    if comision_pct is None or comision_pct < 0:
-        return "El porcentaje de comisión no es válido.", None, None, None
+
+    try:
+        ven = Vendedor.objects.get(pk=int(vid), habilitado=True)
+    except (ValueError, Vendedor.DoesNotExist):
+        return "El vendedor seleccionado no existe o no está habilitado.", None, None, None
+    comision_pct = ven.comision_porcentaje
 
     line_specs = []
     subtotal = Decimal("0.00")
@@ -102,11 +102,27 @@ def _validar_lineas_post(request):
     if descuento > subtotal:
         return "El descuento no puede superar el subtotal de las líneas.", None, None, None
 
-    return None, line_specs, subtotal, (int(vid), fecha_v, descuento, comision_pct, comprador_id)
+    aplica_comision = request.POST.get("aplica_comision") == "1"
+    return None, line_specs, subtotal, (
+        int(vid),
+        fecha_v,
+        descuento,
+        comision_pct,
+        comprador_id,
+        aplica_comision,
+    )
 
 
 def _guardar_presupuesto_desde_lineas(
-    presupuesto, line_specs, subtotal, vid, fecha_v, descuento, comision_pct, comprador_id=None
+    presupuesto,
+    line_specs,
+    subtotal,
+    vid,
+    fecha_v,
+    descuento,
+    comision_pct,
+    comprador_id=None,
+    aplica_comision: bool = True,
 ):
     presupuesto.vendedor_id = vid
     presupuesto.comprador_id = comprador_id
@@ -114,6 +130,7 @@ def _guardar_presupuesto_desde_lineas(
     presupuesto.subtotal_lineas = subtotal
     presupuesto.descuento_monto = descuento
     presupuesto.comision_porcentaje = comision_pct
+    presupuesto.aplica_comision = aplica_comision
     presupuesto.save()
     presupuesto.lineas.all().delete()
     for prod, qty, pu, st in line_specs:
@@ -158,7 +175,7 @@ def presupuesto_nuevo(request):
     if request.method == "POST":
         err, line_specs, subtotal, meta = _validar_lineas_post(request)
         if err is None:
-            vid, fecha_v, descuento, comision_pct, comprador_id = meta
+            vid, fecha_v, descuento, comision_pct, comprador_id, aplica_comision = meta
             with transaction.atomic():
                 pr = Presupuesto.objects.create(
                     vendedor_id=vid,
@@ -167,6 +184,7 @@ def presupuesto_nuevo(request):
                     subtotal_lineas=subtotal,
                     descuento_monto=descuento,
                     comision_porcentaje=comision_pct,
+                    aplica_comision=aplica_comision,
                     creado_por=request.user,
                     actualizado_por=request.user,
                 )
@@ -217,7 +235,7 @@ def presupuesto_editar(request, pk: int):
     if request.method == "POST":
         err, line_specs, subtotal, meta = _validar_lineas_post(request)
         if err is None:
-            vid, fecha_v, descuento, comision_pct, comprador_id = meta
+            vid, fecha_v, descuento, comision_pct, comprador_id, aplica_comision = meta
             with transaction.atomic():
                 _guardar_presupuesto_desde_lineas(
                     presupuesto,
@@ -228,6 +246,7 @@ def presupuesto_editar(request, pk: int):
                     descuento,
                     comision_pct,
                     comprador_id,
+                    aplica_comision,
                 )
                 presupuesto.actualizado_por = request.user
                 presupuesto.save(update_fields=["actualizado_por"])
@@ -298,23 +317,35 @@ def presupuesto_aprobar(request, pk: int):
         messages.error(request, "El presupuesto no tiene líneas.")
         return redirect("presupuesto_detalle", pk=pk)
 
+    comision_aprobacion = presupuesto.vendedor.comision_porcentaje
     try:
         with transaction.atomic():
             venta = crear_venta_confirmada(
                 presupuesto.vendedor_id,
                 presupuesto.fecha_vencimiento_pago,
                 presupuesto.descuento_monto,
-                presupuesto.comision_porcentaje,
+                comision_aprobacion,
                 line_specs,
                 comprador_id=presupuesto.comprador_id,
                 creado_por_id=request.user.id,
+                aplica_comision=presupuesto.aplica_comision,
             )
+            presupuesto.comision_porcentaje = comision_aprobacion
             presupuesto.estado = Presupuesto.Estado.APROBADO
             presupuesto.venta = venta
             presupuesto.aprobado_en = timezone.now()
             presupuesto.aprobado_por = request.user
             presupuesto.actualizado_por = request.user
-            presupuesto.save(update_fields=["estado", "venta", "aprobado_en", "aprobado_por", "actualizado_por"])
+            presupuesto.save(
+                update_fields=[
+                    "comision_porcentaje",
+                    "estado",
+                    "venta",
+                    "aprobado_en",
+                    "aprobado_por",
+                    "actualizado_por",
+                ]
+            )
     except Exception as exc:
         messages.error(request, f"No se pudo generar el pedido: {exc}")
         return redirect("presupuesto_detalle", pk=pk)

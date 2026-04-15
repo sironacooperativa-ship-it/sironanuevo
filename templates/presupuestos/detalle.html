@@ -31,9 +31,22 @@
       <div class="col-md-4"><span class="text-muted">Subtotal</span><div>{{ presupuesto.subtotal_lineas|ars }}</div></div>
       <div class="col-md-4"><span class="text-muted">Descuento</span><div>{{ presupuesto.descuento_monto|ars }}</div></div>
       <div class="col-md-4"><span class="text-muted">Neto</span><div class="fw-semibold">{{ presupuesto.neto|ars }}</div></div>
-      <div class="col-md-4"><span class="text-muted">Comisión</span><div>{{ presupuesto.comision_porcentaje }}% ({{ presupuesto.monto_comision|ars }})</div></div>
+      <div class="col-md-4">
+        <span class="text-muted">Comisión vendedor</span>
+        <div>
+          {% if presupuesto.aplica_comision %}
+            {{ presupuesto.comision_porcentaje }}% — {{ presupuesto.monto_comision|ars }}
+          {% else %}
+            <span class="text-muted">No aplica</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-md-4">
+        <span class="text-muted">Ingreso en caja al cobrar (estim.)</span>
+        <div class="fw-semibold">{{ presupuesto.monto_ingreso_caja|ars }}</div>
+      </div>
       {% if presupuesto.venta_id %}
-        <div class="col-md-4"><span class="text-muted">Pedido generado</span><div><a href="{% url 'ventas_historial' %}">#{{ presupuesto.venta_id }}</a> — {{ presupuesto.venta.get_estado_display }}</div></div>
+        <div class="col-md-4"><span class="text-muted">Pedido generado</span><div><a href="{% url 'venta_detalle' presupuesto.venta_id %}">#{{ presupuesto.venta_id }}</a> — {{ presupuesto.venta.get_estado_display }}</div></div>
       {% endif %}
     </div>
   </div>

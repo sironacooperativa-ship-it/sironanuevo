@@ -226,6 +226,13 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   transform: translateX(-100%);
 }
 
+/* Evita que un borde invisible capture clics cuando el panel está oculto (escritorio) */
+@media (min-width: 992px) {
+  body.app-sidebar-collapsed .app-sidebar-fixed {
+    pointer-events: none;
+  }
+}
+
 @media (max-width: 991.98px) {
   body:not(.app-sidebar-collapsed) .app-sidebar-fixed {
     box-shadow: 8px 0 32px rgba(0, 0, 0, 0.1);

@@ -76,7 +76,7 @@
 
     <div class="card shadow-sm mb-3">
       <div class="card-body row g-3">
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-6">
           <label class="form-label">Aplicar descuento ($)</label>
           <input
             type="text"
@@ -87,23 +87,25 @@
             id="id_descuento_monto"
           />
         </div>
-        <div class="col-12 col-md-4">
-          <label class="form-label">Comisión (%)</label>
-          <input
-            type="text"
-            name="comision_porcentaje"
-            class="form-control"
-            value="{% if repoblar %}{{ repoblar.comision_porcentaje }}{% elif presupuesto %}{{ presupuesto.comision_porcentaje }}{% else %}4{% endif %}"
-            inputmode="decimal"
-            id="id_comision_porcentaje"
-          />
-        </div>
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-6">
+          <div class="form-check mb-3">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              name="aplica_comision"
+              value="1"
+              id="id_aplica_comision"
+              {% if repoblar %}{% if repoblar.aplica_comision %}checked{% endif %}{% elif presupuesto %}{% if presupuesto.aplica_comision %}checked{% endif %}{% else %}checked{% endif %}
+            />
+            <label class="form-check-label" for="id_aplica_comision">Aplicar comisión del vendedor</label>
+          </div>
           <div class="border rounded p-3 bg-light small">
             <div class="d-flex justify-content-between"><span>Subtotal líneas</span><span id="sumSubtotal">$ 0,00</span></div>
             <div class="d-flex justify-content-between"><span>Descuento</span><span id="sumDesc">$ 0,00</span></div>
             <div class="d-flex justify-content-between fw-semibold"><span>Neto</span><span id="sumNeto">$ 0,00</span></div>
-            <div class="d-flex justify-content-between text-muted"><span>Comisión estimada</span><span id="sumComision">$ 0,00</span></div>
+            <p class="text-muted mb-0 mt-2 small">
+              El % de comisión está en <a href="{% url 'vendedores_list' %}">Vendedores</a>. Si marcás aplicar, al aprobar el pedido la comisión se discrimina y el ingreso en caja será el neto menos esa comisión.
+            </p>
           </div>
         </div>
       </div>
@@ -128,11 +130,9 @@
       const tbody = document.getElementById("lineasBody");
       const btnAdd = document.getElementById("btnAddLinea");
       const inpDesc = document.getElementById("id_descuento_monto");
-      const inpCom = document.getElementById("id_comision_porcentaje");
       const sumSubtotal = document.getElementById("sumSubtotal");
       const sumDesc = document.getElementById("sumDesc");
       const sumNeto = document.getElementById("sumNeto");
-      const sumComision = document.getElementById("sumComision");
 
       function fmtMoney(n) {
         return "$ " + n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -178,12 +178,9 @@
         });
         const desc = Math.max(0, parseNum(inpDesc.value));
         const neto = Math.max(0, sub - desc);
-        const pct = Math.max(0, parseNum(inpCom.value));
-        const com = neto * (pct / 100);
         sumSubtotal.textContent = fmtMoney(sub);
         sumDesc.textContent = fmtMoney(desc);
         sumNeto.textContent = fmtMoney(neto);
-        sumComision.textContent = fmtMoney(com);
       }
 
       function buildSelect(tr) {
@@ -236,7 +233,6 @@
 
       btnAdd.addEventListener("click", addRow);
       inpDesc.addEventListener("input", totals);
-      inpCom.addEventListener("input", totals);
 
       document.getElementById("presupuestoForm").addEventListener("submit", function () {
         tbody.querySelectorAll("tr").forEach((tr) => {

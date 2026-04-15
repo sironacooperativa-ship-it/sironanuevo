@@ -12,7 +12,23 @@
       <div class="row g-2 small">
         <div class="col-md-4"><span class="text-muted">Pedido</span><div class="fw-semibold">#{{ venta.pk }}</div></div>
         <div class="col-md-4"><span class="text-muted">Vendedor</span><div>{{ venta.vendedor.apellido }}, {{ venta.vendedor.nombre }}</div></div>
-        <div class="col-md-4"><span class="text-muted">Monto a ingresar en caja</span><div class="fw-semibold fs-5">{{ venta.neto|ars }}</div></div>
+        <div class="col-md-4">
+          <span class="text-muted">Neto del pedido</span><div>{{ venta.neto|ars }}</div>
+        </div>
+        <div class="col-md-4">
+          <span class="text-muted">Comisión vendedor</span>
+          <div>
+            {% if venta.aplica_comision %}
+              {{ venta.monto_comision|ars }} <span class="text-muted small">({{ venta.comision_porcentaje }}%)</span>
+            {% else %}
+              <span class="text-muted">No aplica</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-md-4">
+          <span class="text-muted">Monto a ingresar en caja</span>
+          <div class="fw-semibold fs-5">{{ venta.monto_ingreso_caja|ars }}</div>
+        </div>
       </div>
       <hr />
       <div class="small text-muted mb-0">El movimiento se registrará como ingreso. Si el medio es cheque, el vencimiento quedará en Calendario (como en Caja).</div>

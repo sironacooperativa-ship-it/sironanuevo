@@ -14,6 +14,8 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
+from .pdf_membrete import platypus_membrete
+
 
 def _cell_str(v: Any) -> str:
     if v is None:
@@ -64,11 +66,9 @@ def pdf_response(
         bottomMargin=10 * mm,
     )
     styles = getSampleStyleSheet()
-    story: list[Any] = []
-    story.append(Paragraph(escape(doc_title), styles["Title"]))
-    story.append(Spacer(1, 6))
-
     page_w = landscape(A4)[0] - 20 * mm
+    story: list[Any] = []
+    story.extend(platypus_membrete(doc_title, page_w, styles))
 
     for sec_title, headers, rows in sections:
         story.append(Paragraph(f"<b>{escape(sec_title)}</b>", styles["Heading3"]))

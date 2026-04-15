@@ -14,14 +14,82 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 from openpyxl import load_workbook
+from urllib.parse import urlencode
 
 from core.export_utils import parse_export, pdf_response, xlsx_response
+from core.money_decimal import q2
+from core.pdf_membrete import platypus_membrete
+from personas.models import Proveedor
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.pdfgen import canvas
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 
 from .forms import ProductoForm
 from .models import ListaPrecios, Producto
+
+
+def _filtrar_productos_queryset(request, *, use_post: bool = False):
+    """Filtra por búsqueda, tipo y proveedor (productos con al menos una compra a ese proveedor)."""
+    if use_post:
+        q = (request.POST.get("filtro_q") or "").strip()
+        tipo = (request.POST.get("filtro_tipo") or "").strip()
+        proveedor = (request.POST.get("filtro_proveedor") or "").strip()
+    else:
+        q = (request.GET.get("q") or "").strip()
+        tipo = (request.GET.get("tipo") or "").strip()
+        proveedor = (request.GET.get("proveedor") or "").strip()
+
+    productos = Producto.objects.all().order_by("descripcion", "codigo")
+    if q:
+        productos = productos.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
+    if tipo:
+        productos = productos.filter(tipo=tipo)
+    if proveedor.isdigit():
+        productos = productos.filter(compras_origen__proveedor_id=int(proveedor)).distinct()
+
+    return productos, {"q": q, "tipo": tipo, "proveedor": proveedor}
+
+
+def _parse_pct_aumento(request) -> Decimal | None:
+    raw = (request.POST.get("pct_aumento") or "").strip().replace(",", ".")
+    if raw == "":
+        return None
+    try:
+        d = Decimal(raw)
+    except InvalidOperation:
+        return None
+    if d < 0 or d > Decimal("999.99"):
+        return None
+    return d
+
+
+def _parse_precio_venta_input(raw: str) -> Decimal | None:
+    s = (raw or "").strip().replace(",", ".")
+    if s == "":
+        return None
+    try:
+        d = Decimal(s)
+    except InvalidOperation:
+        return None
+    if d < 0:
+        return None
+    return q2(d)
+
+
+def _redirect_productos_aumento_filtros(request):
+    qstr = urlencode(
+        {
+            "q": (request.POST.get("filtro_q") or "").strip(),
+            "tipo": (request.POST.get("filtro_tipo") or "").strip(),
+            "proveedor": (request.POST.get("filtro_proveedor") or "").strip(),
+        }
+    )
+    url = reverse("productos_aumento")
+    if qstr:
+        url += "?" + qstr
+    return redirect(url)
 
 
 def _celda_texto(v) -> str:
@@ -167,7 +235,12 @@ def _construir_mapa_columnas_import(header_row: tuple) -> dict[str, int]:
 
 
 def _celda_import(row: tuple, key: str, colmap: dict[str, int] | None):
-    if colmap and key in colmap:
+    # Si detectamos encabezados (colmap != None), usamos SOLO ese mapa.
+    # Esto evita que, con encabezados parciales, se lean columnas equivocadas
+    # (por ejemplo, que `stock` tome números de otra columna).
+    if colmap is not None:
+        if key not in colmap:
+            return None
         i = colmap[key]
     else:
         i = _IMPORT_COL_FIXED[key]
@@ -206,14 +279,10 @@ def _parse_stock_importacion(v, fila_num: int) -> int:
 
 @login_required
 def productos_list(request):
-    q = (request.GET.get("q") or "").strip()
-    tipo = (request.GET.get("tipo") or "").strip()
-
-    productos = Producto.objects.all().order_by("descripcion", "codigo")
-    if q:
-        productos = productos.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
-    if tipo:
-        productos = productos.filter(tipo=tipo)
+    productos, filtros_ctx = _filtrar_productos_queryset(request)
+    q = filtros_ctx["q"]
+    tipo = filtros_ctx["tipo"]
+    proveedor = filtros_ctx["proveedor"]
 
     exp = parse_export(request)
     if exp in ("xlsx", "pdf"):
@@ -251,6 +320,7 @@ def productos_list(request):
         return pdf_response(base, "Listado de productos", [("Productos", headers, rows)])
 
     listas = ListaPrecios.objects.all()
+    proveedores_filtro = Proveedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
 
     return render(
         request,
@@ -259,8 +329,132 @@ def productos_list(request):
             "productos": productos,
             "q": q,
             "tipo": tipo,
+            "proveedor": proveedor,
             "tipos": Producto.Tipo.choices,
+            "proveedores_filtro": proveedores_filtro,
             "listas": listas,
+        },
+    )
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def productos_aumento(request):
+    proveedores_filtro = Proveedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
+
+    if request.method == "POST":
+        step = (request.POST.get("step") or "").strip()
+        if step == "confirm":
+            pct = _parse_pct_aumento(request)
+            ids = [int(x) for x in request.POST.getlist("producto_id") if str(x).isdigit()]
+            if pct is None:
+                messages.error(request, "El porcentaje de aumento no es válido.")
+                return _redirect_productos_aumento_filtros(request)
+            if not ids:
+                messages.error(request, "No se recibieron productos para actualizar.")
+                return _redirect_productos_aumento_filtros(request)
+
+            for sid in ids:
+                if _parse_precio_venta_input(request.POST.get(f"precio_{sid}") or "") is None:
+                    messages.error(
+                        request,
+                        f"Revisá el precio final del producto #{sid} (debe ser un importe válido).",
+                    )
+                    return _redirect_productos_aumento_filtros(request)
+
+            factor = Decimal("1.0") + (pct / Decimal("100"))
+            actualizados = 0
+            try:
+                with transaction.atomic():
+                    for sid in ids:
+                        precio = _parse_precio_venta_input(request.POST.get(f"precio_{sid}") or "")
+                        p = Producto.objects.select_for_update().get(pk=sid)
+                        p.costo = q2(p.costo * factor)
+                        p.precio_venta = precio
+                        p.precio_venta_editado = True
+                        p.save()
+                        actualizados += 1
+            except Producto.DoesNotExist:
+                messages.error(request, "Algún producto ya no existe.")
+                return _redirect_productos_aumento_filtros(request)
+
+            messages.success(
+                request,
+                f"Aumento del {pct}% aplicado sobre el costo en {actualizados} producto(s).",
+            )
+            return redirect("productos_list")
+
+        if step == "preview":
+            ids = [int(x) for x in request.POST.getlist("sel") if str(x).isdigit()]
+            pct = _parse_pct_aumento(request)
+            if not ids:
+                messages.error(request, "Seleccioná al menos un producto.")
+                return _redirect_productos_aumento_filtros(request)
+            if pct is None:
+                messages.error(request, "Indicá un porcentaje de aumento válido (ej.: 10 para 10%).")
+                return _redirect_productos_aumento_filtros(request)
+
+            factor = Decimal("1.0") + (pct / Decimal("100"))
+            productos_sel = (
+                Producto.objects.filter(pk__in=ids).order_by("descripcion", "codigo")
+            )
+            rows = []
+            for p in productos_sel:
+                nuevo_costo = q2(p.costo * factor)
+                sugerido = q2(
+                    nuevo_costo
+                    * (Decimal("1.0") + (p.porcentaje_ganancia / Decimal("100")))
+                )
+                rows.append(
+                    {
+                        "producto": p,
+                        "costo_anterior": p.costo,
+                        "nuevo_costo": nuevo_costo,
+                        "precio_sugerido": sugerido,
+                    }
+                )
+
+            fq = (request.POST.get("filtro_q") or "").strip()
+            ft = (request.POST.get("filtro_tipo") or "").strip()
+            fp = (request.POST.get("filtro_proveedor") or "").strip()
+            back_q = {}
+            if fq:
+                back_q["q"] = fq
+            if ft:
+                back_q["tipo"] = ft
+            if fp:
+                back_q["proveedor"] = fp
+            aumento_back_url = reverse("productos_aumento")
+            if back_q:
+                aumento_back_url += "?" + urlencode(back_q)
+
+            return render(
+                request,
+                "productos/aumento.html",
+                {
+                    "step": "confirm",
+                    "pct": pct,
+                    "rows": rows,
+                    "filtro_q": fq,
+                    "filtro_tipo": ft,
+                    "filtro_proveedor": fp,
+                    "aumento_back_url": aumento_back_url,
+                    "proveedores_filtro": proveedores_filtro,
+                },
+            )
+
+    productos, filtros_ctx = _filtrar_productos_queryset(request)
+    return render(
+        request,
+        "productos/aumento.html",
+        {
+            "step": "filter",
+            "productos": productos,
+            "q": filtros_ctx["q"],
+            "tipo": filtros_ctx["tipo"],
+            "proveedor": filtros_ctx["proveedor"],
+            "tipos": Producto.Tipo.choices,
+            "proveedores_filtro": proveedores_filtro,
         },
     )
 
@@ -574,55 +768,76 @@ def productos_import_excel_modelo(request):
 @login_required
 def productos_export_pdf(request):
     incluir_stock = request.GET.get("stock") == "1"
-    productos = (
-        Producto.objects.filter(en_lista_precios=True, habilitado=True)
-        .order_by("descripcion", "codigo")
-        .all()
+    productos = list(
+        Producto.objects.filter(en_lista_precios=True, habilitado=True).order_by("descripcion", "codigo")
     )
 
     buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=14 * mm,
+        leftMargin=14 * mm,
+        topMargin=12 * mm,
+        bottomMargin=12 * mm,
+    )
+    styles = getSampleStyleSheet()
+    story = platypus_membrete("Lista de precios", doc.width, styles)
 
-    y = height - 18 * mm
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(18 * mm, y, "Lista de precios")
-    y -= 10 * mm
-
-    c.setFont("Helvetica", 10)
-    c.drawString(18 * mm, y, "Código")
-    c.drawString(38 * mm, y, "Descripción")
+    headers = ["Código", "Descripción"]
     if incluir_stock:
-        c.drawRightString(width - 38 * mm, y, "Stock")
-    c.drawRightString(width - 18 * mm, y, "Precio")
-    y -= 6 * mm
-    c.line(18 * mm, y, width - 18 * mm, y)
-    y -= 6 * mm
+        headers.append("Stock")
+    headers.append("Precio")
 
-    c.setFont("Helvetica", 10)
+    data = [headers]
     for p in productos:
-        if y < 20 * mm:
-            c.showPage()
-            y = height - 18 * mm
-            c.setFont("Helvetica-Bold", 14)
-            c.drawString(18 * mm, y, "Lista de precios")
-            y -= 16 * mm
-            c.setFont("Helvetica", 10)
-
-        c.drawString(18 * mm, y, p.codigo)
         desc = p.descripcion
-        if len(desc) > 60:
-            desc = desc[:57] + "..."
-        c.drawString(38 * mm, y, desc)
+        if len(desc) > 100:
+            desc = desc[:97] + "..."
+        row = [p.codigo, desc]
         if incluir_stock:
-            c.drawRightString(width - 38 * mm, y, str(p.stock))
-        c.drawRightString(width - 18 * mm, y, f"$ {p.precio_venta:.2f}")
-        y -= 6 * mm
+            row.append(str(p.stock))
+        row.append(f"$ {p.precio_venta:.2f}")
+        data.append(row)
 
-    c.showPage()
-    c.save()
+    if len(data) == 1:
+        row = ["—", "—"]
+        if incluir_stock:
+            row.append("—")
+        row.append("—")
+        data.append(row)
+
+    tw = doc.width
+    if incluir_stock:
+        col_w = [tw * 0.14, tw * 0.46, tw * 0.12, tw * 0.28]
+    else:
+        col_w = [tw * 0.16, tw * 0.54, tw * 0.30]
+
+    t = Table(data, colWidths=col_w, repeatRows=1)
+    t.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0097B2")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cccccc")),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f0f9fb")]),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("ALIGN", (0, 1), (0, -1), "LEFT"),
+                ("ALIGN", (-1, 1), (-1, -1), "RIGHT"),
+            ]
+        )
+    )
+    story.append(t)
+    doc.build(story)
     buffer.seek(0)
-    fecha = timezone.localdate().strftime("%Y-%m-%d")
+    fecha = timezone.localtime().strftime("%d-%m-%Y")
     filename = f"Lista_Precios_Sirona_{fecha}.pdf"
-    return FileResponse(buffer, as_attachment=True, filename=filename)
+    return FileResponse(
+        buffer,
+        as_attachment=True,
+        filename=filename,
+        content_type="application/pdf",
+    )
 

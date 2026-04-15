@@ -8,8 +8,8 @@
   </div>
 
   <p class="text-muted small">
-    Mismo criterio que <strong>Ventas</strong> (vendedor, productos, descuento, comisión). Al <strong>aprobar</strong> se genera un
-    pedido pendiente de pago con calendario y stock descontado; desde <strong>Ventas</strong> podés registrar el cobro.
+    Mismo criterio que <strong>Ventas</strong> (vendedor, productos, descuento). La comisión se toma del vendedor al aprobar. Al <strong>aprobar</strong> se genera un
+    pedido pendiente de pago con calendario y stock descontado; desde <strong>Ventas</strong> podés registrar el cobro y ver la comisión.
   </p>
 
   <div class="card shadow-sm">
@@ -44,7 +44,7 @@
               </td>
               <td>
                 {% if p.venta_id %}
-                  <a href="{% url 'ventas_historial' %}">#{{ p.venta_id }}</a>
+                  <a href="{% url 'venta_detalle' p.venta_id %}">#{{ p.venta_id }}</a>
                 {% else %}
                   —
                 {% endif %}

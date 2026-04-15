@@ -30,7 +30,7 @@
   --app-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   --app-transition: 0.18s ease;
 
-  --app-topbar-h: 3.25rem;
+  --app-topbar-h: 0rem;
   --app-sidebar-w: 272px;
 
   --bs-primary: var(--cg-accent);
@@ -83,28 +83,7 @@
   }
 }
 
-/* Barra superior */
-.app-topbar {
-  position: sticky;
-  top: 0;
-  z-index: 1030;
-  background: var(--cg-surface);
-  border-color: var(--cg-border) !important;
-  padding-top: 0.45rem;
-  padding-bottom: 0.45rem;
-  min-height: var(--app-topbar-h);
-}
-
-.app-topbar .navbar-brand {
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--cg-text) !important;
-}
-
-.app-topbar-user {
-  color: var(--cg-muted);
-  font-weight: 500;
-}
+/* Barra superior (removida) */
 
 .brand-logo {
   max-height: 40px;
@@ -185,7 +164,7 @@
   position: fixed;
   left: 0;
   right: 0;
-  top: var(--app-topbar-h);
+  top: 0;
   bottom: 0;
   background: rgba(15, 15, 15, 0.32);
   z-index: 1018;
@@ -205,7 +184,7 @@ aside#appSidebar.app-sidebar-fixed,
   position: fixed !important;
   left: 0 !important;
   right: auto !important;
-  top: var(--app-topbar-h) !important;
+  top: 0 !important;
   bottom: 0 !important;
   width: var(--app-sidebar-w) !important;
   max-width: min(var(--app-sidebar-w), 100vw) !important;
@@ -222,8 +201,44 @@ aside#appSidebar.app-sidebar-fixed,
   box-sizing: border-box;
 }
 
+.app-menu-fab {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 1060;
+  background: var(--cg-surface);
+  border: 1px solid var(--cg-border);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+body:not(.app-sidebar-collapsed) .app-menu-fab {
+  display: none;
+}
+
+.app-sidebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.app-sidebar-logo {
+  width: 50%;
+  max-width: 140px;
+  height: auto;
+}
+
 body.app-sidebar-collapsed .app-sidebar-fixed {
   transform: translateX(-100%);
+}
+
+/* Evita que un borde invisible capture clics cuando el panel está oculto (escritorio) */
+@media (min-width: 992px) {
+  body.app-sidebar-collapsed .app-sidebar-fixed {
+    pointer-events: none;
+  }
 }
 
 @media (max-width: 991.98px) {
@@ -269,6 +284,13 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   overflow-x: hidden !important;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.app-sidebar-footer {
+  flex-shrink: 0;
+  padding: 0.75rem 0.75rem 0.9rem;
+  border-top: 1px solid var(--cg-border);
+  background: var(--cg-surface);
 }
 
 .app-sidebar-link {

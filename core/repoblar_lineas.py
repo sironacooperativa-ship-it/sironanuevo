@@ -37,4 +37,5 @@ def repoblar_campos_cabecera_desde_post(request) -> dict:
         "fecha_vencimiento_pago": fecha_v,
         "descuento_monto": (request.POST.get("descuento_monto") or "").strip(),
         "comision_porcentaje": (request.POST.get("comision_porcentaje") or "").strip(),
+        "aplica_comision": request.POST.get("aplica_comision") == "1",
     }

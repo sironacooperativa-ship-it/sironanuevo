@@ -133,8 +133,24 @@
                 <td class="text-end">{{ venta.neto|ars }}</td>
               </tr>
               <tr>
-                <td>Comisión ({{ venta.comision_porcentaje }} %)</td>
-                <td class="text-end">{{ venta.monto_comision|ars }}</td>
+                <td>
+                  {% if venta.aplica_comision %}
+                    Comisión vendedor ({{ venta.comision_porcentaje }}%)
+                  {% else %}
+                    Comisión vendedor
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  {% if venta.aplica_comision %}
+                    {{ venta.monto_comision|ars }}
+                  {% else %}
+                    <span class="text-muted">No aplica</span>
+                  {% endif %}
+                </td>
+              </tr>
+              <tr class="fw-semibold">
+                <td>Ingreso en caja al cobrar</td>
+                <td class="text-end">{{ venta.monto_ingreso_caja|ars }}</td>
               </tr>
               <tr>
                 <td>Vencimiento pago (orden)</td>
@@ -178,7 +194,7 @@
           </ul>
         {% else %}
           <p class="mb-2"><span class="badge text-bg-warning text-dark">Pendiente de pago</span></p>
-          <p class="small text-muted mb-0">
+          <p class="small text-muted mb-2">
             {% if venta.fecha_vencimiento_pago %}
               La orden de pago vence el <strong>{{ venta.fecha_vencimiento_pago|date:"d/m/Y" }}</strong>.
             {% else %}
@@ -186,6 +202,14 @@
             {% endif %}
             {% if venta.estado == "PEN" %}
               <a href="{% url 'venta_registrar_pago' venta.pk %}">Registrar cobro en caja</a>
+            {% endif %}
+          </p>
+          <p class="small mb-0">
+            Al cobrar se registrará un ingreso de <strong>{{ venta.monto_ingreso_caja|ars }}</strong> en caja
+            {% if venta.aplica_comision and venta.monto_comision > 0 %}
+              (neto {{ venta.neto|ars }} menos comisión {{ venta.monto_comision|ars }}).
+            {% else %}
+              (igual al neto del pedido).
             {% endif %}
           </p>
         {% endif %}

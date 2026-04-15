@@ -22,6 +22,8 @@ def crear_venta_confirmada(
     line_specs: list[tuple],
     comprador_id: int | None = None,
     creado_por_id: int | None = None,
+    *,
+    aplica_comision: bool = True,
 ) -> Venta:
     """
     Crea Venta + líneas, descuenta stock y genera evento en calendario.
@@ -36,6 +38,7 @@ def crear_venta_confirmada(
             subtotal_lineas=subtotal,
             descuento_monto=descuento_monto,
             comision_porcentaje=comision_porcentaje,
+            aplica_comision=aplica_comision,
             creado_por_id=creado_por_id,
             actualizado_por_id=creado_por_id,
         )
@@ -59,9 +62,13 @@ def crear_venta_confirmada(
                 tipo=Evento.Tipo.PEDIDO,
                 descripcion=(
                     f"Vendedor: {venta.vendedor}. "
-                    f"Monto orden: ${venta.neto}. "
-                    f"Comisión sugerida ({venta.comision_porcentaje}%): ${venta.monto_comision}."
-                    f"{extra_comprador}"
+                    f"Monto neto pedido: ${venta.neto}. "
+                    + (
+                        f"Comisión ({venta.comision_porcentaje}%): ${venta.monto_comision}. "
+                        if venta.aplica_comision
+                        else "Sin comisión al vendedor. "
+                    )
+                    + f"Ingreso en caja al cobrar: ${venta.monto_ingreso_caja}.{extra_comprador}"
                 ),
             )
     return venta

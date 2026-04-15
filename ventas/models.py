@@ -30,6 +30,10 @@ class Venta(models.Model):
     comision_porcentaje = models.DecimalField(
         max_digits=6, decimal_places=2, default=Decimal("4.00")
     )
+    aplica_comision = models.BooleanField(
+        default=True,
+        help_text="Si aplica, la comisión se descuenta del ingreso en caja al cobrar.",
+    )
     creado_por = models.ForeignKey(
         "auth.User",
         null=True,
@@ -67,7 +71,14 @@ class Venta(models.Model):
 
     @property
     def monto_comision(self) -> Decimal:
+        if not self.aplica_comision:
+            return Decimal("0.00")
         return _q2(self.neto * (self.comision_porcentaje / Decimal("100")))
+
+    @property
+    def monto_ingreso_caja(self) -> Decimal:
+        """Importe que se registra en caja al cobrar el pedido (neto menos comisión si aplica)."""
+        return _q2(self.neto - self.monto_comision)
 
     def clean(self):
         super().clean()

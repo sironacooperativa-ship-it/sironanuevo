@@ -3,7 +3,10 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
+from core.comision_agg import comisiones_acumuladas_por_mes
 from core.export_utils import parse_export, pdf_response, xlsx_response
+
+from ventas.models import Venta
 
 from .forms import CompradorForm, ProveedorForm, VendedorForm
 from .models import Comprador, Proveedor, Vendedor
@@ -32,6 +35,28 @@ def vendedores_list(request):
             return xlsx_response("vendedores", [("Vendedores", headers, rows)])
         return pdf_response("vendedores", "Vendedores", [("Vendedores", headers, rows)])
     return render(request, "personas/vendedores_list.html", {"vendedores": vendedores})
+
+
+@login_required
+def vendedor_detalle(request, pk: int):
+    v = get_object_or_404(Vendedor, pk=pk)
+    ventas_qs = (
+        Venta.objects.filter(vendedor=v)
+        .select_related("comprador", "pago_movimiento")
+        .prefetch_related("lineas__producto")
+        .order_by("-creado_en", "-id")
+    )
+    ventas = list(ventas_qs[:400])
+    comisiones_por_mes = comisiones_acumuladas_por_mes(ventas_qs)
+    return render(
+        request,
+        "personas/vendedor_detalle.html",
+        {
+            "vendedor": v,
+            "ventas": ventas,
+            "comisiones_por_mes": comisiones_por_mes,
+        },
+    )
 
 
 @login_required

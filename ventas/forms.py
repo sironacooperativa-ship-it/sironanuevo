@@ -20,7 +20,13 @@ class VentaCabeceraEditForm(forms.ModelForm):
 
     class Meta:
         model = Venta
-        fields = ["comprador", "fecha_vencimiento_pago", "descuento_monto", "comision_porcentaje"]
+        fields = [
+            "comprador",
+            "fecha_vencimiento_pago",
+            "descuento_monto",
+            "comision_porcentaje",
+            "aplica_comision",
+        ]
         widgets = {
             "comprador": forms.Select(attrs={"class": "form-select"}),
             "descuento_monto": forms.TextInput(
@@ -29,6 +35,7 @@ class VentaCabeceraEditForm(forms.ModelForm):
             "comision_porcentaje": forms.TextInput(
                 attrs={"class": "form-control", "inputmode": "decimal", "placeholder": "4"}
             ),
+            "aplica_comision": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -40,6 +47,7 @@ class VentaCabeceraEditForm(forms.ModelForm):
             )
         self.fields["comprador"].queryset = qs
         self.fields["comprador"].required = False
+        self.fields["aplica_comision"].label = "Aplicar comisión (se descuenta del ingreso en caja al cobrar)"
 
     def clean_descuento_monto(self):
         raw = (self.data.get("descuento_monto") or "").strip().replace(",", ".")

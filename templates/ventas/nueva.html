@@ -94,6 +94,17 @@
             inputmode="decimal"
             id="id_comision_porcentaje"
           />
+          <div class="form-check mt-2">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              name="aplica_comision"
+              value="1"
+              id="id_aplica_comision"
+              {% if not repoblar %}checked{% elif repoblar.aplica_comision %}checked{% endif %}
+            />
+            <label class="form-check-label small" for="id_aplica_comision">Aplicar comisión (descuenta del ingreso en caja)</label>
+          </div>
         </div>
         <div class="col-12 col-md-4">
           <div class="border rounded p-3 bg-light small">
@@ -101,6 +112,7 @@
             <div class="d-flex justify-content-between"><span>Descuento</span><span id="sumDesc">$ 0,00</span></div>
             <div class="d-flex justify-content-between fw-semibold"><span>Neto (orden de pago)</span><span id="sumNeto">$ 0,00</span></div>
             <div class="d-flex justify-content-between text-muted"><span>Comisión estimada</span><span id="sumComision">$ 0,00</span></div>
+            <div class="d-flex justify-content-between fw-semibold border-top pt-2 mt-2"><span>Ingreso en caja (estim.)</span><span id="sumIngreso">$ 0,00</span></div>
           </div>
         </div>
       </div>
@@ -128,6 +140,8 @@
       const sumDesc = document.getElementById("sumDesc");
       const sumNeto = document.getElementById("sumNeto");
       const sumComision = document.getElementById("sumComision");
+      const sumIngreso = document.getElementById("sumIngreso");
+      const chkAplica = document.getElementById("id_aplica_comision");
 
       function fmtMoney(n) {
         return (
@@ -178,10 +192,13 @@
         const neto = Math.max(0, sub - desc);
         const pct = Math.max(0, parseNum(inpCom.value));
         const com = neto * (pct / 100);
+        const aplica = chkAplica && chkAplica.checked;
+        const ing = aplica ? Math.max(0, neto - com) : neto;
         sumSubtotal.textContent = fmtMoney(sub);
         sumDesc.textContent = fmtMoney(desc);
         sumNeto.textContent = fmtMoney(neto);
-        sumComision.textContent = fmtMoney(com);
+        sumComision.textContent = fmtMoney(aplica ? com : 0);
+        if (sumIngreso) sumIngreso.textContent = fmtMoney(ing);
       }
 
       function buildSelect(tr) {
@@ -235,6 +252,7 @@
       btnAdd.addEventListener("click", addRow);
       inpDesc.addEventListener("input", totals);
       inpCom.addEventListener("input", totals);
+      if (chkAplica) chkAplica.addEventListener("change", totals);
 
       document.getElementById("ventaForm").addEventListener("submit", function () {
         tbody.querySelectorAll("tr").forEach((tr) => {

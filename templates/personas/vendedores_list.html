@@ -45,7 +45,8 @@
               <td>{{ v.direccion }}</td>
               <td class="text-end">{{ v.comision_porcentaje }}%</td>
               <td class="text-end">
-                <div class="d-flex justify-content-end gap-2">
+                <div class="d-flex justify-content-end gap-2 flex-wrap">
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'vendedor_detalle' v.id %}" title="Pedidos y comisiones">Pedidos</a>
                   <a class="btn btn-sm btn-outline-primary" href="{% url 'vendedor_update' v.id %}">Editar</a>
                   <form method="post" action="{% url 'vendedor_toggle' v.id %}">
                     {% csrf_token %}

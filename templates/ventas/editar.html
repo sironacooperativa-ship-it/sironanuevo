@@ -8,7 +8,7 @@
   </div>
 
   <p class="text-muted small">
-    Solo podés modificar datos de cabecera (comprador, vencimiento, descuento y comisión). Las líneas de productos no se editan desde aquí.
+    Podés modificar comprador, vencimiento, descuento, porcentaje de comisión y si la comisión aplica al pedido. Si aplica, el ingreso en caja al cobrar será el neto menos la comisión. Las líneas de productos no se editan desde aquí.
   </p>
 
   <div class="card shadow-sm">
@@ -39,6 +39,13 @@
             {% if form.comision_porcentaje.errors %}
               <div class="text-danger small">{{ form.comision_porcentaje.errors }}</div>
             {% endif %}
+          </div>
+          <div class="col-12">
+            <div class="form-check">
+              {{ form.aplica_comision }}
+              <label class="form-check-label" for="{{ form.aplica_comision.id_for_label }}">{{ form.aplica_comision.label }}</label>
+            </div>
+            {% if form.aplica_comision.errors %}<div class="text-danger small">{{ form.aplica_comision.errors }}</div>{% endif %}
           </div>
         </div>
         <div class="d-flex justify-content-end gap-2 mt-4">

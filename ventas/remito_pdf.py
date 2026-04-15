@@ -4,16 +4,15 @@ from __future__ import annotations
 from io import BytesIO
 from xml.sax.saxutils import escape
 
-from django.contrib.staticfiles import finders
 from django.http import HttpResponse
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.platypus import Image as RLImage
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from core.money_decimal import q2
+from core.pdf_membrete import platypus_membrete
 
 
 def _money(v) -> str:
@@ -40,13 +39,9 @@ def remito_venta_pdf_response(venta) -> HttpResponse:
     )
     styles = getSampleStyleSheet()
     story = []
-    logo_path = finders.find("img/sirona-logo.png")
-    if logo_path:
-        story.append(RLImage(logo_path, width=48 * mm, height=14 * mm))
-        story.append(Spacer(1, 4 * mm))
-    nrem = _numero_remito(venta)
-    story.append(Paragraph("<b>SIRONA</b> — Remito / comprobante de pedido", styles["Title"]))
+    story.extend(platypus_membrete("Remito / comprobante de pedido", doc.width, styles))
     story.append(Spacer(1, 2 * mm))
+    nrem = _numero_remito(venta)
     story.append(
         Paragraph(
             f"<b>Remito N.º {escape(nrem)}</b> &nbsp;·&nbsp; "
@@ -129,21 +124,32 @@ def remito_venta_pdf_response(venta) -> HttpResponse:
         ["Subtotal líneas", _money(venta.subtotal_lineas)],
         ["Descuento", _money(venta.descuento_monto)],
         ["Neto (orden de pago)", _money(venta.neto)],
-        [f"Comisión ({venta.comision_porcentaje} %)", _money(venta.monto_comision)],
+    ]
+    if venta.aplica_comision:
+        tot_data.append([f"Comisión vendedor ({venta.comision_porcentaje} %)", _money(venta.monto_comision)])
+    else:
+        tot_data.append(["Comisión vendedor", "No aplica"])
+    tot_data.append(["Ingreso en caja al cobrar", _money(venta.monto_ingreso_caja)])
+    tot_data.append(
         [
             "Vencimiento pago (orden)",
             venta.fecha_vencimiento_pago.strftime("%d/%m/%Y") if venta.fecha_vencimiento_pago else "Sin indicar",
-        ],
-    ]
+        ]
+    )
     tt = Table(tot_data, colWidths=[tw * 0.55, tw * 0.45])
+    nrows = len(tot_data)
+    ing_row = nrows - 2
+    neto_row = 2
     tt.setStyle(
         TableStyle(
             [
-                ("FONTNAME", (0, 0), (-1, -2), "Helvetica"),
-                ("FONTNAME", (0, 2), (1, 2), "Helvetica-Bold"),
+                ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+                ("FONTNAME", (0, neto_row), (1, neto_row), "Helvetica-Bold"),
+                ("FONTNAME", (0, ing_row), (1, ing_row), "Helvetica-Bold"),
                 ("FONTSIZE", (0, 0), (-1, -1), 9),
                 ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#dddddd")),
-                ("BACKGROUND", (0, 2), (-1, 2), colors.HexColor("#f0f9fb")),
+                ("BACKGROUND", (0, neto_row), (-1, neto_row), colors.HexColor("#f0f9fb")),
+                ("BACKGROUND", (0, ing_row), (-1, ing_row), colors.HexColor("#e8f8f0")),
             ]
         )
     )
