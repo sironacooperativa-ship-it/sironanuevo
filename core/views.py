@@ -22,6 +22,19 @@ from ventas.models import Venta
 from administrador.models import RegistroActividad
 
 
+def _safe_relative_next(path: str) -> str:
+    """
+    Evita redirecciones abiertas: solo permite rutas internas relativas.
+    Acepta solo strings que empiezan con '/' y rechaza '//' (scheme-relative).
+    """
+    if not path:
+        return ""
+    path = str(path).strip()
+    if not path.startswith("/") or path.startswith("//"):
+        return ""
+    return path
+
+
 @login_required
 def home(request):
     today = timezone.localdate()
@@ -157,7 +170,11 @@ def login_view(request):
 
 def logout_view(request):
     if request.user.is_authenticated:
-        RegistroActividad.registrar_cierre_sesion(request.user, request)
+        try:
+            RegistroActividad.registrar_cierre_sesion(request.user, request)
+        except Exception:
+            # No bloquear el cierre de sesión si falla el registro (p. ej. IP inválida / BD)
+            pass
     logout(request)
     return redirect("login")
 

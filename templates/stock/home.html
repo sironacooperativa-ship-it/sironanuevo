@@ -76,6 +76,7 @@
             <th>Descripción</th>
             <th>Tipo</th>
             <th class="text-end">Stock disponible</th>
+            <th class="text-end">Precio venta</th>
           </tr>
         </thead>
         <tbody>
@@ -85,10 +86,11 @@
               <td>{{ p.descripcion }}</td>
               <td class="text-muted">{{ p.get_tipo_display }}</td>
               <td class="text-end fw-semibold">{{ p.stock }}</td>
+              <td class="text-end">{{ p.precio_venta|ars }}</td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="4" class="text-center text-muted py-5">No hay productos con stock disponible.</td>
+              <td colspan="5" class="text-center text-muted py-5">No hay productos con stock disponible.</td>
             </tr>
           {% endfor %}
         </tbody>
