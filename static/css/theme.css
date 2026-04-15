@@ -213,10 +213,10 @@ aside#appSidebar.app-sidebar-fixed,
 }
 
 .app-sidebar-logo {
-  width: 90%;
-  max-width: 320px;
+  width: 60%;
+  max-width: 170px;
   height: auto;
-  max-height: 240px;
+  max-height: 60px;
 }
 
 body.app-sidebar-collapsed .app-sidebar-fixed {

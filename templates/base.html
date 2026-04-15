@@ -15,11 +15,11 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
-    <link href="{% static 'css/theme.css' %}?v=sidebar-fixed-4" rel="stylesheet" />
+    <link href="{% static 'css/theme.css' %}?v=sidebar-fixed-5" rel="stylesheet" />
     {% block extra_head %}{% endblock %}
   </head>
-  <body class="app-body{% if user.is_authenticated %} app-has-sidebar{% endif %}">
-    {% if user.is_authenticated %}
+  <body class="app-body{% if request.user.is_authenticated %} app-has-sidebar{% endif %}">
+    {% if request.user.is_authenticated %}
       <aside
         class="app-sidebar-fixed"
         id="appSidebar"
@@ -83,13 +83,13 @@
           <span class="app-sidebar-icon-wrap"><i data-lucide="landmark"></i></span>
           <span class="app-sidebar-label">Bancos</span>
         </a>
-        {% if user.is_authenticated %}
+        {% if request.user.is_authenticated %}
           <a class="app-sidebar-link" href="{% url 'cambiar_password' %}">
             <span class="app-sidebar-icon-wrap"><i data-lucide="key"></i></span>
             <span class="app-sidebar-label">Cambiar contraseña</span>
           </a>
         {% endif %}
-        {% if user.is_authenticated and user.is_staff %}
+        {% if request.user.is_authenticated and request.user.is_staff %}
           <a class="app-sidebar-link" href="{% url 'admin_usuarios_list' %}">
             <span class="app-sidebar-icon-wrap"><i data-lucide="shield"></i></span>
             <span class="app-sidebar-label">Administrador</span>
