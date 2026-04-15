@@ -173,7 +173,7 @@
 
 @media (max-width: 991.98px) {
   body:not(.app-sidebar-collapsed) .app-sidebar-backdrop {
-    display: block;
+    display: none;
   }
 }
 
@@ -201,19 +201,7 @@ aside#appSidebar.app-sidebar-fixed,
   box-sizing: border-box;
 }
 
-.app-menu-fab {
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  z-index: 1060;
-  background: var(--cg-surface);
-  border: 1px solid var(--cg-border);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
-}
-
-body:not(.app-sidebar-collapsed) .app-menu-fab {
-  display: none;
-}
+/* Botón hamburguesa removido: se deja el menú fijo */
 
 .app-sidebar-brand {
   display: flex;
@@ -225,25 +213,25 @@ body:not(.app-sidebar-collapsed) .app-menu-fab {
 }
 
 .app-sidebar-logo {
-  width: 50%;
-  max-width: 140px;
+  width: 90%;
+  max-width: 320px;
   height: auto;
 }
 
 body.app-sidebar-collapsed .app-sidebar-fixed {
-  transform: translateX(-100%);
+  transform: translateX(0);
 }
 
 /* Evita que un borde invisible capture clics cuando el panel está oculto (escritorio) */
 @media (min-width: 992px) {
   body.app-sidebar-collapsed .app-sidebar-fixed {
-    pointer-events: none;
+    pointer-events: auto;
   }
 }
 
 @media (max-width: 991.98px) {
   body:not(.app-sidebar-collapsed) .app-sidebar-fixed {
-    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.1);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.06);
   }
 }
 
@@ -265,10 +253,7 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   color: var(--cg-text);
 }
 
-.app-sidebar-pin svg {
-  width: 1.25rem;
-  height: 1.25rem;
-}
+/* Flecha de colapsar removida */
 
 /* Lista vertical estricta: una fila por ítem, sin wrap horizontal */
 .app-sidebar-nav {
@@ -286,12 +271,7 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   -webkit-overflow-scrolling: touch;
 }
 
-.app-sidebar-footer {
-  flex-shrink: 0;
-  padding: 0.75rem 0.75rem 0.9rem;
-  border-top: 1px solid var(--cg-border);
-  background: var(--cg-surface);
-}
+/* Footer removido (Salir va como opción del menú) */
 
 .app-sidebar-link {
   display: flex;
@@ -368,7 +348,7 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
 }
 
 body.app-sidebar-collapsed .app-content-area {
-  margin-left: 0;
+  margin-left: var(--app-sidebar-w);
 }
 
 @media (max-width: 991.98px) {

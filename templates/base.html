@@ -15,29 +15,10 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
-    <link href="{% static 'css/theme.css' %}?v=sidebar-fixed-3" rel="stylesheet" />
+    <link href="{% static 'css/theme.css' %}?v=sidebar-fixed-4" rel="stylesheet" />
     {% block extra_head %}{% endblock %}
   </head>
   <body class="app-body">
-    <button
-      class="btn app-icon-btn app-menu-fab"
-      type="button"
-      id="btnSidebarToggle"
-      aria-controls="appSidebar"
-      aria-expanded="false"
-      aria-label="Mostrar u ocultar menú"
-      title="Menú"
-    >
-      <i data-lucide="menu" class="app-lucide-toolbar"></i>
-    </button>
-
-    <div
-      class="app-sidebar-backdrop"
-      id="appSidebarBackdrop"
-      tabindex="-1"
-      aria-hidden="true"
-    ></div>
-
     <aside
       class="app-sidebar-fixed"
       id="appSidebar"
@@ -47,15 +28,6 @@
         <a class="app-sidebar-brand" href="{% url 'home' %}" aria-label="Inicio">
           <img class="brand-logo app-sidebar-logo" src="{% static 'img/sirona-logo.png' %}" alt="SIRONA" />
         </a>
-        <button
-          type="button"
-          class="btn app-icon-btn app-sidebar-pin"
-          id="btnSidebarCollapse"
-          aria-label="Ocultar menú"
-          title="Ocultar menú"
-        >
-          <i data-lucide="chevron-left" class="app-lucide-toolbar"></i>
-        </button>
       </div>
       <div class="app-sidebar-nav" role="navigation" aria-labelledby="appSidebarLabel">
         <a class="app-sidebar-link" href="{% url 'home' %}">
@@ -126,12 +98,13 @@
             <span class="app-sidebar-label">Historial de actividad</span>
           </a>
         {% endif %}
+        {% if user.is_authenticated %}
+          <a class="app-sidebar-link" href="{% url 'logout' %}">
+            <span class="app-sidebar-icon-wrap"><i data-lucide="log-out"></i></span>
+            <span class="app-sidebar-label">Salir</span>
+          </a>
+        {% endif %}
       </div>
-      {% if user.is_authenticated %}
-        <div class="app-sidebar-footer">
-          <a class="btn btn-sm app-btn-primary-solid w-100" href="{% url 'logout' %}">Salir</a>
-        </div>
-      {% endif %}
     </aside>
 
     <div class="app-content-area">
@@ -186,74 +159,6 @@
               width: 18,
               height: 18,
             },
-          });
-        }
-      })();
-    </script>
-    <script>
-      (function () {
-        var body = document.body;
-        var backdrop = document.getElementById("appSidebarBackdrop");
-        var toggleBtn = document.getElementById("btnSidebarToggle");
-        var collapseBtn = document.getElementById("btnSidebarCollapse");
-        var mqDesktop = window.matchMedia("(min-width: 992px)");
-        var STORAGE_KEY = "sirona.sidebar.collapsed";
-
-        function isDesktop() {
-          return mqDesktop.matches;
-        }
-
-        function readStoredCollapsed() {
-          try {
-            return localStorage.getItem(STORAGE_KEY) === "1";
-          } catch (e) {
-            return false;
-          }
-        }
-
-        function persistCollapsed(collapsed) {
-          if (!isDesktop()) return;
-          try {
-            localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0");
-          } catch (e) {}
-        }
-
-        function setCollapsed(collapsed) {
-          if (collapsed) body.classList.add("app-sidebar-collapsed");
-          else body.classList.remove("app-sidebar-collapsed");
-          if (toggleBtn)
-            toggleBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
-        }
-
-        function syncViewport() {
-          if (isDesktop()) {
-            body.classList.remove("app-sidebar-mobile");
-            setCollapsed(readStoredCollapsed());
-          } else {
-            body.classList.add("app-sidebar-mobile");
-            setCollapsed(true);
-          }
-        }
-
-        function toggleSidebar() {
-          var nowCollapsed = body.classList.toggle("app-sidebar-collapsed");
-          if (toggleBtn)
-            toggleBtn.setAttribute("aria-expanded", nowCollapsed ? "false" : "true");
-          persistCollapsed(nowCollapsed);
-        }
-
-        syncViewport();
-        mqDesktop.addEventListener("change", syncViewport);
-
-        if (toggleBtn) toggleBtn.addEventListener("click", toggleSidebar);
-        if (collapseBtn)
-          collapseBtn.addEventListener("click", function () {
-            setCollapsed(true);
-            persistCollapsed(true);
-          });
-        if (backdrop) {
-          backdrop.addEventListener("click", function () {
-            if (!isDesktop()) setCollapsed(true);
           });
         }
       })();
