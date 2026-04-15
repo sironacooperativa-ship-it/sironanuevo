@@ -30,6 +30,9 @@
   --app-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   --app-transition: 0.18s ease;
 
+  --app-topbar-h: 3.25rem;
+  --app-sidebar-w: 272px;
+
   --bs-primary: var(--cg-accent);
   --bs-primary-rgb: 17, 17, 17;
   --bs-link-color: var(--sirona-teal-dark);
@@ -82,11 +85,14 @@
 
 /* Barra superior */
 .app-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
   background: var(--cg-surface);
   border-color: var(--cg-border) !important;
   padding-top: 0.45rem;
   padding-bottom: 0.45rem;
-  z-index: 1030;
+  min-height: var(--app-topbar-h);
 }
 
 .app-topbar .navbar-brand {
@@ -132,9 +138,13 @@
   outline-offset: 2px;
 }
 
-.app-icon-btn .bi {
-  font-size: 1.35rem;
+.app-icon-btn svg,
+.app-lucide-toolbar {
+  width: 1.35rem;
+  height: 1.35rem;
   display: block;
+  flex-shrink: 0;
+  stroke: currentColor;
 }
 
 /* Botones estilo ChatGPT: primario sólido oscuro */
@@ -169,72 +179,173 @@
   color: var(--cg-text);
 }
 
-/* Sidebar */
-.app-sidebar {
-  --bs-offcanvas-width: min(300px, 92vw);
+/* Fondo al tocar fuera del menú (solo móvil / tablet) */
+.app-sidebar-backdrop {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--app-topbar-h);
+  bottom: 0;
+  background: rgba(15, 15, 15, 0.32);
+  z-index: 1018;
+  transition: opacity 0.2s ease;
+}
+
+@media (max-width: 991.98px) {
+  body:not(.app-sidebar-collapsed) .app-sidebar-backdrop {
+    display: block;
+  }
+}
+
+/* Barra lateral fija (escritorio: siempre a la izquierda; se oculta con la flecha) */
+.app-sidebar-fixed {
+  position: fixed;
+  left: 0;
+  top: var(--app-topbar-h);
+  bottom: 0;
+  width: var(--app-sidebar-w);
+  z-index: 1020;
+  display: flex;
+  flex-direction: column;
   background: var(--cg-bg);
   border-right: 1px solid var(--cg-border);
+  transform: translateX(0);
+  transition: transform 0.22s ease;
+  overflow: hidden;
+}
+
+body.app-sidebar-collapsed .app-sidebar-fixed {
+  transform: translateX(-100%);
+}
+
+@media (max-width: 991.98px) {
+  body:not(.app-sidebar-collapsed) .app-sidebar-fixed {
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.1);
+  }
 }
 
 .app-sidebar-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.7rem 0.85rem;
   border-bottom: 1px solid var(--cg-border);
-  padding: 0.85rem 1rem;
   background: var(--cg-surface);
 }
 
 .app-sidebar-title {
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   letter-spacing: -0.02em;
   color: var(--cg-text);
 }
 
-.app-sidebar-close .bi {
-  font-size: 1.25rem;
+.app-sidebar-pin svg {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
+/* Lista vertical estricta: una fila por ítem, sin wrap horizontal */
 .app-sidebar-nav {
-  padding: 0.35rem 0.5rem 1rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  align-content: flex-start;
+  gap: 0.1rem;
+  padding: 0.45rem 0.55rem 1rem;
+  overflow-x: hidden;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .app-sidebar-link {
   display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.55rem 0.65rem;
-  margin-bottom: 0.1rem;
+  gap: 0.65rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  padding: 0.48rem 0.55rem;
+  margin: 0;
   border-radius: var(--app-radius);
-  color: var(--cg-text);
+  color: var(--cg-text) !important;
   font-weight: 500;
   font-size: 0.875rem;
-  text-decoration: none;
-  transition:
-    background var(--app-transition),
-    color var(--app-transition);
+  line-height: 1.35;
+  text-decoration: none !important;
+  border: 0;
+  background: transparent;
+  transition: background var(--app-transition);
 }
 
-.app-sidebar-link .bi {
-  font-size: 1.1rem;
-  opacity: 0.55;
+.app-sidebar-link:visited {
+  color: var(--cg-text) !important;
+}
+
+.app-sidebar-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
   flex-shrink: 0;
-  width: 1.25rem;
-  text-align: center;
+  color: var(--cg-muted);
+}
+
+.app-sidebar-icon-wrap svg {
+  width: 18px !important;
+  height: 18px !important;
+  stroke: currentColor;
+}
+
+.app-sidebar-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .app-sidebar-link:hover,
 .app-sidebar-link:focus {
   background: var(--cg-hover);
+  color: var(--cg-text) !important;
+}
+
+.app-sidebar-link:hover .app-sidebar-icon-wrap,
+.app-sidebar-link:focus .app-sidebar-icon-wrap {
   color: var(--cg-text);
 }
 
-.app-sidebar-link:hover .bi,
-.app-sidebar-link:focus .bi {
-  opacity: 0.85;
+.app-sidebar-link:active {
+  background: rgba(0, 0, 0, 0.07);
 }
 
-.app-sidebar-link:active {
-  background: rgba(0, 0, 0, 0.08);
+/* Contenido principal: deja lugar al rail fijo en escritorio */
+.app-content-area {
+  margin-left: var(--app-sidebar-w);
+  min-width: 0;
+  transition: margin-left 0.22s ease;
+}
+
+body.app-sidebar-collapsed .app-content-area {
+  margin-left: 0;
+}
+
+@media (max-width: 991.98px) {
+  .app-content-area {
+    margin-left: 0 !important;
+  }
 }
 
 /* Scroll-to-top (botón circular oscuro) */
@@ -274,8 +385,10 @@
   pointer-events: auto;
 }
 
-.app-scroll-top .bi {
-  font-size: 1.1rem;
+.app-scroll-top svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  stroke: currentColor;
 }
 
 /* Botones globales */
