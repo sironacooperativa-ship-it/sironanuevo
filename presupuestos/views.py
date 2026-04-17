@@ -350,17 +350,6 @@ def presupuesto_editar(request, pk: int):
         if err is None:
             vid, fecha_v, descuento, comision_pct, comprador_id, aplica_comision = meta
             with transaction.atomic():
-                _guardar_presupuesto_desde_lineas(
-                    presupuesto,
-                    line_specs,
-                    subtotal,
-                    vid,
-                    fecha_v,
-                    descuento,
-                    comision_pct,
-                    comprador_id,
-                    aplica_comision,
-                )
                 # Si ya estaba aprobado y tiene pedido generado, reflejar cambios en la Venta
                 # (solo si sigue pendiente de pago; si está pagada no se toca para no romper caja).
                 if presupuesto.estado == Presupuesto.Estado.APROBADO and presupuesto.venta_id:
@@ -374,9 +363,46 @@ def presupuesto_editar(request, pk: int):
                         .get(pk=presupuesto.venta_id)
                     )
                     if venta.estado == Venta.Estado.PAGADA or venta.pago_movimiento_id:
-                        raise ValueError(
-                            "El pedido generado ya está pagado; no se puede editar el presupuesto aprobado porque impacta caja."
-                        )
+                        # Pedido pagado: permitir editar SOLO comisión (sin tocar líneas/stock/cabecera para no romper caja).
+                        def _norm_line_specs(specs):
+                            out = []
+                            for prod, qty, pu, st in specs:
+                                out.append((prod.pk, int(qty), str(pu)))
+                            return sorted(out)
+
+                        actuales = [
+                            (ln.producto_id, int(ln.cantidad), str(ln.precio_unitario))
+                            for ln in presupuesto.lineas.all()
+                        ]
+                        if (
+                            int(vid) != int(presupuesto.vendedor_id)
+                            or int(comprador_id or 0) != int(presupuesto.comprador_id or 0)
+                            or (fecha_v or None) != (presupuesto.fecha_vencimiento_pago or None)
+                            or str(descuento) != str(presupuesto.descuento_monto)
+                            or _norm_line_specs(line_specs) != sorted(actuales)
+                        ):
+                            raise ValueError(
+                                "El pedido generado ya está pagado. En este caso solo se puede editar la comisión del presupuesto (no líneas, vendedor, comprador, vencimiento ni descuento)."
+                            )
+                        presupuesto.comision_porcentaje = comision_pct
+                        presupuesto.aplica_comision = aplica_comision
+                        presupuesto.actualizado_por = request.user
+                        presupuesto.save(update_fields=["comision_porcentaje", "aplica_comision", "actualizado_por"])
+                        messages.success(request, "Comisión actualizada (el pedido ya estaba pagado, no se modificó caja).")
+                        return redirect("presupuesto_lista")
+
+                    # Pedido pendiente: primero guardamos presupuesto y luego sincronizamos la venta
+                    _guardar_presupuesto_desde_lineas(
+                        presupuesto,
+                        line_specs,
+                        subtotal,
+                        vid,
+                        fecha_v,
+                        descuento,
+                        comision_pct,
+                        comprador_id,
+                        aplica_comision,
+                    )
                     # Revertir stock por líneas viejas, rearmar líneas y descontar stock nuevo.
                     old_lines = list(venta.lineas.all())
                     for ln in old_lines:
@@ -441,6 +467,18 @@ def presupuesto_editar(request, pk: int):
                                 f"Ingreso en caja al cobrar: {format_monto_ars(venta.monto_ingreso_caja)}.{extra_comprador}"
                             ),
                         )
+                else:
+                    _guardar_presupuesto_desde_lineas(
+                        presupuesto,
+                        line_specs,
+                        subtotal,
+                        vid,
+                        fecha_v,
+                        descuento,
+                        comision_pct,
+                        comprador_id,
+                        aplica_comision,
+                    )
                 presupuesto.actualizado_por = request.user
                 presupuesto.save(update_fields=["actualizado_por"])
             messages.success(request, "Presupuesto actualizado.")
