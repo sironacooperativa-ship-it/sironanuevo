@@ -1,9 +1,5 @@
 from django import forms
-from django.contrib.auth import get_user_model
-
 from .models import Comprador, Proveedor, Vendedor
-
-User = get_user_model()
 
 
 class _BasePersonaForm(forms.ModelForm):
@@ -23,20 +19,13 @@ class _BasePersonaForm(forms.ModelForm):
 class VendedorForm(_BasePersonaForm):
     class Meta(_BasePersonaForm.Meta):
         model = Vendedor
-        fields = _BasePersonaForm.Meta.fields + ["usuario", "acceso", "comision_porcentaje"]
+        fields = _BasePersonaForm.Meta.fields + ["comision_porcentaje"]
         widgets = {
             **_BasePersonaForm.Meta.widgets,
-            "usuario": forms.Select(attrs={"class": "form-select"}),
-            "acceso": forms.Select(attrs={"class": "form-select"}),
             "comision_porcentaje": forms.NumberInput(
                 attrs={"class": "form-control", "step": "0.01", "min": "0"}
             ),
         }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["usuario"].required = False
-        self.fields["usuario"].queryset = User.objects.filter(is_active=True).order_by("username")
 
 
 class ProveedorForm(_BasePersonaForm):

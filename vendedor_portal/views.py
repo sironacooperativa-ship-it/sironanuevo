@@ -6,6 +6,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Q
+from django.db.models import Case, Count, DecimalField, ExpressionWrapper, F, Sum, Value, When
+from django.db.models.functions import Coalesce
 from django.http import FileResponse, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
@@ -87,6 +89,9 @@ def vendedor_home(request):
         # Reusar validador existente, pero forzar vendedor = este perfil
         post = request.POST.copy()
         post["vendedor"] = str(vendedor.pk)
+        # Comisión inamovible en modo vendedor: viene del perfil del vendedor.
+        post["comision_porcentaje"] = str(vendedor.comision_porcentaje)
+        post["aplica_comision"] = "1"
         request.POST = post  # type: ignore[misc]
 
         err, line_specs, subtotal, meta = _validar_lineas_post(request)
@@ -100,8 +105,8 @@ def vendedor_home(request):
                     fecha_vencimiento_pago=fecha_v,
                     subtotal_lineas=subtotal,
                     descuento_monto=descuento,
-                    comision_porcentaje=comision_pct,
-                    aplica_comision=aplica_comision,
+                    comision_porcentaje=vendedor.comision_porcentaje,
+                    aplica_comision=True,
                     creado_por=request.user,
                     actualizado_por=request.user,
                 )
@@ -121,8 +126,7 @@ def vendedor_home(request):
         repoblar = {
             "fecha_vencimiento_pago": request.POST.get("fecha_vencimiento_pago") or "",
             "descuento_monto": request.POST.get("descuento_monto") or "0",
-            "comision_porcentaje": request.POST.get("comision_porcentaje") or "",
-            "aplica_comision": request.POST.get("aplica_comision", "1") == "1",
+            "aplica_comision": True,
         }
 
     return render(
@@ -201,6 +205,24 @@ def vendedor_cliente_update(request, pk: int):
         request,
         "vendedor_portal/cliente_form.html",
         {"vendedor": vendedor, "form": form, "modo": "editar", "cliente": c},
+    )
+
+
+@login_required
+def vendedor_stock(request):
+    vendedor = _get_vendedor_from_user(request.user)
+    if vendedor is None:
+        return HttpResponseForbidden("Este usuario no tiene perfil de vendedor.")
+
+    q = (request.GET.get("q") or "").strip()
+    qs = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
+    if q:
+        qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
+    productos = list(qs[:400])
+    return render(
+        request,
+        "vendedor_portal/stock.html",
+        {"vendedor": vendedor, "productos": productos, "q": q},
     )
 
 
@@ -373,5 +395,47 @@ def vendedor_cuenta_corriente(request):
             "ventas": ventas,
             "movimientos": movs,
         },
+    )
+
+
+@login_required
+def vendedor_reportes(request):
+    vendedor = _get_vendedor_from_user(request.user)
+    if vendedor is None:
+        return HttpResponseForbidden("Este usuario no tiene perfil de vendedor.")
+
+    # Actividad propia
+    neto_expr = ExpressionWrapper(
+        F("subtotal_lineas") - F("descuento_monto"),
+        output_field=DecimalField(max_digits=14, decimal_places=2),
+    )
+    neto_nonneg = Case(
+        When(subtotal_lineas__gte=F("descuento_monto"), then=neto_expr),
+        default=Value(0),
+        output_field=DecimalField(max_digits=14, decimal_places=2),
+    )
+    mis_ventas = Venta.objects.filter(vendedor_id=vendedor.pk)
+    actividad = mis_ventas.aggregate(
+        pedidos=Count("id"),
+        neto_total=Coalesce(Sum(neto_nonneg), Value(0)),
+    )
+
+    # Ranking por neto total acumulado (hasta la fecha)
+    ranking_qs = (
+        Venta.objects.values("vendedor_id", "vendedor__codigo", "vendedor__apellido", "vendedor__nombre")
+        .annotate(neto_total=Coalesce(Sum(neto_nonneg), Value(0)))
+        .order_by("-neto_total", "vendedor__apellido", "vendedor__nombre")
+    )
+    ranking = list(ranking_qs[:50])
+    pos = None
+    for i, r in enumerate(ranking, start=1):
+        if int(r["vendedor_id"]) == int(vendedor.pk):
+            pos = i
+            break
+
+    return render(
+        request,
+        "vendedor_portal/reportes.html",
+        {"vendedor": vendedor, "actividad": actividad, "ranking": ranking, "posicion": pos},
     )
 

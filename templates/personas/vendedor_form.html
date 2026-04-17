@@ -51,18 +51,6 @@
             {{ form.comision_porcentaje }}
             {% if form.comision_porcentaje.errors %}<div class="text-danger small">{{ form.comision_porcentaje.errors }}</div>{% endif %}
           </div>
-          <div class="col-12 col-md-4">
-            <label class="form-label">Acceso</label>
-            {{ form.acceso }}
-            {% if form.acceso.errors %}<div class="text-danger small">{{ form.acceso.errors }}</div>{% endif %}
-            <div class="form-text">Define si entra al Portal Vendedor, al sistema completo, o a ambos.</div>
-          </div>
-          <div class="col-12 col-md-8">
-            <label class="form-label">Usuario (para acceso desde celular) <span class="text-muted fw-normal">(opcional)</span></label>
-            {{ form.usuario }}
-            {% if form.usuario.errors %}<div class="text-danger small">{{ form.usuario.errors }}</div>{% endif %}
-            <div class="form-text">Si asignás un usuario, al iniciar sesión entra al Portal Vendedor.</div>
-          </div>
           <div class="col-12">
             <div class="form-check">
               {{ form.habilitado }}

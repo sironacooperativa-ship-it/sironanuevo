@@ -9,8 +9,6 @@ from django.contrib.auth import logout
 from django.http import HttpResponseRedirect
 from django.shortcuts import resolve_url
 
-from personas.models import Vendedor
-
 _SESSION_LAST_ACTIVITY = "_session_last_activity"
 
 
@@ -42,10 +40,9 @@ class IdleSessionTimeoutMiddleware:
 
 class VendedorAccessMiddleware:
     """
-    Enforce acceso de vendedor:
-    - SOLO_VENDEDOR: siempre portal (bloquea sistema completo)
-    - SOLO_COMPLETO: bloquea portal vendedor
-    - AMBOS: permite ambos
+    Enforce acceso por usuario:
+    - usuario.perfil_acceso.solo_vendedor=True: siempre portal (bloquea sistema completo)
+    - caso contrario: acceso completo (y si entra al portal es por elección en login)
     """
 
     def __init__(self, get_response):
@@ -53,24 +50,22 @@ class VendedorAccessMiddleware:
 
     def __call__(self, request):
         if request.user.is_authenticated and not getattr(request.user, "is_staff", False):
-            v = getattr(request.user, "vendedor_perfil", None)
-            if v is not None:
-                path = request.path or "/"
-                # Permitir siempre login/logout/static/admin (y assets)
-                if (
-                    path.startswith("/static/")
-                    or path.startswith("/login/")
-                    or path.startswith("/logout/")
-                    or path.startswith("/admin/")
-                ):
-                    return self.get_response(request)
+            path = request.path or "/"
+            if (
+                path.startswith("/static/")
+                or path.startswith("/login/")
+                or path.startswith("/logout/")
+                or path.startswith("/admin/")
+                or path.startswith("/health/")
+                or path.startswith("/warmup/")
+            ):
+                return self.get_response(request)
 
-                acceso = getattr(v, "acceso", None)
-                in_portal = path.startswith("/vendedor/")
-
-                if acceso == Vendedor.Acceso.SOLO_VENDEDOR and not in_portal:
-                    return HttpResponseRedirect(resolve_url("vendedor_home"))
-                if acceso == Vendedor.Acceso.SOLO_COMPLETO and in_portal:
-                    return HttpResponseRedirect(resolve_url("home"))
+            solo_vendedor = bool(
+                getattr(getattr(request.user, "perfil_acceso", None), "solo_vendedor", False)
+            )
+            in_portal = path.startswith("/vendedor/")
+            if solo_vendedor and not in_portal:
+                return HttpResponseRedirect(resolve_url("vendedor_home"))
 
         return self.get_response(request)

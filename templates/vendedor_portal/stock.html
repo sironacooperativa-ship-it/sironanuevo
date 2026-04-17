@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Stock{% endblock %}
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+      <h1 class="h4 mb-1">Stock</h1>
+      <div class="text-muted small">Solo lectura: productos habilitados y cantidades disponibles.</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor_home' %}">Volver</a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-12 col-md-8">
+          <label class="form-label">Buscar</label>
+          <input name="q" class="form-control" value="{{ q }}" placeholder="Descripción o código…" />
+        </div>
+        <div class="col-12 col-md-4 d-grid">
+          <button class="btn btn-outline-primary" type="submit">Buscar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Código</th>
+            <th>Producto</th>
+            <th class="text-end">Disponible</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in productos %}
+            <tr>
+              <td><code>{{ p.codigo }}</code></td>
+              <td>{{ p.descripcion }}</td>
+              <td class="text-end fw-semibold">{{ p.stock }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3" class="text-center text-muted py-4">No hay productos.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+

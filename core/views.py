@@ -168,7 +168,7 @@ def login_view(request):
     idle_timeout = request.GET.get("idle") == "1" or request.POST.get("idle") == "1"
 
     error = None
-    # El checkbox se muestra en el login; si el usuario no es vendedor o no aplica, se ignora.
+    # El checkbox se muestra en el login; si el usuario no puede o no aplica, se ignora.
     vendedor_option_visible = True
     vendedor_option_checked = False
     vendedor_option_locked = False
@@ -183,18 +183,18 @@ def login_view(request):
                 return redirect(next_url)
             try:
                 v = getattr(user, "vendedor_perfil", None)
-                if v is not None and not user.is_staff:
-                    # Política:
-                    # - SOLO_VENDEDOR: siempre portal
-                    # - SOLO_COMPLETO: siempre home
-                    # - AMBOS: depende del checkbox del login
-                    if getattr(v, "acceso", None) == Vendedor.Acceso.SOLO_VENDEDOR:
+                if not user.is_staff:
+                    solo_vendedor = bool(
+                        getattr(getattr(user, "perfil_acceso", None), "solo_vendedor", False)
+                    )
+                    # Usuario marcado como vendedor: siempre portal reducido
+                    if solo_vendedor:
                         return redirect("vendedor_home")
-                    if getattr(v, "acceso", None) == Vendedor.Acceso.SOLO_COMPLETO:
-                        return redirect("home")
-                    entrar = (request.POST.get("entrar_como_vendedor") or "0") == "1"
-                    if entrar:
-                        return redirect("vendedor_home")
+                    # Usuario con acceso completo: opcionalmente puede entrar al portal si tiene perfil vendedor.
+                    if v is not None:
+                        entrar = (request.POST.get("entrar_como_vendedor") or "0") == "1"
+                        if entrar:
+                            return redirect("vendedor_home")
             except Exception:
                 pass
             return redirect("home")
