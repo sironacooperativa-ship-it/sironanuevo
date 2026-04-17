@@ -16,6 +16,7 @@ def vendor_mode(request):
     )
     session_get = getattr(getattr(request, "session", None), "get", None)
     session_flag = bool(session_get("modo_vendedor", False)) if callable(session_get) else False
-    in_portal = bool(getattr(request, "path", "") or "").startswith("/vendedor/")
+    path = str(getattr(request, "path", "") or "")
+    in_portal = path.startswith("/vendedor/")
     return {"vendor_mode": bool(solo_vendedor or session_flag or in_portal)}
 
