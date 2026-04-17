@@ -9,6 +9,7 @@ from django.db import transaction
 from django.db.models import F
 
 from calendario.models import Evento
+from caja.models import MovimientoCaja
 from core.money_decimal import format_monto_ars
 from productos.models import Producto
 
@@ -77,3 +78,28 @@ def crear_venta_confirmada(
                 ),
             )
     return venta
+
+
+def eliminar_venta_admin(venta: Venta) -> None:
+    """
+    Elimina un pedido y revierte efectos: stock, evento de calendario, movimiento de caja si estaba pagado.
+    Uso administrativo (corrección de datos).
+    """
+    vid = venta.pk
+    with transaction.atomic():
+        v = (
+            Venta.objects.select_for_update()
+            .select_related("pago_movimiento")
+            .prefetch_related("lineas")
+            .get(pk=vid)
+        )
+        pm_id = v.pago_movimiento_id
+        for ln in v.lineas.all():
+            Producto.objects.filter(pk=ln.producto_id).update(stock=F("stock") + ln.cantidad)
+        Evento.objects.filter(
+            tipo=Evento.Tipo.PEDIDO,
+            titulo=f"Pago pendiente — Pedido #{v.pk}",
+        ).delete()
+        if pm_id:
+            MovimientoCaja.objects.filter(pk=pm_id).delete()
+        v.delete()

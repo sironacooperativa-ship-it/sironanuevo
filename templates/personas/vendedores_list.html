@@ -56,10 +56,25 @@
                       <button class="btn btn-sm btn-outline-success" type="submit">Habilitar</button>
                     {% endif %}
                   </form>
-                  <form method="post" action="{% url 'vendedor_delete' v.id %}" onsubmit="return confirm('¿Eliminar {{ v.codigo }}?');">
-                    {% csrf_token %}
-                    <button class="btn btn-sm btn-outline-danger" type="submit">Eliminar</button>
-                  </form>
+                  {% if user.is_staff %}
+                    {% if v._nv or v._np or v._nc %}
+                      <a
+                        class="btn btn-sm btn-outline-danger"
+                        href="{% url 'vendedor_eliminar_admin' v.pk %}"
+                        title="Ver historial y confirmar borrado completo"
+                      >Eliminar…</a>
+                    {% else %}
+                      <form method="post" action="{% url 'vendedor_delete' v.id %}" onsubmit="return confirm('¿Eliminar {{ v.codigo }}?');">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-danger" type="submit">Eliminar</button>
+                      </form>
+                    {% endif %}
+                  {% else %}
+                    <form method="post" action="{% url 'vendedor_delete' v.id %}" onsubmit="return confirm('¿Eliminar {{ v.codigo }}?');">
+                      {% csrf_token %}
+                      <button class="btn btn-sm btn-outline-danger" type="submit">Eliminar</button>
+                    </form>
+                  {% endif %}
                 </div>
               </td>
             </tr>

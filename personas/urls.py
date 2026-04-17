@@ -9,6 +9,11 @@ urlpatterns = [
     path("vendedores/<int:pk>/", views.vendedor_detalle, name="vendedor_detalle"),
     path("vendedores/<int:pk>/editar/", views.vendedor_update, name="vendedor_update"),
     path("vendedores/<int:pk>/eliminar/", views.vendedor_delete, name="vendedor_delete"),
+    path(
+        "vendedores/<int:pk>/eliminar-admin/",
+        views.vendedor_eliminar_admin,
+        name="vendedor_eliminar_admin",
+    ),
     path("vendedores/<int:pk>/toggle/", views.vendedor_toggle, name="vendedor_toggle"),
     path("proveedores/", views.proveedores_list, name="proveedores_list"),
     path("proveedores/nuevo/", views.proveedor_create, name="proveedor_create"),

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Eliminar vendedor (admin){% endblock %}
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Eliminar vendedor e historial</h1>
+  </div>
+
+  <div class="alert alert-danger">
+    <strong>Acción irreversible.</strong> Se borrará el vendedor
+    <code>{{ vendedor.codigo }}</code> — {{ vendedor.apellido }}, {{ vendedor.nombre }}
+    y todo lo siguiente:
+    <ul class="mb-0 mt-2">
+      <li>
+        <strong>{{ resumen.n_ventas }}</strong> pedido(s): se revierte el stock descontado, se quitan eventos de calendario y, si estaban pagados, el ingreso en caja asociado al cobro.
+      </li>
+      <li><strong>{{ resumen.n_presupuestos }}</strong> presupuesto(s) (borradores y aprobados).</li>
+      <li>
+        <strong>{{ resumen.n_movimientos_caja }}</strong> movimiento(s) de caja vinculado(s) a este vendedor (incluye los que no queden cubiertos por la baja de pedidos).
+      </li>
+    </ul>
+  </div>
+
+  <p class="text-muted small">
+    Revisá el detalle en
+    <a href="{% url 'vendedor_detalle' vendedor.pk %}">ficha del vendedor</a>
+    o el
+    <a href="{% url 'ventas_historial' %}?vendedor={{ vendedor.pk }}">historial de ventas filtrado</a>.
+  </p>
+
+  {% if ventas_muestra %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header fw-semibold py-2">Pedidos a eliminar (muestra, hasta 50)</div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th class="text-end">Neto</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for x in ventas_muestra %}
+              <tr>
+                <td class="fw-semibold">#{{ x.pk }}</td>
+                <td class="text-muted small">{{ x.creado_en|date:"d/m/Y H:i" }}</td>
+                <td>
+                  {% if x.estado == "PEN" %}
+                    <span class="badge text-bg-warning text-dark">Pendiente</span>
+                  {% else %}
+                    <span class="badge text-bg-success">Pagada</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">{{ x.neto|ars }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if presupuestos_muestra %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header fw-semibold py-2">Presupuestos a eliminar (muestra, hasta 50)</div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th class="text-end">Neto</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in presupuestos_muestra %}
+              <tr>
+                <td class="fw-semibold">#{{ p.pk }}</td>
+                <td class="text-muted small">{{ p.creado_en|date:"d/m/Y H:i" }}</td>
+                <td>{{ p.get_estado_display }}</td>
+                <td class="text-end">{{ p.neto|ars }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'vendedores_list' %}">Cancelar</a>
+    <form
+      method="post"
+      action="{% url 'vendedor_eliminar_admin' vendedor.pk %}"
+      class="d-inline"
+      onsubmit="return confirm('¿Eliminar definitivamente al vendedor {{ vendedor.codigo }} y TODO su historial? Esta operación no se puede deshacer.');"
+    >
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">Confirmar eliminación</button>
+    </form>
+  </div>
+{% endblock %}

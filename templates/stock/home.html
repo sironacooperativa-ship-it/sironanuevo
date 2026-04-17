@@ -11,7 +11,9 @@
     <div class="card-body">
       <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
         <h2 class="h5 mb-0">Cargar stock</h2>
-        <div class="text-muted small">Actualiza el stock disponible del producto.</div>
+        <div class="text-muted small">
+          Actualiza el stock disponible del producto. Boleta, proveedor, Nº factura y destinatario son <strong>opcionales</strong> (referencia del movimiento).
+        </div>
       </div>
       <form method="post" novalidate class="row g-2 g-md-3 align-items-end">
         {% csrf_token %}

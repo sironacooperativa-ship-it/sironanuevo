@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
@@ -10,7 +10,7 @@ from django.views.decorators.http import require_http_methods
 
 from core.comision_agg import comisiones_acumuladas_por_mes
 from core.export_utils import parse_export, pdf_response, xlsx_response
-from core.money_decimal import format_monto_ars, q2
+from core.money_decimal import COMISION_PORCENTAJE_DEFECTO, format_monto_ars, q2
 from core.repoblar_lineas import lineas_iniciales_desde_post, repoblar_campos_cabecera_desde_post
 from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_dashboard, parse_fecha_param, rango_periodo
 
@@ -22,7 +22,11 @@ from productos.models import Producto
 from .forms import VentaCabeceraEditForm, VentaPagoForm
 from .models import Venta, VentaLinea
 from .remito_pdf import remito_venta_pdf_response
-from .servicios import crear_venta_confirmada
+from .servicios import crear_venta_confirmada, eliminar_venta_admin
+
+
+def _es_staff(user) -> bool:
+    return bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
 
 
 def _sync_evento_pedido_pendiente(venta: Venta) -> None:
@@ -108,7 +112,11 @@ def venta_nueva(request):
         except InvalidOperation:
             descuento = None
         try:
-            comision_pct = Decimal(str(request.POST.get("comision_porcentaje") or "4").replace(",", "."))
+            comision_pct = Decimal(
+                str(request.POST.get("comision_porcentaje") or str(COMISION_PORCENTAJE_DEFECTO)).replace(
+                    ",", "."
+                )
+            )
         except InvalidOperation:
             comision_pct = None
 
@@ -188,6 +196,7 @@ def venta_nueva(request):
                 "productos_catalogo": productos_catalogo,
                 "lineas_iniciales": lineas_iniciales_desde_post(request),
                 "repoblar": repoblar_campos_cabecera_desde_post(request),
+                "comision_default": COMISION_PORCENTAJE_DEFECTO,
             },
         )
 
@@ -200,6 +209,7 @@ def venta_nueva(request):
             "productos_catalogo": productos_catalogo,
             "lineas_iniciales": [],
             "repoblar": None,
+            "comision_default": COMISION_PORCENTAJE_DEFECTO,
         },
     )
 
@@ -303,6 +313,21 @@ def venta_historial(request):
             "comisiones_por_mes": comisiones_por_mes,
         },
     )
+
+
+@login_required
+@user_passes_test(_es_staff)
+@require_http_methods(["POST"])
+def venta_eliminar(request, pk: int):
+    venta = get_object_or_404(Venta, pk=pk)
+    nid = venta.pk
+    try:
+        eliminar_venta_admin(venta)
+    except Exception as exc:
+        messages.error(request, f"No se pudo eliminar el pedido: {exc}")
+        return redirect("ventas_historial")
+    messages.success(request, f"Pedido #{nid} eliminado (stock y caja/calendario revertidos si correspondía).")
+    return redirect("ventas_historial")
 
 
 @login_required

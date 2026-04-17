@@ -3,6 +3,9 @@ from __future__ import annotations
 
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
+# Comisión sobre el neto del pedido cuando aplica (presupuesto no la muestra; se confirma/edita en Ventas).
+COMISION_PORCENTAJE_DEFECTO = Decimal("4.00")
+
 
 def q2(value) -> Decimal:
     """

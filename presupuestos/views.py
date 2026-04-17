@@ -9,12 +9,16 @@ from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 
 from core.export_utils import parse_export
-from core.money_decimal import parse_decimal_from_input
-from core.fecha_filtros import parse_fecha_param
+from core.money_decimal import COMISION_PORCENTAJE_DEFECTO, parse_decimal_from_input
+from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_param, parse_fecha_dashboard, rango_periodo
 from core.repoblar_lineas import repoblar_campos_cabecera_desde_post
 from personas.models import Comprador, Vendedor
 from productos.models import Producto
-from ventas.servicios import crear_venta_confirmada
+from ventas.servicios import crear_venta_confirmada, eliminar_venta_admin
+
+
+def _es_staff(user) -> bool:
+    return bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
 
 from .models import Presupuesto, PresupuestoLinea
 
@@ -89,10 +93,11 @@ def _validar_lineas_post(request):
         return "El descuento no es válido.", None, None, None
 
     try:
-        ven = Vendedor.objects.get(pk=int(vid), habilitado=True)
+        Vendedor.objects.get(pk=int(vid), habilitado=True)
     except (ValueError, Vendedor.DoesNotExist):
         return "El vendedor seleccionado no existe o no está habilitado.", None, None, None
-    comision_pct = ven.comision_porcentaje
+    # No se muestra en el presupuesto; al aprobar pasa a Ventas con este % (editable allí antes de cobrar).
+    comision_pct = COMISION_PORCENTAJE_DEFECTO
 
     line_specs = []
     subtotal = Decimal("0.00")
@@ -191,21 +196,45 @@ def _guardar_presupuesto_desde_lineas(
 
 
 def _filtrar_presupuestos_queryset(request):
+    periodo = (request.GET.get("periodo") or "").strip()
+    if periodo in ("7d", "30d", "mes", "mes_ant"):
+        fecha_desde, fecha_hasta = rango_periodo(periodo)
+    else:
+        fecha_desde = parse_fecha_dashboard(request.GET.get("fecha_desde"))
+        fecha_hasta = parse_fecha_dashboard(request.GET.get("fecha_hasta"))
+
     qs = (
         Presupuesto.objects.select_related("vendedor", "venta", "comprador")
         .prefetch_related("lineas__producto")
         .order_by("-creado_en", "-id")
     )
+    if fecha_desde:
+        qs = qs.filter(creado_en__date__gte=fecha_desde)
+    if fecha_hasta:
+        qs = qs.filter(creado_en__date__lte=fecha_hasta)
+
+    vid = (request.GET.get("vendedor") or "").strip()
+    if vid.isdigit():
+        qs = qs.filter(vendedor_id=int(vid))
+
     cid = (request.GET.get("comprador") or "").strip()
     if cid.isdigit():
         qs = qs.filter(comprador_id=int(cid))
-    return qs, {"comprador": cid}
+
+    return qs, {
+        "periodo": periodo,
+        "fecha_desde": fecha_filtro_value_iso(request.GET.get("fecha_desde")),
+        "fecha_hasta": fecha_filtro_value_iso(request.GET.get("fecha_hasta")),
+        "vendedor": vid,
+        "comprador": cid,
+    }
 
 
 @login_required
 def presupuesto_lista(request):
     items, filtros_ctx = _filtrar_presupuestos_queryset(request)
     compradores = Comprador.objects.order_by("apellido", "nombre", "codigo")
+    vendedores = Vendedor.objects.order_by("apellido", "nombre", "codigo")
     return render(
         request,
         "presupuestos/lista.html",
@@ -213,6 +242,7 @@ def presupuesto_lista(request):
             "presupuestos": items,
             "filtros": filtros_ctx,
             "compradores_filtro": compradores,
+            "vendedores_filtro": vendedores,
         },
     )
 
@@ -350,11 +380,23 @@ def presupuesto_editar(request, pk: int):
 @require_http_methods(["POST"])
 def presupuesto_eliminar(request, pk: int):
     presupuesto = get_object_or_404(Presupuesto, pk=pk)
-    if presupuesto.estado != Presupuesto.Estado.ACTIVO:
-        messages.warning(request, "No se puede eliminar un presupuesto ya aprobado.")
+    es_admin = _es_staff(request.user)
+    if presupuesto.estado != Presupuesto.Estado.ACTIVO and not es_admin:
+        messages.warning(
+            request,
+            "No se puede eliminar un presupuesto ya aprobado (solo administradores).",
+        )
         return redirect("presupuesto_lista")
     nid = presupuesto.pk
-    presupuesto.delete()
+    try:
+        with transaction.atomic():
+            pr = Presupuesto.objects.select_for_update().get(pk=presupuesto.pk)
+            if pr.venta_id:
+                eliminar_venta_admin(pr.venta)
+            pr.delete()
+    except Exception as exc:
+        messages.error(request, f"No se pudo eliminar el presupuesto: {exc}")
+        return redirect("presupuesto_lista")
     messages.success(request, f"Presupuesto #{nid} eliminado.")
     return redirect("presupuesto_lista")
 
@@ -392,20 +434,18 @@ def presupuesto_aprobar(request, pk: int):
         messages.error(request, "El presupuesto no tiene líneas.")
         return redirect("presupuesto_detalle", pk=pk)
 
-    comision_aprobacion = presupuesto.vendedor.comision_porcentaje
     try:
         with transaction.atomic():
             venta = crear_venta_confirmada(
                 presupuesto.vendedor_id,
                 presupuesto.fecha_vencimiento_pago,
                 presupuesto.descuento_monto,
-                comision_aprobacion,
+                presupuesto.comision_porcentaje,
                 line_specs,
                 comprador_id=presupuesto.comprador_id,
                 creado_por_id=request.user.id,
                 aplica_comision=presupuesto.aplica_comision,
             )
-            presupuesto.comision_porcentaje = comision_aprobacion
             presupuesto.estado = Presupuesto.Estado.APROBADO
             presupuesto.venta = venta
             presupuesto.aprobado_en = timezone.now()
@@ -413,7 +453,6 @@ def presupuesto_aprobar(request, pk: int):
             presupuesto.actualizado_por = request.user
             presupuesto.save(
                 update_fields=[
-                    "comision_porcentaje",
                     "estado",
                     "venta",
                     "aprobado_en",

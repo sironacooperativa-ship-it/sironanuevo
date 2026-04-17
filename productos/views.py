@@ -7,6 +7,7 @@ from io import BytesIO
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
+from django.db.models.deletion import ProtectedError
 from django.db.models import Q
 from django.utils import timezone
 from django.http import FileResponse, HttpResponseBadRequest
@@ -33,7 +34,7 @@ from .models import ListaPrecios, Producto
 def _redirect_productos_con_filtros(request):
     """Vuelve al listado conservando búsqueda / filtros enviados como retorno_* en POST."""
     params = {}
-    for k in ("q", "tipo", "proveedor"):
+    for k in ("q", "tipo", "proveedor", "estado"):
         v = (request.POST.get(f"retorno_{k}") or "").strip()
         if v:
             params[k] = v
@@ -54,6 +55,8 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
         tipo = (request.GET.get("tipo") or "").strip()
         proveedor = (request.GET.get("proveedor") or "").strip()
 
+    estado = (request.GET.get("estado") or "").strip()
+
     productos = Producto.objects.all().order_by("descripcion", "codigo")
     if q:
         productos = productos.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
@@ -61,8 +64,12 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
         productos = productos.filter(tipo=tipo)
     if proveedor.isdigit():
         productos = productos.filter(compras_origen__proveedor_id=int(proveedor)).distinct()
+    if estado == "1":
+        productos = productos.filter(habilitado=True)
+    elif estado == "0":
+        productos = productos.filter(habilitado=False)
 
-    return productos, {"q": q, "tipo": tipo, "proveedor": proveedor}
+    return productos, {"q": q, "tipo": tipo, "proveedor": proveedor, "estado": estado}
 
 
 def _parse_pct_aumento(request) -> Decimal | None:
@@ -97,6 +104,7 @@ def _redirect_productos_aumento_filtros(request):
             "q": (request.POST.get("filtro_q") or "").strip(),
             "tipo": (request.POST.get("filtro_tipo") or "").strip(),
             "proveedor": (request.POST.get("filtro_proveedor") or "").strip(),
+            "estado": (request.POST.get("filtro_estado") or "").strip(),
         }
     )
     url = reverse("productos_aumento")
@@ -343,6 +351,7 @@ def productos_list(request):
     q = filtros_ctx["q"]
     tipo = filtros_ctx["tipo"]
     proveedor = filtros_ctx["proveedor"]
+    estado = filtros_ctx["estado"]
 
     exp = parse_export(request)
     if exp in ("xlsx", "pdf"):
@@ -390,6 +399,7 @@ def productos_list(request):
             "q": q,
             "tipo": tipo,
             "proveedor": proveedor,
+            "estado": estado,
             "tipos": Producto.Tipo.choices,
             "proveedores_filtro": proveedores_filtro,
             "listas": listas,
@@ -477,6 +487,7 @@ def productos_aumento(request):
             fq = (request.POST.get("filtro_q") or "").strip()
             ft = (request.POST.get("filtro_tipo") or "").strip()
             fp = (request.POST.get("filtro_proveedor") or "").strip()
+            fe = (request.POST.get("filtro_estado") or "").strip()
             back_q = {}
             if fq:
                 back_q["q"] = fq
@@ -484,6 +495,8 @@ def productos_aumento(request):
                 back_q["tipo"] = ft
             if fp:
                 back_q["proveedor"] = fp
+            if fe:
+                back_q["estado"] = fe
             aumento_back_url = reverse("productos_aumento")
             if back_q:
                 aumento_back_url += "?" + urlencode(back_q)
@@ -498,6 +511,7 @@ def productos_aumento(request):
                     "filtro_q": fq,
                     "filtro_tipo": ft,
                     "filtro_proveedor": fp,
+                    "filtro_estado": fe,
                     "aumento_back_url": aumento_back_url,
                     "proveedores_filtro": proveedores_filtro,
                 },
@@ -513,6 +527,7 @@ def productos_aumento(request):
             "q": filtros_ctx["q"],
             "tipo": filtros_ctx["tipo"],
             "proveedor": filtros_ctx["proveedor"],
+            "estado": filtros_ctx["estado"],
             "tipos": Producto.Tipo.choices,
             "proveedores_filtro": proveedores_filtro,
         },
@@ -697,6 +712,25 @@ def productos_acciones_masa(request):
     elif accion == "lista_no":
         n = Producto.objects.filter(pk__in=ids).update(en_lista_precios=False)
         messages.success(request, f"Se quitó la marca de lista PDF en {n} producto(s).")
+    elif accion == "eliminar":
+        ok = 0
+        protegidos = []
+        for pid in ids:
+            try:
+                Producto.objects.get(pk=pid).delete()
+                ok += 1
+            except ProtectedError:
+                protegidos.append(str(pid))
+        if ok:
+            messages.success(request, f"Se eliminaron {ok} producto(s).")
+        if protegidos:
+            messages.warning(
+                request,
+                "No se pudieron eliminar algunos ítems porque están referenciados en ventas, presupuestos u otros registros "
+                f"(ids: {', '.join(protegidos)}).",
+            )
+        if not ok and not protegidos:
+            messages.info(request, "No hubo productos para eliminar.")
     else:
         messages.error(request, "Acción no reconocida.")
 

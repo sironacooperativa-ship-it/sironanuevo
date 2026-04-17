@@ -31,18 +31,4 @@ class MovimientoStockForm(forms.Form):
         required=False, widget=forms.TextInput(attrs={"class": "form-control"})
     )
 
-    def clean(self):
-        cleaned = super().clean()
-        tipo = cleaned.get("tipo")
-        if tipo == MovimientoStock.Tipo.ENTRADA:
-            if not (cleaned.get("numero_boleta") or "").strip():
-                self.add_error("numero_boleta", "Obligatorio al agregar stock.")
-            if not (cleaned.get("proveedor") or "").strip():
-                self.add_error("proveedor", "Obligatorio al agregar stock.")
-        elif tipo == MovimientoStock.Tipo.SALIDA:
-            if not (cleaned.get("numero_factura") or "").strip():
-                self.add_error("numero_factura", "Obligatorio al quitar stock.")
-            if not (cleaned.get("destinatario") or "").strip():
-                self.add_error("destinatario", "Obligatorio al quitar stock.")
-        return cleaned
 

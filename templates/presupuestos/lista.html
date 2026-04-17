@@ -15,7 +15,36 @@
   <div class="card shadow-sm mb-3">
     <div class="card-body">
       <form method="get" class="row g-2 align-items-end">
-        <div class="col-12 col-md-6 col-lg-4">
+        <div class="col-12 col-md-6 col-lg-2">
+          <label class="form-label small text-muted mb-0">Período</label>
+          <select name="periodo" class="form-select form-select-sm">
+            <option value="" {% if not filtros.periodo %}selected{% endif %}>Personalizado / todos</option>
+            <option value="7d" {% if filtros.periodo == "7d" %}selected{% endif %}>Últimos 7 días</option>
+            <option value="30d" {% if filtros.periodo == "30d" %}selected{% endif %}>Últimos 30 días</option>
+            <option value="mes" {% if filtros.periodo == "mes" %}selected{% endif %}>Mes actual</option>
+            <option value="mes_ant" {% if filtros.periodo == "mes_ant" %}selected{% endif %}>Mes anterior</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <label class="form-label small text-muted mb-0">Desde (registro)</label>
+          <input type="date" name="fecha_desde" class="form-control form-control-sm" value="{{ filtros.fecha_desde }}" />
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <label class="form-label small text-muted mb-0">Hasta (registro)</label>
+          <input type="date" name="fecha_hasta" class="form-control form-control-sm" value="{{ filtros.fecha_hasta }}" />
+        </div>
+        <div class="col-12 col-md-6 col-lg-2">
+          <label class="form-label small text-muted mb-0">Vendedor</label>
+          <select name="vendedor" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for v in vendedores_filtro %}
+              <option value="{{ v.pk }}" {% if filtros.vendedor == v.pk|stringformat:"s" %}selected{% endif %}>
+                {{ v.codigo }} — {{ v.apellido }}, {{ v.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-6 col-lg-2">
           <label class="form-label small text-muted mb-0">Comprador</label>
           <select name="comprador" class="form-select form-select-sm">
             <option value="">Todos</option>
@@ -31,6 +60,9 @@
           <a class="btn btn-sm btn-outline-secondary" href="{% url 'presupuesto_lista' %}">Limpiar</a>
         </div>
       </form>
+      <p class="small text-muted mb-0 mt-2">
+        Con un <strong>período</strong> predefinido, las fechas manuales no se aplican. Dejá el período vacío para filtrar solo por desde/hasta o ver todo.
+      </p>
     </div>
   </div>
 
@@ -88,7 +120,9 @@
                       {% csrf_token %}
                       <button type="submit" class="btn btn-sm btn-success py-0">Aprobar</button>
                     </form>
-                    <form method="post" action="{% url 'presupuesto_eliminar' p.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar este presupuesto?');">
+                  {% endif %}
+                  {% if p.estado == "ACT" or user.is_staff %}
+                    <form method="post" action="{% url 'presupuesto_eliminar' p.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar el presupuesto #{{ p.pk }}? Si estaba aprobado, también se elimina el pedido y se revierte stock y caja.');">
                       {% csrf_token %}
                       <button type="submit" class="btn btn-sm btn-outline-danger py-0">Eliminar</button>
                     </form>

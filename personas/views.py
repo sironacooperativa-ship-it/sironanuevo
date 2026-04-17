@@ -1,20 +1,34 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from core.comision_agg import comisiones_acumuladas_por_mes
 from core.export_utils import parse_export, pdf_response, xlsx_response
 
+from presupuestos.models import Presupuesto
 from ventas.models import Venta
 
 from .forms import CompradorForm, ProveedorForm, VendedorForm
 from .models import Comprador, Proveedor, Vendedor
+from .services import eliminar_vendedor_y_historial_admin, resumen_historial_vendedor
+
+
+def _es_staff(user) -> bool:
+    return bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
 
 
 @login_required
 def vendedores_list(request):
-    vendedores = Vendedor.objects.all().order_by("apellido", "nombre")
+    vendedores = (
+        Vendedor.objects.annotate(
+            _nv=Count("ventas"),
+            _np=Count("presupuestos"),
+            _nc=Count("movimientocaja_set"),
+        )
+        .order_by("apellido", "nombre")
+    )
     exp = parse_export(request)
     if exp in ("xlsx", "pdf"):
         headers = ["Código", "Apellido", "Nombre", "DNI", "Teléfono", "Mail", "Dirección", "Comisión %"]
@@ -48,6 +62,10 @@ def vendedor_detalle(request, pk: int):
     )
     ventas = list(ventas_qs[:400])
     comisiones_por_mes = comisiones_acumuladas_por_mes(ventas_qs)
+    hist = resumen_historial_vendedor(v)
+    tiene_historial = any(
+        hist[k] > 0 for k in ("n_ventas", "n_presupuestos", "n_movimientos_caja")
+    )
     return render(
         request,
         "personas/vendedor_detalle.html",
@@ -55,6 +73,8 @@ def vendedor_detalle(request, pk: int):
             "vendedor": v,
             "ventas": ventas,
             "comisiones_por_mes": comisiones_por_mes,
+            "resumen_historial": hist,
+            "tiene_historial": tiene_historial,
         },
     )
 
@@ -94,13 +114,14 @@ def vendedor_update(request, pk: int):
 @require_http_methods(["POST"])
 def vendedor_delete(request, pk: int):
     v = get_object_or_404(Vendedor, pk=pk)
-    # No borrar si hay historial asociado: preserva integridad del sistema.
     tiene_historial = (
         v.ventas.exists()
         or v.presupuestos.exists()
         or v.movimientocaja_set.exists()
     )
     if tiene_historial:
+        if _es_staff(request.user):
+            return redirect("vendedor_eliminar_admin", pk=pk)
         messages.error(
             request,
             f"No se puede eliminar {v.codigo} porque tiene historial asociado. Usá 'Inhabilitar'.",
@@ -110,6 +131,45 @@ def vendedor_delete(request, pk: int):
     v.delete()
     messages.success(request, f"Vendedor eliminado: {codigo}")
     return redirect("vendedores_list")
+
+
+@login_required
+@user_passes_test(_es_staff)
+@require_http_methods(["GET", "POST"])
+def vendedor_eliminar_admin(request, pk: int):
+    v = get_object_or_404(Vendedor, pk=pk)
+    resumen = resumen_historial_vendedor(v)
+    ventas_muestra = (
+        Venta.objects.filter(vendedor=v)
+        .select_related("comprador")
+        .order_by("-creado_en")[:50]
+    )
+    presupuestos_muestra = (
+        Presupuesto.objects.filter(vendedor=v).order_by("-creado_en")[:50]
+    )
+
+    if request.method == "POST":
+        try:
+            codigo = eliminar_vendedor_y_historial_admin(v)
+        except Exception as exc:
+            messages.error(request, f"No se pudo eliminar al vendedor: {exc}")
+            return redirect("vendedores_list")
+        messages.success(
+            request,
+            f"Vendedor {codigo} eliminado junto con pedidos, presupuestos y movimientos de caja vinculados.",
+        )
+        return redirect("vendedores_list")
+
+    return render(
+        request,
+        "personas/vendedor_eliminar_admin.html",
+        {
+            "vendedor": v,
+            "resumen": resumen,
+            "ventas_muestra": ventas_muestra,
+            "presupuestos_muestra": presupuestos_muestra,
+        },
+    )
 
 
 @login_required

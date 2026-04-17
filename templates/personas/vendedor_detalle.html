@@ -9,8 +9,23 @@
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedores_list' %}">Volver</a>
       <a class="btn btn-outline-primary btn-sm" href="{% url 'vendedor_update' vendedor.pk %}">Editar</a>
       <a class="btn btn-primary btn-sm" href="{% url 'ventas_historial' %}?vendedor={{ vendedor.pk }}">Historial de ventas (filtrado)</a>
+      {% if user.is_staff and tiene_historial %}
+        <a class="btn btn-outline-danger btn-sm" href="{% url 'vendedor_eliminar_admin' vendedor.pk %}">Eliminar vendedor e historial…</a>
+      {% endif %}
     </div>
   </div>
+
+  {% if user.is_staff and tiene_historial %}
+    <div class="alert alert-warning small mb-3">
+      Este vendedor tiene historial:
+      {{ resumen_historial.n_ventas }} pedido(s),
+      {{ resumen_historial.n_presupuestos }} presupuesto(s),
+      {{ resumen_historial.n_movimientos_caja }} movimiento(s) en caja.
+      Como administrador podés revisar la información abajo y, si corresponde,
+      <a href="{% url 'vendedor_eliminar_admin' vendedor.pk %}">eliminar al vendedor y todo lo asociado</a>
+      (se pedirá confirmación).
+    </div>
+  {% endif %}
 
   <h2 class="h5 mb-3">Comisiones</h2>
   <p class="text-muted small mb-3">

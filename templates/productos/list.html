@@ -6,7 +6,7 @@
     <h1 class="app-page-title mb-1">Productos</h1>
     <p class="text-muted small mb-2">
       Tocá <strong>Editar</strong> o <strong>Nuevo</strong> para abrir el formulario en un panel.
-      En la tabla podés marcar varios productos y usar <strong>Selección múltiple</strong> (habilitar, deshabilitar, lista PDF).
+      En la tabla podés marcar varios productos y usar <strong>Selección múltiple</strong> (habilitar, deshabilitar, lista PDF, eliminar).
     </p>
 
     <div class="card app-card border-0 shadow-sm mb-3">
@@ -53,11 +53,11 @@
   <div class="card app-card border-0 shadow-sm mb-3">
     <div class="card-body p-3">
       <form class="row g-2 align-items-end" method="get">
-        <div class="col-12 col-md-4 col-lg-4">
+        <div class="col-12 col-md-6 col-lg-2">
           <label class="form-label small text-muted mb-1">Buscar</label>
           <input class="form-control form-control-sm rounded-3" name="q" value="{{ q }}" placeholder="Código o descripción" />
         </div>
-        <div class="col-12 col-md-3 col-lg-3">
+        <div class="col-12 col-md-6 col-lg-2">
           <label class="form-label small text-muted mb-1">Tipo</label>
           <select class="form-select form-select-sm rounded-3" name="tipo">
             <option value="">Todos</option>
@@ -66,7 +66,7 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-12 col-md-3 col-lg-3">
+        <div class="col-12 col-md-6 col-lg-3">
           <label class="form-label small text-muted mb-1">Proveedor</label>
           <select class="form-select form-select-sm rounded-3" name="proveedor">
             <option value="">Todos</option>
@@ -77,7 +77,15 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-12 col-md-2 d-flex gap-2">
+        <div class="col-12 col-md-6 col-lg-2">
+          <label class="form-label small text-muted mb-1">Estado</label>
+          <select class="form-select form-select-sm rounded-3" name="estado">
+            <option value="" {% if not estado %}selected{% endif %}>Todos</option>
+            <option value="1" {% if estado == "1" %}selected{% endif %}>Habilitados</option>
+            <option value="0" {% if estado == "0" %}selected{% endif %}>Deshabilitados</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-12 col-lg-3 d-flex gap-2">
           <button class="btn btn-outline-dark btn-sm rounded-pill flex-grow-1" type="submit">Filtrar</button>
           <a class="btn btn-outline-secondary btn-sm rounded-pill flex-grow-1" href="{% url 'productos_list' %}">Limpiar</a>
         </div>
@@ -101,6 +109,7 @@
         <input type="hidden" name="retorno_q" value="{{ q|default:'' }}" />
         <input type="hidden" name="retorno_tipo" value="{{ tipo|default:'' }}" />
         <input type="hidden" name="retorno_proveedor" value="{{ proveedor|default:'' }}" />
+        <input type="hidden" name="retorno_estado" value="{{ estado|default:'' }}" />
         <span class="small text-muted me-1">Selección múltiple:</span>
         <button type="button" class="btn btn-sm btn-outline-success rounded-pill" data-productos-bulk="habilitar">
           Habilitar
@@ -113,6 +122,9 @@
         </button>
         <button type="button" class="btn btn-sm btn-outline-dark rounded-pill" data-productos-bulk="lista_no">
           Quitar lista PDF
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill" data-productos-bulk="eliminar">
+          Eliminar
         </button>
       </form>
     </div>
@@ -248,6 +260,7 @@
             deshabilitar: "¿Deshabilitar los productos seleccionados y sacarlos de la lista PDF?",
             lista_si: "¿Marcar los habilitados para la lista de precios PDF?",
             lista_no: "¿Quitar del listado PDF los productos seleccionados?",
+            eliminar: "¿Eliminar definitivamente los productos seleccionados? Los que estén en ventas o presupuestos no se borrarán.",
           };
           var msg = labels[acc] || "¿Confirmar acción sobre la selección?";
           if (!window.confirm(msg)) return;
