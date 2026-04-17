@@ -9,6 +9,8 @@ from django.contrib.auth import logout
 from django.http import HttpResponseRedirect
 from django.shortcuts import resolve_url
 
+from core.models import PerfilAcceso
+
 _SESSION_LAST_ACTIVITY = "_session_last_activity"
 
 
@@ -61,11 +63,19 @@ class VendedorAccessMiddleware:
             ):
                 return self.get_response(request)
 
-            solo_vendedor = bool(
-                getattr(getattr(request.user, "perfil_acceso", None), "solo_vendedor", False)
-            )
+            # Si no existe el perfil aún (usuarios viejos), lo creamos.
+            perfil = getattr(request.user, "perfil_acceso", None)
+            if perfil is None:
+                PerfilAcceso.objects.get_or_create(
+                    usuario=request.user,
+                    defaults={"solo_vendedor": bool(getattr(request.user, "vendedor_perfil", None) is not None)},
+                )
+                perfil = getattr(request.user, "perfil_acceso", None)
+
+            solo_vendedor = bool(getattr(perfil, "solo_vendedor", False))
             in_portal = path.startswith("/vendedor/")
             if solo_vendedor and not in_portal:
+                request.session["modo_vendedor"] = True
                 return HttpResponseRedirect(resolve_url("vendedor_home"))
 
         return self.get_response(request)

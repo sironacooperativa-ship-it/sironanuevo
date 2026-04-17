@@ -21,7 +21,7 @@
   </head>
   <body class="app-body{% if request.user.is_authenticated %} app-authenticated{% else %} app-guest{% endif %}">
     {% if request.user.is_authenticated %}
-      {% if request.user.vendedor_perfil and not request.user.is_staff %}
+      {% if vendor_mode and not request.user.is_staff %}
         <nav class="navbar border-bottom bg-white sticky-top sirona-topbar">
           <div class="container-fluid px-3 px-xl-4 d-flex align-items-center justify-content-between">
             <a class="navbar-brand d-flex align-items-center py-1 m-0" href="{% url 'vendedor_home' %}">
@@ -58,8 +58,7 @@
         </nav>
       {% endif %}
 
-      {# Django templates no soporta paréntesis en if; equivalente a: NOT(vendedor AND NOT staff) #}
-      {% if request.user.is_staff or not request.user.vendedor_perfil %}
+      {% if not vendor_mode or request.user.is_staff %}
         <div
           class="offcanvas offcanvas-start sirona-offcanvas"
           tabindex="-1"

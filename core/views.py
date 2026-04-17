@@ -187,12 +187,16 @@ def login_view(request):
                     solo_vendedor = bool(
                         getattr(getattr(user, "perfil_acceso", None), "solo_vendedor", False)
                     )
+                    entrar = (request.POST.get("entrar_como_vendedor") or "0") == "1"
+                    # Guardar modo en sesión (para menú/layout)
+                    modo = bool(solo_vendedor or (entrar and v is not None))
+                    request.session["modo_vendedor"] = modo
+
                     # Usuario marcado como vendedor: siempre portal reducido
                     if solo_vendedor:
                         return redirect("vendedor_home")
                     # Usuario con acceso completo: opcionalmente puede entrar al portal si tiene perfil vendedor.
                     if v is not None:
-                        entrar = (request.POST.get("entrar_como_vendedor") or "0") == "1"
                         if entrar:
                             return redirect("vendedor_home")
             except Exception:
@@ -222,6 +226,10 @@ def logout_view(request):
             # No bloquear el cierre de sesión si falla el registro (p. ej. IP inválida / BD)
             pass
     logout(request)
+    try:
+        request.session.pop("modo_vendedor", None)
+    except Exception:
+        pass
     return redirect("login")
 
 
