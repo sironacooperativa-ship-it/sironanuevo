@@ -15,11 +15,11 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
-    <link href="{% static 'css/theme.css' %}?v=offcanvas-3" rel="stylesheet" />
+    <link href="{% static 'css/theme.css' %}?v=offcanvas-5" rel="stylesheet" />
     <script src="{% static 'js/money-ars.js' %}"></script>
     {% block extra_head %}{% endblock %}
   </head>
-  <body class="app-body">
+  <body class="app-body{% if request.user.is_authenticated %} app-authenticated{% else %} app-guest{% endif %}">
     {% if request.user.is_authenticated %}
       <nav class="navbar border-bottom bg-white sticky-top sirona-topbar">
         <div class="container-fluid px-3 px-xl-4 d-flex align-items-center justify-content-between">
@@ -57,73 +57,73 @@
         </div>
         <div class="offcanvas-body sirona-offcanvas-body">
           <nav class="sirona-offcanvas-nav" aria-label="Navegación">
-            <a class="app-sidebar-link" href="{% url 'home' %}" data-bs-dismiss="offcanvas">
+            <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'home' %}">
               <span class="app-sidebar-icon-wrap"><i data-lucide="home"></i></span>
               <span class="app-sidebar-label">Inicio</span>
             </a>
-            <a class="app-sidebar-link" href="{% url 'productos_list' %}" data-bs-dismiss="offcanvas">
+            <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'productos_list' %}">
               <span class="app-sidebar-icon-wrap"><i data-lucide="package"></i></span>
               <span class="app-sidebar-label">Productos</span>
             </a>
-            <a class="app-sidebar-link" href="{% url 'stock_home' %}" data-bs-dismiss="offcanvas">
+            <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'stock_home' %}">
               <span class="app-sidebar-icon-wrap"><i data-lucide="boxes"></i></span>
               <span class="app-sidebar-label">Stock</span>
             </a>
-            <a class="app-sidebar-link" href="{% url 'caja_list' %}" data-bs-dismiss="offcanvas">
+            <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'caja_list' %}">
               <span class="app-sidebar-icon-wrap"><i data-lucide="wallet"></i></span>
               <span class="app-sidebar-label">Caja</span>
             </a>
-            <a class="app-sidebar-link" href="{% url 'compra_historial' %}" data-bs-dismiss="offcanvas">
+            <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'compra_historial' %}">
               <span class="app-sidebar-icon-wrap"><i data-lucide="shopping-cart"></i></span>
               <span class="app-sidebar-label">Compras</span>
             </a>
-            <a class="app-sidebar-link" href="{% url 'ventas_historial' %}" data-bs-dismiss="offcanvas">
+            <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'ventas_historial' %}">
               <span class="app-sidebar-icon-wrap"><i data-lucide="trending-up"></i></span>
               <span class="app-sidebar-label">Ventas</span>
             </a>
-            <a class="app-sidebar-link" href="{% url 'presupuesto_lista' %}" data-bs-dismiss="offcanvas">
+            <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'presupuesto_lista' %}">
               <span class="app-sidebar-icon-wrap"><i data-lucide="file-text"></i></span>
               <span class="app-sidebar-label">Presupuestos</span>
             </a>
-            <a class="app-sidebar-link" href="{% url 'vendedores_list' %}" data-bs-dismiss="offcanvas">
+            <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'vendedores_list' %}">
               <span class="app-sidebar-icon-wrap"><i data-lucide="user-check"></i></span>
               <span class="app-sidebar-label">Vendedores</span>
             </a>
-            <a class="app-sidebar-link" href="{% url 'compradores_list' %}" data-bs-dismiss="offcanvas">
+            <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'compradores_list' %}">
               <span class="app-sidebar-icon-wrap"><i data-lucide="users"></i></span>
               <span class="app-sidebar-label">Compradores</span>
             </a>
-            <a class="app-sidebar-link" href="{% url 'proveedores_list' %}" data-bs-dismiss="offcanvas">
+            <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'proveedores_list' %}">
               <span class="app-sidebar-icon-wrap"><i data-lucide="truck"></i></span>
               <span class="app-sidebar-label">Proveedores</span>
             </a>
-            <a class="app-sidebar-link" href="{% url 'reportes_dashboard' %}" data-bs-dismiss="offcanvas">
+            <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'reportes_dashboard' %}">
               <span class="app-sidebar-icon-wrap"><i data-lucide="chart-column"></i></span>
               <span class="app-sidebar-label">Reportes</span>
             </a>
-            <a class="app-sidebar-link" href="{% url 'calendario_home' %}" data-bs-dismiss="offcanvas">
+            <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'calendario_home' %}">
               <span class="app-sidebar-icon-wrap"><i data-lucide="calendar-days"></i></span>
               <span class="app-sidebar-label">Calendario</span>
             </a>
-            <a class="app-sidebar-link" href="{% url 'bancos_cuentas' %}" data-bs-dismiss="offcanvas">
+            <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'bancos_cuentas' %}">
               <span class="app-sidebar-icon-wrap"><i data-lucide="landmark"></i></span>
               <span class="app-sidebar-label">Bancos</span>
             </a>
-            <a class="app-sidebar-link" href="{% url 'cambiar_password' %}" data-bs-dismiss="offcanvas">
+            <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'cambiar_password' %}">
               <span class="app-sidebar-icon-wrap"><i data-lucide="key"></i></span>
               <span class="app-sidebar-label">Cambiar contraseña</span>
             </a>
             {% if request.user.is_staff %}
-              <a class="app-sidebar-link" href="{% url 'admin_usuarios_list' %}" data-bs-dismiss="offcanvas">
+              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'admin_usuarios_list' %}">
                 <span class="app-sidebar-icon-wrap"><i data-lucide="shield"></i></span>
                 <span class="app-sidebar-label">Administrador</span>
               </a>
-              <a class="app-sidebar-link" href="{% url 'admin_actividad_list' %}" data-bs-dismiss="offcanvas">
+              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'admin_actividad_list' %}">
                 <span class="app-sidebar-icon-wrap"><i data-lucide="history"></i></span>
                 <span class="app-sidebar-label">Historial de actividad</span>
               </a>
             {% endif %}
-            <a class="app-sidebar-link app-sidebar-link-logout" href="{% url 'logout' %}" data-bs-dismiss="offcanvas">
+            <a class="app-sidebar-link app-sidebar-link-logout sirona-offcanvas-nav-link" href="{% url 'logout' %}">
               <span class="app-sidebar-icon-wrap"><i data-lucide="log-out"></i></span>
               <span class="app-sidebar-label">Salir</span>
             </a>
@@ -193,6 +193,29 @@
         if (menu) {
           menu.addEventListener("shown.bs.offcanvas", paintIcons);
         }
+      })();
+    </script>
+    <script>
+      (function () {
+        var menu = document.getElementById("sironaMenu");
+        if (!menu || typeof bootstrap === "undefined") return;
+        menu.querySelectorAll("a.sirona-offcanvas-nav-link[href]").forEach(function (anchor) {
+          anchor.addEventListener("click", function (ev) {
+            var href = anchor.getAttribute("href");
+            if (!href || href === "#") return;
+            if (ev.defaultPrevented) return;
+            if (ev.button !== 0 || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) return;
+            if (!menu.classList.contains("show")) return;
+            var inst = bootstrap.Offcanvas.getOrCreateInstance(menu);
+            ev.preventDefault();
+            function go() {
+              menu.removeEventListener("hidden.bs.offcanvas", go);
+              window.location.assign(href);
+            }
+            menu.addEventListener("hidden.bs.offcanvas", go);
+            inst.hide();
+          });
+        });
       })();
     </script>
     <script>

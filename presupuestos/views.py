@@ -9,6 +9,7 @@ from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 
 from core.export_utils import parse_export
+from core.money_decimal import parse_decimal_from_input
 from core.fecha_filtros import parse_fecha_param
 from core.repoblar_lineas import repoblar_campos_cabecera_desde_post
 from personas.models import Comprador, Vendedor
@@ -60,8 +61,11 @@ def _validar_lineas_post(request):
     """Valida POST de líneas (igual que venta). Devuelve (error_msg|None, line_specs, subtotal, extras)."""
     vid = request.POST.get("vendedor")
     fecha_v = parse_fecha_param(request.POST.get("fecha_vencimiento_pago") or "")
+    raw_desc = (request.POST.get("descuento_monto") or "").strip()
     try:
-        descuento = Decimal(str(request.POST.get("descuento_monto") or "0").replace(",", "."))
+        descuento = (
+            parse_decimal_from_input(raw_desc) if raw_desc else Decimal("0")
+        )
     except InvalidOperation:
         descuento = None
 
@@ -124,7 +128,7 @@ def _validar_lineas_post(request):
         raw_pu = praw_s
         if raw_pu:
             try:
-                pu = Decimal(str(raw_pu).replace(",", "."))
+                pu = parse_decimal_from_input(raw_pu)
             except InvalidOperation:
                 err = f"El precio unitario no es válido en la línea de {prod.codigo}."
                 break

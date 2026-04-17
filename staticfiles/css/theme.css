@@ -345,15 +345,15 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   background: rgba(0, 0, 0, 0.07);
 }
 
-/* Contenido principal: deja lugar al rail fijo en escritorio */
+/* Contenido principal: menú offcanvas (sin rail fijo; sin margen lateral). */
 .app-content-area {
-  margin-left: var(--app-sidebar-w);
+  margin-left: 0;
   min-width: 0;
   transition: margin-left 0.22s ease;
 }
 
-body.app-sidebar-collapsed .app-content-area {
-  margin-left: 0;
+.app-guest .app-content-area {
+  margin-left: 0 !important;
 }
 
 @media (max-width: 991.98px) {

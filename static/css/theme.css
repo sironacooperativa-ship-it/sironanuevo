@@ -402,14 +402,17 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   border-radius: var(--app-radius);
 }
 
-/* Contenido principal: deja lugar al rail fijo en escritorio */
+/* Contenido principal: menú offcanvas (sin rail fijo; sin margen lateral). */
 .app-content-area {
   margin-left: 0;
   min-width: 0;
   transition: margin-left 0.22s ease;
 }
 
-/* Menú offcanvas: sin margen lateral fijo */
+/* Login / páginas sin sesión: evita hueco a la izquierda si quedó CSS antiguo (p. ej. staticfiles con rail). */
+.app-guest .app-content-area {
+  margin-left: 0 !important;
+}
 
 @media (max-width: 991.98px) {
   .app-content-area {
