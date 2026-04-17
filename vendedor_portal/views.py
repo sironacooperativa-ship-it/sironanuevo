@@ -47,7 +47,13 @@ def vendedor_home(request):
     comprador_id_raw = (request.GET.get("comprador") or request.POST.get("comprador") or "").strip()
     comprador = None
     if comprador_id_raw.isdigit():
-        comprador = Comprador.objects.filter(pk=int(comprador_id_raw), habilitado=True).first()
+        comprador = (
+            Comprador.objects.filter(
+                pk=int(comprador_id_raw),
+                habilitado=True,
+                vendedor_asignado_id=vendedor.pk,
+            ).first()
+        )
 
     mis_clientes = list(
         Comprador.objects.filter(habilitado=True, vendedor_asignado_id=vendedor.pk)
@@ -58,13 +64,13 @@ def vendedor_home(request):
     candidatos = []
     if q and comprador is None:
         candidatos = (
-            Comprador.objects.filter(habilitado=True)
+            Comprador.objects.filter(habilitado=True, vendedor_asignado_id=vendedor.pk)
             .filter(apellido__icontains=q)
             .order_by("apellido", "nombre", "codigo")[:15]
         )
         if not candidatos:
             candidatos = (
-                Comprador.objects.filter(habilitado=True)
+                Comprador.objects.filter(habilitado=True, vendedor_asignado_id=vendedor.pk)
                 .filter(nombre__icontains=q)
                 .order_by("apellido", "nombre", "codigo")[:15]
             )
@@ -158,7 +164,9 @@ def vendedor_clientes_list(request):
         return HttpResponseForbidden("Este usuario no tiene perfil de vendedor.")
 
     q = (request.GET.get("q") or "").strip()
-    qs = Comprador.objects.all().order_by("apellido", "nombre", "codigo")
+    qs = Comprador.objects.filter(vendedor_asignado_id=vendedor.pk).order_by(
+        "apellido", "nombre", "codigo"
+    )
     if q:
         qs = qs.filter(Q(apellido__icontains=q) | Q(nombre__icontains=q) | Q(codigo__icontains=q))
     clientes = list(qs[:250])

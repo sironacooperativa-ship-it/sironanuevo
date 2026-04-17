@@ -20,13 +20,17 @@
       <form method="get" class="row g-2 align-items-end" novalidate>
         <div class="col-12">
           <label class="form-label">Mis clientes</label>
-          <select class="form-select" name="comprador" onchange="this.form.submit()">
+          <select class="form-select" name="comprador">
             <option value="">— Elegir —</option>
             {% for c in mis_clientes %}
               <option value="{{ c.pk }}" {% if comprador and comprador.pk == c.pk %}selected{% endif %}>{{ c.codigo }} — {{ c.apellido }}, {{ c.nombre }}</option>
             {% endfor %}
           </select>
-          <div class="form-text">Muestra clientes vigentes asignados a vos.</div>
+          {% if not mis_clientes %}
+            <div class="form-text text-warning">Todavía no tenés clientes asignados.</div>
+          {% else %}
+            <div class="form-text">Muestra clientes vigentes asignados a vos.</div>
+          {% endif %}
         </div>
         <div class="col-12 col-md-8">
           <label class="form-label">Cliente</label>
@@ -40,7 +44,7 @@
           />
         </div>
         <div class="col-12 col-md-4 d-grid">
-          <button class="btn btn-outline-primary" type="submit">Buscar</button>
+          <button class="btn btn-outline-primary" type="submit">Ver</button>
         </div>
       </form>
 
