@@ -13,6 +13,8 @@ from caja.models import MovimientoCaja
 from core.money_decimal import format_monto_ars
 from productos.models import Producto
 
+from presupuestos.models import Presupuesto
+
 from .models import Venta, VentaLinea
 
 
@@ -100,6 +102,20 @@ def eliminar_venta_admin(venta: Venta) -> None:
             tipo=Evento.Tipo.PEDIDO,
             titulo=f"Pago pendiente — Pedido #{v.pk}",
         ).delete()
+        # Si el pedido vino de un presupuesto, lo “desaprueba” para que no quede inconsistente.
+        try:
+            pr = v.presupuesto_origen
+        except Presupuesto.DoesNotExist:
+            pr = None
+        if pr is not None:
+            pr.estado = Presupuesto.Estado.ACTIVO
+            pr.venta = None
+            pr.aprobado_en = None
+            pr.aprobado_por = None
+            pr.save(update_fields=["estado", "venta", "aprobado_en", "aprobado_por"])
+
+        # Borra cualquier movimiento de caja asociado a la venta (incluye el pago si estaba vinculado).
+        MovimientoCaja.objects.filter(venta_id=vid).delete()
         if pm_id:
             MovimientoCaja.objects.filter(pk=pm_id).delete()
         v.delete()

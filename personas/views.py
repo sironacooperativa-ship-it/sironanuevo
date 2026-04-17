@@ -23,9 +23,9 @@ def _es_staff(user) -> bool:
 def vendedores_list(request):
     vendedores = (
         Vendedor.objects.annotate(
-            _nv=Count("ventas"),
-            _np=Count("presupuestos"),
-            _nc=Count("movimientocaja_set"),
+            nv=Count("ventas"),
+            np=Count("presupuestos"),
+            nc=Count("movimientocaja_set"),
         )
         .order_by("apellido", "nombre")
     )

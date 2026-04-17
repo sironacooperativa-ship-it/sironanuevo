@@ -1,6 +1,17 @@
 {% extends "base.html" %}
 {% load money %}
 {% block title %}Reportes{% endblock %}
+{% block extra_head %}
+  <style>
+    .report-kpi-value {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      line-height: 1.1;
+      font-size: clamp(1.25rem, 2.2vw, 2rem);
+      overflow-wrap: anywhere;
+    }
+  </style>
+{% endblock %}
 {% block content %}
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Reportes</h1>
@@ -79,7 +90,7 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <div class="text-muted small">Pedidos</div>
-          <div class="display-6">{{ kpis.pedidos }}</div>
+          <div class="report-kpi-value">{{ kpis.pedidos }}</div>
         </div>
       </div>
     </div>
@@ -87,7 +98,7 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <div class="text-muted small">Neto ventas</div>
-          <div class="display-6">{{ kpis.neto_total|ars }}</div>
+          <div class="report-kpi-value">{{ kpis.neto_total|ars }}</div>
         </div>
       </div>
     </div>
@@ -95,7 +106,7 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <div class="text-muted small">Comisión total</div>
-          <div class="display-6">{{ kpis.comision_total|ars }}</div>
+          <div class="report-kpi-value">{{ kpis.comision_total|ars }}</div>
         </div>
       </div>
     </div>
@@ -103,7 +114,7 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <div class="text-muted small">Compras (monto)</div>
-          <div class="display-6">{{ compras_kpis.compras_total|ars }}</div>
+          <div class="report-kpi-value">{{ compras_kpis.compras_total|ars }}</div>
         </div>
       </div>
     </div>
@@ -111,7 +122,7 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <div class="text-muted small">Margen estimado</div>
-          <div class="display-6">{{ margen|ars }}</div>
+          <div class="report-kpi-value">{{ margen|ars }}</div>
           <div class="small text-muted mt-1">ventas netas − compras</div>
         </div>
       </div>

@@ -65,12 +65,20 @@
           {% csrf_token %}
           <button type="submit" class="btn btn-success btn-sm">Aprobar</button>
         </form>
-        <form method="post" action="{% url 'presupuesto_eliminar' presupuesto.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar?');">
+      {% elif presupuesto.venta_id %}
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'venta_detalle' presupuesto.venta_id %}">Ver pedido #{{ presupuesto.venta_id }}</a>
+        <a class="btn btn-primary btn-sm" href="{% url 'venta_registrar_pago' presupuesto.venta_id %}">Registrar pago (pedido)</a>
+      {% endif %}
+      {% if presupuesto.estado == "ACT" or user.is_staff %}
+        <form
+          method="post"
+          action="{% url 'presupuesto_eliminar' presupuesto.pk %}"
+          class="d-inline"
+          onsubmit="return confirm('¿Eliminar el presupuesto #{{ presupuesto.pk }}? Si estaba aprobado, también se elimina el pedido y se revierte stock y caja.');"
+        >
           {% csrf_token %}
           <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar</button>
         </form>
-      {% elif presupuesto.venta_id %}
-        <a class="btn btn-primary btn-sm" href="{% url 'venta_registrar_pago' presupuesto.venta_id %}">Registrar pago (pedido)</a>
       {% endif %}
       <button type="button" class="btn btn-outline-dark btn-sm" onclick="window.print()">Imprimir</button>
       <a class="btn btn-outline-danger btn-sm" href="{% url 'presupuesto_detalle' presupuesto.pk %}?export=pdf">Exportar PDF</a>

@@ -57,7 +57,7 @@
                     {% endif %}
                   </form>
                   {% if user.is_staff %}
-                    {% if v._nv or v._np or v._nc %}
+                    {% if v.nv or v.np or v.nc %}
                       <a
                         class="btn btn-sm btn-outline-danger"
                         href="{% url 'vendedor_eliminar_admin' v.pk %}"
