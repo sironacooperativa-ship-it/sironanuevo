@@ -25,7 +25,7 @@ def vendedores_list(request):
         Vendedor.objects.annotate(
             nv=Count("ventas"),
             np=Count("presupuestos"),
-            nc=Count("movimientocaja_set"),
+            nc=Count("movimientocaja"),
         )
         .order_by("apellido", "nombre")
     )

@@ -390,7 +390,14 @@ def presupuesto_eliminar(request, pk: int):
     nid = presupuesto.pk
     try:
         with transaction.atomic():
-            pr = Presupuesto.objects.select_for_update().get(pk=presupuesto.pk)
+            # En Postgres, `FOR UPDATE` puede fallar si la query incorpora LEFT OUTER JOIN
+            # (p. ej. por relaciones nulas). Lockeamos solo la tabla de Presupuesto.
+            qs = Presupuesto.objects
+            try:
+                qs = qs.select_for_update(of=("self",))
+            except TypeError:
+                qs = qs.select_for_update()
+            pr = qs.get(pk=presupuesto.pk)
             if pr.venta_id:
                 eliminar_venta_admin(pr.venta)
             pr.delete()
