@@ -182,13 +182,24 @@ def login_view(request):
             if next_url:
                 return redirect(next_url)
             try:
-                v = getattr(user, "vendedor_perfil", None)
                 if not user.is_staff:
                     solo_vendedor = bool(
                         getattr(getattr(user, "perfil_acceso", None), "solo_vendedor", False)
                     )
                     entrar = (request.POST.get("entrar_como_vendedor") or "0") == "1"
-                    # Guardar modo en sesión (para menú/layout)
+                    # Si corresponde, asegurar perfil Vendedor (usuarios viejos o creados sin vínculo)
+                    v = getattr(user, "vendedor_perfil", None)
+                    if (solo_vendedor or entrar) and v is None:
+                        nombre = (user.first_name or "").strip() or user.username
+                        apellido = (user.last_name or "").strip() or "—"
+                        v = Vendedor.objects.create(
+                            nombre=nombre,
+                            apellido=apellido,
+                            usuario=user,
+                            habilitado=True,
+                        )
+
+                    # Guardar modo en sesión (para menú/layout). Si entró como vendedor, lo activamos.
                     modo = bool(solo_vendedor or (entrar and v is not None))
                     request.session["modo_vendedor"] = modo
 
@@ -196,9 +207,8 @@ def login_view(request):
                     if solo_vendedor:
                         return redirect("vendedor_home")
                     # Usuario con acceso completo: opcionalmente puede entrar al portal si tiene perfil vendedor.
-                    if v is not None:
-                        if entrar:
-                            return redirect("vendedor_home")
+                    if entrar and v is not None:
+                        return redirect("vendedor_home")
             except Exception:
                 pass
             return redirect("home")
