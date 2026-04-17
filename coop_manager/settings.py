@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "presupuestos",
     "reportes",
     "administrador",
+    "vendedor_portal",
 ]
 
 MIDDLEWARE = [
@@ -39,6 +40,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "core.middleware.VendedorAccessMiddleware",
     "core.middleware.IdleSessionTimeoutMiddleware",
     "administrador.middleware.RegistroActividadMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",

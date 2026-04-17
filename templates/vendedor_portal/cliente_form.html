@@ -1,14 +1,14 @@
 {% extends "base.html" %}
-{% block title %}{% if modo == "nuevo" %}Nuevo vendedor{% else %}Editar vendedor{% endif %}{% endblock %}
+{% block title %}{% if modo == "nuevo" %}Nuevo cliente{% else %}Editar cliente{% endif %}{% endblock %}
 {% block content %}
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <div>
-      <h1 class="h3 mb-1">{% if modo == "nuevo" %}Nuevo vendedor{% else %}Editar vendedor{% endif %}</h1>
-      {% if vendedor %}
-        <div class="text-muted small">Código: <code>{{ vendedor.codigo }}</code></div>
+      <h1 class="h4 mb-1">{% if modo == "nuevo" %}Nuevo cliente{% else %}Editar cliente{% endif %}</h1>
+      {% if cliente %}
+        <div class="text-muted small">Código: <code>{{ cliente.codigo }}</code></div>
       {% endif %}
     </div>
-    <a class="btn btn-outline-secondary" href="{% url 'vendedores_list' %}">Volver</a>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor_clientes_list' %}">Volver</a>
   </div>
 
   <div class="card shadow-sm">
@@ -46,23 +46,6 @@
             {{ form.direccion }}
             {% if form.direccion.errors %}<div class="text-danger small">{{ form.direccion.errors }}</div>{% endif %}
           </div>
-          <div class="col-12 col-md-4">
-            <label class="form-label">Comisión (%)</label>
-            {{ form.comision_porcentaje }}
-            {% if form.comision_porcentaje.errors %}<div class="text-danger small">{{ form.comision_porcentaje.errors }}</div>{% endif %}
-          </div>
-          <div class="col-12 col-md-4">
-            <label class="form-label">Acceso</label>
-            {{ form.acceso }}
-            {% if form.acceso.errors %}<div class="text-danger small">{{ form.acceso.errors }}</div>{% endif %}
-            <div class="form-text">Define si entra al Portal Vendedor, al sistema completo, o a ambos.</div>
-          </div>
-          <div class="col-12 col-md-8">
-            <label class="form-label">Usuario (para acceso desde celular) <span class="text-muted fw-normal">(opcional)</span></label>
-            {{ form.usuario }}
-            {% if form.usuario.errors %}<div class="text-danger small">{{ form.usuario.errors }}</div>{% endif %}
-            <div class="form-text">Si asignás un usuario, al iniciar sesión entra al Portal Vendedor.</div>
-          </div>
           <div class="col-12">
             <div class="form-check">
               {{ form.habilitado }}
@@ -73,7 +56,7 @@
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-4">
-          <a class="btn btn-outline-secondary" href="{% url 'vendedores_list' %}">Cancelar</a>
+          <a class="btn btn-outline-secondary" href="{% url 'vendedor_clientes_list' %}">Cancelar</a>
           <button class="btn btn-primary" type="submit">Guardar</button>
         </div>
       </form>

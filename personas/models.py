@@ -56,6 +56,24 @@ class PersonaBase(models.Model):
 
 
 class Vendedor(PersonaBase):
+    class Acceso(models.TextChoices):
+        AMBOS = "BOTH", "Completo y vendedor"
+        SOLO_VENDEDOR = "VEND", "Solo vendedor (reducido)"
+        SOLO_COMPLETO = "FULL", "Solo completo"
+
+    usuario = models.OneToOneField(
+        "auth.User",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="vendedor_perfil",
+    )
+    acceso = models.CharField(
+        max_length=4,
+        choices=Acceso.choices,
+        default=Acceso.AMBOS,
+        db_index=True,
+    )
     comision_porcentaje = models.DecimalField(
         max_digits=6, decimal_places=2, default=Decimal("0.00")
     )

@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}{% if modo == "nuevo" %}Nuevo comprador{% else %}Editar comprador{% endif %}{% endblock %}
+{% block title %}{% if modo == "nuevo" %}Nuevo cliente{% else %}Editar cliente{% endif %}{% endblock %}
 {% block content %}
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <div>
-      <h1 class="h3 mb-1">{% if modo == "nuevo" %}Nuevo comprador{% else %}Editar comprador{% endif %}</h1>
+      <h1 class="h3 mb-1">{% if modo == "nuevo" %}Nuevo cliente{% else %}Editar cliente{% endif %}</h1>
       {% if comprador %}
         <div class="text-muted small">Código: <code>{{ comprador.codigo }}</code></div>
       {% endif %}

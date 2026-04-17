@@ -20,6 +20,7 @@ from productos.models import Producto
 from ventas.models import Venta
 
 from administrador.models import RegistroActividad
+from personas.models import Vendedor
 
 
 def _safe_relative_next(path: str) -> str:
@@ -149,6 +150,10 @@ def login_view(request):
     idle_timeout = request.GET.get("idle") == "1" or request.POST.get("idle") == "1"
 
     error = None
+    # El checkbox se muestra en el login; si el usuario no es vendedor o no aplica, se ignora.
+    vendedor_option_visible = True
+    vendedor_option_checked = False
+    vendedor_option_locked = False
     if request.method == "POST":
         next_url = _safe_relative_next(request.POST.get("next") or "") or next_url
         username = request.POST.get("username", "").strip()
@@ -158,13 +163,36 @@ def login_view(request):
             login(request, user)
             if next_url:
                 return redirect(next_url)
+            try:
+                v = getattr(user, "vendedor_perfil", None)
+                if v is not None and not user.is_staff:
+                    # Política:
+                    # - SOLO_VENDEDOR: siempre portal
+                    # - SOLO_COMPLETO: siempre home
+                    # - AMBOS: depende del checkbox del login
+                    if getattr(v, "acceso", None) == Vendedor.Acceso.SOLO_VENDEDOR:
+                        return redirect("vendedor_home")
+                    if getattr(v, "acceso", None) == Vendedor.Acceso.SOLO_COMPLETO:
+                        return redirect("home")
+                    entrar = (request.POST.get("entrar_como_vendedor") or "0") == "1"
+                    if entrar:
+                        return redirect("vendedor_home")
+            except Exception:
+                pass
             return redirect("home")
         error = "Usuario o contraseña incorrectos."
 
     return render(
         request,
         "core/login.html",
-        {"error": error, "idle_timeout": idle_timeout, "next": next_url},
+        {
+            "error": error,
+            "idle_timeout": idle_timeout,
+            "next": next_url,
+            "vendedor_option_visible": vendedor_option_visible,
+            "vendedor_option_checked": vendedor_option_checked,
+            "vendedor_option_locked": vendedor_option_locked,
+        },
     )
 
 

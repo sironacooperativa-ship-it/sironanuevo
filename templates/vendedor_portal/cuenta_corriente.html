@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Cuenta corriente{% endblock %}
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+      <h1 class="h4 mb-1">Cuenta corriente</h1>
+      <div class="text-muted small">Pedidos y pagos asociados a tu usuario.</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor_home' %}">Volver</a>
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'vendedor_listas' %}">Listas de precio</a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <h2 class="h6 mb-2">Pedidos (últimos 250)</h2>
+      {% if ventas %}
+        <div class="list-group">
+          {% for v in ventas %}
+            <div class="list-group-item">
+              <div class="d-flex justify-content-between align-items-center gap-2">
+                <div class="fw-semibold">Pedido #{{ v.pk }}</div>
+                {% if v.estado == "PAG" %}
+                  <span class="badge text-bg-success">Pagado</span>
+                {% else %}
+                  <span class="badge text-bg-warning">Impago</span>
+                {% endif %}
+              </div>
+              <div class="text-muted small">
+                {% if v.comprador_id %}Cliente: {{ v.comprador }} · {% endif %}
+                {% if v.fecha_vencimiento_pago %}Vence: {{ v.fecha_vencimiento_pago|date:"d/m/Y" }} · {% endif %}
+                Neto: $ {{ v.neto }}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-muted small">No hay pedidos para mostrar.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h2 class="h6 mb-2">Pagos / movimientos (últimos 250)</h2>
+      {% if movimientos %}
+        <div class="list-group">
+          {% for m in movimientos %}
+            <div class="list-group-item">
+              <div class="d-flex justify-content-between align-items-center gap-2">
+                <div class="fw-semibold">{{ m.get_tipo_display }} · $ {{ m.monto }}</div>
+                <div class="text-muted small">{{ m.fecha|date:"d/m/Y" }}</div>
+              </div>
+              <div class="text-muted small">
+                {{ m.operacion }}
+                {% if m.venta_id %} · Pedido #{{ m.venta_id }}{% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-muted small">No hay movimientos para mostrar.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+

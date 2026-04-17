@@ -46,6 +46,26 @@
                 required
               />
             </div>
+            {% if vendedor_option_visible %}
+              <div class="form-check mb-3">
+                <input type="hidden" name="entrar_como_vendedor" value="0" />
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  name="entrar_como_vendedor"
+                  id="id_entrar_como_vendedor"
+                  value="1"
+                  {% if vendedor_option_checked %}checked{% endif %}
+                  {% if vendedor_option_locked %}disabled{% endif %}
+                />
+                <label class="form-check-label" for="id_entrar_como_vendedor">
+                  Entrar como vendedor (modo reducido)
+                </label>
+                {% if vendedor_option_locked %}
+                  <div class="form-text">Tu acceso está configurado como “solo vendedor”.</div>
+                {% endif %}
+              </div>
+            {% endif %}
             <button class="btn btn-primary w-100" type="submit">Entrar</button>
           </form>
         </div>

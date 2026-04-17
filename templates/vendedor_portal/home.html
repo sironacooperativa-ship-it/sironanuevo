@@ -1,0 +1,440 @@
+{% extends "base.html" %}
+{% block title %}Portal Vendedor{% endblock %}
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+      <h1 class="h4 mb-1">Portal Vendedor</h1>
+      <div class="text-muted small">{{ vendedor.codigo }} — {{ vendedor.apellido }}, {{ vendedor.nombre }}</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'vendedor_clientes_list' %}">Clientes</a>
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'vendedor_listas' %}">Listas de precio</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor_cuenta_corriente' %}">Cuenta corriente</a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end" novalidate>
+        <div class="col-12 col-md-8">
+          <label class="form-label">Cliente</label>
+          <input
+            type="text"
+            name="cliente"
+            class="form-control"
+            placeholder="Buscar por apellido o nombre…"
+            value="{{ cliente_busqueda }}"
+            autocomplete="off"
+          />
+        </div>
+        <div class="col-12 col-md-4 d-grid">
+          <button class="btn btn-outline-primary" type="submit">Buscar</button>
+        </div>
+      </form>
+
+      {% if candidatos %}
+        <div class="mt-3">
+          <div class="text-muted small mb-2">Resultados</div>
+          <div class="list-group">
+            {% for c in candidatos %}
+              <a class="list-group-item list-group-item-action" href="{% url 'vendedor_home' %}?comprador={{ c.pk }}">
+                <div class="d-flex justify-content-between align-items-center gap-2">
+                  <div class="fw-semibold">{{ c.apellido }}, {{ c.nombre }}</div>
+                  <span class="text-muted small">{{ c.codigo }}</span>
+                </div>
+                {% if c.telefono %}<div class="text-muted small">{{ c.telefono }}</div>{% endif %}
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      {% if comprador %}
+        <div class="mt-3 pt-3 border-top">
+          <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+            <div>
+              <div class="text-muted small">Cliente seleccionado</div>
+              <div class="fw-semibold">{{ comprador.apellido }}, {{ comprador.nombre }}</div>
+              <div class="text-muted small">{{ comprador.codigo }}</div>
+            </div>
+            <a class="btn btn-sm btn-outline-secondary" href="{% url 'vendedor_home' %}">Cambiar</a>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if comprador %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <h2 class="h6 mb-2">Pedidos impagos</h2>
+        {% if impagos %}
+          <div class="list-group">
+            {% for v in impagos %}
+              <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center gap-2">
+                  <div class="fw-semibold">Pedido #{{ v.pk }}</div>
+                  <span class="badge text-bg-warning">Impago</span>
+                </div>
+                <div class="text-muted small">
+                  {% if v.fecha_vencimiento_pago %}
+                    Vence: {{ v.fecha_vencimiento_pago|date:"d/m/Y" }}
+                  {% else %}
+                    Sin vencimiento
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-muted small">No hay pedidos impagos para este cliente.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {{ productos_catalogo|json_script:"presupuestos-productos" }}
+    {{ lineas_iniciales|json_script:"presupuestos-lineas-iniciales" }}
+
+    <form method="post" novalidate id="presupuestoForm">
+      {% csrf_token %}
+      <input type="hidden" name="comprador" value="{{ comprador.pk }}" />
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-body row g-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label">Fecha límite de pago <span class="text-muted fw-normal">(opcional)</span></label>
+            <input
+              type="date"
+              name="fecha_vencimiento_pago"
+              class="form-control"
+              value="{% if repoblar %}{{ repoblar.fecha_vencimiento_pago }}{% endif %}"
+            />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Comisión (%)</label>
+            <input
+              type="text"
+              name="comision_porcentaje"
+              class="form-control"
+              inputmode="decimal"
+              value="{% if repoblar %}{{ repoblar.comision_porcentaje }}{% else %}4.00{% endif %}"
+            />
+            <div class="form-text">Se aplica al aprobar: descuenta comisión del ingreso en caja (si aplica).</div>
+          </div>
+          <div class="col-12">
+            <div class="form-check">
+              <input type="hidden" name="aplica_comision" value="0" />
+              <input
+                class="form-check-input"
+                type="checkbox"
+                name="aplica_comision"
+                id="id_aplica_comision"
+                value="1"
+                {% if repoblar %}{% if repoblar.aplica_comision %}checked{% endif %}{% else %}checked{% endif %}
+              />
+              <label class="form-check-label" for="id_aplica_comision">Aplicar comisión</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            <h2 class="h6 mb-0">Armar presupuesto</h2>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddLinea">+ Agregar</button>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle" id="tablaLineas">
+              <thead class="table-light">
+                <tr>
+                  <th>Producto</th>
+                  <th class="text-end" style="width: 6.5rem">Cant.</th>
+                  <th class="text-end" style="width: 8rem">Precio</th>
+                  <th class="text-end" style="width: 8rem">Subtotal</th>
+                  <th style="width: 3rem"></th>
+                </tr>
+              </thead>
+              <tbody id="lineasBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-body row g-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label">Descuento ($)</label>
+            <input
+              type="text"
+              name="descuento_monto"
+              class="form-control"
+              value="{% if repoblar %}{{ repoblar.descuento_monto }}{% else %}0{% endif %}"
+              inputmode="decimal"
+              id="id_descuento_monto"
+            />
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="border rounded p-3 bg-light small">
+              <div class="d-flex justify-content-between"><span>Subtotal</span><span id="sumSubtotal">$ 0,00</span></div>
+              <div class="d-flex justify-content-between"><span>Descuento</span><span id="sumDesc">$ 0,00</span></div>
+              <div class="d-flex justify-content-between fw-semibold"><span>Neto</span><span id="sumNeto">$ 0,00</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-grid d-md-flex justify-content-md-end gap-2">
+        <button type="submit" class="btn btn-primary">Guardar presupuesto</button>
+      </div>
+    </form>
+
+    <script>
+      (function () {
+        const el = document.getElementById("presupuestos-productos");
+        const productos = el ? JSON.parse(el.textContent) : [];
+        const byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
+        const iniEl = document.getElementById("presupuestos-lineas-iniciales");
+        const iniciales = iniEl ? JSON.parse(iniEl.textContent) : [];
+
+        const tbody = document.getElementById("lineasBody");
+        const btnAdd = document.getElementById("btnAddLinea");
+        const inpDesc = document.getElementById("id_descuento_monto");
+        const sumSubtotal = document.getElementById("sumSubtotal");
+        const sumDesc = document.getElementById("sumDesc");
+        const sumNeto = document.getElementById("sumNeto");
+
+        const fmtMoney =
+          typeof formatMontoArs === "function"
+            ? formatMontoArs
+            : function (n) {
+                return (
+                  "$ " +
+                  Number(n).toLocaleString("es-AR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })
+                );
+              };
+
+        function parseMontoArsInput(s) {
+          let t = String(s || "").trim();
+          if (!t) return 0;
+          t = t.replace(/\$/g, "").replace(/\u00a0/g, " ").replace(/\s/g, "");
+          if (!t) return 0;
+          let neg = t.startsWith("-");
+          if (neg) t = t.slice(1).trim();
+          if (!t) return 0;
+          if ((t.match(/,/g) || []).length > 1) return 0;
+          const sign = neg ? "-" : "";
+          if (t.includes(",")) {
+            const i = t.lastIndexOf(",");
+            let head = t.slice(0, i).replace(/\./g, "");
+            const tail = t.slice(i + 1);
+            if (!tail || !/^\d+$/.test(tail)) return 0;
+            if (!head) head = "0";
+            t = sign + head + "." + tail;
+          } else {
+            const parts = t.split(".");
+            if (parts.length === 1) {
+              t = sign + parts[0];
+            } else if (parts.length === 2 && parts[1].length <= 2 && /^\d+$/.test(parts[1])) {
+              t = sign + parts[0] + "." + parts[1];
+            } else {
+              t = sign + parts.join("");
+            }
+          }
+          const v = parseFloat(t);
+          return Number.isFinite(v) ? v : 0;
+        }
+
+        function precioUnitarioEfectivo(row) {
+          const sel = row.querySelector('select[name="linea_producto"]');
+          const inpPu = row.querySelector('input[name="linea_precio_unitario"]');
+          const pid = sel.value;
+          const p = pid ? byId[pid] : null;
+          if (!p) return 0;
+          const raw = inpPu && inpPu.value ? String(inpPu.value).trim() : "";
+          if (raw !== "") {
+            const v = parseMontoArsInput(raw);
+            if (v > 0) return v;
+          }
+          return parseFloat(p.precio);
+        }
+
+        function rowSubtotal(row) {
+          const sel = row.querySelector('select[name="linea_producto"]');
+          const q = row.querySelector('input[name="linea_cantidad"]');
+          const pid = sel.value;
+          const qty = parseInt(q.value, 10) || 0;
+          if (!pid || qty <= 0) return 0;
+          const p = byId[pid];
+          if (!p) return 0;
+          return qty * precioUnitarioEfectivo(row);
+        }
+
+        function refreshRow(row) {
+          const sel = row.querySelector('select[name="linea_producto"]');
+          const pid = sel.value;
+          const p = pid ? byId[pid] : null;
+          const subEl = row.querySelector(".js-subtotal");
+          const q = parseInt(row.querySelector('input[name="linea_cantidad"]').value, 10) || 0;
+          if (p && q > 0) {
+            subEl.textContent = fmtMoney(q * precioUnitarioEfectivo(row));
+          } else {
+            subEl.textContent = "—";
+          }
+        }
+
+        function totals() {
+          let sub = 0;
+          tbody.querySelectorAll("tr").forEach((tr) => {
+            sub += rowSubtotal(tr);
+          });
+          const desc = Math.max(0, parseMontoArsInput(inpDesc.value));
+          const neto = Math.max(0, sub - desc);
+          sumSubtotal.textContent = fmtMoney(sub);
+          sumDesc.textContent = fmtMoney(desc);
+          sumNeto.textContent = fmtMoney(neto);
+        }
+
+        function buildSelect(tr) {
+          const sel = document.createElement("select");
+          sel.name = "linea_producto";
+          sel.className = "form-select form-select-sm";
+          sel.innerHTML =
+            '<option value="">— Producto —</option>' +
+            productos
+              .map(
+                (p) =>
+                  `<option value="${p.id}">${p.codigo} — ${p.descripcion} (stock ${p.stock})</option>`
+              )
+              .join("");
+          sel.dataset.prevEmpty = sel.value ? "0" : "1";
+          sel.addEventListener("change", () => {
+            const wasEmpty = sel.dataset.prevEmpty === "1";
+            const nowEmpty = !sel.value;
+            sel.dataset.prevEmpty = nowEmpty ? "1" : "0";
+            const qIn = tr.querySelector('input[name="linea_cantidad"]');
+            const inpPu = tr.querySelector('input[name="linea_precio_unitario"]');
+            const p = sel.value ? byId[sel.value] : null;
+            if (p && qIn && !String(qIn.value || "").trim()) {
+              qIn.value = "1";
+            }
+            if (inpPu) {
+              if (p) {
+                inpPu.value = fmtMoney(parseFloat(p.precio));
+              } else {
+                inpPu.value = "";
+              }
+            }
+            refreshRow(tr);
+            totals();
+            if (wasEmpty && !nowEmpty && tr === tbody.lastElementChild) {
+              addRow();
+            }
+          });
+          return sel;
+        }
+
+        function addRow() {
+          const tr = document.createElement("tr");
+          tr.innerHTML =
+            '<td></td>' +
+            '<td class="text-end"><input type="number" name="linea_cantidad" class="form-control form-control-sm text-end" min="1" step="1" value="" placeholder="1" title="Cantidad" /></td>' +
+            '<td class="text-end"><input type="text" name="linea_precio_unitario" class="form-control form-control-sm text-end" inputmode="decimal" placeholder="Lista" autocomplete="off" title="Vacío = precio de lista del producto" /></td>' +
+            '<td class="text-end fw-semibold js-subtotal">—</td>' +
+            '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger py-0 js-remove" title="Quitar">×</button></td>';
+          tr.children[0].appendChild(buildSelect(tr));
+          tr.querySelector('input[name="linea_cantidad"]').addEventListener("input", () => {
+            refreshRow(tr);
+            totals();
+          });
+          tr.querySelector('input[name="linea_precio_unitario"]').addEventListener("input", () => {
+            refreshRow(tr);
+            totals();
+          });
+          tr.querySelector(".js-remove").addEventListener("click", () => {
+            tr.remove();
+            totals();
+          });
+          tbody.appendChild(tr);
+          refreshRow(tr);
+          totals();
+        }
+
+        if (btnAdd) btnAdd.addEventListener("click", addRow);
+        if (inpDesc) inpDesc.addEventListener("input", totals);
+
+        document.getElementById("presupuestoForm").addEventListener("submit", function () {
+          tbody.querySelectorAll("tr").forEach((tr) => {
+            const sel = tr.querySelector('select[name="linea_producto"]');
+            const qIn = tr.querySelector('input[name="linea_cantidad"]');
+            const puIn = tr.querySelector('input[name="linea_precio_unitario"]');
+            const noProd = !sel || !String(sel.value || "").trim();
+            const noQty = !qIn || !String(qIn.value || "").trim();
+            const noPu = !puIn || !String(puIn.value || "").trim();
+            if (noProd && noQty && noPu) {
+              tr.remove();
+            }
+          });
+        });
+
+        if (productos.length === 0) {
+          if (btnAdd) btnAdd.disabled = true;
+          tbody.innerHTML =
+            '<tr><td colspan="5" class="text-muted text-center py-3">No hay productos habilitados.</td></tr>';
+        } else if (iniciales.length > 0) {
+          iniciales.forEach((L) => {
+            addRow();
+            const tr = tbody.lastElementChild;
+            const sel = tr.querySelector('select[name="linea_producto"]');
+            const qIn = tr.querySelector('input[name="linea_cantidad"]');
+            const puIn = tr.querySelector('input[name="linea_precio_unitario"]');
+            const pid =
+              L.producto_id !== undefined && L.producto_id !== null && String(L.producto_id).trim() !== ""
+                ? String(L.producto_id)
+                : "";
+            if (pid && sel.querySelector(`option[value="${pid}"]`)) {
+              sel.value = pid;
+              sel.dataset.prevEmpty = "0";
+            } else {
+              sel.value = "";
+              sel.dataset.prevEmpty = pid ? "0" : "1";
+            }
+            const rawQty =
+              L.cantidad_raw !== undefined && L.cantidad_raw !== null
+                ? String(L.cantidad_raw)
+                : L.cantidad !== undefined && L.cantidad !== null
+                  ? String(L.cantidad)
+                  : "";
+            qIn.value = rawQty;
+            if (puIn && L.precio_unitario != null && String(L.precio_unitario).trim() !== "") {
+              const rawP = String(L.precio_unitario).trim();
+              const n = parseFloat(rawP.replace(",", "."));
+              if (Number.isFinite(n)) {
+                puIn.value = fmtMoney(n);
+              } else {
+                puIn.value = rawP;
+              }
+            }
+            refreshRow(tr);
+          });
+          const last = tbody.lastElementChild;
+          if (last) {
+            const s = last.querySelector('select[name="linea_producto"]');
+            if (s && s.value) {
+              addRow();
+            }
+          }
+          totals();
+        } else {
+          addRow();
+        }
+      })();
+    </script>
+  {% else %}
+    <div class="text-muted small">Buscá un cliente para ver impagos y armar un presupuesto.</div>
+  {% endif %}
+{% endblock %}
+
