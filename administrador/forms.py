@@ -46,12 +46,21 @@ class UsuarioCrearForm(forms.ModelForm):
             if solo_vendedor and not hasattr(user, "vendedor_perfil"):
                 nombre = (user.first_name or "").strip() or user.username
                 apellido = (user.last_name or "").strip() or "—"
-                Vendedor.objects.create(
-                    nombre=nombre,
-                    apellido=apellido,
-                    usuario=user,
-                    habilitado=True,
-                )
+                existente = Vendedor.objects.filter(
+                    usuario__isnull=True,
+                    nombre__iexact=nombre,
+                    apellido__iexact=apellido,
+                ).first()
+                if existente:
+                    existente.usuario = user
+                    existente.save(update_fields=["usuario"])
+                else:
+                    Vendedor.objects.create(
+                        nombre=nombre,
+                        apellido=apellido,
+                        usuario=user,
+                        habilitado=True,
+                    )
         return user
 
 
@@ -85,12 +94,21 @@ class UsuarioEditarForm(forms.ModelForm):
             if solo_vendedor and not hasattr(user, "vendedor_perfil"):
                 nombre = (user.first_name or "").strip() or user.username
                 apellido = (user.last_name or "").strip() or "—"
-                Vendedor.objects.create(
-                    nombre=nombre,
-                    apellido=apellido,
-                    usuario=user,
-                    habilitado=True,
-                )
+                existente = Vendedor.objects.filter(
+                    usuario__isnull=True,
+                    nombre__iexact=nombre,
+                    apellido__iexact=apellido,
+                ).first()
+                if existente:
+                    existente.usuario = user
+                    existente.save(update_fields=["usuario"])
+                else:
+                    Vendedor.objects.create(
+                        nombre=nombre,
+                        apellido=apellido,
+                        usuario=user,
+                        habilitado=True,
+                    )
         return user
 
 

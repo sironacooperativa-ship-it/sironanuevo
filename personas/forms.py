@@ -27,6 +27,29 @@ class VendedorForm(_BasePersonaForm):
             ),
         }
 
+    def clean(self):
+        cd = super().clean()
+        # Evitar duplicados al crear
+        if self.instance and self.instance.pk:
+            return cd
+
+        dni = (cd.get("dni") or "").strip()
+        nombre = (cd.get("nombre") or "").strip()
+        apellido = (cd.get("apellido") or "").strip()
+
+        if dni:
+            if Vendedor.objects.filter(dni__iexact=dni).exists():
+                self.add_error("dni", "Ya existe un vendedor cargado con ese DNI.")
+                raise forms.ValidationError("Ya existe un vendedor con ese DNI.")
+        else:
+            if nombre and apellido and Vendedor.objects.filter(
+                nombre__iexact=nombre, apellido__iexact=apellido
+            ).exists():
+                raise forms.ValidationError(
+                    "Ya existe un vendedor cargado con ese nombre y apellido. Si es la misma persona, editá el existente."
+                )
+        return cd
+
 
 class ProveedorForm(_BasePersonaForm):
     class Meta(_BasePersonaForm.Meta):
@@ -48,4 +71,27 @@ class CompradorForm(_BasePersonaForm):
         self.fields["vendedor_asignado"].queryset = Vendedor.objects.filter(habilitado=True).order_by(
             "apellido", "nombre", "codigo"
         )
+
+    def clean(self):
+        cd = super().clean()
+        # Evitar duplicados al crear
+        if self.instance and self.instance.pk:
+            return cd
+
+        dni = (cd.get("dni") or "").strip()
+        nombre = (cd.get("nombre") or "").strip()
+        apellido = (cd.get("apellido") or "").strip()
+
+        if dni:
+            if Comprador.objects.filter(dni__iexact=dni).exists():
+                self.add_error("dni", "Ya existe un cliente cargado con ese DNI.")
+                raise forms.ValidationError("Ya existe un cliente con ese DNI.")
+        else:
+            if nombre and apellido and Comprador.objects.filter(
+                nombre__iexact=nombre, apellido__iexact=apellido
+            ).exists():
+                raise forms.ValidationError(
+                    "Ya existe un cliente cargado con ese nombre y apellido. Si es la misma persona, editá el existente."
+                )
+        return cd
 
