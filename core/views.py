@@ -41,6 +41,45 @@ def _safe_relative_next(path: str) -> str:
 
 @login_required
 def home(request):
+    # Si el usuario está en modo vendedor, mostrar un inicio reducido con datos propios.
+    if not request.user.is_staff and (
+        bool(request.session.get("modo_vendedor", False))
+        or bool(getattr(getattr(request.user, "perfil_acceso", None), "solo_vendedor", False))
+    ):
+        v = getattr(request.user, "vendedor_perfil", None)
+        if v is not None:
+            today = timezone.localdate()
+            ult_30 = today - timedelta(days=29)
+
+            neto_expr = ExpressionWrapper(
+                F("subtotal_lineas") - F("descuento_monto"),
+                output_field=DecimalField(max_digits=14, decimal_places=2),
+            )
+            neto_nonneg = Case(
+                When(subtotal_lineas__gte=F("descuento_monto"), then=neto_expr),
+                default=Value(Decimal("0.00")),
+                output_field=DecimalField(max_digits=14, decimal_places=2),
+            )
+            ventas_30 = Venta.objects.filter(vendedor_id=v.pk, creado_en__date__gte=ult_30)
+            kpis = ventas_30.aggregate(
+                pedidos=Count("id"),
+                neto_total=Coalesce(Sum(neto_nonneg), Value(Decimal("0.00"))),
+                pagadas=Count("id", filter=Q(estado=Venta.Estado.PAGADA)),
+                pendientes=Count("id", filter=Q(estado=Venta.Estado.PENDIENTE)),
+            )
+            kpis["neto_total"] = q2(kpis["neto_total"])
+
+            pendientes = (
+                Venta.objects.filter(vendedor_id=v.pk, estado=Venta.Estado.PENDIENTE)
+                .select_related("comprador")
+                .order_by("fecha_vencimiento_pago", "id")[:25]
+            )
+            return render(
+                request,
+                "core/home_vendedor.html",
+                {"vendedor": v, "kpis_ventas": kpis, "ventas_pendientes": pendientes, "hoy": today},
+            )
+
     today = timezone.localdate()
     ult_30 = today - timedelta(days=29)
     prox_7 = today + timedelta(days=7)
