@@ -4,17 +4,20 @@ from itertools import zip_longest
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
+from django.db.models import F
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 
 from core.export_utils import parse_export
-from core.money_decimal import COMISION_PORCENTAJE_DEFECTO, parse_decimal_from_input
+from core.money_decimal import COMISION_PORCENTAJE_DEFECTO, format_monto_ars, parse_decimal_from_input
 from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_param, parse_fecha_dashboard, rango_periodo
 from core.repoblar_lineas import repoblar_campos_cabecera_desde_post
 from personas.models import Comprador, Vendedor
 from productos.models import Producto
 from ventas.servicios import crear_venta_confirmada, eliminar_venta_admin
+from ventas.models import Venta, VentaLinea
+from calendario.models import Evento
 
 
 def _es_staff(user) -> bool:
@@ -96,8 +99,13 @@ def _validar_lineas_post(request):
         Vendedor.objects.get(pk=int(vid), habilitado=True)
     except (ValueError, Vendedor.DoesNotExist):
         return "El vendedor seleccionado no existe o no está habilitado.", None, None, None
-    # No se muestra en el presupuesto; al aprobar pasa a Ventas con este % (editable allí antes de cobrar).
-    comision_pct = COMISION_PORCENTAJE_DEFECTO
+    raw_com = (request.POST.get("comision_porcentaje") or "").strip()
+    try:
+        comision_pct = parse_decimal_from_input(raw_com) if raw_com else COMISION_PORCENTAJE_DEFECTO
+    except InvalidOperation:
+        comision_pct = None
+    if comision_pct is None or comision_pct < 0:
+        return "El porcentaje de comisión no es válido.", None, None, None
 
     line_specs = []
     subtotal = Decimal("0.00")
@@ -153,7 +161,6 @@ def _validar_lineas_post(request):
     if descuento > subtotal:
         return "El descuento no puede superar el subtotal de las líneas.", None, None, None
 
-    # En presupuesto no se muestra en pantalla; por defecto aplica (igual que antes con el checkbox activado).
     aplica_comision = request.POST.get("aplica_comision", "1") == "1"
     return None, line_specs, subtotal, (
         int(vid),
@@ -321,8 +328,9 @@ def presupuesto_nuevo(request):
 @require_http_methods(["GET", "POST"])
 def presupuesto_editar(request, pk: int):
     presupuesto = get_object_or_404(Presupuesto, pk=pk)
-    if presupuesto.estado != Presupuesto.Estado.ACTIVO:
-        messages.warning(request, "Solo se pueden editar presupuestos pendientes de aprobar.")
+    es_admin = _es_staff(request.user)
+    if presupuesto.estado != Presupuesto.Estado.ACTIVO and not es_admin:
+        messages.warning(request, "Solo administradores pueden editar presupuestos aprobados.")
         return redirect("presupuesto_lista")
 
     vendedores = Vendedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
@@ -353,6 +361,86 @@ def presupuesto_editar(request, pk: int):
                     comprador_id,
                     aplica_comision,
                 )
+                # Si ya estaba aprobado y tiene pedido generado, reflejar cambios en la Venta
+                # (solo si sigue pendiente de pago; si está pagada no se toca para no romper caja).
+                if presupuesto.estado == Presupuesto.Estado.APROBADO and presupuesto.venta_id:
+                    qs = Venta.objects
+                    try:
+                        qs = qs.select_for_update(of=("self",))
+                    except TypeError:
+                        qs = qs.select_for_update()
+                    venta = (
+                        qs.prefetch_related("lineas")
+                        .get(pk=presupuesto.venta_id)
+                    )
+                    if venta.estado == Venta.Estado.PAGADA or venta.pago_movimiento_id:
+                        raise ValueError(
+                            "El pedido generado ya está pagado; no se puede editar el presupuesto aprobado porque impacta caja."
+                        )
+                    # Revertir stock por líneas viejas, rearmar líneas y descontar stock nuevo.
+                    old_lines = list(venta.lineas.all())
+                    for ln in old_lines:
+                        Producto.objects.filter(pk=ln.producto_id).update(stock=F("stock") + ln.cantidad)
+                    VentaLinea.objects.filter(venta_id=venta.pk).delete()
+
+                    pids_afectados: list[int] = []
+                    for prod, qty, pu, st in line_specs:
+                        VentaLinea.objects.create(
+                            venta=venta,
+                            producto=prod,
+                            cantidad=qty,
+                            precio_unitario=pu,
+                            subtotal=st,
+                        )
+                        Producto.objects.filter(pk=prod.pk).update(stock=F("stock") - qty)
+                        pids_afectados.append(prod.pk)
+                    Producto.deshabilitar_sin_stock(pids_afectados)
+
+                    venta.vendedor_id = vid
+                    venta.comprador_id = comprador_id
+                    venta.fecha_vencimiento_pago = fecha_v
+                    venta.subtotal_lineas = subtotal
+                    venta.descuento_monto = descuento
+                    venta.comision_porcentaje = comision_pct
+                    venta.aplica_comision = aplica_comision
+                    venta.actualizado_por = request.user
+                    venta.save(
+                        update_fields=[
+                            "vendedor",
+                            "comprador",
+                            "fecha_vencimiento_pago",
+                            "subtotal_lineas",
+                            "descuento_monto",
+                            "comision_porcentaje",
+                            "aplica_comision",
+                            "actualizado_por",
+                        ]
+                    )
+                    # Sincronizar evento de calendario del pedido pendiente (mismo título).
+                    Evento.objects.filter(
+                        tipo=Evento.Tipo.PEDIDO,
+                        titulo=f"Pago pendiente — Pedido #{venta.pk}",
+                    ).delete()
+                    if venta.fecha_vencimiento_pago is not None:
+                        extra_comprador = (
+                            f" Comprador: {venta.comprador}." if venta.comprador_id else ""
+                        )
+                        com_txt = (
+                            f"Comisión ({venta.comision_porcentaje}%): {format_monto_ars(venta.monto_comision)}. "
+                            if venta.aplica_comision
+                            else "Sin comisión al vendedor. "
+                        )
+                        Evento.objects.create(
+                            fecha=venta.fecha_vencimiento_pago,
+                            titulo=f"Pago pendiente — Pedido #{venta.pk}",
+                            tipo=Evento.Tipo.PEDIDO,
+                            descripcion=(
+                                f"Vendedor: {venta.vendedor}. "
+                                f"Monto neto pedido: {format_monto_ars(venta.neto)}. "
+                                f"{com_txt}"
+                                f"Ingreso en caja al cobrar: {format_monto_ars(venta.monto_ingreso_caja)}.{extra_comprador}"
+                            ),
+                        )
                 presupuesto.actualizado_por = request.user
                 presupuesto.save(update_fields=["actualizado_por"])
             messages.success(request, "Presupuesto actualizado.")

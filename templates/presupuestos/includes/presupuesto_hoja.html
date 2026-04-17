@@ -87,15 +87,6 @@
               <td>Neto</td>
               <td class="text-end">{{ presupuesto.neto|ars }}</td>
             </tr>
-            {% if presupuesto.venta_id and presupuesto.venta.estado == "PAG" and presupuesto.venta.pago_movimiento %}
-              <tr>
-                <td colspan="2" class="text-end pt-2 border-top">
-                  <div class="fw-bold text-success">PAGADO</div>
-                  <div class="small text-muted">{{ presupuesto.venta.pago_movimiento.creado_en|date:"d/m/Y H:i" }}</div>
-                  <div class="small">{% if presupuesto.venta.pago_movimiento.creado_por %}{{ presupuesto.venta.pago_movimiento.creado_por.get_username }}{% else %}—{% endif %}</div>
-                </td>
-              </tr>
-            {% endif %}
             <tr>
               <td>{% if presupuesto.estado == "ACT" %}Venc. pago (si se confirma){% else %}Venc. pago{% endif %}</td>
               <td class="text-end">
