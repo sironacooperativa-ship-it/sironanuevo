@@ -4,6 +4,9 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.db import connections
+from django.db.utils import OperationalError
+from django.http import HttpResponse
 from django.db.models import Case, Count, DecimalField, ExpressionWrapper, F, Q, Sum, Value, When
 from django.db.models.functions import Coalesce
 from django.shortcuts import redirect, render
@@ -139,6 +142,21 @@ def home(request):
             "hoy": today,
         },
     )
+
+
+@require_http_methods(["GET"])
+def health(request):
+    return HttpResponse("ok", content_type="text/plain")
+
+
+@require_http_methods(["GET"])
+def warmup(request):
+    try:
+        conn = connections["default"]
+        conn.ensure_connection()
+    except OperationalError:
+        return HttpResponse("db_error", status=503, content_type="text/plain")
+    return HttpResponse("ok", content_type="text/plain")
 
 
 @require_http_methods(["GET", "POST"])
