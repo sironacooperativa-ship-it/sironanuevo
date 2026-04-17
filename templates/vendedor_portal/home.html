@@ -18,6 +18,16 @@
   <div class="card shadow-sm mb-3">
     <div class="card-body">
       <form method="get" class="row g-2 align-items-end" novalidate>
+        <div class="col-12">
+          <label class="form-label">Mis clientes</label>
+          <select class="form-select" name="comprador" onchange="this.form.submit()">
+            <option value="">— Elegir —</option>
+            {% for c in mis_clientes %}
+              <option value="{{ c.pk }}" {% if comprador and comprador.pk == c.pk %}selected{% endif %}>{{ c.codigo }} — {{ c.apellido }}, {{ c.nombre }}</option>
+            {% endfor %}
+          </select>
+          <div class="form-text">Muestra clientes vigentes asignados a vos.</div>
+        </div>
         <div class="col-12 col-md-8">
           <label class="form-label">Cliente</label>
           <input

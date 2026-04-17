@@ -105,6 +105,14 @@ class Proveedor(PersonaBase):
 
 
 class Comprador(PersonaBase):
+    vendedor_asignado = models.ForeignKey(
+        Vendedor,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="clientes_asignados",
+    )
+
     class Meta(PersonaBase.Meta):
         verbose_name = "Comprador"
         verbose_name_plural = "Compradores"

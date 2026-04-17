@@ -49,6 +49,11 @@ def vendedor_home(request):
     if comprador_id_raw.isdigit():
         comprador = Comprador.objects.filter(pk=int(comprador_id_raw), habilitado=True).first()
 
+    mis_clientes = list(
+        Comprador.objects.filter(habilitado=True, vendedor_asignado_id=vendedor.pk)
+        .order_by("apellido", "nombre", "codigo")[:500]
+    )
+
     # Buscar clientes (si hay texto y todavía no eligieron uno)
     candidatos = []
     if q and comprador is None:
@@ -135,6 +140,7 @@ def vendedor_home(request):
         {
             "vendedor": vendedor,
             "cliente_busqueda": q,
+            "mis_clientes": mis_clientes,
             "candidatos": candidatos,
             "comprador": comprador,
             "impagos": impagos,
@@ -171,9 +177,14 @@ def vendedor_cliente_create(request):
         return HttpResponseForbidden("Este usuario no tiene perfil de vendedor.")
 
     if request.method == "POST":
+        post = request.POST.copy()
+        post.pop("vendedor_asignado", None)
+        request.POST = post  # type: ignore[misc]
         form = CompradorForm(request.POST)
         if form.is_valid():
-            c = form.save()
+            c = form.save(commit=False)
+            c.vendedor_asignado_id = vendedor.pk
+            c.save()
             messages.success(request, f"Cliente creado: {c.codigo}")
             return redirect("vendedor_clientes_list")
     else:
@@ -193,10 +204,19 @@ def vendedor_cliente_update(request, pk: int):
         return HttpResponseForbidden("Este usuario no tiene perfil de vendedor.")
 
     c = get_object_or_404(Comprador, pk=pk)
+    # Seguridad simple: el vendedor solo edita sus clientes asignados.
+    if c.vendedor_asignado_id not in (None, vendedor.pk):
+        return HttpResponseForbidden("No podés editar este cliente.")
     if request.method == "POST":
+        post = request.POST.copy()
+        post.pop("vendedor_asignado", None)
+        request.POST = post  # type: ignore[misc]
         form = CompradorForm(request.POST, instance=c)
         if form.is_valid():
-            c = form.save()
+            c = form.save(commit=False)
+            if c.vendedor_asignado_id is None:
+                c.vendedor_asignado_id = vendedor.pk
+            c.save()
             messages.success(request, f"Cliente actualizado: {c.codigo}")
             return redirect("vendedor_clientes_list")
     else:

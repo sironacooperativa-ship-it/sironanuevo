@@ -46,6 +46,11 @@
             {{ form.direccion }}
             {% if form.direccion.errors %}<div class="text-danger small">{{ form.direccion.errors }}</div>{% endif %}
           </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Vendedor asignado <span class="text-muted fw-normal">(opcional)</span></label>
+            {{ form.vendedor_asignado }}
+            {% if form.vendedor_asignado.errors %}<div class="text-danger small">{{ form.vendedor_asignado.errors }}</div>{% endif %}
+          </div>
           <div class="col-12">
             <div class="form-check">
               {{ form.habilitado }}

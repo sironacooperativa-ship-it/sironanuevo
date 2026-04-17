@@ -36,4 +36,16 @@ class ProveedorForm(_BasePersonaForm):
 class CompradorForm(_BasePersonaForm):
     class Meta(_BasePersonaForm.Meta):
         model = Comprador
+        fields = _BasePersonaForm.Meta.fields + ["vendedor_asignado"]
+        widgets = {
+            **_BasePersonaForm.Meta.widgets,
+            "vendedor_asignado": forms.Select(attrs={"class": "form-select"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["vendedor_asignado"].required = False
+        self.fields["vendedor_asignado"].queryset = Vendedor.objects.filter(habilitado=True).order_by(
+            "apellido", "nombre", "codigo"
+        )
 
