@@ -17,7 +17,7 @@ from openpyxl import load_workbook
 from urllib.parse import urlencode
 
 from core.export_utils import parse_export, pdf_response, xlsx_response
-from core.money_decimal import q2
+from core.money_decimal import format_monto_ars, q2
 from core.pdf_membrete import platypus_membrete
 from personas.models import Proveedor
 from reportlab.lib import colors
@@ -28,6 +28,19 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 
 from .forms import ProductoForm
 from .models import ListaPrecios, Producto
+
+
+def _redirect_productos_con_filtros(request):
+    """Vuelve al listado conservando búsqueda / filtros enviados como retorno_* en POST."""
+    params = {}
+    for k in ("q", "tipo", "proveedor"):
+        v = (request.POST.get(f"retorno_{k}") or "").strip()
+        if v:
+            params[k] = v
+    url = reverse("productos_list")
+    if params:
+        url += "?" + urlencode(params)
+    return redirect(url)
 
 
 def _filtrar_productos_queryset(request, *, use_post: bool = False):
@@ -275,6 +288,53 @@ def _parse_stock_importacion(v, fila_num: int) -> int:
     if n < 0:
         raise ValueError(f"Fila {fila_num}: el stock no puede ser negativo ({n}).")
     return n
+
+
+IMPORT_EXCEL_CONFLICTS_KEY = "productos_import_excel_conflictos_v1"
+
+
+def _tipo_label_producto(codigo_tipo: str) -> str:
+    return dict(Producto.Tipo.choices).get(codigo_tipo, codigo_tipo)
+
+
+def _excel_snapshot_for_session(
+    defaults: dict,
+    *,
+    fecha_vencimiento: date | None,
+) -> dict:
+    """Valores serializables (JSON) para la sesión y para reaplicar si el usuario elige Excel."""
+    snap: dict = {
+        "descripcion": defaults["descripcion"],
+        "tipo": defaults["tipo"],
+        "tipo_label": _tipo_label_producto(defaults["tipo"]),
+        "costo": str(defaults["costo"]),
+        "stock": str(int(defaults["stock"])),
+        "porcentaje_ganancia": str(defaults["porcentaje_ganancia"]),
+        "fecha_vencimiento": fecha_vencimiento.isoformat() if fecha_vencimiento else "",
+    }
+    if defaults.get("precio_venta_editado"):
+        snap["precio_venta"] = str(defaults["precio_venta"])
+        snap["precio_automatico"] = False
+    else:
+        snap["precio_venta"] = ""
+        snap["precio_automatico"] = True
+    return snap
+
+
+def _aplicar_snapshot_excel_a_producto(producto: Producto, snap: dict) -> None:
+    producto.descripcion = (snap.get("descripcion") or "")[:255]
+    producto.tipo = snap["tipo"]
+    producto.costo = Decimal(snap["costo"])
+    producto.stock = int(snap["stock"])
+    producto.porcentaje_ganancia = Decimal(snap["porcentaje_ganancia"])
+    fv = (snap.get("fecha_vencimiento") or "").strip()
+    producto.fecha_vencimiento = date.fromisoformat(fv) if fv else None
+    if snap.get("precio_automatico"):
+        producto.precio_venta_editado = False
+    else:
+        producto.precio_venta = Decimal(snap["precio_venta"])
+        producto.precio_venta_editado = True
+    producto.save()
 
 
 @login_required
@@ -572,6 +632,9 @@ def producto_delete(request, pk: int):
 @require_http_methods(["POST"])
 def producto_toggle_habilitado(request, pk: int):
     producto = get_object_or_404(Producto, pk=pk)
+    if not producto.habilitado and producto.stock <= 0:
+        messages.warning(request, "No se puede habilitar un producto sin stock.")
+        return redirect("productos_list")
     producto.habilitado = not producto.habilitado
     if not producto.habilitado:
         producto.en_lista_precios = False
@@ -589,6 +652,55 @@ def producto_toggle_lista(request, pk: int):
     producto.en_lista_precios = request.POST.get("set_lista") == "1"
     producto.save(update_fields=["en_lista_precios"])
     return redirect("productos_list")
+
+
+@login_required
+@require_http_methods(["POST"])
+def productos_acciones_masa(request):
+    """Habilitar / deshabilitar / lista PDF sobre varios productos seleccionados."""
+    accion = (request.POST.get("accion") or "").strip()
+    ids = sorted({int(x) for x in request.POST.getlist("producto_id") if str(x).isdigit()})
+    if not ids:
+        messages.warning(request, "Seleccioná al menos un producto.")
+        return _redirect_productos_con_filtros(request)
+
+    existentes = set(Producto.objects.filter(pk__in=ids).values_list("pk", flat=True))
+    ids = [i for i in ids if i in existentes]
+    if not ids:
+        messages.error(request, "No se encontraron productos válidos para la acción.")
+        return _redirect_productos_con_filtros(request)
+
+    if accion == "habilitar":
+        sin_stock = Producto.objects.filter(pk__in=ids, habilitado=False, stock__lte=0).count()
+        n = Producto.objects.filter(pk__in=ids, habilitado=False, stock__gt=0).update(habilitado=True)
+        if n:
+            messages.success(request, f"Se habilitaron {n} producto(s).")
+        if sin_stock:
+            messages.warning(
+                request,
+                f"No se habilitaron {sin_stock} producto(s) sin stock (o revisá el stock antes).",
+            )
+        if not n and not sin_stock:
+            messages.info(request, "Los productos elegidos ya estaban habilitados.")
+    elif accion == "deshabilitar":
+        n = Producto.objects.filter(pk__in=ids).update(habilitado=False, en_lista_precios=False)
+        messages.success(request, f"Se deshabilitaron {n} producto(s) y se sacaron de la lista PDF.")
+    elif accion == "lista_si":
+        deshab = Producto.objects.filter(pk__in=ids, habilitado=False).count()
+        n = Producto.objects.filter(pk__in=ids, habilitado=True).update(en_lista_precios=True)
+        messages.success(request, f"{n} producto(s) marcados para la lista de precios PDF.")
+        if deshab:
+            messages.info(
+                request,
+                f"{deshab} producto(s) deshabilitados no se incluyen en lista hasta habilitarlos.",
+            )
+    elif accion == "lista_no":
+        n = Producto.objects.filter(pk__in=ids).update(en_lista_precios=False)
+        messages.success(request, f"Se quitó la marca de lista PDF en {n} producto(s).")
+    else:
+        messages.error(request, "Acción no reconocida.")
+
+    return _redirect_productos_con_filtros(request)
 
 
 @login_required
@@ -635,8 +747,10 @@ def productos_import_excel(request):
     # Columnas: codigo(opcional), descripcion, tipo, costo, porcentaje_ganancia(opcional), precio_venta(opcional), stock(opcional), fecha_vencimiento(opcional)
     # Si la fila 1 tiene encabezados reconocidos, las columnas se ubican por título (orden libre).
     # Tipo: flexible — ver _resolver_tipo_producto
+    #
+    # Códigos que ya existen: no se pisan; se guardan en sesión y se muestran en un resumen para elegir.
     creados = 0
-    actualizados = 0
+    conflictos: list[dict] = []
 
     try:
         with transaction.atomic():
@@ -717,24 +831,89 @@ def productos_import_excel(request):
                     defaults["precio_venta_editado"] = True
 
                 if codigo:
-                    _obj, created = Producto.objects.update_or_create(
-                        codigo=codigo, defaults=defaults
-                    )
+                    if Producto.objects.filter(codigo=codigo).exists():
+                        existente = Producto.objects.get(codigo=codigo)
+                        conflictos.append(
+                            {
+                                "fila": i,
+                                "codigo": codigo,
+                                "producto_id": existente.pk,
+                                "excel": _excel_snapshot_for_session(defaults, fecha_vencimiento=fecha_vencimiento),
+                            }
+                        )
+                        continue
+                    Producto.objects.update_or_create(codigo=codigo, defaults=defaults)
+                    creados += 1
                 else:
                     obj = Producto(**defaults)
                     obj.save()
-                    created = True
-
-                if created:
                     creados += 1
-                else:
-                    actualizados += 1
     except ValueError as exc:
         messages.error(request, str(exc))
         return redirect("productos_import_excel")
 
-    messages.success(request, f"Importación OK. Creados: {creados}. Actualizados: {actualizados}.")
+    if conflictos:
+        request.session[IMPORT_EXCEL_CONFLICTS_KEY] = {"items": conflictos}
+        request.session.modified = True
+        messages.success(
+            request,
+            f"Se cargaron {creados} producto(s) nuevo(s). "
+            f"Hay {len(conflictos)} fila(s) con código ya existente: revisá el resumen y elegí qué datos conservar.",
+        )
+        return redirect("productos_import_excel_resumen")
+
+    messages.success(request, f"Importación OK. Productos nuevos cargados: {creados}.")
     return redirect("productos_list")
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def productos_import_excel_resumen(request):
+    """Tras importar, permite elegir por cada código duplicado si se aplica la fila del Excel o se mantiene la base."""
+    payload = request.session.get(IMPORT_EXCEL_CONFLICTS_KEY) or {}
+    items = list(payload.get("items") or [])
+
+    if request.method == "POST":
+        if not items:
+            messages.info(request, "No había decisiones pendientes.")
+            return redirect("productos_import_excel")
+        actualizados = 0
+        for it in items:
+            pid = it.get("producto_id")
+            if not pid:
+                continue
+            choice = (request.POST.get(f"resolver_{pid}") or "mantener").strip().lower()
+            if choice == "excel":
+                try:
+                    p = Producto.objects.get(pk=pid)
+                except Producto.DoesNotExist:
+                    continue
+                _aplicar_snapshot_excel_a_producto(p, it["excel"])
+                actualizados += 1
+        request.session.pop(IMPORT_EXCEL_CONFLICTS_KEY, None)
+        messages.success(
+            request,
+            f"Listo. Se actualizaron {actualizados} producto(s) con los datos del Excel. "
+            "El resto se mantuvo como estaba en la base.",
+        )
+        return redirect("productos_list")
+
+    if not items:
+        messages.info(request, "No hay un resumen de importación pendiente. Volvé a importar un archivo si hace falta.")
+        return redirect("productos_import_excel")
+
+    ids = [x["producto_id"] for x in items if x.get("producto_id")]
+    productos = {p.pk: p for p in Producto.objects.filter(pk__in=ids)}
+    filas = []
+    for it in items:
+        pid = it.get("producto_id")
+        filas.append({**it, "producto": productos.get(pid) if pid else None})
+
+    return render(
+        request,
+        "productos/import_excel_resumen.html",
+        {"filas": filas},
+    )
 
 
 @login_required
@@ -797,7 +976,7 @@ def productos_export_pdf(request):
         row = [p.codigo, desc]
         if incluir_stock:
             row.append(str(p.stock))
-        row.append(f"$ {p.precio_venta:.2f}")
+        row.append(format_monto_ars(p.precio_venta))
         data.append(row)
 
     if len(data) == 1:

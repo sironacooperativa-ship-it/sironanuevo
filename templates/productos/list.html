@@ -4,7 +4,10 @@
 {% block content %}
   <div class="app-page-header mb-3">
     <h1 class="app-page-title mb-1">Productos</h1>
-    <p class="text-muted small mb-2">Tocá <strong>Editar</strong> o <strong>Nuevo</strong> para abrir el formulario en un panel.</p>
+    <p class="text-muted small mb-2">
+      Tocá <strong>Editar</strong> o <strong>Nuevo</strong> para abrir el formulario en un panel.
+      En la tabla podés marcar varios productos y usar <strong>Selección múltiple</strong> (habilitar, deshabilitar, lista PDF).
+    </p>
 
     <div class="card app-card border-0 shadow-sm mb-3">
       <div class="card-body p-3">
@@ -86,10 +89,46 @@
   </div>
 
   <div class="card app-card border-0 shadow-sm overflow-hidden">
+    <div class="card-body border-bottom py-2 px-3 bg-light">
+      <form
+        id="productosBulkForm"
+        method="post"
+        action="{% url 'productos_acciones_masa' %}"
+        class="d-flex flex-wrap gap-2 align-items-center"
+      >
+        {% csrf_token %}
+        <input type="hidden" name="accion" id="id_productos_bulk_accion" value="" />
+        <input type="hidden" name="retorno_q" value="{{ q|default:'' }}" />
+        <input type="hidden" name="retorno_tipo" value="{{ tipo|default:'' }}" />
+        <input type="hidden" name="retorno_proveedor" value="{{ proveedor|default:'' }}" />
+        <span class="small text-muted me-1">Selección múltiple:</span>
+        <button type="button" class="btn btn-sm btn-outline-success rounded-pill" data-productos-bulk="habilitar">
+          Habilitar
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" data-productos-bulk="deshabilitar">
+          Deshabilitar
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill" data-productos-bulk="lista_si">
+          En lista PDF
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-dark rounded-pill" data-productos-bulk="lista_no">
+          Quitar lista PDF
+        </button>
+      </form>
+    </div>
     <div class="table-responsive">
       <table class="table table-hover table-sm align-middle mb-0 app-table table-productos">
         <thead class="table-light">
           <tr>
+            <th scope="col" class="text-center" style="width: 2.25rem" title="Seleccionar">
+              <label class="visually-hidden" for="chkProductosTodos">Todos</label>
+              <input
+                type="checkbox"
+                class="form-check-input"
+                id="chkProductosTodos"
+                title="Seleccionar / quitar todos"
+              />
+            </th>
             <th scope="col" class="small text-muted text-uppercase" style="letter-spacing: 0.04em;">Código</th>
             <th scope="col" class="small text-muted text-uppercase" style="letter-spacing: 0.04em;">Descripción</th>
             <th scope="col" class="small text-muted text-uppercase" style="letter-spacing: 0.04em;">Tipo</th>
@@ -103,12 +142,27 @@
         </thead>
         <tbody>
           {% for p in productos %}
-            <tr class="app-table-row {% if not p.habilitado %}opacity-50{% endif %}">
+            <tr class="app-table-row {% if not p.habilitado %}opacity-50{% endif %}{% if p.stock == 0 %} table-light{% endif %}">
+              <td class="text-center align-middle">
+                <input
+                  type="checkbox"
+                  class="form-check-input chk-bulk-producto"
+                  name="producto_id"
+                  value="{{ p.pk }}"
+                  form="productosBulkForm"
+                  title="Seleccionar {{ p.codigo }}"
+                />
+              </td>
               <td class="font-monospace small">{{ p.codigo }}</td>
               <td class="small">{{ p.descripcion }}</td>
               <td class="small text-muted">{{ p.get_tipo_display }}</td>
               <td class="text-end col-monto small">{{ p.costo|ars }}</td>
-              <td class="text-end small">{{ p.stock }}</td>
+              <td class="text-end small text-nowrap">
+                {{ p.stock }}
+                {% if p.stock == 0 %}
+                  <span class="badge rounded-pill text-bg-secondary ms-1 small">Sin stock</span>
+                {% endif %}
+              </td>
               <td class="text-end small">{{ p.porcentaje_ganancia }}%</td>
               <td class="text-end col-monto small fw-medium">{{ p.precio_venta|ars }}</td>
               <td class="text-center align-middle py-1">
@@ -153,13 +207,56 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="9" class="text-center text-muted py-5 small">No hay productos cargados.</td>
+              <td colspan="10" class="text-center text-muted py-5 small">No hay productos cargados.</td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
+
+  <script>
+    (function () {
+      const form = document.getElementById("productosBulkForm");
+      const accIn = document.getElementById("id_productos_bulk_accion");
+      const master = document.getElementById("chkProductosTodos");
+      if (!form || !accIn || !master) return;
+
+      function eachChk(fn) {
+        document.querySelectorAll(".chk-bulk-producto").forEach(fn);
+      }
+
+      master.addEventListener("change", function () {
+        eachChk(function (cb) {
+          cb.checked = master.checked;
+        });
+      });
+
+      document.querySelectorAll("[data-productos-bulk]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const acc = btn.getAttribute("data-productos-bulk") || "";
+          let n = 0;
+          eachChk(function (cb) {
+            if (cb.checked) n += 1;
+          });
+          if (!n) {
+            alert("Seleccioná al menos un producto (casillas al inicio de cada fila).");
+            return;
+          }
+          var labels = {
+            habilitar: "¿Habilitar los productos seleccionados? (no se habilitan los que están sin stock.)",
+            deshabilitar: "¿Deshabilitar los productos seleccionados y sacarlos de la lista PDF?",
+            lista_si: "¿Marcar los habilitados para la lista de precios PDF?",
+            lista_no: "¿Quitar del listado PDF los productos seleccionados?",
+          };
+          var msg = labels[acc] || "¿Confirmar acción sobre la selección?";
+          if (!window.confirm(msg)) return;
+          accIn.value = acc;
+          form.submit();
+        });
+      });
+    })();
+  </script>
 
   <p class="text-muted small mt-3 mb-0">
     Código automático: <code>ME/AC/OT</code> + 4 dígitos.

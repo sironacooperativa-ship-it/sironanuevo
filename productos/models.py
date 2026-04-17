@@ -89,7 +89,39 @@ class Producto(models.Model):
         if not self.precio_venta_editado:
             self.precio_venta = self.calcular_precio_venta()
 
+        if self.stock is not None and self.stock == 0:
+            self.habilitado = False
+            self.en_lista_precios = False
+            uf = kwargs.get("update_fields")
+            if uf is not None:
+                kwargs["update_fields"] = sorted(set(uf) | {"habilitado", "en_lista_precios"})
+        elif self.stock is not None and self.stock > 0:
+            # Al pasar de sin stock a con stock, queda habilitado para venta (y en lista de precios).
+            paso_a_positivo = False
+            if self._state.adding:
+                paso_a_positivo = True
+            elif self.pk is not None:
+                prev = (
+                    type(self).objects.filter(pk=self.pk).values_list("stock", flat=True).first()
+                )
+                if prev is not None and prev <= 0:
+                    paso_a_positivo = True
+            if paso_a_positivo:
+                self.habilitado = True
+                self.en_lista_precios = True
+                uf = kwargs.get("update_fields")
+                if uf is not None:
+                    kwargs["update_fields"] = sorted(set(uf) | {"habilitado", "en_lista_precios"})
+
         super().save(*args, **kwargs)
+
+    @classmethod
+    def deshabilitar_sin_stock(cls, producto_ids: list[int] | None = None) -> None:
+        """Tras actualizar stock con F() u otro SQL, pone habilitado=False donde stock = 0."""
+        qs = cls.objects.filter(stock=0)
+        if producto_ids is not None:
+            qs = qs.filter(pk__in=producto_ids)
+        qs.update(habilitado=False, en_lista_precios=False)
 
 
 class ListaPrecios(models.Model):

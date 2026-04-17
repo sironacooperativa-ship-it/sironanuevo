@@ -42,7 +42,14 @@ def stock_home(request):
                     )
 
                     delta = cantidad if tipo == MovimientoStock.Tipo.ENTRADA else -cantidad
+                    stock_antes = p.stock
                     Producto.objects.filter(pk=p.pk).update(stock=F("stock") + delta)
+                    stock_despues = stock_antes + delta
+                    if stock_despues > 0 and stock_antes <= 0:
+                        Producto.objects.filter(pk=p.pk, stock__gt=0).update(
+                            habilitado=True, en_lista_precios=True
+                        )
+                    Producto.deshabilitar_sin_stock([p.pk])
 
                     messages.success(request, f"Stock actualizado ({mov.get_tipo_display()}): {p.codigo} ({delta:+d})")
                     return redirect("stock_home")

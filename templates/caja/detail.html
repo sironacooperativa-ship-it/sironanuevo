@@ -28,6 +28,10 @@
           <dt class="col-sm-3">Compra</dt>
           <dd class="col-sm-9">Registro #{{ mov.compra_registro.pk }} — {{ mov.compra_registro.producto.codigo }}</dd>
         {% endif %}
+        {% if mov.compra_nota_credito %}
+          <dt class="col-sm-3">Nota de crédito</dt>
+          <dd class="col-sm-9">Por compra #{{ mov.compra_nota_credito.pk }}{% if mov.compra_nota_credito.anulada %} <span class="badge text-bg-warning">anulada</span>{% endif %}</dd>
+        {% endif %}
 
         {% if mov.medio_pago == "TRF" or mov.medio_pago == "MP" %}
           <dt class="col-sm-3">Banco / MP</dt><dd class="col-sm-9">{{ mov.banco }}</dd>

@@ -54,6 +54,11 @@
       <a class="btn btn-primary btn-sm" href="{% url 'venta_nueva' %}">Nueva venta</a>
       <a class="btn btn-outline-primary btn-sm" href="{% url 'presupuesto_nuevo' %}">Nuevo presupuesto</a>
       <a class="btn btn-outline-primary btn-sm" href="{% url 'compra_registrar' %}">Nueva compra</a>
+      <a
+        class="btn btn-outline-primary btn-sm"
+        href="{% url 'producto_create' %}"
+        data-sirona-modal-url="{% url 'producto_create' %}?modal=1"
+      >Carga nuevo producto</a>
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'reportes_dashboard' %}">Ver reportes</a>
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'productos_list' %}">Productos</a>
     </div>

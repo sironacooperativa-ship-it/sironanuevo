@@ -20,3 +20,13 @@ def q2(value) -> Decimal:
     except (InvalidOperation, ValueError):
         return Decimal("0.00")
     return d.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def format_monto_ars(value) -> str:
+    """
+    Texto para mostrar montos en pesos: $ 1.234.567,89 (miles con punto, decimales con coma).
+    """
+    d = q2(value)
+    us = f"{d:,.2f}"
+    ar = us.replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"$ {ar}"

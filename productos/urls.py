@@ -11,7 +11,13 @@ urlpatterns = [
     path("<int:pk>/eliminar/", views.producto_delete, name="producto_delete"),
     path("<int:pk>/toggle-habilitado/", views.producto_toggle_habilitado, name="producto_toggle_habilitado"),
     path("<int:pk>/toggle-lista/", views.producto_toggle_lista, name="producto_toggle_lista"),
+    path("acciones-masa/", views.productos_acciones_masa, name="productos_acciones_masa"),
     path("importar-excel/", views.productos_import_excel, name="productos_import_excel"),
+    path(
+        "importar-excel/resumen/",
+        views.productos_import_excel_resumen,
+        name="productos_import_excel_resumen",
+    ),
     path(
         "importar-excel/modelo.xlsx",
         views.productos_import_excel_modelo,

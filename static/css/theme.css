@@ -354,6 +354,54 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   background: rgba(0, 0, 0, 0.07);
 }
 
+.app-sidebar-link-logout .app-sidebar-label {
+  color: #b42318;
+}
+
+.app-sidebar-link-logout:hover .app-sidebar-label,
+.app-sidebar-link-logout:focus .app-sidebar-label {
+  color: #7f1d1d;
+}
+
+.app-sidebar-link-logout .app-sidebar-icon-wrap {
+  color: #b42318;
+}
+
+/* Panel lateral tipo ChatGPT (offcanvas, no rail fijo) */
+.sirona-offcanvas {
+  width: min(300px, 92vw) !important;
+  border-right: 1px solid var(--cg-border);
+  background: var(--cg-bg);
+}
+
+.sirona-offcanvas-header {
+  padding: 0.65rem 0.75rem;
+  background: var(--cg-surface);
+  border-bottom: 1px solid var(--cg-border) !important;
+}
+
+.sirona-offcanvas-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: -0.02em;
+  color: var(--cg-text);
+}
+
+.sirona-offcanvas-body {
+  padding: 0.5rem 0.55rem 1rem !important;
+  background: var(--cg-bg);
+}
+
+.sirona-offcanvas-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.sirona-offcanvas .app-sidebar-link {
+  border-radius: var(--app-radius);
+}
+
 /* Contenido principal: deja lugar al rail fijo en escritorio */
 .app-content-area {
   margin-left: 0;

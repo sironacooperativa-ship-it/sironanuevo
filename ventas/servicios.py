@@ -9,6 +9,7 @@ from django.db import transaction
 from django.db.models import F
 
 from calendario.models import Evento
+from core.money_decimal import format_monto_ars
 from productos.models import Producto
 
 from .models import Venta, VentaLinea
@@ -42,6 +43,7 @@ def crear_venta_confirmada(
             creado_por_id=creado_por_id,
             actualizado_por_id=creado_por_id,
         )
+        pids_afectados: list[int] = []
         for prod, qty, pu, st in line_specs:
             VentaLinea.objects.create(
                 venta=venta,
@@ -51,6 +53,9 @@ def crear_venta_confirmada(
                 subtotal=st,
             )
             Producto.objects.filter(pk=prod.pk).update(stock=F("stock") - qty)
+            pids_afectados.append(prod.pk)
+
+        Producto.deshabilitar_sin_stock(pids_afectados)
 
         extra_comprador = (
             f" Comprador: {venta.comprador}." if getattr(venta, "comprador_id", None) else ""
@@ -62,13 +67,13 @@ def crear_venta_confirmada(
                 tipo=Evento.Tipo.PEDIDO,
                 descripcion=(
                     f"Vendedor: {venta.vendedor}. "
-                    f"Monto neto pedido: ${venta.neto}. "
+                    f"Monto neto pedido: {format_monto_ars(venta.neto)}. "
                     + (
-                        f"Comisión ({venta.comision_porcentaje}%): ${venta.monto_comision}. "
+                        f"Comisión ({venta.comision_porcentaje}%): {format_monto_ars(venta.monto_comision)}. "
                         if venta.aplica_comision
                         else "Sin comisión al vendedor. "
                     )
-                    + f"Ingreso en caja al cobrar: ${venta.monto_ingreso_caja}.{extra_comprador}"
+                    + f"Ingreso en caja al cobrar: {format_monto_ars(venta.monto_ingreso_caja)}.{extra_comprador}"
                 ),
             )
     return venta

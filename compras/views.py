@@ -1,10 +1,10 @@
 from datetime import datetime
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, transaction
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from calendario.models import Evento
@@ -16,6 +16,11 @@ from productos.models import Producto
 
 from .forms import CompraRegistrarForm
 from .models import Compra
+from .servicios import compra_anular_por_admin, compra_eliminar_por_admin
+
+
+def _es_staff(user) -> bool:
+    return bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
 
 
 def _filtrar_compras_queryset(request):
@@ -27,7 +32,9 @@ def _filtrar_compras_queryset(request):
         fecha_hasta = parse_fecha_dashboard(request.GET.get("fecha_hasta"))
 
     qs = (
-        Compra.objects.select_related("proveedor", "producto", "movimiento_caja")
+        Compra.objects.select_related(
+            "proveedor", "producto", "movimiento_caja", "movimiento_credito"
+        )
         .order_by("-creado_en", "-id")
     )
     if fecha_desde:
@@ -66,6 +73,7 @@ def compra_historial(request):
             "Costo u.",
             "Monto",
             "Medio pago",
+            "Anulada",
             "Registro",
         ]
         rows = []
@@ -80,6 +88,7 @@ def compra_historial(request):
                     str(c.costo_unitario),
                     str(c.monto),
                     c.get_medio_pago_display(),
+                    "Sí" if c.anulada else "No",
                     c.creado_en.strftime("%d/%m/%Y %H:%M"),
                 ]
             )
@@ -97,8 +106,40 @@ def compra_historial(request):
             "filtros": filtros_ctx,
             "productos_filtro": productos,
             "proveedores_filtro": proveedores,
+            "es_admin_compras": _es_staff(request.user),
         },
     )
+
+
+@login_required
+@user_passes_test(_es_staff)
+@require_http_methods(["POST"])
+def compra_admin_eliminar(request, pk: int):
+    compra = get_object_or_404(Compra, pk=pk)
+    try:
+        compra_eliminar_por_admin(compra, request.user)
+    except ValidationError as exc:
+        messages.error(request, " ".join(exc.messages) if exc.messages else str(exc))
+    else:
+        messages.success(request, "Compra eliminada; movimientos de caja asociados y stock actualizados.")
+    return redirect("compra_historial")
+
+
+@login_required
+@user_passes_test(_es_staff)
+@require_http_methods(["POST"])
+def compra_admin_anular(request, pk: int):
+    compra = get_object_or_404(Compra, pk=pk)
+    try:
+        compra_anular_por_admin(compra, request.user)
+    except ValidationError as exc:
+        messages.error(request, " ".join(exc.messages) if exc.messages else str(exc))
+    else:
+        messages.success(
+            request,
+            "Compra anulada. Quedó registrada la nota de crédito en caja (ingreso que compensa el egreso).",
+        )
+    return redirect("compra_historial")
 
 
 @login_required

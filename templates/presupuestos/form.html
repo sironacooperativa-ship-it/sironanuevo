@@ -57,6 +57,9 @@
           <h2 class="h6 mb-0">Productos</h2>
           <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddLinea" title="Agregar línea">+ Agregar producto</button>
         </div>
+        <p class="text-muted small mb-2">
+          Podés cambiar el <strong>precio unitario</strong> por línea (solo para este presupuesto); en el catálogo el producto sigue con su precio de lista.
+        </p>
         <div class="table-responsive">
           <table class="table table-sm align-middle" id="tablaLineas">
             <thead class="table-light">
@@ -88,23 +91,13 @@
           />
         </div>
         <div class="col-12 col-md-6">
-          <div class="form-check mb-3">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              name="aplica_comision"
-              value="1"
-              id="id_aplica_comision"
-              {% if repoblar %}{% if repoblar.aplica_comision %}checked{% endif %}{% elif presupuesto %}{% if presupuesto.aplica_comision %}checked{% endif %}{% else %}checked{% endif %}
-            />
-            <label class="form-check-label" for="id_aplica_comision">Aplicar comisión del vendedor</label>
-          </div>
+          <input type="hidden" name="aplica_comision" value="1" />
           <div class="border rounded p-3 bg-light small">
             <div class="d-flex justify-content-between"><span>Subtotal líneas</span><span id="sumSubtotal">$ 0,00</span></div>
             <div class="d-flex justify-content-between"><span>Descuento</span><span id="sumDesc">$ 0,00</span></div>
             <div class="d-flex justify-content-between fw-semibold"><span>Neto</span><span id="sumNeto">$ 0,00</span></div>
             <p class="text-muted mb-0 mt-2 small">
-              El % de comisión está en <a href="{% url 'vendedores_list' %}">Vendedores</a>. Si marcás aplicar, al aprobar el pedido la comisión se discrimina y el ingreso en caja será el neto menos esa comisión.
+              Al <strong>aprobar</strong> el presupuesto se genera un pedido; el desglose de importes al cobrar figura en <strong>Ventas</strong> y en la ficha del <a href="{% url 'vendedores_list' %}">vendedor</a>.
             </p>
           </div>
         </div>
@@ -134,14 +127,31 @@
       const sumDesc = document.getElementById("sumDesc");
       const sumNeto = document.getElementById("sumNeto");
 
-      function fmtMoney(n) {
-        return "$ " + n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      }
+      const fmtMoney =
+        typeof formatMontoArs === "function"
+          ? formatMontoArs
+          : function (n) {
+              return "$ " + Number(n).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            };
 
       function parseNum(s) {
         const t = String(s || "").replace(",", ".").trim();
         const v = parseFloat(t);
         return Number.isFinite(v) ? v : 0;
+      }
+
+      function precioUnitarioEfectivo(row) {
+        const sel = row.querySelector('select[name="linea_producto"]');
+        const inpPu = row.querySelector('input[name="linea_precio_unitario"]');
+        const pid = sel.value;
+        const p = pid ? byId[pid] : null;
+        if (!p) return 0;
+        const raw = (inpPu && inpPu.value) ? String(inpPu.value).trim() : "";
+        if (raw !== "") {
+          const v = parseNum(raw);
+          if (v > 0) return v;
+        }
+        return parseFloat(p.precio);
       }
 
       function rowSubtotal(row) {
@@ -152,21 +162,18 @@
         if (!pid || qty <= 0) return 0;
         const p = byId[pid];
         if (!p) return 0;
-        return qty * parseFloat(p.precio);
+        return qty * precioUnitarioEfectivo(row);
       }
 
       function refreshRow(row) {
         const sel = row.querySelector('select[name="linea_producto"]');
         const pid = sel.value;
         const p = pid ? byId[pid] : null;
-        const unitEl = row.querySelector(".js-precio-unit");
         const subEl = row.querySelector(".js-subtotal");
         const q = parseInt(row.querySelector('input[name="linea_cantidad"]').value, 10) || 0;
         if (p && q > 0) {
-          unitEl.textContent = fmtMoney(parseFloat(p.precio));
-          subEl.textContent = fmtMoney(q * parseFloat(p.precio));
+          subEl.textContent = fmtMoney(q * precioUnitarioEfectivo(row));
         } else {
-          unitEl.textContent = "—";
           subEl.textContent = "—";
         }
       }
@@ -200,6 +207,19 @@
           const wasEmpty = sel.dataset.prevEmpty === "1";
           const nowEmpty = !sel.value;
           sel.dataset.prevEmpty = nowEmpty ? "1" : "0";
+          const qIn = tr.querySelector('input[name="linea_cantidad"]');
+          const inpPu = tr.querySelector('input[name="linea_precio_unitario"]');
+          const p = sel.value ? byId[sel.value] : null;
+          if (p && qIn && !String(qIn.value || "").trim()) {
+            qIn.value = "1";
+          }
+          if (inpPu) {
+            if (p) {
+              inpPu.value = fmtMoney(parseFloat(p.precio));
+            } else {
+              inpPu.value = "";
+            }
+          }
           refreshRow(tr);
           totals();
           if (wasEmpty && !nowEmpty && tr === tbody.lastElementChild) {
@@ -213,12 +233,16 @@
         const tr = document.createElement("tr");
         tr.innerHTML =
           '<td></td>' +
-          '<td class="text-end"><input type="number" name="linea_cantidad" class="form-control form-control-sm text-end" min="1" step="1" value="1" /></td>' +
-          '<td class="text-end js-precio-unit">—</td>' +
+          '<td class="text-end"><input type="number" name="linea_cantidad" class="form-control form-control-sm text-end" min="1" step="1" value="" placeholder="1" title="Cantidad" /></td>' +
+          '<td class="text-end"><input type="text" name="linea_precio_unitario" class="form-control form-control-sm text-end js-precio-input" inputmode="decimal" placeholder="Lista" autocomplete="off" title="Vacío = precio de lista del producto" /></td>' +
           '<td class="text-end fw-semibold js-subtotal">—</td>' +
           '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger py-0 js-remove" title="Quitar">×</button></td>';
         tr.children[0].appendChild(buildSelect(tr));
         tr.querySelector('input[name="linea_cantidad"]').addEventListener("input", () => {
+          refreshRow(tr);
+          totals();
+        });
+        tr.querySelector('input[name="linea_precio_unitario"]').addEventListener("input", () => {
           refreshRow(tr);
           totals();
         });
@@ -237,7 +261,12 @@
       document.getElementById("presupuestoForm").addEventListener("submit", function () {
         tbody.querySelectorAll("tr").forEach((tr) => {
           const sel = tr.querySelector('select[name="linea_producto"]');
-          if (sel && !String(sel.value || "").trim()) {
+          const qIn = tr.querySelector('input[name="linea_cantidad"]');
+          const puIn = tr.querySelector('input[name="linea_precio_unitario"]');
+          const noProd = !sel || !String(sel.value || "").trim();
+          const noQty = !qIn || !String(qIn.value || "").trim();
+          const noPu = !puIn || !String(puIn.value || "").trim();
+          if (noProd && noQty && noPu) {
             tr.remove();
           }
         });
@@ -253,9 +282,34 @@
           const tr = tbody.lastElementChild;
           const sel = tr.querySelector('select[name="linea_producto"]');
           const qIn = tr.querySelector('input[name="linea_cantidad"]');
-          sel.value = String(L.producto_id);
-          sel.dataset.prevEmpty = "0";
-          qIn.value = String(L.cantidad);
+          const puIn = tr.querySelector('input[name="linea_precio_unitario"]');
+          const pid =
+            L.producto_id !== undefined && L.producto_id !== null && String(L.producto_id).trim() !== ""
+              ? String(L.producto_id)
+              : "";
+          if (pid && sel.querySelector(`option[value="${pid}"]`)) {
+            sel.value = pid;
+            sel.dataset.prevEmpty = "0";
+          } else {
+            sel.value = "";
+            sel.dataset.prevEmpty = pid ? "0" : "1";
+          }
+          const rawQty =
+            L.cantidad_raw !== undefined && L.cantidad_raw !== null
+              ? String(L.cantidad_raw)
+              : L.cantidad !== undefined && L.cantidad !== null
+                ? String(L.cantidad)
+                : "";
+          qIn.value = rawQty;
+          if (puIn && L.precio_unitario != null && String(L.precio_unitario).trim() !== "") {
+            const rawP = String(L.precio_unitario).trim();
+            const n = parseFloat(rawP.replace(",", "."));
+            if (Number.isFinite(n)) {
+              puIn.value = fmtMoney(n);
+            } else {
+              puIn.value = rawP;
+            }
+          }
           refreshRow(tr);
         });
         const last = tbody.lastElementChild;

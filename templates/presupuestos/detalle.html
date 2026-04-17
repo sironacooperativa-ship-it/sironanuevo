@@ -1,9 +1,62 @@
 {% extends "base.html" %}
+{% load static %}
 {% load money %}
-{% block title %}Presupuesto #{{ presupuesto.pk }}{% endblock %}
+{% block title %}{% if presupuesto.estado == "ACT" %}Presupuesto{% else %}Orden de compra{% endif %} #{{ presupuesto.pk }}{% endblock %}
+{% block extra_head %}
+  <style>
+    .presupuesto-factura-wrap {
+      max-width: 640px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .presupuesto-doc .table-presupuesto {
+      font-size: 0.875rem;
+    }
+    .presupuesto-doc .table-presupuesto th,
+    .presupuesto-doc .table-presupuesto td {
+      padding: 0.35rem 0.5rem;
+      vertical-align: middle;
+    }
+    .presupuesto-doc .table-presupuesto .col-desc {
+      max-width: 14rem;
+      word-wrap: break-word;
+    }
+    @media print {
+      .no-print,
+      nav,
+      .offcanvas,
+      .app-scroll-top,
+      .app-messages {
+        display: none !important;
+      }
+      body.app-body {
+        background: #fff !important;
+      }
+      main.app-main {
+        padding-top: 0.5rem !important;
+      }
+      .presupuesto-doc {
+        border: none !important;
+        box-shadow: none !important;
+      }
+      .presupuesto-factura-wrap {
+        max-width: 168mm !important;
+      }
+      .presupuesto-print-hoja1 {
+        page-break-after: always;
+      }
+      @page {
+        size: A4;
+        margin: 14mm;
+      }
+    }
+  </style>
+{% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-    <h1 class="h3 mb-0">Presupuesto #{{ presupuesto.pk }}</h1>
+  <div class="no-print d-flex flex-wrap align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">
+      {% if presupuesto.estado == "ACT" %}Presupuesto{% else %}Orden de compra{% endif %} #{{ presupuesto.pk }}
+    </h1>
     <div class="d-flex gap-2 flex-wrap">
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'presupuesto_lista' %}">Volver</a>
       {% if presupuesto.estado == "ACT" %}
@@ -19,63 +72,19 @@
       {% elif presupuesto.venta_id %}
         <a class="btn btn-primary btn-sm" href="{% url 'venta_registrar_pago' presupuesto.venta_id %}">Registrar pago (pedido)</a>
       {% endif %}
+      <button type="button" class="btn btn-outline-dark btn-sm" onclick="window.print()">Imprimir</button>
+      <a class="btn btn-outline-danger btn-sm" href="{% url 'presupuesto_detalle' presupuesto.pk %}?export=pdf">Exportar PDF</a>
     </div>
+    <p class="text-muted small mb-0 w-100 no-print">
+      Al imprimir o exportar PDF salen <strong>dos hojas</strong>: copia <strong>Remito</strong> y copia <strong>Duplicado</strong>.
+    </p>
   </div>
 
-  <div class="card shadow-sm mb-3">
-    <div class="card-body row g-2 small">
-      <div class="col-md-4"><span class="text-muted">Vendedor</span><div>{{ presupuesto.vendedor }}</div></div>
-      <div class="col-md-4"><span class="text-muted">Comprador</span><div>{% if presupuesto.comprador %}{{ presupuesto.comprador }}{% else %}<span class="text-muted">—</span>{% endif %}</div></div>
-      <div class="col-md-4"><span class="text-muted">Estado</span><div>{{ presupuesto.get_estado_display }}</div></div>
-      <div class="col-md-4"><span class="text-muted">Venc. pago (pedido)</span><div>{% if presupuesto.fecha_vencimiento_pago %}{{ presupuesto.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">Sin indicar</span>{% endif %}</div></div>
-      <div class="col-md-4"><span class="text-muted">Subtotal</span><div>{{ presupuesto.subtotal_lineas|ars }}</div></div>
-      <div class="col-md-4"><span class="text-muted">Descuento</span><div>{{ presupuesto.descuento_monto|ars }}</div></div>
-      <div class="col-md-4"><span class="text-muted">Neto</span><div class="fw-semibold">{{ presupuesto.neto|ars }}</div></div>
-      <div class="col-md-4">
-        <span class="text-muted">Comisión vendedor</span>
-        <div>
-          {% if presupuesto.aplica_comision %}
-            {{ presupuesto.comision_porcentaje }}% — {{ presupuesto.monto_comision|ars }}
-          {% else %}
-            <span class="text-muted">No aplica</span>
-          {% endif %}
-        </div>
-      </div>
-      <div class="col-md-4">
-        <span class="text-muted">Ingreso en caja al cobrar (estim.)</span>
-        <div class="fw-semibold">{{ presupuesto.monto_ingreso_caja|ars }}</div>
-      </div>
-      {% if presupuesto.venta_id %}
-        <div class="col-md-4"><span class="text-muted">Pedido generado</span><div><a href="{% url 'venta_detalle' presupuesto.venta_id %}">#{{ presupuesto.venta_id }}</a> — {{ presupuesto.venta.get_estado_display }}</div></div>
-      {% endif %}
-    </div>
+  <div class="presupuesto-factura-wrap presupuesto-print-hoja1 mb-3">
+    {% include "presupuestos/includes/presupuesto_hoja.html" with copia_label="Remito" %}
   </div>
 
-  <div class="card shadow-sm">
-    <div class="card-header fw-semibold">Líneas</div>
-    <div class="table-responsive">
-      <table class="table table-sm mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>Código</th>
-            <th>Descripción</th>
-            <th class="text-end">Cantidad</th>
-            <th class="text-end">P. unit.</th>
-            <th class="text-end">Subtotal</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for l in presupuesto.lineas.all %}
-            <tr>
-              <td><code>{{ l.producto.codigo }}</code></td>
-              <td>{{ l.producto.descripcion }}</td>
-              <td class="text-end">{{ l.cantidad }}</td>
-              <td class="text-end">{{ l.precio_unitario|ars }}</td>
-              <td class="text-end">{{ l.subtotal|ars }}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+  <div class="presupuesto-factura-wrap d-none d-print-block mb-0">
+    {% include "presupuestos/includes/presupuesto_hoja.html" with copia_label="Duplicado" %}
   </div>
 {% endblock %}

@@ -8,9 +8,31 @@
   </div>
 
   <p class="text-muted small">
-    Mismo criterio que <strong>Ventas</strong> (vendedor, productos, descuento). La comisión se toma del vendedor al aprobar. Al <strong>aprobar</strong> se genera un
-    pedido pendiente de pago con calendario y stock descontado; desde <strong>Ventas</strong> podés registrar el cobro y ver la comisión.
+    Mismo criterio que <strong>Ventas</strong> (vendedor, productos, descuento). Al <strong>aprobar</strong> se genera un pedido pendiente de pago (stock descontado, calendario).
+    El cobro y el desglose por pedido se gestionan en <strong>Ventas</strong> y en la ficha del vendedor.
   </p>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-12 col-md-6 col-lg-4">
+          <label class="form-label small text-muted mb-0">Comprador</label>
+          <select name="comprador" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for c in compradores_filtro %}
+              <option value="{{ c.pk }}" {% if filtros.comprador == c.pk|stringformat:"s" %}selected{% endif %}>
+                {{ c.codigo }} — {{ c.apellido }}, {{ c.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 d-flex gap-1 flex-wrap">
+          <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'presupuesto_lista' %}">Limpiar</a>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <div class="card shadow-sm">
     <div class="table-responsive">
@@ -20,6 +42,7 @@
             <th>#</th>
             <th>Fecha</th>
             <th>Vendedor</th>
+            <th>Comprador</th>
             <th>Venc. pago</th>
             <th class="text-end">Neto</th>
             <th>Estado</th>
@@ -33,6 +56,13 @@
               <td class="fw-semibold">{{ p.pk }}</td>
               <td class="text-muted small">{{ p.creado_en|date:"d/m/Y H:i" }}</td>
               <td>{{ p.vendedor.apellido }}, {{ p.vendedor.nombre }}</td>
+              <td class="small">
+                {% if p.comprador_id %}
+                  {{ p.comprador.apellido }}, {{ p.comprador.nombre }}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
               <td>{% if p.fecha_vencimiento_pago %}{{ p.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
               <td class="text-end">{{ p.neto|ars }}</td>
               <td>
@@ -67,7 +97,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="8" class="text-center text-muted py-5">No hay presupuestos.</td></tr>
+            <tr><td colspan="9" class="text-center text-muted py-5">No hay presupuestos con los filtros actuales.</td></tr>
           {% endfor %}
         </tbody>
       </table>

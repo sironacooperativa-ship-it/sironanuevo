@@ -10,7 +10,7 @@ from django.views.decorators.http import require_http_methods
 
 from core.comision_agg import comisiones_acumuladas_por_mes
 from core.export_utils import parse_export, pdf_response, xlsx_response
-from core.money_decimal import q2
+from core.money_decimal import format_monto_ars, q2
 from core.repoblar_lineas import lineas_iniciales_desde_post, repoblar_campos_cabecera_desde_post
 from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_dashboard, parse_fecha_param, rango_periodo
 
@@ -31,14 +31,14 @@ def _sync_evento_pedido_pendiente(venta: Venta) -> None:
     qs = Evento.objects.filter(tipo=Evento.Tipo.PEDIDO, titulo=titulo)
     extra = f" Comprador: {venta.comprador}." if venta.comprador_id else ""
     com_txt = (
-        f"Comisión ({venta.comision_porcentaje}%): ${venta.monto_comision}."
+        f"Comisión ({venta.comision_porcentaje}%): {format_monto_ars(venta.monto_comision)}."
         if venta.aplica_comision
         else "Sin comisión al vendedor."
     )
     desc = (
         f"Vendedor: {venta.vendedor}. "
-        f"Monto neto pedido: ${venta.neto}. {com_txt} "
-        f"Ingreso en caja al cobrar: ${venta.monto_ingreso_caja}.{extra}"
+        f"Monto neto pedido: {format_monto_ars(venta.neto)}. {com_txt} "
+        f"Ingreso en caja al cobrar: {format_monto_ars(venta.monto_ingreso_caja)}.{extra}"
     )
     if venta.fecha_vencimiento_pago is None:
         qs.delete()

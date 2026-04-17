@@ -16,6 +16,12 @@ class ProductoForm(forms.ModelForm):
 
     class Meta:
         model = Producto
+        help_texts = {
+            "stock": (
+                "Si el stock pasa a 0, el producto se deshabilita solo. "
+                "Si pasa de 0 a un valor mayor, se habilita para la venta y vuelve a la lista de precios."
+            ),
+        }
         fields = [
             "descripcion",
             "tipo",
@@ -66,5 +72,18 @@ class ProductoForm(forms.ModelForm):
 
         # Si el usuario ingresa un precio, lo respetamos.
         cleaned["precio_venta_editado"] = True
+
+        stock = cleaned.get("stock")
+        if stock is not None:
+            s = int(stock)
+            if s == 0:
+                cleaned["habilitado"] = False
+                cleaned["en_lista_precios"] = False
+            elif s > 0:
+                prev = int(self.instance.stock) if self.instance.pk else 0
+                if not self.instance.pk or prev <= 0:
+                    cleaned["habilitado"] = True
+                    cleaned["en_lista_precios"] = True
+
         return cleaned
 

@@ -143,12 +143,15 @@
       const sumIngreso = document.getElementById("sumIngreso");
       const chkAplica = document.getElementById("id_aplica_comision");
 
-      function fmtMoney(n) {
-        return (
-          "$ " +
-          n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-        );
-      }
+      const fmtMoney =
+        typeof formatMontoArs === "function"
+          ? formatMontoArs
+          : function (n) {
+              return (
+                "$ " +
+                Number(n).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+              );
+            };
 
       function parseNum(s) {
         const t = String(s || "").replace(",", ".").trim();

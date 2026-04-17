@@ -87,11 +87,13 @@
             <th class="text-end">Monto</th>
             <th>Medio</th>
             <th class="text-center">Caja</th>
+            <th>Estado</th>
+            {% if es_admin_compras %}<th class="text-end">Admin</th>{% endif %}
           </tr>
         </thead>
         <tbody>
           {% for c in compras %}
-            <tr>
+            <tr class="{% if c.anulada %}table-secondary{% endif %}">
               <td><span class="fw-semibold">#{{ c.pk }}</span></td>
               <td class="text-muted small">{{ c.fecha_compra|date:"d/m/Y" }}</td>
               <td>{{ c.proveedor.apellido }}, {{ c.proveedor.nombre }}</td>
@@ -99,17 +101,41 @@
               <td class="text-end">{{ c.cantidad }}</td>
               <td class="text-end">{{ c.monto|ars }}</td>
               <td class="small">{{ c.get_medio_pago_display }}</td>
-              <td class="text-center">
+              <td class="text-center small">
                 {% if c.movimiento_caja %}
-                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'caja_detail' c.movimiento_caja.pk %}">Ver</a>
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'caja_detail' c.movimiento_caja.pk %}">Egreso</a>
                 {% else %}
-                  <span class="text-muted small">—</span>
+                  <span class="text-muted">—</span>
+                {% endif %}
+                {% if c.movimiento_credito %}
+                  <a class="btn btn-sm btn-outline-primary ms-1" href="{% url 'caja_detail' c.movimiento_credito.pk %}" title="Nota de crédito">N.C.</a>
                 {% endif %}
               </td>
+              <td class="small">
+                {% if c.anulada %}
+                  <span class="badge text-bg-warning">Anulada</span>
+                {% else %}
+                  <span class="text-muted">Vigente</span>
+                {% endif %}
+              </td>
+              {% if es_admin_compras %}
+                <td class="text-end text-nowrap">
+                  <form method="post" action="{% url 'compra_admin_eliminar' c.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar definitivamente la compra #{{ c.pk }}? Se borrarán los movimientos de caja vinculados y se descontará la cantidad del stock.');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                  </form>
+                  {% if not c.anulada and c.movimiento_caja %}
+                    <form method="post" action="{% url 'compra_admin_anular' c.pk %}" class="d-inline ms-1" onsubmit="return confirm('¿Anular la compra #{{ c.pk }}? Quedará marcada como anulada y se registrará una nota de crédito en caja por el mismo monto.');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-warning">Anular</button>
+                    </form>
+                  {% endif %}
+                </td>
+              {% endif %}
             </tr>
           {% empty %}
             <tr>
-              <td colspan="8" class="text-center text-muted py-5">No hay compras con los filtros actuales.</td>
+              <td colspan="{% if es_admin_compras %}10{% else %}9{% endif %}" class="text-center text-muted py-5">No hay compras con los filtros actuales.</td>
             </tr>
           {% endfor %}
         </tbody>

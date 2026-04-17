@@ -21,7 +21,11 @@
   <div class="col-12 col-sm-6">
     <label class="form-label small text-muted mb-1">Stock</label>
     {{ form.stock }}
+    {% if form.stock.help_text %}<div class="form-text small">{{ form.stock.help_text }}</div>{% endif %}
     {% if form.stock.errors %}<div class="text-danger small">{{ form.stock.errors }}</div>{% endif %}
+    {% if form.instance.pk and form.instance.stock == 0 %}
+      <div class="alert alert-secondary py-2 px-2 small mt-2 mb-0">Sin stock: el producto está deshabilitado. Ingresá unidades (acá o en <a href="{% url 'stock_home' %}">Stock</a>) para volver a habilitarlo.</div>
+    {% endif %}
   </div>
 
   <div class="col-12 col-sm-6">

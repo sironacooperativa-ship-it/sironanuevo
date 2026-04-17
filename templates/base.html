@@ -15,7 +15,8 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
-    <link href="{% static 'css/theme.css' %}?v=offcanvas-2" rel="stylesheet" />
+    <link href="{% static 'css/theme.css' %}?v=offcanvas-3" rel="stylesheet" />
+    <script src="{% static 'js/money-ars.js' %}"></script>
     {% block extra_head %}{% endblock %}
   </head>
   <body class="app-body">
@@ -41,37 +42,92 @@
       </nav>
 
       <div
-        class="offcanvas offcanvas-start"
+        class="offcanvas offcanvas-start sirona-offcanvas"
         tabindex="-1"
         id="sironaMenu"
         aria-labelledby="sironaMenuLabel"
       >
-        <div class="offcanvas-header">
-          <h5 class="offcanvas-title" id="sironaMenuLabel">Menú</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
-        </div>
-        <div class="offcanvas-body p-2">
-          <div class="list-group list-group-flush">
-            <a class="list-group-item list-group-item-action" href="{% url 'home' %}">Inicio</a>
-            <a class="list-group-item list-group-item-action" href="{% url 'productos_list' %}">Productos</a>
-            <a class="list-group-item list-group-item-action" href="{% url 'stock_home' %}">Stock</a>
-            <a class="list-group-item list-group-item-action" href="{% url 'caja_list' %}">Caja</a>
-            <a class="list-group-item list-group-item-action" href="{% url 'compra_historial' %}">Compras</a>
-            <a class="list-group-item list-group-item-action" href="{% url 'ventas_historial' %}">Ventas</a>
-            <a class="list-group-item list-group-item-action" href="{% url 'presupuesto_lista' %}">Presupuestos</a>
-            <a class="list-group-item list-group-item-action" href="{% url 'vendedores_list' %}">Vendedores</a>
-            <a class="list-group-item list-group-item-action" href="{% url 'compradores_list' %}">Compradores</a>
-            <a class="list-group-item list-group-item-action" href="{% url 'proveedores_list' %}">Proveedores</a>
-            <a class="list-group-item list-group-item-action" href="{% url 'reportes_dashboard' %}">Reportes</a>
-            <a class="list-group-item list-group-item-action" href="{% url 'calendario_home' %}">Calendario</a>
-            <a class="list-group-item list-group-item-action" href="{% url 'bancos_cuentas' %}">Bancos</a>
-            <a class="list-group-item list-group-item-action" href="{% url 'cambiar_password' %}">Cambiar contraseña</a>
-            {% if request.user.is_staff %}
-              <a class="list-group-item list-group-item-action" href="{% url 'admin_usuarios_list' %}">Administrador</a>
-              <a class="list-group-item list-group-item-action" href="{% url 'admin_actividad_list' %}">Historial de actividad</a>
-            {% endif %}
-            <a class="list-group-item list-group-item-action text-danger" href="{% url 'logout' %}">Salir</a>
+        <div class="offcanvas-header sirona-offcanvas-header border-0">
+          <div class="d-flex align-items-center gap-2 min-w-0">
+            <span class="sirona-offcanvas-title text-truncate" id="sironaMenuLabel">Menú</span>
           </div>
+          <button type="button" class="btn app-icon-btn" data-bs-dismiss="offcanvas" aria-label="Cerrar" title="Cerrar">
+            <i data-lucide="x" class="app-lucide-toolbar"></i>
+          </button>
+        </div>
+        <div class="offcanvas-body sirona-offcanvas-body">
+          <nav class="sirona-offcanvas-nav" aria-label="Navegación">
+            <a class="app-sidebar-link" href="{% url 'home' %}" data-bs-dismiss="offcanvas">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="home"></i></span>
+              <span class="app-sidebar-label">Inicio</span>
+            </a>
+            <a class="app-sidebar-link" href="{% url 'productos_list' %}" data-bs-dismiss="offcanvas">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="package"></i></span>
+              <span class="app-sidebar-label">Productos</span>
+            </a>
+            <a class="app-sidebar-link" href="{% url 'stock_home' %}" data-bs-dismiss="offcanvas">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="boxes"></i></span>
+              <span class="app-sidebar-label">Stock</span>
+            </a>
+            <a class="app-sidebar-link" href="{% url 'caja_list' %}" data-bs-dismiss="offcanvas">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="wallet"></i></span>
+              <span class="app-sidebar-label">Caja</span>
+            </a>
+            <a class="app-sidebar-link" href="{% url 'compra_historial' %}" data-bs-dismiss="offcanvas">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="shopping-cart"></i></span>
+              <span class="app-sidebar-label">Compras</span>
+            </a>
+            <a class="app-sidebar-link" href="{% url 'ventas_historial' %}" data-bs-dismiss="offcanvas">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="trending-up"></i></span>
+              <span class="app-sidebar-label">Ventas</span>
+            </a>
+            <a class="app-sidebar-link" href="{% url 'presupuesto_lista' %}" data-bs-dismiss="offcanvas">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="file-text"></i></span>
+              <span class="app-sidebar-label">Presupuestos</span>
+            </a>
+            <a class="app-sidebar-link" href="{% url 'vendedores_list' %}" data-bs-dismiss="offcanvas">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="user-check"></i></span>
+              <span class="app-sidebar-label">Vendedores</span>
+            </a>
+            <a class="app-sidebar-link" href="{% url 'compradores_list' %}" data-bs-dismiss="offcanvas">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="users"></i></span>
+              <span class="app-sidebar-label">Compradores</span>
+            </a>
+            <a class="app-sidebar-link" href="{% url 'proveedores_list' %}" data-bs-dismiss="offcanvas">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="truck"></i></span>
+              <span class="app-sidebar-label">Proveedores</span>
+            </a>
+            <a class="app-sidebar-link" href="{% url 'reportes_dashboard' %}" data-bs-dismiss="offcanvas">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="chart-column"></i></span>
+              <span class="app-sidebar-label">Reportes</span>
+            </a>
+            <a class="app-sidebar-link" href="{% url 'calendario_home' %}" data-bs-dismiss="offcanvas">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="calendar-days"></i></span>
+              <span class="app-sidebar-label">Calendario</span>
+            </a>
+            <a class="app-sidebar-link" href="{% url 'bancos_cuentas' %}" data-bs-dismiss="offcanvas">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="landmark"></i></span>
+              <span class="app-sidebar-label">Bancos</span>
+            </a>
+            <a class="app-sidebar-link" href="{% url 'cambiar_password' %}" data-bs-dismiss="offcanvas">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="key"></i></span>
+              <span class="app-sidebar-label">Cambiar contraseña</span>
+            </a>
+            {% if request.user.is_staff %}
+              <a class="app-sidebar-link" href="{% url 'admin_usuarios_list' %}" data-bs-dismiss="offcanvas">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="shield"></i></span>
+                <span class="app-sidebar-label">Administrador</span>
+              </a>
+              <a class="app-sidebar-link" href="{% url 'admin_actividad_list' %}" data-bs-dismiss="offcanvas">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="history"></i></span>
+                <span class="app-sidebar-label">Historial de actividad</span>
+              </a>
+            {% endif %}
+            <a class="app-sidebar-link app-sidebar-link-logout" href="{% url 'logout' %}" data-bs-dismiss="offcanvas">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="log-out"></i></span>
+              <span class="app-sidebar-label">Salir</span>
+            </a>
+          </nav>
         </div>
       </div>
     {% endif %}
@@ -120,15 +176,22 @@
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
     <script>
       (function () {
-        var L = typeof lucide !== "undefined" ? lucide : window.lucide;
-        if (L && typeof L.createIcons === "function") {
-          L.createIcons({
-            attrs: {
-              "stroke-width": 1.65,
-              width: 18,
-              height: 18,
-            },
-          });
+        function paintIcons() {
+          var L = typeof lucide !== "undefined" ? lucide : window.lucide;
+          if (L && typeof L.createIcons === "function") {
+            L.createIcons({
+              attrs: {
+                "stroke-width": 1.65,
+                width: 18,
+                height: 18,
+              },
+            });
+          }
+        }
+        paintIcons();
+        var menu = document.getElementById("sironaMenu");
+        if (menu) {
+          menu.addEventListener("shown.bs.offcanvas", paintIcons);
         }
       })();
     </script>

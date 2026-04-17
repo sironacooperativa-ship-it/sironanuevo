@@ -1,4 +1,5 @@
 from decimal import Decimal, InvalidOperation
+from itertools import zip_longest
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -7,8 +8,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 
+from core.export_utils import parse_export
 from core.fecha_filtros import parse_fecha_param
-from core.repoblar_lineas import lineas_iniciales_desde_post, repoblar_campos_cabecera_desde_post
+from core.repoblar_lineas import repoblar_campos_cabecera_desde_post
 from personas.models import Comprador, Vendedor
 from productos.models import Producto
 from ventas.servicios import crear_venta_confirmada
@@ -30,6 +32,30 @@ def _productos_payload():
     ]
 
 
+def _lineas_presupuesto_desde_post(request) -> list[dict]:
+    """
+    Repuebla líneas tras error de validación: conserva producto, cantidad y precio tal como los envió el usuario
+    (incluye filas incompletas o cantidades/precios inválidos para que pueda corregir solo eso).
+    """
+    pids = request.POST.getlist("linea_producto")
+    qtys = request.POST.getlist("linea_cantidad")
+    precios = request.POST.getlist("linea_precio_unitario")
+    out: list[dict] = []
+    for pid, qraw, praw in zip_longest(pids, qtys, precios, fillvalue=""):
+        ps = (pid or "").strip()
+        qs = (qraw or "").strip()
+        pc = (praw or "").strip()
+        if not ps and not qs and not pc:
+            continue
+        row: dict = {"cantidad_raw": qs}
+        if ps.isdigit():
+            row["producto_id"] = int(ps)
+        if pc:
+            row["precio_unitario"] = pc
+        out.append(row)
+    return out
+
+
 def _validar_lineas_post(request):
     """Valida POST de líneas (igual que venta). Devuelve (error_msg|None, line_specs, subtotal, extras)."""
     vid = request.POST.get("vendedor")
@@ -41,6 +67,7 @@ def _validar_lineas_post(request):
 
     pids = request.POST.getlist("linea_producto")
     qtys = request.POST.getlist("linea_cantidad")
+    precios_raw = request.POST.getlist("linea_precio_unitario")
 
     cid_raw = (request.POST.get("comprador") or "").strip()
     comprador_id = None
@@ -66,13 +93,17 @@ def _validar_lineas_post(request):
     line_specs = []
     subtotal = Decimal("0.00")
     err = None
-    for pid, qraw in zip(pids, qtys):
+    for pid, qraw, praw in zip_longest(pids, qtys, precios_raw, fillvalue=""):
         pid = (pid or "").strip()
         qraw = (qraw or "").strip()
-        if not pid and not qraw:
+        praw_s = (praw or "").strip()
+        if not pid and not qraw and not praw_s:
             continue
         if not pid:
-            err = "Hay una línea sin producto."
+            err = "Hay una línea sin producto (elegí el producto o borrá la fila vacía)."
+            break
+        if not qraw:
+            err = "Indicá la cantidad en cada línea con producto."
             break
         try:
             qty = int(qraw)
@@ -90,7 +121,18 @@ def _validar_lineas_post(request):
         if prod.stock < qty:
             err = f"Stock insuficiente para {prod.codigo} (disponible: {prod.stock})."
             break
-        pu = prod.precio_venta
+        raw_pu = praw_s
+        if raw_pu:
+            try:
+                pu = Decimal(str(raw_pu).replace(",", "."))
+            except InvalidOperation:
+                err = f"El precio unitario no es válido en la línea de {prod.codigo}."
+                break
+        else:
+            pu = prod.precio_venta
+        if pu <= 0:
+            err = f"El precio unitario debe ser mayor a cero ({prod.codigo})."
+            break
         st = (pu * qty).quantize(Decimal("0.01"))
         subtotal += st
         line_specs.append((prod, qty, pu, st))
@@ -102,7 +144,8 @@ def _validar_lineas_post(request):
     if descuento > subtotal:
         return "El descuento no puede superar el subtotal de las líneas.", None, None, None
 
-    aplica_comision = request.POST.get("aplica_comision") == "1"
+    # En presupuesto no se muestra en pantalla; por defecto aplica (igual que antes con el checkbox activado).
+    aplica_comision = request.POST.get("aplica_comision", "1") == "1"
     return None, line_specs, subtotal, (
         int(vid),
         fecha_v,
@@ -143,24 +186,47 @@ def _guardar_presupuesto_desde_lineas(
         )
 
 
-@login_required
-def presupuesto_lista(request):
-    items = (
-        Presupuesto.objects.select_related("vendedor", "venta")
+def _filtrar_presupuestos_queryset(request):
+    qs = (
+        Presupuesto.objects.select_related("vendedor", "venta", "comprador")
         .prefetch_related("lineas__producto")
         .order_by("-creado_en", "-id")
     )
-    return render(request, "presupuestos/lista.html", {"presupuestos": items})
+    cid = (request.GET.get("comprador") or "").strip()
+    if cid.isdigit():
+        qs = qs.filter(comprador_id=int(cid))
+    return qs, {"comprador": cid}
+
+
+@login_required
+def presupuesto_lista(request):
+    items, filtros_ctx = _filtrar_presupuestos_queryset(request)
+    compradores = Comprador.objects.order_by("apellido", "nombre", "codigo")
+    return render(
+        request,
+        "presupuestos/lista.html",
+        {
+            "presupuestos": items,
+            "filtros": filtros_ctx,
+            "compradores_filtro": compradores,
+        },
+    )
 
 
 @login_required
 def presupuesto_detalle(request, pk: int):
     p = get_object_or_404(
-        Presupuesto.objects.select_related("vendedor", "venta", "comprador").prefetch_related(
-            "lineas__producto"
-        ),
+        Presupuesto.objects.select_related(
+            "vendedor",
+            "comprador",
+            "venta",
+            "venta__pago_movimiento",
+            "venta__pago_movimiento__creado_por",
+        ).prefetch_related("lineas__producto"),
         pk=pk,
     )
+    if parse_export(request) == "pdf":
+        return presupuesto_pdf_response(p)
     return render(request, "presupuestos/detalle.html", {"presupuesto": p})
 
 
@@ -199,7 +265,7 @@ def presupuesto_nuevo(request):
             messages.success(request, f"Presupuesto #{pr.pk} guardado.")
             return redirect("presupuesto_lista")
         messages.error(request, err)
-        lineas_iniciales = lineas_iniciales_desde_post(request)
+        lineas_iniciales = _lineas_presupuesto_desde_post(request)
         repoblar = repoblar_campos_cabecera_desde_post(request)
 
     return render(
@@ -228,7 +294,12 @@ def presupuesto_editar(request, pk: int):
     vendedores = Vendedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
     productos_catalogo = _productos_payload()
     lineas_iniciales = [
-        {"producto_id": ln.producto_id, "cantidad": ln.cantidad} for ln in presupuesto.lineas.all()
+        {
+            "producto_id": ln.producto_id,
+            "cantidad": ln.cantidad,
+            "precio_unitario": str(ln.precio_unitario),
+        }
+        for ln in presupuesto.lineas.all()
     ]
     repoblar = None
 
@@ -253,7 +324,7 @@ def presupuesto_editar(request, pk: int):
             messages.success(request, "Presupuesto actualizado.")
             return redirect("presupuesto_lista")
         messages.error(request, err)
-        lineas_iniciales = lineas_iniciales_desde_post(request)
+        lineas_iniciales = _lineas_presupuesto_desde_post(request)
         repoblar = repoblar_campos_cabecera_desde_post(request)
 
     return render(

@@ -317,7 +317,7 @@ def reset_datos(request):
             Producto.objects.all().delete()
         else:
             # Dejar productos pero resetear stock y flags típicos de pruebas
-            Producto.objects.all().update(stock=0, en_lista_precios=False)
+            Producto.objects.all().update(stock=0, en_lista_precios=False, habilitado=False)
             ListaPrecios.objects.all().delete()
 
     messages.success(

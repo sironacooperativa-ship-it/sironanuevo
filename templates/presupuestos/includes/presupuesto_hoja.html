@@ -1,0 +1,116 @@
+{% load static %}
+{% load money %}
+{# Una hoja del presupuesto (Remito / Duplicado). Contexto: presupuesto, copia_label #}
+<div class="card shadow-sm border presupuesto-doc mb-3">
+  <div class="card-body p-3 p-md-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 border-bottom pb-3 mb-3">
+      <div>
+        <img src="{% static 'img/sirona-logo.png' %}" alt="SIRONA" class="mb-2" style="max-height: 48px; width: auto" />
+        {% if presupuesto.estado == "ACT" %}
+          <div class="fs-5 fw-semibold">Presupuesto N.º {{ presupuesto.pk|stringformat:"08d" }}</div>
+          <div class="text-muted small">Copia {{ copia_label }} · Cotización</div>
+        {% else %}
+          <div class="fs-5 fw-semibold">Orden de compra N.º {{ presupuesto.pk|stringformat:"08d" }}</div>
+          <div class="text-muted small">Copia {{ copia_label }}</div>
+        {% endif %}
+      </div>
+      <div class="text-end">
+        <div class="small text-muted">Emitido {{ presupuesto.creado_en|date:"d/m/Y" }} · {{ presupuesto.creado_en|date:"H:i" }}</div>
+        <div class="small"><span class="text-muted">Estado:</span> {{ presupuesto.get_estado_display }}</div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3 small">
+      <div class="col-12">
+        <h2 class="h6 text-uppercase text-muted mb-2">Vendedor</h2>
+        <p class="mb-1"><span class="text-muted">Código:</span> {{ presupuesto.vendedor.codigo }}</p>
+        <p class="mb-1 fw-semibold">{{ presupuesto.vendedor.apellido }}, {{ presupuesto.vendedor.nombre }}</p>
+        {% if presupuesto.vendedor.telefono %}<p class="mb-1">Tel. {{ presupuesto.vendedor.telefono }}</p>{% endif %}
+        {% if presupuesto.vendedor.mail %}<p class="mb-0">{{ presupuesto.vendedor.mail }}</p>{% endif %}
+      </div>
+      <div class="col-12">
+        <h2 class="h6 text-uppercase text-muted mb-2">Cliente</h2>
+        {% if presupuesto.comprador %}
+          <p class="mb-1"><span class="text-muted">Código:</span> {{ presupuesto.comprador.codigo }}</p>
+          <p class="mb-1 fw-semibold">{{ presupuesto.comprador.apellido }}, {{ presupuesto.comprador.nombre }}</p>
+          {% if presupuesto.comprador.telefono %}<p class="mb-1">Tel. {{ presupuesto.comprador.telefono }}</p>{% endif %}
+          {% if presupuesto.comprador.direccion %}<p class="mb-0 text-muted">{{ presupuesto.comprador.direccion }}</p>{% endif %}
+        {% else %}
+          <p class="text-muted mb-0">Sin asignar</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <h2 class="h6 text-uppercase text-muted mb-2">Detalle</h2>
+    <table class="table table-sm table-presupuesto mb-3">
+      <thead class="table-light">
+        <tr>
+          <th class="text-center" style="width: 2.25rem">N.º</th>
+          <th style="width: 4.5rem">Cód.</th>
+          <th class="col-desc">Descripción</th>
+          <th class="text-end" style="width: 3rem">Cant.</th>
+          <th class="text-end" style="width: 5rem">P. unit.</th>
+          <th class="text-end" style="width: 5.5rem">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in presupuesto.lineas.all %}
+          <tr>
+            <td class="text-center text-muted">{{ forloop.counter }}</td>
+            <td class="text-nowrap">{{ l.producto.codigo }}</td>
+            <td class="col-desc">{{ l.producto.descripcion }}</td>
+            <td class="text-end">{{ l.cantidad }}</td>
+            <td class="text-end text-nowrap">{{ l.precio_unitario|ars }}</td>
+            <td class="text-end text-nowrap fw-medium">{{ l.subtotal|ars }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted">Sin líneas</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="row justify-content-end mb-2">
+      <div class="col-12 col-sm-10 col-md-7">
+        <table class="table table-sm mb-0">
+          <tbody>
+            <tr>
+              <td>Subtotal líneas</td>
+              <td class="text-end">{{ presupuesto.subtotal_lineas|ars }}</td>
+            </tr>
+            <tr>
+              <td>Descuento</td>
+              <td class="text-end">{{ presupuesto.descuento_monto|ars }}</td>
+            </tr>
+            <tr class="fw-semibold table-light">
+              <td>Neto</td>
+              <td class="text-end">{{ presupuesto.neto|ars }}</td>
+            </tr>
+            {% if presupuesto.venta_id and presupuesto.venta.estado == "PAG" and presupuesto.venta.pago_movimiento %}
+              <tr>
+                <td colspan="2" class="text-end pt-2 border-top">
+                  <div class="fw-bold text-success">PAGADO</div>
+                  <div class="small text-muted">{{ presupuesto.venta.pago_movimiento.creado_en|date:"d/m/Y H:i" }}</div>
+                  <div class="small">{% if presupuesto.venta.pago_movimiento.creado_por %}{{ presupuesto.venta.pago_movimiento.creado_por.get_username }}{% else %}—{% endif %}</div>
+                </td>
+              </tr>
+            {% endif %}
+            <tr>
+              <td>{% if presupuesto.estado == "ACT" %}Venc. pago (si se confirma){% else %}Venc. pago{% endif %}</td>
+              <td class="text-end">
+                {% if presupuesto.fecha_vencimiento_pago %}{{ presupuesto.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">Sin indicar</span>{% endif %}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if presupuesto.venta_id %}
+      <p class="small text-muted mb-0 border-top pt-3">
+        Pedido generado: <a href="{% url 'venta_detalle' presupuesto.venta_id %}">#{{ presupuesto.venta_id }}</a> — {{ presupuesto.venta.get_estado_display }}.
+      </p>
+    {% endif %}
+  </div>
+</div>

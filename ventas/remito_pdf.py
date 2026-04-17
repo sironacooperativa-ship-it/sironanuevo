@@ -11,14 +11,12 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from core.money_decimal import q2
+from core.money_decimal import format_monto_ars
 from core.pdf_membrete import platypus_membrete
 
 
 def _money(v) -> str:
-    d = q2(v)
-    s = f"{d:,.2f}"
-    return "$ " + s.replace(",", "X").replace(".", ",").replace("X", ".")
+    return format_monto_ars(v)
 
 
 def _numero_remito(venta) -> str:

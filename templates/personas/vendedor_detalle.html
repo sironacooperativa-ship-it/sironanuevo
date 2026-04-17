@@ -12,11 +12,16 @@
     </div>
   </div>
 
+  <h2 class="h5 mb-3">Comisiones</h2>
+  <p class="text-muted small mb-3">
+    Cada pedido muestra neto, comisión e ingreso en caja; al cobrar, caja y deudas usan el ingreso neto para el vendedor.
+  </p>
+
   <div class="row g-3 mb-3">
     <div class="col-12 col-md-4">
       <div class="card shadow-sm h-100">
         <div class="card-body small">
-          <div class="text-muted">Comisión configurada</div>
+          <div class="text-muted">Porcentaje configurado</div>
           <div class="fs-5 fw-semibold">{{ vendedor.comision_porcentaje }}%</div>
           <p class="text-muted mb-0 mt-2 small">
             Se aplica al confirmar cada pedido (venta directa o al aprobar un presupuesto).
@@ -26,7 +31,7 @@
     </div>
     <div class="col-12 col-md-8">
       <div class="card shadow-sm h-100">
-        <div class="card-header fw-semibold py-2">Comisiones acumuladas por mes</div>
+        <div class="card-header fw-semibold py-2">Totales por mes</div>
         <div class="card-body p-0">
           {% if comisiones_por_mes %}
             <div class="table-responsive">
@@ -56,7 +61,7 @@
   </div>
 
   <div class="card shadow-sm">
-    <div class="card-header fw-semibold">Pedidos (ventas)</div>
+    <div class="card-header fw-semibold">Detalle por pedido</div>
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">

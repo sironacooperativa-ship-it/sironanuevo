@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Importar Excel — códigos repetidos{% endblock %}
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Códigos que ya existían</h1>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'productos_list' %}">Ir a productos</a>
+  </div>
+
+  <p class="text-muted small mb-3">
+    Ya se cargaron los productos <strong>nuevos</strong>. Para cada fila del Excel cuyo <strong>código</strong> coincide con uno que ya estaba en la base,
+    elegí si querés <strong>aplicar los datos del Excel</strong> o <strong>dejar el producto como está</strong>.
+  </p>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="card shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Fila</th>
+              <th>Código</th>
+              <th>Datos en el Excel</th>
+              <th>Datos en la base</th>
+              <th class="text-nowrap">Decisión</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in filas %}
+              <tr>
+                <td class="text-muted">{{ row.fila }}</td>
+                <td><code>{{ row.codigo }}</code></td>
+                <td class="small">
+                  <div><strong>{{ row.excel.descripcion }}</strong></div>
+                  <div class="text-muted">{{ row.excel.tipo_label }}</div>
+                  <div>Costo: {{ row.excel.costo }} · %: {{ row.excel.porcentaje_ganancia }} · Stock: {{ row.excel.stock }}</div>
+                  <div>
+                    Precio:
+                    {% if row.excel.precio_automatico %}
+                      <span class="text-muted">automático (costo + %)</span>
+                    {% else %}
+                      {{ row.excel.precio_venta }}
+                    {% endif %}
+                  </div>
+                  {% if row.excel.fecha_vencimiento %}
+                    <div>Vto.: {{ row.excel.fecha_vencimiento }}</div>
+                  {% endif %}
+                </td>
+                <td class="small">
+                  {% if row.producto %}
+                    <div><strong>{{ row.producto.descripcion }}</strong></div>
+                    <div class="text-muted">{{ row.producto.get_tipo_display }}</div>
+                    <div>Costo: {{ row.producto.costo }} · %: {{ row.producto.porcentaje_ganancia }} · Stock: {{ row.producto.stock }}</div>
+                    <div>Precio: {{ row.producto.precio_venta|ars }}{% if not row.producto.precio_venta_editado %} <span class="text-muted">(calculado)</span>{% endif %}</div>
+                    {% if row.producto.fecha_vencimiento %}
+                      <div>Vto.: {{ row.producto.fecha_vencimiento|date:"d/m/Y" }}</div>
+                    {% endif %}
+                  {% else %}
+                    <span class="text-warning">No se encontró el producto en la base (pudo haberse eliminado).</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if row.producto %}
+                    <div class="d-flex flex-column gap-1">
+                      <label class="small mb-0">
+                        <input type="radio" name="resolver_{{ row.producto_id }}" value="mantener" checked />
+                        Mantener base
+                      </label>
+                      <label class="small mb-0">
+                        <input type="radio" name="resolver_{{ row.producto_id }}" value="excel" />
+                        Usar Excel
+                      </label>
+                    </div>
+                  {% else %}
+                    <span class="text-muted small">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="card-body border-top d-flex flex-wrap gap-2 justify-content-end">
+        <a class="btn btn-outline-secondary" href="{% url 'productos_import_excel' %}">Volver a importar</a>
+        <button type="submit" class="btn btn-primary">Aplicar decisiones</button>
+      </div>
+    </div>
+  </form>
+{% endblock %}

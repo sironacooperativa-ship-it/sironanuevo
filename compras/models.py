@@ -30,6 +30,14 @@ class Compra(models.Model):
         on_delete=models.SET_NULL,
         related_name="compra_registro",
     )
+    anulada = models.BooleanField(default=False, db_index=True)
+    movimiento_credito = models.OneToOneField(
+        MovimientoCaja,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="compra_nota_credito",
+    )
     creado_por = models.ForeignKey(
         "auth.User",
         null=True,

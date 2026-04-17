@@ -1,14 +1,17 @@
 """Repoblar cabecera y líneas de pedido/presupuesto desde POST tras un error de validación."""
 
+from itertools import zip_longest
+
 from core.fecha_filtros import parse_fecha_param
 
 
 def lineas_iniciales_desde_post(request) -> list[dict]:
-    """Replica líneas `linea_producto` / `linea_cantidad` para json_script en plantillas."""
+    """Replica líneas `linea_producto` / `linea_cantidad` [y opcional `linea_precio_unitario`] para json_script."""
     pids = request.POST.getlist("linea_producto")
     qtys = request.POST.getlist("linea_cantidad")
+    precios = request.POST.getlist("linea_precio_unitario")
     out: list[dict] = []
-    for pid, qraw in zip(pids, qtys):
+    for pid, qraw, praw in zip_longest(pids, qtys, precios, fillvalue=""):
         ps = (pid or "").strip()
         qs = (qraw or "").strip()
         if not ps and not qs:
@@ -20,7 +23,11 @@ def lineas_iniciales_desde_post(request) -> list[dict]:
             except ValueError:
                 qty = 1
         if ps.isdigit():
-            out.append({"producto_id": int(ps), "cantidad": max(1, qty)})
+            row: dict = {"producto_id": int(ps), "cantidad": max(1, qty)}
+            pstr = (praw or "").strip()
+            if pstr:
+                row["precio_unitario"] = pstr
+            out.append(row)
     return out
 
 
