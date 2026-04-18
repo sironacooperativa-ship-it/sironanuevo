@@ -4,7 +4,6 @@
 {% block content %}
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Stock</h1>
-    {% include "includes/export_buttons.html" %}
   </div>
 
   <div class="card shadow-sm mb-3">
@@ -128,6 +127,11 @@
         </table>
       </div>
     </div>
+  </div>
+
+  <div class="d-flex flex-wrap align-items-center gap-2 mt-3 mb-2">
+    <span class="text-muted small">Exportar:</span>
+    {% include "includes/export_buttons.html" %}
   </div>
 
   <script>

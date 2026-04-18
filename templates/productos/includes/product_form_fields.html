@@ -58,8 +58,31 @@
   <div class="col-12 col-sm-6">
     <div class="form-check form-switch sirona-switch mt-2 mt-sm-3">
       {{ form.en_lista_precios }}
-      <label class="form-check-label small" for="{{ form.en_lista_precios.id_for_label }}">En lista (PDF)</label>
+      <label class="form-check-label small" for="{{ form.en_lista_precios.id_for_label }}">En lista Farmacia (PDF)</label>
     </div>
     {% if form.en_lista_precios.errors %}<div class="text-danger small">{{ form.en_lista_precios.errors }}</div>{% endif %}
   </div>
+
+  {% if listas_extra_opciones %}
+    <div class="col-12">
+      <hr class="my-2" />
+      <label class="form-label small text-muted mb-1">También en otras listas de precio</label>
+      <p class="small text-muted mb-2">
+        El precio base de Farmacia se define arriba. Marcá rubros adicionales para incluir el producto con precio propio en cada lista (se edita en <strong>Listas de precio</strong>).
+      </p>
+      {% for l in listas_extra_opciones %}
+        <div class="form-check">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            name="listas_extra"
+            value="{{ l.pk }}"
+            id="lista_extra_{{ l.pk }}"
+            {% if l.pk in listas_extra_marcados %}checked{% endif %}
+          />
+          <label class="form-check-label small" for="lista_extra_{{ l.pk }}">{{ l.nombre }}</label>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
 </div>

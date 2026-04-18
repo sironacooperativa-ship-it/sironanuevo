@@ -15,6 +15,17 @@
     </div>
   </div>
 
+  {% if vendedor.usuario_id %}
+    <p class="text-muted small mb-3">
+      Usuario de acceso al portal: <strong>{{ vendedor.usuario.username }}</strong>
+      (debe coincidir con el vínculo en <strong>Administración → Usuarios</strong> y con «vendedor asignado» en cada cliente).
+    </p>
+  {% else %}
+    <p class="text-muted small text-warning mb-3">
+      Este vendedor no tiene usuario vinculado. Creá o editá el usuario en <strong>Administración → Usuarios</strong> y elegí el registro <strong>{{ vendedor.codigo }}</strong> en «Vendedor existente en el sistema».
+    </p>
+  {% endif %}
+
   {% if user.is_staff and tiene_historial %}
     <div class="alert alert-warning small mb-3">
       Este vendedor tiene historial:

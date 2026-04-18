@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load money %}
 {% block title %}Cuenta corriente{% endblock %}
 {% block content %}
   <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
@@ -9,6 +10,31 @@
     <div class="d-flex gap-2">
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor_home' %}">Volver</a>
       <a class="btn btn-outline-primary btn-sm" href="{% url 'vendedor_listas' %}">Listas de precio</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="text-muted small text-uppercase">Saldo pendiente</div>
+          <p class="h4 mb-1">{{ saldo_pendiente|ars }}</p>
+          <p class="text-muted small mb-0">
+            Pedidos impagos ya imputados: sin fecha de vencimiento o con vencimiento hasta hoy ({{ hoy|date:"d/m/Y" }}).
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="text-muted small text-uppercase">A pagar (vencimiento futuro)</div>
+          <p class="h4 mb-1 text-secondary">{{ total_a_pagar_futuro|ars }}</p>
+          <p class="text-muted small mb-0">
+            Suma de pedidos con fecha de cobro posterior: al llegar la fecha pasan a integrar el saldo pendiente.
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -23,15 +49,34 @@
                 <div class="fw-semibold">Pedido #{{ v.pk }}</div>
                 {% if v.estado == "PAG" %}
                   <span class="badge text-bg-success">Pagado</span>
+                {% elif v.fecha_vencimiento_pago and v.fecha_vencimiento_pago > hoy %}
+                  <span class="badge text-bg-info">Impago</span>
                 {% else %}
                   <span class="badge text-bg-warning">Impago</span>
                 {% endif %}
               </div>
               <div class="text-muted small">
                 {% if v.comprador_id %}Cliente: {{ v.comprador }} · {% endif %}
-                {% if v.fecha_vencimiento_pago %}Vence: {{ v.fecha_vencimiento_pago|date:"d/m/Y" }} · {% endif %}
-                Neto: $ {{ v.neto }}
+                {% if v.fecha_vencimiento_pago %}Vence cobro: {{ v.fecha_vencimiento_pago|date:"d/m/Y" }} · {% endif %}
+                Neto: {{ v.neto|ars }}
               </div>
+              {% if v.estado == "PEN" and v.fecha_vencimiento_pago and v.fecha_vencimiento_pago > hoy %}
+                <div class="small text-primary mt-1 fw-semibold">A pagar</div>
+                <div class="text-muted small">Este importe aún no integra el saldo pendiente hasta la fecha de vencimiento.</div>
+              {% endif %}
+              {% if v.estado == "PAG" and v.pago_movimiento %}
+                {% if v.pago_movimiento.medio_pago == "CHQ" %}
+                  <div class="text-muted small mt-1">
+                    Cobro con cheque: el ingreso se registró en caja al momento del cobro
+                    ({{ v.monto_ingreso_caja|ars }}).
+                    N.º {{ v.pago_movimiento.numero_cheque }}
+                    {% if v.pago_movimiento.fecha_vencimiento_cheque %}
+                      · Venc. cheque: {{ v.pago_movimiento.fecha_vencimiento_cheque|date:"d/m/Y" }}
+                    {% endif %}
+                  </div>
+                  <div class="text-muted small">El vencimiento del cheque queda en Calendario / exportaciones del sistema.</div>
+                {% endif %}
+              {% endif %}
             </div>
           {% endfor %}
         </div>
@@ -49,13 +94,19 @@
           {% for m in movimientos %}
             <div class="list-group-item">
               <div class="d-flex justify-content-between align-items-center gap-2">
-                <div class="fw-semibold">{{ m.get_tipo_display }} · $ {{ m.monto }}</div>
+                <div class="fw-semibold">{{ m.get_tipo_display }} · {{ m.monto|ars }} · {{ m.get_medio_pago_display }}</div>
                 <div class="text-muted small">{{ m.fecha|date:"d/m/Y" }}</div>
               </div>
               <div class="text-muted small">
                 {{ m.operacion }}
                 {% if m.venta_id %} · Pedido #{{ m.venta_id }}{% endif %}
               </div>
+              {% if m.medio_pago == "CHQ" and m.numero_cheque %}
+                <div class="text-muted small mt-1">
+                  Cheque {{ m.numero_cheque }}
+                  {% if m.fecha_vencimiento_cheque %}· Vence {{ m.fecha_vencimiento_cheque|date:"d/m/Y" }}{% endif %}
+                </div>
+              {% endif %}
             </div>
           {% endfor %}
         </div>

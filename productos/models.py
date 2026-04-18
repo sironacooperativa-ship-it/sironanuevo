@@ -3,6 +3,7 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.utils.text import slugify
 
 
 class Producto(models.Model):
@@ -125,14 +126,62 @@ class Producto(models.Model):
 
 
 class ListaPrecios(models.Model):
+    """Rubro / canal de venta. La lista marcada como Farmacia usa los precios del modelo Producto."""
+
     nombre = models.CharField(max_length=100)
-    productos = models.ManyToManyField(Producto, related_name="listas_precios")
+    slug = models.SlugField(max_length=120, blank=True, default="", db_index=True)
+    es_farmacia = models.BooleanField(default=False, db_index=True)
+    productos = models.ManyToManyField(
+        Producto,
+        through="ListaPrecioItem",
+        related_name="listas_precios",
+    )
     creado_en = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["-creado_en", "-id"]
+        ordering = ["-es_farmacia", "-creado_en", "-id"]
         unique_together = [("nombre",)]
 
     def __str__(self) -> str:
         return self.nombre
+
+    def save(self, *args, **kwargs):
+        if not (self.slug or "").strip():
+            base = slugify(self.nombre)[:120] or "lista"
+            slug = base
+            n = 1
+            qs = ListaPrecios.objects.filter(slug=slug)
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            while qs.exists():
+                slug = f"{base}-{n}"
+                n += 1
+                qs = ListaPrecios.objects.filter(slug=slug)
+                if self.pk:
+                    qs = qs.exclude(pk=self.pk)
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def precio_para(self, producto: Producto) -> Decimal | None:
+        """Precio de venta en esta lista (Farmacia = `Producto.precio_venta`)."""
+        if self.es_farmacia:
+            return producto.precio_venta
+        item = self.items.filter(producto_id=producto.pk).first()
+        return item.precio_venta if item else None
+
+
+class ListaPrecioItem(models.Model):
+    """Precio por rubro distinto de Farmacia. La lista Farmacia no usa filas (precio en Producto)."""
+
+    lista = models.ForeignKey(ListaPrecios, on_delete=models.CASCADE, related_name="items")
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name="items_lista_precio")
+    precio_venta = models.DecimalField(max_digits=12, decimal_places=2)
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["producto__descripcion", "producto__codigo"]
+        unique_together = [("lista", "producto")]
+
+    def __str__(self) -> str:
+        return f"{self.lista} · {self.producto.codigo}"
 

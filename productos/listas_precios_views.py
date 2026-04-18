@@ -1,0 +1,224 @@
+"""Gestión de listas de precios por rubro (Farmacia = precios en Producto; otras = ListaPrecioItem)."""
+
+from __future__ import annotations
+
+from decimal import Decimal
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.db.models import Q
+from django.http import HttpResponseForbidden
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_http_methods
+
+from core.money_decimal import q2
+
+from .models import ListaPrecioItem, ListaPrecios, Producto
+
+
+def producto_listas_extra_context(producto: Producto | None) -> dict:
+    opciones = ListaPrecios.objects.filter(es_farmacia=False).order_by("nombre")
+    marcados: set[int] = set()
+    if producto and producto.pk:
+        marcados = set(
+            ListaPrecioItem.objects.filter(producto=producto).values_list("lista_id", flat=True)
+        )
+    return {
+        "listas_extra_opciones": opciones,
+        "listas_extra_marcados": marcados,
+    }
+
+
+def sync_producto_listas_extras_from_post(request, producto: Producto) -> None:
+    """Asocia el producto a listas de rubro (no Farmacia) según checkboxes POST `listas_extra`."""
+    if request.POST.get("listas_extra_present") != "1":
+        return
+    ids = {int(x) for x in request.POST.getlist("listas_extra") if str(x).isdigit()}
+    listas_ids = set(
+        ListaPrecios.objects.filter(es_farmacia=False, pk__in=ids).values_list("pk", flat=True)
+    )
+    ListaPrecioItem.objects.filter(producto=producto).exclude(lista_id__in=listas_ids).delete()
+    for lista in ListaPrecios.objects.filter(es_farmacia=False, pk__in=listas_ids):
+        ListaPrecioItem.objects.get_or_create(
+            lista=lista,
+            producto=producto,
+            defaults={"precio_venta": producto.precio_venta},
+        )
+
+
+def _parse_precio(raw: str) -> Decimal | None:
+    s = (raw or "").strip().replace(",", ".")
+    if s == "":
+        return None
+    try:
+        d = Decimal(s)
+    except Exception:
+        return None
+    if d < 0:
+        return None
+    return q2(d)
+
+
+@login_required
+@require_http_methods(["GET"])
+def listas_precios_menu(request):
+    listas = list(ListaPrecios.objects.all().order_by("-es_farmacia", "nombre"))
+    return render(request, "productos/listas_precios_index.html", {"listas": listas})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def lista_precios_nueva(request):
+    if request.method == "POST":
+        nombre = (request.POST.get("nombre") or "").strip()
+        if not nombre:
+            messages.error(request, "Ingresá un nombre para la lista.")
+            return redirect("productos_listas_precios")
+        if ListaPrecios.objects.filter(nombre__iexact=nombre).exists():
+            messages.error(request, "Ya existe una lista con ese nombre.")
+            return redirect("productos_listas_precios")
+        lista = ListaPrecios.objects.create(nombre=nombre)
+        messages.success(request, f"Lista creada: {lista.nombre}")
+        return redirect("lista_precios_trabajar", pk=lista.pk)
+    return render(request, "productos/lista_precios_nueva.html", {})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def lista_precios_renombrar(request, pk: int):
+    lista = get_object_or_404(ListaPrecios, pk=pk)
+    if lista.es_farmacia:
+        return HttpResponseForbidden("La lista Farmacia no se puede renombrar.")
+    if request.method == "POST":
+        nombre = (request.POST.get("nombre") or "").strip()
+        if not nombre:
+            messages.error(request, "El nombre no puede quedar vacío.")
+        elif ListaPrecios.objects.filter(nombre__iexact=nombre).exclude(pk=lista.pk).exists():
+            messages.error(request, "Ya existe otra lista con ese nombre.")
+        else:
+            lista.nombre = nombre
+            lista.slug = ""
+            lista.save()
+            messages.success(request, "Lista actualizada.")
+            return redirect("lista_precios_trabajar", pk=lista.pk)
+    return render(request, "productos/lista_precios_renombrar.html", {"lista": lista})
+
+
+@login_required
+@require_http_methods(["POST"])
+def lista_precios_eliminar(request, pk: int):
+    lista = get_object_or_404(ListaPrecios, pk=pk)
+    if lista.es_farmacia:
+        messages.error(request, "La lista Farmacia no se puede eliminar.")
+        return redirect("productos_listas_precios")
+    nombre = lista.nombre
+    lista.delete()
+    messages.success(request, f"Lista eliminada: {nombre}")
+    return redirect("productos_listas_precios")
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def lista_precios_trabajar(request, pk: int):
+    lista = get_object_or_404(ListaPrecios, pk=pk)
+    q = (request.GET.get("q") or request.POST.get("q") or "").strip()
+
+    if lista.es_farmacia:
+        qs = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
+        if q:
+            qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
+        productos = list(qs[:800])
+
+        if request.method == "POST":
+            actualizados = 0
+            with transaction.atomic():
+                for p in productos:
+                    key = f"pv_{p.pk}"
+                    if key not in request.POST:
+                        continue
+                    pr = _parse_precio(request.POST.get(key) or "")
+                    if pr is None:
+                        continue
+                    if p.precio_venta != pr:
+                        p.precio_venta = pr
+                        p.precio_venta_editado = True
+                        p.save()
+                        actualizados += 1
+            messages.success(request, f"Se actualizaron {actualizados} precio(s) de Farmacia.")
+            return redirect(f"{request.path}?q={q}" if q else request.path)
+
+        return render(
+            request,
+            "productos/lista_precios_trabajar_farmacia.html",
+            {"lista": lista, "productos": productos, "q": q},
+        )
+
+    # Listas por rubro: ítems con precio propio
+    if request.method == "POST":
+        accion = (request.POST.get("accion") or "").strip()
+        quitar = (request.POST.get("quitar_item") or "").strip()
+        if quitar.isdigit():
+            ListaPrecioItem.objects.filter(pk=int(quitar), lista=lista).delete()
+            messages.info(request, "Producto quitado de la lista.")
+            return redirect(f"{request.path}?q={q}" if q else request.path)
+        if accion == "agregar":
+            raw_pid = (request.POST.get("producto_id") or "").strip()
+            if raw_pid.isdigit():
+                prod = Producto.objects.filter(pk=int(raw_pid), habilitado=True).first()
+                if prod:
+                    ListaPrecioItem.objects.get_or_create(
+                        lista=lista,
+                        producto=prod,
+                        defaults={"precio_venta": prod.precio_venta},
+                    )
+                    messages.success(request, f"Agregado a la lista: {prod.codigo}")
+                else:
+                    messages.warning(request, "Producto no encontrado o deshabilitado.")
+            return redirect(f"{request.path}?q={q}" if q else request.path)
+
+        items = ListaPrecioItem.objects.filter(lista=lista).select_related("producto")
+        n = 0
+        with transaction.atomic():
+            for it in items:
+                key = f"ip_{it.pk}"
+                if key not in request.POST:
+                    continue
+                pr = _parse_precio(request.POST.get(key) or "")
+                if pr is None:
+                    continue
+                if it.precio_venta != pr:
+                    it.precio_venta = pr
+                    it.save(update_fields=["precio_venta"])
+                    n += 1
+        messages.success(request, f"Se guardaron {n} precio(s) de la lista.")
+        return redirect(f"{request.path}?q={q}" if q else request.path)
+
+    items = (
+        ListaPrecioItem.objects.filter(lista=lista)
+        .select_related("producto")
+        .order_by("producto__descripcion", "producto__codigo")
+    )
+    if q:
+        items = items.filter(
+            Q(producto__descripcion__icontains=q) | Q(producto__codigo__icontains=q)
+        )
+    items = list(items[:800])
+
+    en_lista_ids = {it.producto_id for it in items}
+    disponibles = list(
+        Producto.objects.filter(habilitado=True)
+        .exclude(pk__in=en_lista_ids)
+        .order_by("descripcion", "codigo")[:400]
+    )
+
+    return render(
+        request,
+        "productos/lista_precios_trabajar_rubro.html",
+        {
+            "lista": lista,
+            "items": items,
+            "disponibles": disponibles,
+            "q": q,
+        },
+    )

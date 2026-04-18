@@ -18,6 +18,19 @@ from presupuestos.models import Presupuesto
 from .models import Venta, VentaLinea
 
 
+def unpack_linea_spec(spec: tuple) -> tuple:
+    """
+    Línea de pedido/presupuesto: (prod, qty, pu, st) o
+    (prod, qty, pu, st, codigo_snap, descripcion_snap).
+    """
+    prod, qty, pu, st = spec[:4]
+    if len(spec) >= 6:
+        cod, desc = str(spec[4] or ""), str(spec[5] or "")
+    else:
+        cod, desc = prod.codigo, prod.descripcion
+    return prod, qty, pu, st, cod, desc
+
+
 def crear_venta_confirmada(
     vendedor_id: int,
     fecha_vencimiento_pago: Optional[date],
@@ -31,7 +44,8 @@ def crear_venta_confirmada(
 ) -> Venta:
     """
     Crea Venta + líneas, descuenta stock y genera evento en calendario.
-    line_specs: tuplas (Producto, cantidad, precio_unitario, subtotal).
+    line_specs: tuplas (Producto, cantidad, precio_unitario, subtotal)
+    o con texto congelado: (..., codigo_snapshot, descripcion_snapshot).
     """
     subtotal = sum((t[3] for t in line_specs), Decimal("0.00"))
     with transaction.atomic():
@@ -47,13 +61,16 @@ def crear_venta_confirmada(
             actualizado_por_id=creado_por_id,
         )
         pids_afectados: list[int] = []
-        for prod, qty, pu, st in line_specs:
+        for spec in line_specs:
+            prod, qty, pu, st, cod_snap, desc_snap = unpack_linea_spec(spec)
             VentaLinea.objects.create(
                 venta=venta,
                 producto=prod,
                 cantidad=qty,
                 precio_unitario=pu,
                 subtotal=st,
+                codigo_snapshot=cod_snap[:6] if cod_snap else "",
+                descripcion_snapshot=(desc_snap or "")[:255],
             )
             Producto.objects.filter(pk=prod.pk).update(stock=F("stock") - qty)
             pids_afectados.append(prod.pk)

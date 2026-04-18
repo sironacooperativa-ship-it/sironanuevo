@@ -19,33 +19,25 @@
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-start gap-2">
               <div>
-                <div class="fw-semibold">{{ L.nombre }}</div>
-                {% if L.existe %}
-                  <div class="text-muted small">{{ L.cantidad }} productos</div>
-                {% else %}
-                  <div class="text-danger small">No configurada (falta guardarla desde Productos)</div>
-                {% endif %}
+                <div class="fw-semibold">
+                  {{ L.nombre }}
+                  {% if L.es_farmacia %}<span class="badge text-bg-secondary ms-1">Farmacia</span>{% endif %}
+                </div>
+                <div class="text-muted small">{{ L.cantidad }} productos</div>
               </div>
             </div>
 
             <div class="d-flex flex-wrap gap-2 mt-3">
-              {% if L.existe %}
-                <a class="btn btn-primary btn-sm" href="{% url 'vendedor_lista_pdf' L.slug %}">Descargar PDF</a>
-                <a class="btn btn-outline-primary btn-sm" href="{% url 'vendedor_lista_png' L.slug %}">Descargar PNG</a>
-                <button class="btn btn-outline-secondary btn-sm js-share" type="button" data-share-url="{% url 'vendedor_lista_png' L.slug %}">
-                  Compartir PNG
-                </button>
-              {% else %}
-                <button class="btn btn-primary btn-sm" type="button" disabled>Descargar PDF</button>
-                <button class="btn btn-outline-primary btn-sm" type="button" disabled>Descargar PNG</button>
-              {% endif %}
+              <a class="btn btn-primary btn-sm" href="{% url 'vendedor_lista_pdf' L.slug %}">Descargar PDF</a>
+              <a class="btn btn-outline-primary btn-sm" href="{% url 'vendedor_lista_png' L.slug %}">Descargar PNG</a>
+              <button class="btn btn-outline-secondary btn-sm js-share" type="button" data-share-url="{% url 'vendedor_lista_png' L.slug %}">
+                Compartir PNG
+              </button>
             </div>
 
-            {% if L.existe %}
-              <div class="text-muted small mt-2">
-                El PNG es paginado. Si necesitás otra página, agregá <code>?page=2</code> al link.
-              </div>
-            {% endif %}
+            <div class="text-muted small mt-2">
+              El PNG es paginado. Si necesitás otra página, agregá <code>?page=2</code> al link.
+            </div>
           </div>
         </div>
       </div>

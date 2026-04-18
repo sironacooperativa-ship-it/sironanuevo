@@ -81,13 +81,13 @@ def _append_copia_presupuesto_pdf(story, presupuesto, doc, styles, copia_label: 
     lineas = list(presupuesto.lineas.all())
     data = [["N.º", "Código", "Descripción", "Cant.", "P. unit.", "Subtotal"]]
     for n_item, ln in enumerate(lineas, start=1):
-        desc = ln.producto.descripcion
+        desc = ln.texto_descripcion
         if len(desc) > 72:
             desc = desc[:69] + "…"
         data.append(
             [
                 str(n_item),
-                escape(str(ln.producto.codigo)),
+                escape(str(ln.texto_codigo)),
                 escape(desc),
                 str(ln.cantidad),
                 _money(ln.precio_unitario),

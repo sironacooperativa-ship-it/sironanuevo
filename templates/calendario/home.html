@@ -4,10 +4,7 @@
 {% block content %}
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Calendario</h1>
-    <div class="d-flex align-items-center gap-2 flex-wrap">
-      {% include "includes/export_buttons.html" %}
-      <span class="text-muted small">Ventana: {{ desde|date:"d/m/y" }} → {{ hasta|date:"d/m/y" }}</span>
-    </div>
+    <span class="text-muted small">Ventana: {{ desde|date:"d/m/y" }} → {{ hasta|date:"d/m/y" }}</span>
   </div>
 
   <div class="row g-3">
@@ -137,6 +134,12 @@
               {% endfor %}
             </tbody>
           </table>
+        </div>
+        <div class="card-footer bg-white border-top py-3">
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="text-muted small">Exportar tablas de esta vista:</span>
+            {% include "includes/export_buttons.html" %}
+          </div>
         </div>
       </div>
     </div>

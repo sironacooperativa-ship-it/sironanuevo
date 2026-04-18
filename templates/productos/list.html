@@ -1,12 +1,30 @@
 {% extends "base.html" %}
 {% load money %}
+{% block extra_head %}
+  <style>
+    tr.producto-row-inline.is-editing .producto-view {
+      display: none !important;
+    }
+    tr.producto-row-inline.is-editing .producto-edit {
+      display: block !important;
+    }
+    tr.producto-row-inline.is-editing .producto-edit-actions {
+      display: flex !important;
+    }
+    tr.producto-row-inline.is-editing input.producto-edit[type="number"],
+    tr.producto-row-inline.is-editing select.producto-edit {
+      width: 100%;
+      min-width: 4.25rem;
+    }
+  </style>
+{% endblock %}
 {% block title %}Productos{% endblock %}
 {% block content %}
   <div class="app-page-header mb-3">
     <h1 class="app-page-title mb-1">Productos</h1>
     <p class="text-muted small mb-2">
-      Tocá <strong>Editar</strong> o <strong>Nuevo</strong> para abrir el formulario en un panel.
-      En la tabla podés marcar varios productos y usar <strong>Selección múltiple</strong> (habilitar, deshabilitar, lista PDF, eliminar).
+      <strong>Editar</strong> habilita los campos en la misma fila (incluye stock). <strong>Nuevo</strong> abre el formulario en panel.
+      Selección múltiple: habilitar, deshabilitar, lista PDF, eliminar.
     </p>
 
     <div class="card app-card border-0 shadow-sm mb-3">
@@ -17,34 +35,12 @@
             href="{% url 'producto_create' %}"
             data-sirona-modal-url="{% url 'producto_create' %}?modal=1"
           >Nuevo</a>
-          {% include "includes/export_buttons.html" %}
           <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'productos_import_excel' %}">Importar Excel</a>
           <a
             class="btn btn-outline-dark btn-sm rounded-pill"
             href="{% url 'productos_aumento' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
           >Aumento</a>
-          <form class="d-flex align-items-center gap-2 flex-wrap" method="post" action="{% url 'lista_precios_guardar' %}">
-            {% csrf_token %}
-            <input class="form-control form-control-sm rounded-pill" style="max-width: 200px" name="nombre" placeholder="Nombre de lista" />
-            <button class="btn btn-outline-primary btn-sm rounded-pill" type="submit">Guardar selección</button>
-          </form>
-          <form class="d-flex align-items-center gap-2 flex-wrap" method="post" action="{% url 'lista_precios_aplicar' %}">
-            {% csrf_token %}
-            <select class="form-select form-select-sm rounded-pill" style="max-width: 200px" name="lista_id">
-              <option value="">Aplicar lista…</option>
-              {% for l in listas %}
-                <option value="{{ l.id }}">{{ l.nombre }}</option>
-              {% endfor %}
-            </select>
-            <button class="btn btn-outline-secondary btn-sm rounded-pill" type="submit">Aplicar</button>
-          </form>
-          <form class="d-flex align-items-center gap-2 flex-wrap" method="get" action="{% url 'productos_export_pdf' %}">
-            <div class="form-check form-switch sirona-switch mb-0">
-              <input class="form-check-input" type="checkbox" value="1" id="pdfStock" name="stock" />
-              <label class="form-check-label small" for="pdfStock">Stock en PDF</label>
-            </div>
-            <button class="btn btn-outline-success btn-sm rounded-pill" type="submit">PDF</button>
-          </form>
+          <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'productos_listas_precios' %}">Listas de precio</a>
         </div>
       </div>
     </div>
@@ -154,7 +150,10 @@
         </thead>
         <tbody>
           {% for p in productos %}
-            <tr class="app-table-row {% if not p.habilitado %}opacity-50{% endif %}{% if p.stock == 0 %} table-light{% endif %}">
+            <tr
+              id="producto-row-{{ p.pk }}"
+              class="app-table-row producto-row-inline {% if not p.habilitado %}opacity-50{% endif %}{% if p.stock == 0 %} table-light{% endif %}"
+            >
               <td class="text-center align-middle">
                 <input
                   type="checkbox"
@@ -165,55 +164,168 @@
                   title="Seleccionar {{ p.codigo }}"
                 />
               </td>
-              <td class="font-monospace small">{{ p.codigo }}</td>
-              <td class="small">{{ p.descripcion }}</td>
-              <td class="small text-muted">{{ p.get_tipo_display }}</td>
-              <td class="text-end col-monto small">{{ p.costo|ars }}</td>
-              <td class="text-end small text-nowrap">
-                {{ p.stock }}
-                {% if p.stock == 0 %}
-                  <span class="badge rounded-pill text-bg-secondary ms-1 small">Sin stock</span>
-                {% endif %}
+              <td class="font-monospace small align-middle">{{ p.codigo }}</td>
+              <td class="small align-middle" style="min-width: 11rem">
+                <span class="producto-view">{{ p.descripcion }}</span>
+                <input
+                  type="text"
+                  name="descripcion"
+                  class="form-control form-control-sm rounded-3 producto-edit d-none"
+                  form="producto-inline-{{ p.pk }}"
+                  value="{{ p.descripcion }}"
+                  maxlength="255"
+                  autocomplete="off"
+                />
               </td>
-              <td class="text-end small">{{ p.porcentaje_ganancia }}%</td>
-              <td class="text-end col-monto small fw-medium">{{ p.precio_venta|ars }}</td>
+              <td class="small align-middle">
+                <span class="producto-view text-muted">{{ p.get_tipo_display }}</span>
+                <select
+                  name="tipo"
+                  class="form-select form-select-sm rounded-3 producto-edit d-none"
+                  form="producto-inline-{{ p.pk }}"
+                >
+                  {% for v, label in tipos %}
+                    <option value="{{ v }}" {% if p.tipo == v %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td class="text-end col-monto small align-middle">
+                <span class="producto-view">{{ p.costo|ars }}</span>
+                <input
+                  type="number"
+                  name="costo"
+                  class="form-control form-control-sm text-end rounded-3 producto-edit d-none"
+                  form="producto-inline-{{ p.pk }}"
+                  value="{{ p.costo }}"
+                  step="0.01"
+                  min="0"
+                />
+              </td>
+              <td class="text-end small text-nowrap align-middle">
+                <span class="producto-view">
+                  {{ p.stock }}
+                  {% if p.stock == 0 %}
+                    <span class="badge rounded-pill text-bg-secondary ms-1 small">Sin stock</span>
+                  {% endif %}
+                </span>
+                <input
+                  type="number"
+                  name="stock"
+                  class="form-control form-control-sm text-end rounded-3 producto-edit d-none"
+                  form="producto-inline-{{ p.pk }}"
+                  value="{{ p.stock }}"
+                  min="0"
+                  step="1"
+                  title="Stock"
+                />
+              </td>
+              <td class="text-end small align-middle">
+                <span class="producto-view">{{ p.porcentaje_ganancia }}%</span>
+                <input
+                  type="number"
+                  name="porcentaje_ganancia"
+                  class="form-control form-control-sm text-end rounded-3 producto-edit d-none"
+                  form="producto-inline-{{ p.pk }}"
+                  value="{{ p.porcentaje_ganancia }}"
+                  min="0"
+                  step="0.01"
+                />
+              </td>
+              <td class="text-end col-monto small fw-medium align-middle">
+                <span class="producto-view">{{ p.precio_venta|ars }}</span>
+                <input
+                  type="number"
+                  name="precio_venta"
+                  class="form-control form-control-sm text-end rounded-3 producto-edit d-none"
+                  form="producto-inline-{{ p.pk }}"
+                  value="{{ p.precio_venta }}"
+                  step="0.01"
+                  min="0"
+                  title="Precio de venta"
+                />
+              </td>
               <td class="text-center align-middle py-1">
-                <form method="post" action="{% url 'producto_toggle_lista' p.id %}" class="d-inline">
-                  {% csrf_token %}
-                  <label class="visually-hidden" for="lista-precios-{{ p.id }}">En lista PDF</label>
-                  <div class="form-check form-switch sirona-switch d-inline-flex justify-content-center mb-0 mx-auto">
+                <div class="producto-view">
+                  <form method="post" action="{% url 'producto_toggle_lista' p.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <label class="visually-hidden" for="lista-precios-{{ p.id }}">En lista PDF</label>
+                    <div class="form-check form-switch sirona-switch d-inline-flex justify-content-center mb-0 mx-auto">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        role="switch"
+                        name="set_lista"
+                        value="1"
+                        id="lista-precios-{{ p.id }}"
+                        {% if p.en_lista_precios %}checked{% endif %}
+                        {% if not p.habilitado %}disabled{% endif %}
+                        onchange="this.form.submit()"
+                        title="{% if p.habilitado %}Lista PDF{% else %}Habilitá primero{% endif %}"
+                      />
+                    </div>
+                  </form>
+                </div>
+                <div class="producto-edit d-none small text-start">
+                  <label class="form-check form-switch sirona-switch mb-1">
                     <input
                       class="form-check-input"
                       type="checkbox"
-                      role="switch"
-                      name="set_lista"
-                      value="1"
-                      id="lista-precios-{{ p.id }}"
+                      name="en_lista_precios"
+                      form="producto-inline-{{ p.pk }}"
                       {% if p.en_lista_precios %}checked{% endif %}
-                      {% if not p.habilitado %}disabled{% endif %}
-                      onchange="this.form.submit()"
-                      title="{% if p.habilitado %}Lista PDF{% else %}Habilitá primero{% endif %}"
                     />
-                  </div>
-                </form>
+                    <span class="form-check-label">Lista PDF</span>
+                  </label>
+                  <label class="small text-muted d-block mb-0">Venc.</label>
+                  <input
+                    type="date"
+                    name="fecha_vencimiento"
+                    class="form-control form-control-sm rounded-3"
+                    form="producto-inline-{{ p.pk }}"
+                    value="{% if p.fecha_vencimiento %}{{ p.fecha_vencimiento|date:'Y-m-d' }}{% endif %}"
+                  />
+                </div>
               </td>
-              <td class="text-end">
+              <td class="text-end align-middle">
                 <div class="d-flex flex-wrap justify-content-end gap-1 align-items-center">
-                  <a
-                    class="btn btn-sm btn-primary rounded-pill px-3"
-                    href="{% url 'producto_update' p.id %}"
-                    data-sirona-modal-url="{% url 'producto_update' p.id %}?modal=1"
-                  >Editar</a>
-                  <form method="post" action="{% url 'producto_toggle_habilitado' p.id %}" class="d-inline">
-                    {% csrf_token %}
-                    <button class="btn btn-sm btn-outline-secondary rounded-pill py-1" type="submit">
-                      {% if p.habilitado %}Deshab.{% else %}Habilitar{% endif %}
+                  <div class="producto-view d-flex flex-wrap gap-1 justify-content-end">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-primary rounded-pill px-3 js-producto-editar"
+                      data-row="producto-row-{{ p.pk }}"
+                    >
+                      Editar
                     </button>
-                  </form>
-                  <form method="post" action="{% url 'producto_delete' p.id %}" class="d-inline" onsubmit="return confirm('¿Eliminar {{ p.codigo }}?');">
-                    {% csrf_token %}
-                    <button class="btn btn-sm btn-outline-danger rounded-pill py-1" type="submit">Eliminar</button>
-                  </form>
+                    <form method="post" action="{% url 'producto_toggle_habilitado' p.id %}" class="d-inline">
+                      {% csrf_token %}
+                      <button class="btn btn-sm btn-outline-secondary rounded-pill py-1" type="submit">
+                        {% if p.habilitado %}Deshab.{% else %}Habilitar{% endif %}
+                      </button>
+                    </form>
+                    <form method="post" action="{% url 'producto_delete' p.id %}" class="d-inline" onsubmit="return confirm('¿Eliminar {{ p.codigo }}?');">
+                      {% csrf_token %}
+                      <button class="btn btn-sm btn-outline-danger rounded-pill py-1" type="submit">Eliminar</button>
+                    </form>
+                  </div>
+                  <div class="producto-edit producto-edit-actions d-none flex-wrap gap-1 justify-content-end align-items-center">
+                    <label class="form-check form-switch sirona-switch mb-0 me-1 small">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        name="habilitado"
+                        form="producto-inline-{{ p.pk }}"
+                        {% if p.habilitado %}checked{% endif %}
+                      />
+                      <span class="form-check-label">Activo</span>
+                    </label>
+                    <button type="submit" class="btn btn-sm btn-success rounded-pill px-2" form="producto-inline-{{ p.pk }}">
+                      Guardar
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 js-producto-cancelar">
+                      Cancelar
+                    </button>
+                    <a class="btn btn-sm btn-link text-decoration-none py-0 px-1" href="{% url 'producto_update' p.pk %}">Ficha completa</a>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -225,7 +337,63 @@
         </tbody>
       </table>
     </div>
+    <div class="card-footer bg-white border-top py-3 px-3">
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <span class="text-muted small me-1">Exportar listado:</span>
+        {% include "includes/export_buttons.html" %}
+        <form class="d-flex align-items-center gap-2 flex-wrap" method="get" action="{% url 'productos_export_pdf' %}">
+          <div class="form-check form-switch sirona-switch mb-0">
+            <input class="form-check-input" type="checkbox" value="1" id="pdfStock" name="stock" />
+            <label class="form-check-label small" for="pdfStock">Stock en PDF</label>
+          </div>
+          <button class="btn btn-outline-success btn-sm rounded-pill" type="submit">PDF lista precios</button>
+        </form>
+      </div>
+      <p class="small text-muted mb-0 mt-2">Excel y PDF respetan los filtros actuales de la página (usá Filtrar antes).</p>
+    </div>
   </div>
+
+  {% for p in productos %}
+    <form
+      id="producto-inline-{{ p.pk }}"
+      method="post"
+      action="{% url 'producto_inline_update' p.pk %}"
+      class="d-none"
+      aria-hidden="true"
+    >
+      {% csrf_token %}
+      <input type="hidden" name="retorno_q" value="{{ q|default:'' }}" />
+      <input type="hidden" name="retorno_tipo" value="{{ tipo|default:'' }}" />
+      <input type="hidden" name="retorno_proveedor" value="{{ proveedor|default:'' }}" />
+      <input type="hidden" name="retorno_estado" value="{{ estado|default:'' }}" />
+    </form>
+  {% endfor %}
+
+  <script>
+    (function () {
+      document.querySelectorAll(".js-producto-editar").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var id = btn.getAttribute("data-row");
+          if (!id) return;
+          document.querySelectorAll("tr.producto-row-inline.is-editing").forEach(function (tr) {
+            tr.classList.remove("is-editing");
+          });
+          var row = document.getElementById(id);
+          if (row) {
+            row.classList.add("is-editing");
+            try {
+              row.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            } catch (e) {}
+          }
+        });
+      });
+      document.querySelectorAll(".js-producto-cancelar").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          window.location.reload();
+        });
+      });
+    })();
+  </script>
 
   <script>
     (function () {

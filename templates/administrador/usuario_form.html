@@ -60,6 +60,12 @@
           {% if form.vendedor.errors %}<div class="text-danger small">{{ form.vendedor.errors }}</div>{% endif %}
           {% if form.vendedor.help_text %}<div class="form-text">{{ form.vendedor.help_text }}</div>{% endif %}
         </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label" for="{{ form.vinculo_vendedor.id_for_label }}">{{ form.vinculo_vendedor.label }}</label>
+          {{ form.vinculo_vendedor }}
+          {% if form.vinculo_vendedor.errors %}<div class="text-danger small">{{ form.vinculo_vendedor.errors }}</div>{% endif %}
+          {% if form.vinculo_vendedor.help_text %}<div class="form-text">{{ form.vinculo_vendedor.help_text }}</div>{% endif %}
+        </div>
 
         {% if modo == "nuevo" %}
           <div class="col-12 col-md-6">

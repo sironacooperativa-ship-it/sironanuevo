@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from io import BytesIO
 
 from django.contrib import messages
@@ -15,12 +16,16 @@ from django.utils import timezone
 
 from personas.models import Comprador, Vendedor
 from personas.forms import CompradorForm
-from presupuestos.models import Presupuesto, PresupuestoLinea
+from core.export_utils import parse_export
+from presupuestos.models import Presupuesto, PresupuestoLinea, presupuesto_tiene_alerta_catalogo
+from presupuestos.presupuesto_pdf import presupuesto_pdf_response
+from presupuestos.share_utils import contexto_compartir_presupuesto
 from presupuestos.views import _lineas_presupuesto_desde_post, _productos_payload, _validar_lineas_post
-from productos.models import ListaPrecios, Producto
+from productos.models import ListaPrecioItem, ListaPrecios, Producto
 from core.money_decimal import format_monto_ars
 from core.pdf_membrete import platypus_membrete
 from ventas.models import Venta
+from ventas.servicios import unpack_linea_spec
 from caja.models import MovimientoCaja
 
 from reportlab.lib import colors
@@ -63,17 +68,16 @@ def vendedor_home(request):
     # Buscar clientes (si hay texto y todavía no eligieron uno)
     candidatos = []
     if q and comprador is None:
-        candidatos = (
+        candidatos = list(
             Comprador.objects.filter(habilitado=True, vendedor_asignado_id=vendedor.pk)
-            .filter(apellido__icontains=q)
+            .filter(
+                Q(apellido__icontains=q)
+                | Q(nombre__icontains=q)
+                | Q(codigo__icontains=q)
+                | Q(dni__icontains=q)
+            )
             .order_by("apellido", "nombre", "codigo")[:15]
         )
-        if not candidatos:
-            candidatos = (
-                Comprador.objects.filter(habilitado=True, vendedor_asignado_id=vendedor.pk)
-                .filter(nombre__icontains=q)
-                .order_by("apellido", "nombre", "codigo")[:15]
-            )
 
     # Historial impago (solo si hay comprador elegido)
     impagos = []
@@ -121,16 +125,20 @@ def vendedor_home(request):
                     creado_por=request.user,
                     actualizado_por=request.user,
                 )
-                for prod, qty, pu, st in line_specs:
+                for spec in line_specs:
+                    prod, qty, pu, st, cod, desc = unpack_linea_spec(spec)
                     PresupuestoLinea.objects.create(
                         presupuesto=pr,
                         producto=prod,
                         cantidad=qty,
                         precio_unitario=pu,
                         subtotal=st,
+                        codigo_snapshot=(cod or "")[:6],
+                        descripcion_snapshot=(desc or "")[:255],
+                        producto_capturado_en=prod.actualizado_en,
                     )
-            messages.success(request, f"Presupuesto #{pr.pk} guardado.")
-            return redirect(f"{redirect('vendedor_home').url}?comprador={comprador.pk}")
+            messages.success(request, f"Presupuesto #{pr.pk} guardado. Podés compartirlo por WhatsApp desde la ficha.")
+            return redirect("vendedor_presupuesto_ver", pk=pr.pk)
 
         messages.error(request, err)
         lineas_iniciales = _lineas_presupuesto_desde_post(request)
@@ -155,6 +163,34 @@ def vendedor_home(request):
             "repoblar": repoblar,
         },
     )
+
+
+@login_required
+def vendedor_presupuesto_ver(request, pk: int):
+    """Ficha del presupuesto para el vendedor (compartir por WhatsApp, mismo contenido que en administración)."""
+    vendedor = _get_vendedor_from_user(request.user)
+    if vendedor is None:
+        return HttpResponseForbidden("Este usuario no tiene perfil de vendedor.")
+    p = get_object_or_404(
+        Presupuesto.objects.select_related(
+            "vendedor",
+            "comprador",
+            "venta",
+            "venta__pago_movimiento",
+            "venta__pago_movimiento__creado_por",
+        ).prefetch_related("lineas__producto"),
+        pk=pk,
+        vendedor_id=vendedor.pk,
+    )
+    if parse_export(request) == "pdf":
+        return presupuesto_pdf_response(p)
+    ctx = {
+        "presupuesto": p,
+        "alerta_catalogo": presupuesto_tiene_alerta_catalogo(p),
+        "vista_publica_compartida": False,
+        **contexto_compartir_presupuesto(request, p),
+    }
+    return render(request, "presupuestos/detalle.html", ctx)
 
 
 @login_required
@@ -254,36 +290,28 @@ def vendedor_stock(request):
     )
 
 
-_LISTAS_FIJAS: list[dict] = [
-    {"slug": "farmacias", "nombre": "Farmacias"},
-    {"slug": "kioscos", "nombre": "Kioscos"},
-    {"slug": "almacenes-y-supermercados", "nombre": "Almacenes y supermercados"},
-    {"slug": "sexshop", "nombre": "SexShop"},
-]
-
-
-def _lista_nombre_por_slug(slug: str) -> str | None:
-    s = (slug or "").strip().lower()
-    for it in _LISTAS_FIJAS:
-        if it["slug"] == s:
-            return it["nombre"]
-    return None
-
-
 def _get_lista_precios_por_slug(slug: str) -> ListaPrecios | None:
-    nombre = _lista_nombre_por_slug(slug)
-    if not nombre:
+    s = (slug or "").strip().lower()
+    if not s:
         return None
-    return ListaPrecios.objects.filter(nombre=nombre).first()
+    return ListaPrecios.objects.filter(slug=s).first()
 
 
-def _productos_lista_precios(lista: ListaPrecios) -> list[Producto]:
-    return list(
-        lista.productos.filter(habilitado=True).order_by("descripcion", "codigo").all()
+def _filas_lista_precios(lista: ListaPrecios) -> list[tuple[Producto, "Decimal"]]:
+    if lista.es_farmacia:
+        qs = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
+            "descripcion", "codigo"
+        )
+        return [(p, p.precio_venta) for p in qs]
+    items = (
+        ListaPrecioItem.objects.filter(lista=lista, producto__habilitado=True)
+        .select_related("producto")
+        .order_by("producto__descripcion", "producto__codigo")
     )
+    return [(i.producto, i.precio_venta) for i in items]
 
 
-def _build_lista_precios_pdf(*, titulo: str, productos: list[Producto]) -> HttpResponse:
+def _build_lista_precios_pdf(*, titulo: str, filas: list[tuple[Producto, "Decimal"]]) -> HttpResponse:
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -298,11 +326,11 @@ def _build_lista_precios_pdf(*, titulo: str, productos: list[Producto]) -> HttpR
 
     headers = ["Código", "Descripción", "Precio"]
     data = [headers]
-    for p in productos:
+    for p, precio in filas:
         desc = p.descripcion
         if len(desc) > 110:
             desc = desc[:107] + "..."
-        data.append([p.codigo, desc, format_monto_ars(p.precio_venta)])
+        data.append([p.codigo, desc, format_monto_ars(precio)])
 
     if len(data) == 1:
         data.append(["—", "—", "—"])
@@ -342,13 +370,18 @@ def vendedor_listas(request):
         return HttpResponseForbidden("Este usuario no tiene perfil de vendedor.")
 
     items = []
-    for it in _LISTAS_FIJAS:
-        lista = ListaPrecios.objects.filter(nombre=it["nombre"]).first()
+    for lista in ListaPrecios.objects.all().order_by("-es_farmacia", "nombre"):
+        if lista.es_farmacia:
+            cant = Producto.objects.filter(habilitado=True, en_lista_precios=True).count()
+        else:
+            cant = ListaPrecioItem.objects.filter(lista=lista, producto__habilitado=True).count()
         items.append(
             {
-                **it,
-                "existe": bool(lista),
-                "cantidad": lista.productos.count() if lista else 0,
+                "slug": lista.slug,
+                "nombre": lista.nombre,
+                "existe": True,
+                "cantidad": cant,
+                "es_farmacia": lista.es_farmacia,
             }
         )
     return render(request, "vendedor_portal/listas.html", {"vendedor": vendedor, "listas": items})
@@ -363,8 +396,8 @@ def vendedor_lista_pdf(request, slug: str):
     lista = _get_lista_precios_por_slug(slug)
     if lista is None:
         return HttpResponseBadRequest("Lista no válida o no configurada.")
-    productos = _productos_lista_precios(lista)
-    return _build_lista_precios_pdf(titulo=f"Lista de precios — {lista.nombre}", productos=productos)
+    filas = _filas_lista_precios(lista)
+    return _build_lista_precios_pdf(titulo=f"Lista de precios — {lista.nombre}", filas=filas)
 
 
 @login_required
@@ -376,10 +409,10 @@ def vendedor_lista_png(request, slug: str):
     lista = _get_lista_precios_por_slug(slug)
     if lista is None:
         return HttpResponseBadRequest("Lista no válida o no configurada.")
-    productos = _productos_lista_precios(lista)
+    filas = _filas_lista_precios(lista)
     payload = [
-        {"codigo": p.codigo, "descripcion": p.descripcion, "precio": format_monto_ars(p.precio_venta)}
-        for p in productos
+        {"codigo": p.codigo, "descripcion": p.descripcion, "precio": format_monto_ars(precio)}
+        for p, precio in filas
     ]
     return render(
         request,
@@ -393,11 +426,32 @@ def vendedor_lista_png(request, slug: str):
     )
 
 
+def _venta_neto_sql():
+    """Replica `Venta.neto` en SQL para agregaciones."""
+    return Case(
+        When(subtotal_lineas__gt=F("descuento_monto"), then=F("subtotal_lineas") - F("descuento_monto")),
+        default=Value(0),
+        output_field=DecimalField(max_digits=14, decimal_places=2),
+    )
+
+
 @login_required
 def vendedor_cuenta_corriente(request):
     vendedor = _get_vendedor_from_user(request.user)
     if vendedor is None:
         return HttpResponseForbidden("Este usuario no tiene perfil de vendedor.")
+
+    hoy = timezone.localdate()
+    neto_expr = _venta_neto_sql()
+    pendientes = Venta.objects.filter(vendedor_id=vendedor.pk, estado=Venta.Estado.PENDIENTE)
+    # Imputado al saldo: sin fecha de vencimiento o fecha ya vencida (incluye el día de hoy).
+    saldo_pendiente = pendientes.filter(
+        Q(fecha_vencimiento_pago__isnull=True) | Q(fecha_vencimiento_pago__lte=hoy)
+    ).aggregate(s=Sum(neto_expr))["s"] or Decimal("0")
+    # Con vencimiento futuro: aún no imputa al saldo; se muestra como "a pagar".
+    total_a_pagar_futuro = pendientes.filter(fecha_vencimiento_pago__gt=hoy).aggregate(s=Sum(neto_expr))[
+        "s"
+    ] or Decimal("0")
 
     # Pedidos del vendedor (incluye comprador si existe)
     ventas = (
@@ -422,6 +476,9 @@ def vendedor_cuenta_corriente(request):
             "vendedor": vendedor,
             "ventas": ventas,
             "movimientos": movs,
+            "hoy": hoy,
+            "saldo_pendiente": saldo_pendiente,
+            "total_a_pagar_futuro": total_a_pagar_futuro,
         },
     )
 

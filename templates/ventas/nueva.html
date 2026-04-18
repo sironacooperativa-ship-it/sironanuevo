@@ -49,6 +49,35 @@
     </div>
 
     <div class="card shadow-sm mb-3">
+      <div class="card-body row g-3">
+        <div class="col-12 col-md-6 col-lg-5">
+          <label class="form-label" for="id_lista_precios">Lista de precios</label>
+          {% if listas_precio %}
+            <select name="lista_precios" class="form-select" id="id_lista_precios" required>
+              {% for l in listas_precio %}
+                <option
+                  value="{{ l.pk }}"
+                  {% if repoblar %}
+                    {% if repoblar.lista_precios_id %}
+                      {% if repoblar.lista_precios_id == l.pk %}selected{% endif %}
+                    {% elif l.es_farmacia %}selected{% endif %}
+                  {% elif l.es_farmacia %}selected{% endif %}
+                >
+                  {{ l.nombre }}{% if l.es_farmacia %} — precio base (producto){% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          {% else %}
+            <div class="alert alert-warning mb-0 small">No hay listas de precio cargadas. Creá al menos una en Productos → Listas de precio.</div>
+          {% endif %}
+          <div class="form-text small">
+            Elegí el rubro antes de cargar líneas. <strong>Farmacias</strong> usa el precio del producto; otras listas usan el precio configurado en Listas de precio.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
       <div class="card-body">
         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
           <h2 class="h6 mb-0">Productos</h2>
@@ -126,9 +155,10 @@
 
   <script>
     (function () {
+      const catalogoPreciosUrl = "{% url 'venta_catalogo_precios' %}";
       const el = document.getElementById("ventas-productos");
-      const productos = el ? JSON.parse(el.textContent) : [];
-      const byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
+      let productos = el ? JSON.parse(el.textContent) : [];
+      let byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
       const iniEl = document.getElementById("ventas-lineas-iniciales");
       const iniciales = iniEl ? JSON.parse(iniEl.textContent) : [];
 
@@ -204,18 +234,23 @@
         if (sumIngreso) sumIngreso.textContent = fmtMoney(ing);
       }
 
-      function buildSelect(tr) {
-        const sel = document.createElement("select");
-        sel.name = "linea_producto";
-        sel.className = "form-select form-select-sm";
-        sel.innerHTML =
+      function optionsHtml() {
+        return (
           '<option value="">— Producto —</option>' +
           productos
             .map(
               (p) =>
                 `<option value="${p.id}">${p.codigo} — ${p.descripcion} (stock ${p.stock})</option>`
             )
-            .join("");
+            .join("")
+        );
+      }
+
+      function buildSelect(tr) {
+        const sel = document.createElement("select");
+        sel.name = "linea_producto";
+        sel.className = "form-select form-select-sm";
+        sel.innerHTML = optionsHtml();
         sel.dataset.prevEmpty = sel.value ? "0" : "1";
         sel.addEventListener("change", () => {
           const wasEmpty = sel.dataset.prevEmpty === "1";
@@ -250,6 +285,44 @@
         tbody.appendChild(tr);
         refreshRow(tr);
         totals();
+      }
+
+      const listaPreciosSel = document.getElementById("id_lista_precios");
+      if (listaPreciosSel) {
+        listaPreciosSel.addEventListener("change", function () {
+          const lid = listaPreciosSel.value;
+          if (!lid) return;
+          fetch(catalogoPreciosUrl + "?lista=" + encodeURIComponent(lid), {
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+            credentials: "same-origin",
+          })
+            .then(function (r) {
+              if (!r.ok) throw new Error("catálogo");
+              return r.json();
+            })
+            .then(function (data) {
+              productos = data.productos || [];
+              byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
+              tbody.querySelectorAll('select[name="linea_producto"]').forEach(function (sel) {
+                const v = sel.value;
+                sel.innerHTML = optionsHtml();
+                if (v && byId[v]) {
+                  sel.value = v;
+                } else {
+                  sel.value = "";
+                  sel.dataset.prevEmpty = "1";
+                }
+                const tr = sel.closest("tr");
+                if (tr) {
+                  refreshRow(tr);
+                }
+              });
+              totals();
+            })
+            .catch(function () {
+              alert("No se pudo cargar el catálogo de precios para esa lista.");
+            });
+        });
       }
 
       btnAdd.addEventListener("click", addRow);

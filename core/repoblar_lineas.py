@@ -38,6 +38,8 @@ def repoblar_campos_cabecera_desde_post(request) -> dict:
     raw_fecha = (request.POST.get("fecha_vencimiento_pago") or "").strip()
     fd = parse_fecha_param(raw_fecha)
     fecha_v = fd.strftime("%Y-%m-%d") if fd else raw_fecha
+    lp = (request.POST.get("lista_precios") or "").strip()
+    lista_precios_id = int(lp) if lp.isdigit() else None
     return {
         "vendedor_id": int(v) if v.isdigit() else None,
         "comprador_id": int(c) if c.isdigit() else None,
@@ -45,4 +47,5 @@ def repoblar_campos_cabecera_desde_post(request) -> dict:
         "descuento_monto": (request.POST.get("descuento_monto") or "").strip(),
         "comision_porcentaje": (request.POST.get("comision_porcentaje") or "").strip(),
         "aplica_comision": request.POST.get("aplica_comision") == "1",
+        "lista_precios_id": lista_precios_id,
     }

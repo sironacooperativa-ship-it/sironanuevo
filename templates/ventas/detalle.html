@@ -34,11 +34,6 @@
         <a class="btn btn-primary btn-sm" href="{% url 'venta_editar' venta.pk %}">Editar</a>
         <a class="btn btn-primary btn-sm" href="{% url 'venta_registrar_pago' venta.pk %}">Registrar pago</a>
       {% endif %}
-      <button type="button" class="btn btn-outline-dark btn-sm" onclick="window.print()">Imprimir</button>
-      <a
-        class="btn btn-outline-danger btn-sm"
-        href="{% url 'venta_detalle' venta.pk %}?export=pdf"
-      >Exportar PDF</a>
       {% if user.is_staff %}
         <form
           method="post"
@@ -112,8 +107,8 @@
             {% for ln in venta.lineas.all %}
               <tr>
                 <td class="text-center text-muted">{{ forloop.counter }}</td>
-                <td>{{ ln.producto.codigo }}</td>
-                <td>{{ ln.producto.descripcion }}</td>
+                <td>{{ ln.texto_codigo }}</td>
+                <td>{{ ln.texto_descripcion }}</td>
                 <td class="text-end">{{ ln.cantidad }}</td>
                 <td class="text-end">{{ ln.precio_unitario|ars }}</td>
                 <td class="text-end">{{ ln.subtotal|ars }}</td>
@@ -226,5 +221,10 @@
         {% endif %}
       </div>
     </div>
+  </div>
+
+  <div class="no-print d-flex flex-wrap gap-2 justify-content-center mt-4 mb-2">
+    <button type="button" class="btn btn-outline-dark btn-sm" onclick="window.print()">Imprimir</button>
+    <a class="btn btn-outline-danger btn-sm" href="{% url 'venta_detalle' venta.pk %}?export=pdf">Exportar PDF</a>
   </div>
 {% endblock %}

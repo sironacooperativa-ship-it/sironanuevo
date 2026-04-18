@@ -74,7 +74,9 @@ class VendedorAccessMiddleware:
 
             solo_vendedor = bool(getattr(perfil, "solo_vendedor", False))
             in_portal = path.startswith("/vendedor/")
-            if solo_vendedor and not in_portal:
+            # Enlace firmado de presupuesto (cliente): no forzar portal
+            presupuesto_compartido = path.startswith("/presupuestos/c/")
+            if solo_vendedor and not in_portal and not presupuesto_compartido:
                 request.session["modo_vendedor"] = True
                 return HttpResponseRedirect(resolve_url("vendedor_home"))
 

@@ -96,9 +96,29 @@ class VentaLinea(models.Model):
     cantidad = models.PositiveIntegerField()
     precio_unitario = models.DecimalField(max_digits=12, decimal_places=2)
     subtotal = models.DecimalField(max_digits=14, decimal_places=2)
+    codigo_snapshot = models.CharField(
+        max_length=6,
+        blank=True,
+        default="",
+        help_text="Código tal como figuraba al confirmar el pedido (no cambia si editás el producto).",
+    )
+    descripcion_snapshot = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Descripción tal como figuraba al confirmar el pedido.",
+    )
 
     class Meta:
         ordering = ["id"]
 
+    @property
+    def texto_codigo(self) -> str:
+        return self.codigo_snapshot or self.producto.codigo
+
+    @property
+    def texto_descripcion(self) -> str:
+        return self.descripcion_snapshot or self.producto.descripcion
+
     def __str__(self) -> str:
-        return f"{self.producto.codigo} x{self.cantidad}"
+        return f"{self.texto_codigo} x{self.cantidad}"

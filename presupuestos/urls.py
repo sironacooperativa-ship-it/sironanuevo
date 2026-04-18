@@ -5,6 +5,11 @@ from . import views
 urlpatterns = [
     path("", views.presupuesto_lista, name="presupuesto_lista"),
     path("nuevo/", views.presupuesto_nuevo, name="presupuesto_nuevo"),
+    path(
+        "c/<str:token>/",
+        views.presupuesto_compartido,
+        name="presupuesto_compartido",
+    ),
     path("<int:pk>/", views.presupuesto_detalle, name="presupuesto_detalle"),
     path("<int:pk>/editar/", views.presupuesto_editar, name="presupuesto_editar"),
     path("<int:pk>/eliminar/", views.presupuesto_eliminar, name="presupuesto_eliminar"),

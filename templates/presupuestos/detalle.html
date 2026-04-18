@@ -53,18 +53,37 @@
   </style>
 {% endblock %}
 {% block content %}
+  {% if not vista_publica_compartida %}
   <div class="no-print d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">
       {% if presupuesto.estado == "ACT" %}Presupuesto{% else %}Orden de compra{% endif %} #{{ presupuesto.pk }}
     </h1>
-    <div class="d-flex gap-2 flex-wrap">
+    <div class="d-flex gap-2 flex-wrap align-items-center">
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'presupuesto_lista' %}">Volver</a>
+      {% if whatsapp_compartir_url %}
+        <a
+          class="btn btn-success btn-sm"
+          href="{{ whatsapp_compartir_url }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Abre WhatsApp con un mensaje y el enlace para el cliente"
+        >WhatsApp al cliente</a>
+      {% endif %}
+      {% if url_compartir_cliente %}
+        <button type="button" class="btn btn-outline-secondary btn-sm js-copy-enlace-presupuesto" data-url="{{ url_compartir_cliente }}">
+          Copiar enlace
+        </button>
+      {% endif %}
       {% if presupuesto.estado == "ACT" %}
         <a class="btn btn-outline-primary btn-sm" href="{% url 'presupuesto_editar' presupuesto.pk %}">Editar</a>
-        <form method="post" action="{% url 'presupuesto_aprobar' presupuesto.pk %}" class="d-inline" onsubmit="return confirm('¿Aprobar y generar el pedido?');">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-success btn-sm">Aprobar</button>
-        </form>
+        {% if alerta_catalogo %}
+          <span class="align-self-center small text-danger fw-semibold" title="Resolvé la alerta abajo antes de aprobar.">!</span>
+        {% else %}
+          <form method="post" action="{% url 'presupuesto_aprobar' presupuesto.pk %}" class="d-inline" onsubmit="return confirm('¿Aprobar y generar el pedido?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success btn-sm">Aprobar</button>
+          </form>
+        {% endif %}
       {% elif presupuesto.venta_id %}
         <a class="btn btn-outline-secondary btn-sm" href="{% url 'venta_detalle' presupuesto.venta_id %}">Ver pedido #{{ presupuesto.venta_id }}</a>
         <a class="btn btn-primary btn-sm" href="{% url 'venta_registrar_pago' presupuesto.venta_id %}">Registrar pago (pedido)</a>
@@ -80,13 +99,57 @@
           <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar</button>
         </form>
       {% endif %}
-      <button type="button" class="btn btn-outline-dark btn-sm" onclick="window.print()">Imprimir</button>
-      <a class="btn btn-outline-danger btn-sm" href="{% url 'presupuesto_detalle' presupuesto.pk %}?export=pdf">Exportar PDF</a>
     </div>
-    <p class="text-muted small mb-0 w-100 no-print">
-      Al imprimir o exportar PDF salen <strong>dos hojas</strong>: copia <strong>Remito</strong> y copia <strong>Duplicado</strong>.
+    {% if presupuesto.comprador_id and not whatsapp_compartir_url %}
+      <p class="text-muted small w-100 mb-0">
+        Para enviar por WhatsApp en un clic, cargá el <strong>celular del cliente</strong> con código de país en Personas (ej. 549351…).
+      </p>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="no-print text-center mb-3">
+    <p class="text-muted small mb-0">
+      {% if presupuesto.estado == "ACT" %}Presupuesto{% else %}Orden de compra{% endif %} N.º {{ presupuesto.pk }}
+      · enlace privado de solo lectura
     </p>
   </div>
+  {% endif %}
+
+  {% if presupuesto.estado == "ACT" and alerta_catalogo and not vista_publica_compartida %}
+    <div class="no-print alert alert-warning d-flex align-items-start gap-3 mb-3" id="aprobar-catalogo" role="alert">
+      <span class="fs-3 lh-1 text-danger" aria-hidden="true">!</span>
+      <div class="flex-grow-1">
+        <strong>El catálogo de productos cambió</strong> después de guardar este presupuesto.
+        Antes de aprobar y generar el pedido, elegí una opción:
+        <ul class="small mb-2 mt-2">
+          <li><strong>Actualizar desde catálogo</strong>: se recalculan precios de línea con el <em>precio de venta</em> actual de cada producto y se actualizan código/descripción en el presupuesto.</li>
+          <li><strong>Conservar presupuesto original</strong>: se mantienen los importes y textos guardados en el presupuesto (como al cotizar).</li>
+        </ul>
+        <div class="d-flex flex-wrap gap-2">
+          <form
+            method="post"
+            action="{% url 'presupuesto_aprobar' presupuesto.pk %}"
+            class="d-inline"
+            onsubmit="return confirm('Se aplicarán precio de venta y datos actuales del catálogo a cada línea. ¿Aprobar y generar el pedido?');"
+          >
+            {% csrf_token %}
+            <input type="hidden" name="resolver_catalogo" value="actualizar" />
+            <button type="submit" class="btn btn-warning btn-sm">Actualizar desde catálogo y aprobar</button>
+          </form>
+          <form
+            method="post"
+            action="{% url 'presupuesto_aprobar' presupuesto.pk %}"
+            class="d-inline"
+            onsubmit="return confirm('Se mantienen los valores del presupuesto. ¿Aprobar y generar el pedido?');"
+          >
+            {% csrf_token %}
+            <input type="hidden" name="resolver_catalogo" value="conservar" />
+            <button type="submit" class="btn btn-outline-secondary btn-sm">Conservar presupuesto original y aprobar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  {% endif %}
 
   <div class="presupuesto-factura-wrap presupuesto-print-hoja1 mb-3">
     {% include "presupuestos/includes/presupuesto_hoja.html" with copia_label="Remito" %}
@@ -95,4 +158,37 @@
   <div class="presupuesto-factura-wrap d-none d-print-block mb-0">
     {% include "presupuestos/includes/presupuesto_hoja.html" with copia_label="Duplicado" %}
   </div>
+
+  <div class="presupuesto-factura-wrap no-print text-center mt-3 mb-2">
+    <p class="text-muted small mb-2">
+      Al imprimir o exportar PDF salen <strong>dos hojas</strong>: copia <strong>Remito</strong> y copia <strong>Duplicado</strong>.
+    </p>
+    <div class="d-inline-flex flex-wrap gap-2 justify-content-center">
+      <button type="button" class="btn btn-outline-dark btn-sm" onclick="window.print()">Imprimir</button>
+      <a class="btn btn-outline-danger btn-sm" href="{{ presupuesto_url_pdf }}">Exportar PDF</a>
+    </div>
+  </div>
+
+  {% if not vista_publica_compartida %}
+  <script>
+    (function () {
+      document.querySelectorAll(".js-copy-enlace-presupuesto").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var u = btn.getAttribute("data-url") || "";
+          if (!u) return;
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(u).then(function () {
+              btn.textContent = "¡Copiado!";
+              setTimeout(function () {
+                btn.textContent = "Copiar enlace";
+              }, 2000);
+            });
+          } else {
+            window.prompt("Copiá este enlace:", u);
+          }
+        });
+      });
+    })();
+  </script>
+  {% endif %}
 {% endblock %}

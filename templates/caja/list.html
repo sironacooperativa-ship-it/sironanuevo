@@ -4,10 +4,7 @@
 {% block content %}
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Caja (Libro diario)</h1>
-    <div class="d-flex gap-2 align-items-center flex-wrap">
-      {% include "includes/export_buttons.html" %}
-      <a class="btn btn-primary" href="{% url 'caja_create' %}">Nuevo movimiento</a>
-    </div>
+    <a class="btn btn-primary" href="{% url 'caja_create' %}">Nuevo movimiento</a>
   </div>
 
   <div class="row g-3 mb-3">
@@ -161,4 +158,9 @@
   {% empty %}
     <div class="text-muted text-center py-5">No hay movimientos.</div>
   {% endfor %}
+
+  <div class="d-flex flex-wrap align-items-center gap-2 mt-3 mb-2">
+    <span class="text-muted small">Exportar con búsqueda / filtros actuales:</span>
+    {% include "includes/export_buttons.html" %}
+  </div>
 {% endblock %}

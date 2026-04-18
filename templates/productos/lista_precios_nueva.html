@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Nueva lista de precio{% endblock %}
+{% block content %}
+  <div class="app-page-header mb-3">
+    <h1 class="app-page-title mb-1">Nueva lista de precio</h1>
+    <p class="text-muted small mb-0">Ej.: Kioscos, Supermercados, etc. Los precios se cargan en la pantalla siguiente.</p>
+  </div>
+  <div class="card app-card border-0 shadow-sm" style="max-width: 32rem">
+    <div class="card-body p-3">
+      <form method="post">
+        {% csrf_token %}
+        <label class="form-label small text-muted">Nombre</label>
+        <input type="text" name="nombre" class="form-control rounded-3 mb-3" required maxlength="100" placeholder="Nombre del rubro" />
+        <div class="d-flex gap-2">
+          <a class="btn btn-outline-secondary rounded-pill" href="{% url 'productos_listas_precios' %}">Cancelar</a>
+          <button type="submit" class="btn btn-primary rounded-pill">Crear y continuar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

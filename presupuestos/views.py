@@ -5,17 +5,18 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import F
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 
 from core.export_utils import parse_export
-from core.money_decimal import COMISION_PORCENTAJE_DEFECTO, format_monto_ars, parse_decimal_from_input
+from core.money_decimal import COMISION_PORCENTAJE_DEFECTO, format_monto_ars, parse_decimal_from_input, q2
 from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_param, parse_fecha_dashboard, rango_periodo
 from core.repoblar_lineas import repoblar_campos_cabecera_desde_post
 from personas.models import Comprador, Vendedor
 from productos.models import Producto
-from ventas.servicios import crear_venta_confirmada, eliminar_venta_admin
+from ventas.servicios import crear_venta_confirmada, eliminar_venta_admin, unpack_linea_spec
 from ventas.models import Venta, VentaLinea
 from calendario.models import Evento
 
@@ -23,7 +24,35 @@ from calendario.models import Evento
 def _es_staff(user) -> bool:
     return bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
 
-from .models import Presupuesto, PresupuestoLinea
+from .models import Presupuesto, PresupuestoLinea, presupuesto_tiene_alerta_catalogo
+from .presupuesto_pdf import presupuesto_pdf_response
+from .share_utils import contexto_compartir_presupuesto, pk_desde_token_compartir
+
+
+def _actualizar_presupuesto_lineas_desde_catalogo(presupuesto: Presupuesto) -> None:
+    """Recalcula precios desde el precio de venta actual del producto y actualiza snapshots."""
+    subtotal = Decimal("0.00")
+    for ln in presupuesto.lineas.select_related("producto").order_by("id"):
+        prod = ln.producto
+        pu = q2(prod.precio_venta)
+        st = q2(Decimal(ln.cantidad) * pu)
+        subtotal += st
+        PresupuestoLinea.objects.filter(pk=ln.pk).update(
+            precio_unitario=pu,
+            subtotal=st,
+            codigo_snapshot=(prod.codigo or "")[:6],
+            descripcion_snapshot=(prod.descripcion or "")[:255],
+            producto_capturado_en=prod.actualizado_en,
+        )
+    presupuesto.subtotal_lineas = subtotal
+    presupuesto.save(update_fields=["subtotal_lineas"])
+
+
+def _marcar_lineas_presupuesto_al_dia_con_catalogo(presupuesto: Presupuesto) -> None:
+    """Sin cambiar montos ni textos: registra que el presupuesto se aprueba con valores actuales respecto al catálogo."""
+    for ln in presupuesto.lineas.select_related("producto"):
+        prod = ln.producto
+        PresupuestoLinea.objects.filter(pk=ln.pk).update(producto_capturado_en=prod.actualizado_en)
 
 
 def _productos_payload():
@@ -152,7 +181,7 @@ def _validar_lineas_post(request):
             break
         st = (pu * qty).quantize(Decimal("0.01"))
         subtotal += st
-        line_specs.append((prod, qty, pu, st))
+        line_specs.append((prod, qty, pu, st, prod.codigo, prod.descripcion))
 
     if err:
         return err, None, None, None
@@ -192,13 +221,17 @@ def _guardar_presupuesto_desde_lineas(
     presupuesto.aplica_comision = aplica_comision
     presupuesto.save()
     presupuesto.lineas.all().delete()
-    for prod, qty, pu, st in line_specs:
+    for spec in line_specs:
+        prod, qty, pu, st, cod, desc = unpack_linea_spec(spec)
         PresupuestoLinea.objects.create(
             presupuesto=presupuesto,
             producto=prod,
             cantidad=qty,
             precio_unitario=pu,
             subtotal=st,
+            codigo_snapshot=(cod or "")[:6],
+            descripcion_snapshot=(desc or "")[:255],
+            producto_capturado_en=prod.actualizado_en,
         )
 
 
@@ -242,6 +275,8 @@ def presupuesto_lista(request):
     items, filtros_ctx = _filtrar_presupuestos_queryset(request)
     compradores = Comprador.objects.order_by("apellido", "nombre", "codigo")
     vendedores = Vendedor.objects.order_by("apellido", "nombre", "codigo")
+    for pr in items:
+        pr.alerta_catalogo = presupuesto_tiene_alerta_catalogo(pr)
     return render(
         request,
         "presupuestos/lista.html",
@@ -252,6 +287,38 @@ def presupuesto_lista(request):
             "vendedores_filtro": vendedores,
         },
     )
+
+
+def presupuesto_compartido(request, token: str):
+    """
+    Vista sin login: el cliente abre el enlace firmado (WhatsApp, etc.).
+    """
+    pk = pk_desde_token_compartir(token)
+    if pk is None:
+        raise Http404("El enlace no es válido o expiró. Pedí al vendedor que lo reenvíe desde el sistema.")
+    p = get_object_or_404(
+        Presupuesto.objects.select_related(
+            "vendedor",
+            "comprador",
+            "venta",
+            "venta__pago_movimiento",
+            "venta__pago_movimiento__creado_por",
+        ).prefetch_related("lineas__producto"),
+        pk=pk,
+    )
+    if parse_export(request) == "pdf":
+        return presupuesto_pdf_response(p)
+    ctx = {
+        "presupuesto": p,
+        "alerta_catalogo": False,
+        "vista_publica_compartida": True,
+        **contexto_compartir_presupuesto(request, p),
+    }
+    ctx["whatsapp_compartir_url"] = None
+    ctx["url_compartir_cliente"] = None
+    response = render(request, "presupuestos/detalle.html", ctx)
+    response["X-Robots-Tag"] = "noindex, nofollow"
+    return response
 
 
 @login_required
@@ -268,7 +335,13 @@ def presupuesto_detalle(request, pk: int):
     )
     if parse_export(request) == "pdf":
         return presupuesto_pdf_response(p)
-    return render(request, "presupuestos/detalle.html", {"presupuesto": p})
+    ctx = {
+        "presupuesto": p,
+        "alerta_catalogo": presupuesto_tiene_alerta_catalogo(p),
+        "vista_publica_compartida": False,
+        **contexto_compartir_presupuesto(request, p),
+    }
+    return render(request, "presupuestos/detalle.html", ctx)
 
 
 @login_required
@@ -295,13 +368,17 @@ def presupuesto_nuevo(request):
                     creado_por=request.user,
                     actualizado_por=request.user,
                 )
-                for prod, qty, pu, st in line_specs:
+                for spec in line_specs:
+                    prod, qty, pu, st, cod, desc = unpack_linea_spec(spec)
                     PresupuestoLinea.objects.create(
                         presupuesto=pr,
                         producto=prod,
                         cantidad=qty,
                         precio_unitario=pu,
                         subtotal=st,
+                        codigo_snapshot=(cod or "")[:6],
+                        descripcion_snapshot=(desc or "")[:255],
+                        producto_capturado_en=prod.actualizado_en,
                     )
             messages.success(request, f"Presupuesto #{pr.pk} guardado.")
             return redirect("presupuesto_lista")
@@ -366,7 +443,8 @@ def presupuesto_editar(request, pk: int):
                         # Pedido pagado: permitir editar SOLO comisión (sin tocar líneas/stock/cabecera para no romper caja).
                         def _norm_line_specs(specs):
                             out = []
-                            for prod, qty, pu, st in specs:
+                            for spec in specs:
+                                prod, qty, pu, st, _c, _d = unpack_linea_spec(spec)
                                 out.append((prod.pk, int(qty), str(pu)))
                             return sorted(out)
 
@@ -410,13 +488,16 @@ def presupuesto_editar(request, pk: int):
                     VentaLinea.objects.filter(venta_id=venta.pk).delete()
 
                     pids_afectados: list[int] = []
-                    for prod, qty, pu, st in line_specs:
+                    for spec in line_specs:
+                        prod, qty, pu, st, cod, desc = unpack_linea_spec(spec)
                         VentaLinea.objects.create(
                             venta=venta,
                             producto=prod,
                             cantidad=qty,
                             precio_unitario=pu,
                             subtotal=st,
+                            codigo_snapshot=(cod or "")[:6],
+                            descripcion_snapshot=(desc or "")[:255],
                         )
                         Producto.objects.filter(pk=prod.pk).update(stock=F("stock") - qty)
                         pids_afectados.append(prod.pk)
@@ -537,54 +618,101 @@ def presupuesto_eliminar(request, pk: int):
 @login_required
 @require_http_methods(["POST"])
 def presupuesto_aprobar(request, pk: int):
-    presupuesto = get_object_or_404(
-        Presupuesto.objects.prefetch_related("lineas__producto"),
-        pk=pk,
-    )
+    presupuesto = get_object_or_404(Presupuesto, pk=pk)
     if presupuesto.estado != Presupuesto.Estado.ACTIVO:
         messages.warning(request, "Este presupuesto ya fue aprobado.")
         return redirect("presupuesto_lista")
 
-    line_specs = []
-    err = None
-    for ln in presupuesto.lineas.select_related("producto"):
-        prod = ln.producto
-        if not prod.habilitado:
-            err = f"El producto {prod.codigo} ya no está habilitado."
-            break
-        if prod.stock < ln.cantidad:
-            err = (
-                f"Stock insuficiente para {prod.codigo} al aprobar (necesario: {ln.cantidad}, "
-                f"disponible: {prod.stock})."
-            )
-            break
-        line_specs.append((prod, ln.cantidad, ln.precio_unitario, ln.subtotal))
-
-    if err:
-        messages.error(request, err)
-        return redirect("presupuesto_detalle", pk=pk)
-    if not line_specs:
-        messages.error(request, "El presupuesto no tiene líneas.")
+    resolver = (request.POST.get("resolver_catalogo") or "").strip()
+    necesita_resolver = presupuesto_tiene_alerta_catalogo(presupuesto)
+    if necesita_resolver and resolver not in ("actualizar", "conservar"):
+        messages.error(
+            request,
+            "El catálogo de productos cambió después de armar este presupuesto. "
+            "Elegí «Actualizar desde catálogo» o «Conservar presupuesto original» antes de aprobar.",
+        )
         return redirect("presupuesto_detalle", pk=pk)
 
     try:
         with transaction.atomic():
+            pr = Presupuesto.objects.select_for_update().get(pk=pk)
+            if pr.estado != Presupuesto.Estado.ACTIVO:
+                messages.warning(request, "Este presupuesto ya fue aprobado.")
+                return redirect("presupuesto_lista")
+
+            lineas_qs = pr.lineas.select_related("producto").order_by("id")
+            lineas_list = list(lineas_qs)
+            if not lineas_list:
+                messages.error(request, "El presupuesto no tiene líneas.")
+                return redirect("presupuesto_detalle", pk=pk)
+
+            err = None
+            for ln in lineas_list:
+                prod = ln.producto
+                if not prod.habilitado:
+                    err = f"El producto {prod.codigo} ya no está habilitado."
+                    break
+                if prod.stock < ln.cantidad:
+                    err = (
+                        f"Stock insuficiente para {prod.codigo} al aprobar (necesario: {ln.cantidad}, "
+                        f"disponible: {prod.stock})."
+                    )
+                    break
+            if err:
+                messages.error(request, err)
+                return redirect("presupuesto_detalle", pk=pk)
+
+            if presupuesto_tiene_alerta_catalogo(pr):
+                if resolver == "actualizar":
+                    _actualizar_presupuesto_lineas_desde_catalogo(pr)
+                elif resolver == "conservar":
+                    _marcar_lineas_presupuesto_al_dia_con_catalogo(pr)
+                else:
+                    messages.error(
+                        request,
+                        "El catálogo de productos cambió después de armar este presupuesto. "
+                        "Elegí «Actualizar desde catálogo» o «Conservar presupuesto original» antes de aprobar.",
+                    )
+                    return redirect("presupuesto_detalle", pk=pk)
+
+            pr.refresh_from_db()
+            if pr.descuento_monto > pr.subtotal_lineas:
+                messages.error(
+                    request,
+                    "El descuento supera el subtotal de líneas. Editá el presupuesto y ajustá descuento o líneas.",
+                )
+                return redirect("presupuesto_detalle", pk=pk)
+
+            line_specs = []
+            for ln in pr.lineas.select_related("producto").order_by("id"):
+                prod = ln.producto
+                line_specs.append(
+                    (
+                        prod,
+                        ln.cantidad,
+                        ln.precio_unitario,
+                        ln.subtotal,
+                        ln.codigo_snapshot or prod.codigo,
+                        ln.descripcion_snapshot or prod.descripcion,
+                    )
+                )
+
             venta = crear_venta_confirmada(
-                presupuesto.vendedor_id,
-                presupuesto.fecha_vencimiento_pago,
-                presupuesto.descuento_monto,
-                presupuesto.comision_porcentaje,
+                pr.vendedor_id,
+                pr.fecha_vencimiento_pago,
+                pr.descuento_monto,
+                pr.comision_porcentaje,
                 line_specs,
-                comprador_id=presupuesto.comprador_id,
+                comprador_id=pr.comprador_id,
                 creado_por_id=request.user.id,
-                aplica_comision=presupuesto.aplica_comision,
+                aplica_comision=pr.aplica_comision,
             )
-            presupuesto.estado = Presupuesto.Estado.APROBADO
-            presupuesto.venta = venta
-            presupuesto.aprobado_en = timezone.now()
-            presupuesto.aprobado_por = request.user
-            presupuesto.actualizado_por = request.user
-            presupuesto.save(
+            pr.estado = Presupuesto.Estado.APROBADO
+            pr.venta = venta
+            pr.aprobado_en = timezone.now()
+            pr.aprobado_por = request.user
+            pr.actualizado_por = request.user
+            pr.save(
                 update_fields=[
                     "estado",
                     "venta",

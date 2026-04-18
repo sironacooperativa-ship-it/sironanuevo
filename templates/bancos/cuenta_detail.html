@@ -8,7 +8,6 @@
       <p class="text-muted font-monospace small mb-0">{{ cuenta.cuenta }}</p>
     </div>
     <div class="d-flex gap-2 align-items-center flex-wrap">
-      {% include "includes/export_buttons.html" %}
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'bancos_cuentas' %}">Volver</a>
     </div>
   </div>
@@ -90,5 +89,10 @@
         </tbody>
       </table>
     </div>
+  </div>
+
+  <div class="d-flex flex-wrap align-items-center gap-2 mt-3 mb-2">
+    <span class="text-muted small">Exportar movimientos:</span>
+    {% include "includes/export_buttons.html" %}
   </div>
 {% endblock %}

@@ -1,4 +1,4 @@
-{# Preserva filtros GET actuales (excepto export). Uso: {% include "includes/export_buttons.html" %} #}
+{# Preserva filtros GET actuales (excepto export). Colocar debajo de la tabla principal. #}
 <form class="d-inline-flex gap-1 align-items-center flex-wrap" method="get" action="{{ request.path }}">
   {% for key, value in request.GET.items %}
     {% if key != "export" %}

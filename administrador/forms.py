@@ -2,12 +2,55 @@ from __future__ import annotations
 
 from django import forms
 from django.contrib.auth import get_user_model
+from django.db import transaction
 
 from core.models import PerfilAcceso
 from personas.models import Vendedor
 
 
 User = get_user_model()
+
+
+def _vendedor_del_usuario(user) -> Vendedor | None:
+    """Registro Vendedor vinculado a este usuario (OneToOne inversa)."""
+    if not user or not getattr(user, "pk", None):
+        return None
+    return Vendedor.objects.filter(usuario_id=user.pk).first()
+
+
+def _vincular_usuario_a_vendedor(user, v_destino: Vendedor) -> None:
+    """
+    Asigna user al registro de vendedor elegido y desvincula duplicados previos.
+    Los clientes en Comprador.vendedor_asignado deben apuntar al mismo id que este registro.
+    """
+    for prev in Vendedor.objects.filter(usuario_id=user.pk).exclude(pk=v_destino.pk):
+        prev.usuario = None
+        prev.save(update_fields=["usuario"])
+    v_destino.usuario = user
+    v_destino.save(update_fields=["usuario"])
+
+
+def _asegurar_vendedor_automatico(user) -> None:
+    """Crea o enlaza un Vendedor por nombre/apellido (comportamiento anterior)."""
+    if _vendedor_del_usuario(user) is not None:
+        return
+    nombre = (user.first_name or "").strip() or user.username
+    apellido = (user.last_name or "").strip() or "—"
+    existente = Vendedor.objects.filter(
+        usuario__isnull=True,
+        nombre__iexact=nombre,
+        apellido__iexact=apellido,
+    ).first()
+    if existente:
+        existente.usuario = user
+        existente.save(update_fields=["usuario"])
+    else:
+        Vendedor.objects.create(
+            nombre=nombre,
+            apellido=apellido,
+            usuario=user,
+            habilitado=True,
+        )
 
 
 class UsuarioCrearForm(forms.ModelForm):
@@ -18,6 +61,17 @@ class UsuarioCrearForm(forms.ModelForm):
         required=False,
         initial=True,
         help_text="Si está activo, el usuario ingresa al modo reducido (Portal Vendedor).",
+    )
+    vinculo_vendedor = forms.ModelChoiceField(
+        label="Vendedor existente en el sistema",
+        queryset=Vendedor.objects.filter(habilitado=True).order_by("codigo"),
+        required=False,
+        empty_label="— Sin elegir: se crea o enlaza por nombre/apellido —",
+        help_text=(
+            "Si ya cargaste al vendedor en Personas y asignaste clientes, elegilo acá. "
+            "Si no, el sistema puede crear otro registro distinto y los clientes no se verán en el portal."
+        ),
+        widget=forms.Select(attrs={"class": "form-select"}),
     )
 
     class Meta:
@@ -30,6 +84,14 @@ class UsuarioCrearForm(forms.ModelForm):
         p2 = cd.get("password2")
         if p1 and p2 and p1 != p2:
             raise forms.ValidationError("Las contraseñas no coinciden.")
+        solo = bool(cd.get("vendedor"))
+        vin = cd.get("vinculo_vendedor")
+        if solo and vin and vin.usuario_id:
+            self.add_error(
+                "vinculo_vendedor",
+                f"Ese vendedor ya está vinculado al usuario «{vin.usuario.username}». "
+                "Editá ese usuario o liberá el vínculo en Personas → Vendedores.",
+            )
         return cd
 
     def save(self, commit=True):
@@ -42,25 +104,13 @@ class UsuarioCrearForm(forms.ModelForm):
                 usuario=user,
                 defaults={"solo_vendedor": solo_vendedor},
             )
-            # Si es vendedor, aseguramos un perfil Vendedor (para asociar pedidos/presupuestos).
-            if solo_vendedor and not hasattr(user, "vendedor_perfil"):
-                nombre = (user.first_name or "").strip() or user.username
-                apellido = (user.last_name or "").strip() or "—"
-                existente = Vendedor.objects.filter(
-                    usuario__isnull=True,
-                    nombre__iexact=nombre,
-                    apellido__iexact=apellido,
-                ).first()
-                if existente:
-                    existente.usuario = user
-                    existente.save(update_fields=["usuario"])
-                else:
-                    Vendedor.objects.create(
-                        nombre=nombre,
-                        apellido=apellido,
-                        usuario=user,
-                        habilitado=True,
-                    )
+            if solo_vendedor:
+                vin = self.cleaned_data.get("vinculo_vendedor")
+                with transaction.atomic():
+                    if vin:
+                        _vincular_usuario_a_vendedor(user, vin)
+                    else:
+                        _asegurar_vendedor_automatico(user)
         return user
 
 
@@ -69,6 +119,17 @@ class UsuarioEditarForm(forms.ModelForm):
         label="Vendedor",
         required=False,
         help_text="Si está activo, el usuario queda limitado al modo reducido (Portal Vendedor).",
+    )
+    vinculo_vendedor = forms.ModelChoiceField(
+        label="Vendedor existente en el sistema",
+        queryset=Vendedor.objects.filter(habilitado=True).order_by("codigo"),
+        required=False,
+        empty_label="— Sin elegir: mantener actual o crear/enlazar por nombre —",
+        help_text=(
+            "Elegí el mismo registro que usás al asignar clientes (Compradores → vendedor asignado). "
+            "Así el portal muestra «Mis clientes» correctamente."
+        ),
+        widget=forms.Select(attrs={"class": "form-select"}),
     )
 
     class Meta:
@@ -81,7 +142,21 @@ class UsuarioEditarForm(forms.ModelForm):
         solo = False
         if inst and getattr(inst, "pk", None):
             solo = bool(getattr(getattr(inst, "perfil_acceso", None), "solo_vendedor", False))
+            v = _vendedor_del_usuario(inst)
+            self.fields["vinculo_vendedor"].initial = v.pk if v else None
         self.fields["vendedor"].initial = solo
+
+    def clean(self):
+        cd = super().clean()
+        solo = bool(cd.get("vendedor"))
+        vin = cd.get("vinculo_vendedor")
+        uid = getattr(self.instance, "pk", None)
+        if solo and vin and vin.usuario_id and uid and vin.usuario_id != uid:
+            self.add_error(
+                "vinculo_vendedor",
+                f"Ese vendedor ya está vinculado al usuario «{vin.usuario.username}».",
+            )
+        return cd
 
     def save(self, commit=True):
         user = super().save(commit=commit)
@@ -91,24 +166,13 @@ class UsuarioEditarForm(forms.ModelForm):
                 usuario=user,
                 defaults={"solo_vendedor": solo_vendedor},
             )
-            if solo_vendedor and not hasattr(user, "vendedor_perfil"):
-                nombre = (user.first_name or "").strip() or user.username
-                apellido = (user.last_name or "").strip() or "—"
-                existente = Vendedor.objects.filter(
-                    usuario__isnull=True,
-                    nombre__iexact=nombre,
-                    apellido__iexact=apellido,
-                ).first()
-                if existente:
-                    existente.usuario = user
-                    existente.save(update_fields=["usuario"])
-                else:
-                    Vendedor.objects.create(
-                        nombre=nombre,
-                        apellido=apellido,
-                        usuario=user,
-                        habilitado=True,
-                    )
+            if solo_vendedor:
+                vin = self.cleaned_data.get("vinculo_vendedor")
+                with transaction.atomic():
+                    if vin:
+                        _vincular_usuario_a_vendedor(user, vin)
+                    elif _vendedor_del_usuario(user) is None:
+                        _asegurar_vendedor_automatico(user)
         return user
 
 
@@ -123,4 +187,3 @@ class UsuarioPasswordForm(forms.Form):
         if p1 and p2 and p1 != p2:
             raise forms.ValidationError("Las contraseñas no coinciden.")
         return cd
-

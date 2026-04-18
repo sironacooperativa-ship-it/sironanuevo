@@ -8,8 +8,8 @@
   </div>
 
   <p class="text-muted small">
-    Mismo criterio que <strong>Ventas</strong> (vendedor, productos, descuento). Al <strong>aprobar</strong> se genera un pedido pendiente de pago (stock descontado, calendario).
-    El cobro y el desglose por pedido se gestionan en <strong>Ventas</strong> y en la ficha del vendedor.
+    Mismo criterio que <strong>Pedidos</strong> (vendedor, productos, descuento). Al <strong>aprobar</strong> se genera un pedido pendiente de pago (stock descontado, calendario).
+    El cobro y el desglose por pedido se gestionan en <strong>Pedidos</strong> y en la ficha del vendedor.
   </p>
 
   <div class="card shadow-sm mb-3">
@@ -85,7 +85,17 @@
         <tbody>
           {% for p in presupuestos %}
             <tr>
-              <td class="fw-semibold">{{ p.pk }}</td>
+              <td class="fw-semibold">
+                {{ p.pk }}
+                {% if p.estado == "ACT" and p.alerta_catalogo %}
+                  <span
+                    class="text-danger fw-bold ms-1"
+                    title="Uno o más productos cambiaron en el catálogo. Abrí el detalle para elegir actualizar o conservar antes de aprobar."
+                    role="img"
+                    aria-label="Alerta: catálogo modificado"
+                  >!</span>
+                {% endif %}
+              </td>
               <td class="text-muted small">{{ p.creado_en|date:"d/m/Y H:i" }}</td>
               <td>{{ p.vendedor.apellido }}, {{ p.vendedor.nombre }}</td>
               <td class="small">
@@ -116,10 +126,18 @@
                   <a class="btn btn-sm btn-outline-secondary py-0" href="{% url 'presupuesto_detalle' p.pk %}">Ver</a>
                   {% if p.estado == "ACT" %}
                     <a class="btn btn-sm btn-outline-primary py-0" href="{% url 'presupuesto_editar' p.pk %}">Editar</a>
-                    <form method="post" action="{% url 'presupuesto_aprobar' p.pk %}" class="d-inline" onsubmit="return confirm('¿Aprobar y generar el pedido? Se descontará stock y quedará en Ventas como pendiente de pago.');">
-                      {% csrf_token %}
-                      <button type="submit" class="btn btn-sm btn-success py-0">Aprobar</button>
-                    </form>
+                    {% if p.alerta_catalogo %}
+                      <a
+                        class="btn btn-sm btn-success py-0"
+                        href="{% url 'presupuesto_detalle' p.pk %}#aprobar-catalogo"
+                        title="Elegí en el detalle si actualizás desde catálogo o conservás el presupuesto"
+                      >Aprobar…</a>
+                    {% else %}
+                      <form method="post" action="{% url 'presupuesto_aprobar' p.pk %}" class="d-inline" onsubmit="return confirm('¿Aprobar y generar el pedido? Se descontará stock y quedará en Pedidos como pendiente de pago.');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-success py-0">Aprobar</button>
+                      </form>
+                    {% endif %}
                   {% endif %}
                   {% if p.estado == "ACT" or user.is_staff %}
                     <form method="post" action="{% url 'presupuesto_eliminar' p.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar el presupuesto #{{ p.pk }}? Si estaba aprobado, también se elimina el pedido y se revierte stock y caja.');">

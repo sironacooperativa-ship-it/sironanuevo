@@ -53,7 +53,12 @@
             <a class="navbar-brand d-flex align-items-center py-1 m-0" href="{% url 'home' %}">
               <img class="brand-logo brand-logo-sm" src="{% static 'img/sirona-logo.png' %}" alt="SIRONA" />
             </a>
-            <span class="small text-muted d-none d-md-inline">{{ request.user.username }}</span>
+            <div class="d-flex align-items-center gap-3">
+              <span class="small text-muted d-none d-md-inline">{{ request.user.username }}</span>
+              <a class="btn app-icon-btn" href="{% url 'logout' %}" title="Salir" aria-label="Salir">
+                <i data-lucide="log-out" class="app-lucide-toolbar"></i>
+              </a>
+            </div>
           </div>
         </nav>
       {% endif %}
@@ -83,6 +88,10 @@
                 <span class="app-sidebar-icon-wrap"><i data-lucide="package"></i></span>
                 <span class="app-sidebar-label">Productos</span>
               </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'productos_listas_precios' %}">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="tags"></i></span>
+                <span class="app-sidebar-label">Listas de precio</span>
+              </a>
               <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'stock_home' %}">
                 <span class="app-sidebar-icon-wrap"><i data-lucide="boxes"></i></span>
                 <span class="app-sidebar-label">Stock</span>
@@ -91,17 +100,13 @@
                 <span class="app-sidebar-icon-wrap"><i data-lucide="wallet"></i></span>
                 <span class="app-sidebar-label">Caja</span>
               </a>
-              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'compra_historial' %}">
-                <span class="app-sidebar-icon-wrap"><i data-lucide="shopping-cart"></i></span>
-                <span class="app-sidebar-label">Compras</span>
-              </a>
-              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'ventas_historial' %}">
-                <span class="app-sidebar-icon-wrap"><i data-lucide="trending-up"></i></span>
-                <span class="app-sidebar-label">Ventas</span>
-              </a>
               <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'presupuesto_lista' %}">
                 <span class="app-sidebar-icon-wrap"><i data-lucide="file-text"></i></span>
                 <span class="app-sidebar-label">Presupuestos</span>
+              </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'ventas_historial' %}">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="trending-up"></i></span>
+                <span class="app-sidebar-label">Pedidos</span>
               </a>
               <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'vendedores_list' %}">
                 <span class="app-sidebar-icon-wrap"><i data-lucide="user-check"></i></span>
@@ -111,13 +116,13 @@
                 <span class="app-sidebar-icon-wrap"><i data-lucide="users"></i></span>
                 <span class="app-sidebar-label">Clientes</span>
               </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'compra_historial' %}">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="shopping-cart"></i></span>
+                <span class="app-sidebar-label">Compras</span>
+              </a>
               <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'proveedores_list' %}">
                 <span class="app-sidebar-icon-wrap"><i data-lucide="truck"></i></span>
                 <span class="app-sidebar-label">Proveedores</span>
-              </a>
-              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'reportes_dashboard' %}">
-                <span class="app-sidebar-icon-wrap"><i data-lucide="chart-column"></i></span>
-                <span class="app-sidebar-label">Reportes</span>
               </a>
               <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'calendario_home' %}">
                 <span class="app-sidebar-icon-wrap"><i data-lucide="calendar-days"></i></span>
@@ -127,18 +132,22 @@
                 <span class="app-sidebar-icon-wrap"><i data-lucide="landmark"></i></span>
                 <span class="app-sidebar-label">Bancos</span>
               </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'reportes_dashboard' %}">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="chart-column"></i></span>
+                <span class="app-sidebar-label">Reportes</span>
+              </a>
               <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'cambiar_password' %}">
                 <span class="app-sidebar-icon-wrap"><i data-lucide="key"></i></span>
                 <span class="app-sidebar-label">Cambiar contraseña</span>
               </a>
               {% if request.user.is_staff %}
+                <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'admin_actividad_list' %}">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="history"></i></span>
+                  <span class="app-sidebar-label">Historial</span>
+                </a>
                 <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'admin_usuarios_list' %}">
                   <span class="app-sidebar-icon-wrap"><i data-lucide="shield"></i></span>
                   <span class="app-sidebar-label">Administrador</span>
-                </a>
-                <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'admin_actividad_list' %}">
-                  <span class="app-sidebar-icon-wrap"><i data-lucide="history"></i></span>
-                  <span class="app-sidebar-label">Historial de actividad</span>
                 </a>
               {% endif %}
               <a class="app-sidebar-link app-sidebar-link-logout sirona-offcanvas-nav-link" href="{% url 'logout' %}">

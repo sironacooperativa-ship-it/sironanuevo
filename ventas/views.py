@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
@@ -17,7 +18,7 @@ from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_dashboard, pa
 from calendario.models import Evento
 from caja.models import MovimientoCaja
 from personas.models import Comprador, Vendedor
-from productos.models import Producto
+from productos.models import ListaPrecios, Producto
 
 from .forms import VentaCabeceraEditForm, VentaPagoForm
 from .models import Venta, VentaLinea
@@ -71,14 +72,37 @@ def _venta_detalle_queryset():
     )
 
 
-def _productos_payload():
+def _lista_farmacia_o_primera() -> ListaPrecios | None:
+    return (
+        ListaPrecios.objects.filter(es_farmacia=True).order_by("id").first()
+        or ListaPrecios.objects.order_by("id").first()
+    )
+
+
+def _lista_precios_desde_post(request) -> ListaPrecios | None:
+    raw = (request.POST.get("lista_precios") or "").strip()
+    if raw.isdigit():
+        lista = ListaPrecios.objects.filter(pk=int(raw)).first()
+        if lista:
+            return lista
+    return _lista_farmacia_o_primera()
+
+
+def _precio_producto_para_lista(lista: ListaPrecios, prod: Producto) -> Decimal:
+    p = lista.precio_para(prod)
+    if p is not None:
+        return q2(Decimal(str(p)))
+    return q2(prod.precio_venta)
+
+
+def _productos_payload_lista(lista: ListaPrecios):
     qs = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
     return [
         {
             "id": p.id,
             "codigo": p.codigo,
             "descripcion": p.descripcion,
-            "precio": str(p.precio_venta),
+            "precio": str(_precio_producto_para_lista(lista, p)),
             "stock": p.stock,
         }
         for p in qs
@@ -86,11 +110,25 @@ def _productos_payload():
 
 
 @login_required
+@require_http_methods(["GET"])
+def venta_catalogo_precios(request):
+    lid = (request.GET.get("lista") or "").strip()
+    if not lid.isdigit():
+        return JsonResponse({"error": "Lista no válida"}, status=400)
+    lista = ListaPrecios.objects.filter(pk=int(lid)).first()
+    if lista is None:
+        return JsonResponse({"error": "Lista no encontrada"}, status=404)
+    return JsonResponse({"productos": _productos_payload_lista(lista)})
+
+
+@login_required
 @require_http_methods(["GET", "POST"])
 def venta_nueva(request):
     vendedores = Vendedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
     compradores = Comprador.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
-    productos_catalogo = _productos_payload()
+    listas_precio = list(ListaPrecios.objects.all().order_by("-es_farmacia", "nombre"))
+    lista_default = _lista_farmacia_o_primera()
+    productos_catalogo = _productos_payload_lista(lista_default) if lista_default else []
 
     if request.method == "POST":
         err = None
@@ -132,6 +170,7 @@ def venta_nueva(request):
         elif err is None and (comision_pct is None or comision_pct < 0):
             err = "El porcentaje de comisión no es válido."
         elif err is None:
+            lista_venta = _lista_precios_desde_post(request)
             line_specs = []
             subtotal = Decimal("0.00")
             for pid, qraw in zip(pids, qtys):
@@ -158,10 +197,13 @@ def venta_nueva(request):
                 if prod.stock < qty:
                     err = f"Stock insuficiente para {prod.codigo} (disponible: {prod.stock})."
                     break
-                pu = prod.precio_venta
+                if lista_venta is not None:
+                    pu = _precio_producto_para_lista(lista_venta, prod)
+                else:
+                    pu = q2(prod.precio_venta)
                 st = (pu * qty).quantize(Decimal("0.01"))
                 subtotal += st
-                line_specs.append((prod, qty, pu, st))
+                line_specs.append((prod, qty, pu, st, prod.codigo, prod.descripcion))
 
             if err is None and not line_specs:
                 err = "Agregá al menos un producto a la venta."
@@ -187,13 +229,16 @@ def venta_nueva(request):
 
         if err:
             messages.error(request, err)
+        lista_rep = _lista_precios_desde_post(request)
+        cat_rep = _productos_payload_lista(lista_rep) if lista_rep else []
         return render(
             request,
             "ventas/nueva.html",
             {
                 "vendedores": vendedores,
                 "compradores": compradores,
-                "productos_catalogo": productos_catalogo,
+                "listas_precio": listas_precio,
+                "productos_catalogo": cat_rep,
                 "lineas_iniciales": lineas_iniciales_desde_post(request),
                 "repoblar": repoblar_campos_cabecera_desde_post(request),
                 "comision_default": COMISION_PORCENTAJE_DEFECTO,
@@ -206,6 +251,7 @@ def venta_nueva(request):
         {
             "vendedores": vendedores,
             "compradores": compradores,
+            "listas_precio": listas_precio,
             "productos_catalogo": productos_catalogo,
             "lineas_iniciales": [],
             "repoblar": None,

@@ -89,8 +89,8 @@ def remito_venta_pdf_response(venta) -> HttpResponse:
         data.append(
             [
                 str(n_item),
-                escape(str(ln.producto.codigo)),
-                escape(ln.producto.descripcion[:80]),
+                escape(str(ln.texto_codigo)),
+                escape(ln.texto_descripcion[:80]),
                 str(ln.cantidad),
                 _money(ln.precio_unitario),
                 _money(ln.subtotal),

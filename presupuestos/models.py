@@ -103,9 +103,53 @@ class PresupuestoLinea(models.Model):
     cantidad = models.PositiveIntegerField()
     precio_unitario = models.DecimalField(max_digits=12, decimal_places=2)
     subtotal = models.DecimalField(max_digits=14, decimal_places=2)
+    codigo_snapshot = models.CharField(
+        max_length=6,
+        blank=True,
+        default="",
+        help_text="Código al guardar la línea (no cambia si editás el producto después).",
+    )
+    descripcion_snapshot = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Descripción al guardar la línea.",
+    )
+    producto_capturado_en = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Valor de producto.actualizado_en al último guardado/aceptación de esta línea (para detectar cambios en catálogo).",
+    )
 
     class Meta:
         ordering = ["id"]
 
+    def linea_superada_por_catalogo_producto(self) -> bool:
+        """El producto en catálogo se modificó después de fijar esta línea."""
+        cap = self.producto_capturado_en
+        p = self.producto
+        if cap is None:
+            return True
+        # Microsegundos: si son iguales, no hubo edición posterior a la captura.
+        return p.actualizado_en > cap
+
+    @property
+    def texto_codigo(self) -> str:
+        return self.codigo_snapshot or self.producto.codigo
+
+    @property
+    def texto_descripcion(self) -> str:
+        return self.descripcion_snapshot or self.producto.descripcion
+
     def __str__(self) -> str:
-        return f"{self.producto.codigo} x{self.cantidad}"
+        return f"{self.texto_codigo} x{self.cantidad}"
+
+
+def presupuesto_tiene_alerta_catalogo(presupuesto: Presupuesto) -> bool:
+    """Presupuesto activo con al menos una línea desactualizada respecto al producto en catálogo."""
+    if presupuesto.estado != Presupuesto.Estado.ACTIVO:
+        return False
+    for ln in presupuesto.lineas.select_related("producto"):
+        if ln.linea_superada_por_catalogo_producto():
+            return True
+    return False

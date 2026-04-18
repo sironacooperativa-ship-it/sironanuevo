@@ -1,12 +1,13 @@
 from django.urls import path
 
-from . import views
+from . import listas_precios_views, views
 
 
 urlpatterns = [
     path("", views.productos_list, name="productos_list"),
     path("aumento/", views.productos_aumento, name="productos_aumento"),
     path("nuevo/", views.producto_create, name="producto_create"),
+    path("<int:pk>/inline/", views.producto_inline_update, name="producto_inline_update"),
     path("<int:pk>/editar/", views.producto_update, name="producto_update"),
     path("<int:pk>/eliminar/", views.producto_delete, name="producto_delete"),
     path("<int:pk>/toggle-habilitado/", views.producto_toggle_habilitado, name="producto_toggle_habilitado"),
@@ -26,5 +27,10 @@ urlpatterns = [
     path("lista-precios.pdf", views.productos_export_pdf, name="productos_export_pdf"),
     path("listas/guardar/", views.lista_precios_guardar, name="lista_precios_guardar"),
     path("listas/aplicar/", views.lista_precios_aplicar, name="lista_precios_aplicar"),
+    path("listas-precio/", listas_precios_views.listas_precios_menu, name="productos_listas_precios"),
+    path("listas-precio/nueva/", listas_precios_views.lista_precios_nueva, name="lista_precios_nueva"),
+    path("listas-precio/<int:pk>/", listas_precios_views.lista_precios_trabajar, name="lista_precios_trabajar"),
+    path("listas-precio/<int:pk>/renombrar/", listas_precios_views.lista_precios_renombrar, name="lista_precios_renombrar"),
+    path("listas-precio/<int:pk>/eliminar/", listas_precios_views.lista_precios_eliminar, name="lista_precios_eliminar"),
 ]
 

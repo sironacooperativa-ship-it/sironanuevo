@@ -28,7 +28,8 @@ from reportlab.lib.units import mm
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 
 from .forms import ProductoForm
-from .models import ListaPrecios, Producto
+from .listas_precios_views import producto_listas_extra_context, sync_producto_listas_extras_from_post
+from .models import Producto
 
 
 def _redirect_productos_con_filtros(request):
@@ -388,7 +389,6 @@ def productos_list(request):
             return xlsx_response(base, [("Productos", headers, rows)])
         return pdf_response(base, "Listado de productos", [("Productos", headers, rows)])
 
-    listas = ListaPrecios.objects.all()
     proveedores_filtro = Proveedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
 
     return render(
@@ -402,7 +402,6 @@ def productos_list(request):
             "estado": estado,
             "tipos": Producto.Tipo.choices,
             "proveedores_filtro": proveedores_filtro,
-            "listas": listas,
         },
     )
 
@@ -537,42 +536,21 @@ def productos_aumento(request):
 @login_required
 @require_http_methods(["POST"])
 def lista_precios_guardar(request):
-    nombre = (request.POST.get("nombre") or "").strip()
-    if not nombre:
-        messages.error(request, "Tenés que ingresar un nombre para guardar la lista.")
-        return redirect("productos_list")
-
-    seleccion = list(Producto.objects.filter(en_lista_precios=True, habilitado=True).values_list("id", flat=True))
-    if not seleccion:
-        messages.error(request, "No hay productos seleccionados para guardar.")
-        return redirect("productos_list")
-
-    with transaction.atomic():
-        lista, _created = ListaPrecios.objects.get_or_create(nombre=nombre)
-        lista.productos.set(seleccion)
-
-    messages.success(request, f"Lista guardada: {nombre}")
-    return redirect("productos_list")
+    messages.info(
+        request,
+        "Las listas de precios se administran desde la pestaña Listas de precio (rubros y precios por lista).",
+    )
+    return redirect("productos_listas_precios")
 
 
 @login_required
 @require_http_methods(["POST"])
 def lista_precios_aplicar(request):
-    lista_id = request.POST.get("lista_id")
-    if not lista_id:
-        messages.error(request, "Seleccioná una lista para aplicar.")
-        return redirect("productos_list")
-
-    lista = get_object_or_404(ListaPrecios, pk=lista_id)
-    ids = list(lista.productos.values_list("id", flat=True))
-
-    with transaction.atomic():
-        Producto.objects.update(en_lista_precios=False)
-        if ids:
-            Producto.objects.filter(id__in=ids, habilitado=True).update(en_lista_precios=True)
-
-    messages.success(request, f"Lista aplicada: {lista.nombre}")
-    return redirect("productos_list")
+    messages.info(
+        request,
+        "Para marcar productos en el PDF de Farmacia usá el interruptor «En lista (PDF)» en cada producto.",
+    )
+    return redirect("productos_listas_precios")
 
 
 def _render_producto_form(request, *, template_full: str, modo: str, form, producto=None):
@@ -588,6 +566,7 @@ def _render_producto_form(request, *, template_full: str, modo: str, form, produ
         "modal_title": (
             f"Editar · {producto.codigo}" if producto else "Nuevo producto"
         ),
+        **producto_listas_extra_context(producto),
     }
     if request.GET.get("modal") == "1":
         return render(request, "productos/form_fragment.html", ctx)
@@ -603,6 +582,7 @@ def producto_create(request):
             producto = form.save(commit=False)
             producto.precio_venta_editado = bool(form.cleaned_data.get("precio_venta_editado"))
             producto.save()
+            sync_producto_listas_extras_from_post(request, producto)
             messages.success(request, f"Producto creado: {producto.codigo}")
             return redirect("productos_list")
     else:
@@ -620,6 +600,7 @@ def producto_update(request, pk: int):
             producto = form.save(commit=False)
             producto.precio_venta_editado = bool(form.cleaned_data.get("precio_venta_editado"))
             producto.save()
+            sync_producto_listas_extras_from_post(request, producto)
             messages.success(request, f"Producto actualizado: {producto.codigo}")
             return redirect("productos_list")
     else:
@@ -631,6 +612,28 @@ def producto_update(request, pk: int):
         form=form,
         producto=producto,
     )
+
+
+@login_required
+@require_http_methods(["POST"])
+def producto_inline_update(request, pk: int):
+    """Guardado desde la tabla (edición en línea). No sincroniza listas de rubro extra."""
+    producto = get_object_or_404(Producto, pk=pk)
+    form = ProductoForm(request.POST, instance=producto)
+    if form.is_valid():
+        producto = form.save(commit=False)
+        producto.precio_venta_editado = bool(form.cleaned_data.get("precio_venta_editado"))
+        producto.save()
+        messages.success(request, f"Producto actualizado: {producto.codigo}")
+    else:
+        parts = []
+        for field, errs in form.errors.items():
+            parts.append(f"{field}: {', '.join(str(e) for e in errs)}")
+        messages.error(
+            request,
+            "No se pudo guardar desde la tabla. " + (" · ".join(parts) if parts else "Revisá los valores."),
+        )
+    return _redirect_productos_con_filtros(request)
 
 
 @login_required

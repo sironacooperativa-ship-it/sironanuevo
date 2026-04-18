@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load money %}
 {% block title %}Portal Vendedor{% endblock %}
 {% block content %}
   <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
@@ -17,9 +18,10 @@
 
   <div class="card shadow-sm mb-3">
     <div class="card-body">
+      <h2 class="h6 mb-3">Mis clientes</h2>
       <form method="get" class="row g-2 align-items-end" novalidate>
         <div class="col-12">
-          <label class="form-label">Mis clientes</label>
+          <label class="form-label">Elegir</label>
           <select class="form-select" name="comprador">
             <option value="">— Elegir —</option>
             {% for c in mis_clientes %}
@@ -27,7 +29,10 @@
             {% endfor %}
           </select>
           {% if not mis_clientes %}
-            <div class="form-text text-warning">Todavía no tenés clientes asignados.</div>
+            <div class="form-text text-warning">
+              Todavía no hay clientes con <strong>vendedor asignado</strong> igual a tu registro (<strong>{{ vendedor.codigo }}</strong>).
+              Si ya están cargados, pedí que en <strong>Administración → Usuarios</strong> tu cuenta quede vinculada al mismo vendedor que figura en <strong>Personas → Compradores</strong>.
+            </div>
           {% else %}
             <div class="form-text">Muestra clientes vigentes asignados a vos.</div>
           {% endif %}
@@ -38,7 +43,7 @@
             type="text"
             name="cliente"
             class="form-control"
-            placeholder="Buscar por apellido o nombre…"
+            placeholder="Apellido, nombre, código o DNI…"
             value="{{ cliente_busqueda }}"
             autocomplete="off"
           />
@@ -76,68 +81,65 @@
             <a class="btn btn-sm btn-outline-secondary" href="{% url 'vendedor_home' %}">Cambiar</a>
           </div>
         </div>
+
+        <div class="mt-3 pt-3 border-top">
+          <h2 class="h6 mb-2">Pedidos impagos</h2>
+          {% if impagos %}
+            <div class="list-group">
+              {% for v in impagos %}
+                <div class="list-group-item">
+                  <div class="d-flex justify-content-between align-items-center gap-2">
+                    <div class="fw-semibold">Pedido #{{ v.pk }}</div>
+                    <span class="badge text-bg-warning">Impago</span>
+                  </div>
+                  <div class="text-muted small">
+                    {% if v.fecha_vencimiento_pago %}
+                      Vence: {{ v.fecha_vencimiento_pago|date:"d/m/Y" }}
+                    {% else %}
+                      Sin vencimiento
+                    {% endif %}
+                    · Neto: {{ v.neto|ars }}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-muted small">No hay pedidos impagos para este cliente.</div>
+          {% endif %}
+        </div>
       {% endif %}
     </div>
   </div>
 
   {% if comprador %}
-    <div class="card shadow-sm mb-3">
-      <div class="card-body">
-        <h2 class="h6 mb-2">Pedidos impagos</h2>
-        {% if impagos %}
-          <div class="list-group">
-            {% for v in impagos %}
-              <div class="list-group-item">
-                <div class="d-flex justify-content-between align-items-center gap-2">
-                  <div class="fw-semibold">Pedido #{{ v.pk }}</div>
-                  <span class="badge text-bg-warning">Impago</span>
-                </div>
-                <div class="text-muted small">
-                  {% if v.fecha_vencimiento_pago %}
-                    Vence: {{ v.fecha_vencimiento_pago|date:"d/m/Y" }}
-                  {% else %}
-                    Sin vencimiento
-                  {% endif %}
-                </div>
-              </div>
-            {% endfor %}
-          </div>
-        {% else %}
-          <div class="text-muted small">No hay pedidos impagos para este cliente.</div>
-        {% endif %}
-      </div>
-    </div>
-
     {{ productos_catalogo|json_script:"presupuestos-productos" }}
     {{ lineas_iniciales|json_script:"presupuestos-lineas-iniciales" }}
 
     <form method="post" novalidate id="presupuestoForm">
       {% csrf_token %}
       <input type="hidden" name="comprador" value="{{ comprador.pk }}" />
+      <input type="hidden" name="comision_porcentaje" value="{{ vendedor.comision_porcentaje }}" />
+      <input type="hidden" name="aplica_comision" value="1" />
 
       <div class="card shadow-sm mb-3">
-        <div class="card-body row g-3">
-          <div class="col-12 col-md-6">
-            <label class="form-label">Fecha límite de pago <span class="text-muted fw-normal">(opcional)</span></label>
-            <input
-              type="date"
-              name="fecha_vencimiento_pago"
-              class="form-control"
-              value="{% if repoblar %}{{ repoblar.fecha_vencimiento_pago }}{% endif %}"
-            />
-          </div>
-          <input type="hidden" name="comision_porcentaje" value="{{ vendedor.comision_porcentaje }}" />
-          <input type="hidden" name="aplica_comision" value="1" />
-        </div>
-      </div>
-
-      <div class="card shadow-sm mb-3">
+        <div class="card-header fw-semibold">Nuevo presupuesto</div>
         <div class="card-body">
           <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
             <h2 class="h6 mb-0">Armar presupuesto</h2>
             <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddLinea">+ Agregar</button>
           </div>
-          <div class="table-responsive">
+          <div class="row g-3 mb-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label">Fecha límite de pago <span class="text-muted fw-normal">(opcional)</span></label>
+              <input
+                type="date"
+                name="fecha_vencimiento_pago"
+                class="form-control"
+                value="{% if repoblar %}{{ repoblar.fecha_vencimiento_pago }}{% endif %}"
+              />
+            </div>
+          </div>
+          <div class="table-responsive mb-3">
             <table class="table table-sm align-middle" id="tablaLineas">
               <thead class="table-light">
                 <tr>
@@ -151,34 +153,31 @@
               <tbody id="lineasBody"></tbody>
             </table>
           </div>
-        </div>
-      </div>
-
-      <div class="card shadow-sm mb-3">
-        <div class="card-body row g-3">
-          <div class="col-12 col-md-6">
-            <label class="form-label">Descuento ($)</label>
-            <input
-              type="text"
-              name="descuento_monto"
-              class="form-control"
-              value="{% if repoblar %}{{ repoblar.descuento_monto }}{% else %}0{% endif %}"
-              inputmode="decimal"
-              id="id_descuento_monto"
-            />
-          </div>
-          <div class="col-12 col-md-6">
-            <div class="border rounded p-3 bg-light small">
-              <div class="d-flex justify-content-between"><span>Subtotal</span><span id="sumSubtotal">$ 0,00</span></div>
-              <div class="d-flex justify-content-between"><span>Descuento</span><span id="sumDesc">$ 0,00</span></div>
-              <div class="d-flex justify-content-between fw-semibold"><span>Neto</span><span id="sumNeto">$ 0,00</span></div>
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label">Descuento ($)</label>
+              <input
+                type="text"
+                name="descuento_monto"
+                class="form-control"
+                value="{% if repoblar %}{{ repoblar.descuento_monto }}{% else %}0{% endif %}"
+                inputmode="decimal"
+                id="id_descuento_monto"
+              />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Detalle</label>
+              <div class="border rounded p-3 bg-light small">
+                <div class="d-flex justify-content-between"><span>Subtotal</span><span id="sumSubtotal">$ 0,00</span></div>
+                <div class="d-flex justify-content-between"><span>Descuento</span><span id="sumDesc">$ 0,00</span></div>
+                <div class="d-flex justify-content-between fw-semibold"><span>Neto</span><span id="sumNeto">$ 0,00</span></div>
+              </div>
             </div>
           </div>
+          <div class="d-grid d-md-flex justify-content-md-end gap-2 mt-4 pt-2 border-top">
+            <button type="submit" class="btn btn-primary">Guardar presupuesto</button>
+          </div>
         </div>
-      </div>
-
-      <div class="d-grid d-md-flex justify-content-md-end gap-2">
-        <button type="submit" class="btn btn-primary">Guardar presupuesto</button>
       </div>
     </form>
 

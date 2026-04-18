@@ -71,6 +71,10 @@ class CompradorForm(_BasePersonaForm):
         self.fields["vendedor_asignado"].queryset = Vendedor.objects.filter(habilitado=True).order_by(
             "apellido", "nombre", "codigo"
         )
+        self.fields["vendedor_asignado"].help_text = (
+            "Debe ser el mismo registro vinculado al usuario del vendedor (Administración → Usuarios), "
+            "para que vea estos clientes en el portal."
+        )
 
     def clean(self):
         cd = super().clean()

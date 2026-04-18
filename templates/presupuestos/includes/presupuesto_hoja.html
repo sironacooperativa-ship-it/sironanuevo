@@ -57,8 +57,8 @@
         {% for l in presupuesto.lineas.all %}
           <tr>
             <td class="text-center text-muted">{{ forloop.counter }}</td>
-            <td class="text-nowrap">{{ l.producto.codigo }}</td>
-            <td class="col-desc">{{ l.producto.descripcion }}</td>
+            <td class="text-nowrap">{{ l.texto_codigo }}</td>
+            <td class="col-desc">{{ l.texto_descripcion }}</td>
             <td class="text-end">{{ l.cantidad }}</td>
             <td class="text-end text-nowrap">{{ l.precio_unitario|ars }}</td>
             <td class="text-end text-nowrap fw-medium">{{ l.subtotal|ars }}</td>
