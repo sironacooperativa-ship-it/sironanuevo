@@ -7,6 +7,7 @@ from django.views.decorators.http import require_http_methods
 from core.comision_agg import comisiones_acumuladas_por_mes
 from core.export_utils import parse_export, pdf_response, xlsx_response
 
+from caja.models import MovimientoCaja
 from presupuestos.models import Presupuesto
 from ventas.models import Venta
 
@@ -52,6 +53,15 @@ def vendedores_list(request):
 
 
 @login_required
+def vendedor_ficha(request, pk: int):
+    """Ficha de datos del vendedor; con ?modal=1 devuelve HTML para el popup del listado."""
+    v = get_object_or_404(Vendedor.objects.select_related("usuario"), pk=pk)
+    if request.GET.get("modal") == "1":
+        return render(request, "personas/vendedor_ficha_fragment.html", {"vendedor": v})
+    return render(request, "personas/vendedor_ficha_standalone.html", {"vendedor": v})
+
+
+@login_required
 def vendedor_detalle(request, pk: int):
     v = get_object_or_404(Vendedor, pk=pk)
     ventas_qs = (
@@ -75,6 +85,52 @@ def vendedor_detalle(request, pk: int):
             "comisiones_por_mes": comisiones_por_mes,
             "resumen_historial": hist,
             "tiene_historial": tiene_historial,
+        },
+    )
+
+
+@login_required
+def vendedor_actividad(request, pk: int):
+    """Clientes vinculados, pedidos y movimientos de caja que involucran al vendedor."""
+    v = get_object_or_404(Vendedor, pk=pk)
+    ids_en_pedidos = set(
+        Venta.objects.filter(vendedor=v, comprador_id__isnull=False).values_list("comprador_id", flat=True)
+    )
+    ids_asignados = set(Comprador.objects.filter(vendedor_asignado=v).values_list("pk", flat=True))
+    ids_clientes = ids_en_pedidos | ids_asignados
+    filas_clientes: list[dict] = []
+    if ids_clientes:
+        for c in (
+            Comprador.objects.filter(pk__in=ids_clientes)
+            .select_related("vendedor_asignado")
+            .order_by("apellido", "nombre", "codigo")
+        ):
+            filas_clientes.append(
+                {
+                    "comprador": c,
+                    "asignado_a_este": c.vendedor_asignado_id == v.pk,
+                    "en_pedidos": c.pk in ids_en_pedidos,
+                }
+            )
+
+    ventas = list(
+        Venta.objects.filter(vendedor=v)
+        .select_related("comprador", "pago_movimiento")
+        .order_by("-creado_en", "-id")[:400]
+    )
+    movimientos = list(
+        MovimientoCaja.objects.filter(vendedor=v)
+        .select_related("venta", "cuenta_bancaria")
+        .order_by("-fecha", "-creado_en", "-id")[:400]
+    )
+    return render(
+        request,
+        "personas/vendedor_actividad.html",
+        {
+            "vendedor": v,
+            "filas_clientes": filas_clientes,
+            "ventas": ventas,
+            "movimientos": movimientos,
         },
     )
 

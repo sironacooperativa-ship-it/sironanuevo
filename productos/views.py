@@ -1,6 +1,6 @@
 import math
 import unicodedata
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
 
@@ -18,7 +18,7 @@ from openpyxl import load_workbook
 from urllib.parse import urlencode
 
 from core.export_utils import parse_export, pdf_response, xlsx_response
-from core.money_decimal import format_monto_ars, q2
+from core.money_decimal import format_monto_ars, q2, redondear_precio_mostrador_ars
 from core.pdf_membrete import platypus_membrete
 from personas.models import Proveedor
 from reportlab.lib import colors
@@ -35,7 +35,7 @@ from .models import Producto
 def _redirect_productos_con_filtros(request):
     """Vuelve al listado conservando búsqueda / filtros enviados como retorno_* en POST."""
     params = {}
-    for k in ("q", "tipo", "proveedor", "estado"):
+    for k in ("q", "tipo", "proveedor", "estado", "ingreso"):
         v = (request.POST.get(f"retorno_{k}") or "").strip()
         if v:
             params[k] = v
@@ -57,8 +57,9 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
         proveedor = (request.GET.get("proveedor") or "").strip()
 
     estado = (request.GET.get("estado") or "").strip()
+    ingreso = (request.GET.get("ingreso") or "").strip()
 
-    productos = Producto.objects.all().order_by("descripcion", "codigo")
+    productos = Producto.objects.all()
     if q:
         productos = productos.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
     if tipo:
@@ -69,8 +70,14 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
         productos = productos.filter(habilitado=True)
     elif estado == "0":
         productos = productos.filter(habilitado=False)
+    if ingreso == "nuevos":
+        desde = timezone.now() - timedelta(days=30)
+        productos = productos.filter(creado_en__gte=desde)
+        productos = productos.order_by("-creado_en", "descripcion", "codigo")
+    else:
+        productos = productos.order_by("descripcion", "codigo")
 
-    return productos, {"q": q, "tipo": tipo, "proveedor": proveedor, "estado": estado}
+    return productos, {"q": q, "tipo": tipo, "proveedor": proveedor, "estado": estado, "ingreso": ingreso}
 
 
 def _parse_pct_aumento(request) -> Decimal | None:
@@ -106,6 +113,7 @@ def _redirect_productos_aumento_filtros(request):
             "tipo": (request.POST.get("filtro_tipo") or "").strip(),
             "proveedor": (request.POST.get("filtro_proveedor") or "").strip(),
             "estado": (request.POST.get("filtro_estado") or "").strip(),
+            "ingreso": (request.POST.get("filtro_ingreso") or "").strip(),
         }
     )
     url = reverse("productos_aumento")
@@ -353,6 +361,7 @@ def productos_list(request):
     tipo = filtros_ctx["tipo"]
     proveedor = filtros_ctx["proveedor"]
     estado = filtros_ctx["estado"]
+    ingreso = filtros_ctx["ingreso"]
 
     exp = parse_export(request)
     if exp in ("xlsx", "pdf"):
@@ -400,6 +409,7 @@ def productos_list(request):
             "tipo": tipo,
             "proveedor": proveedor,
             "estado": estado,
+            "ingreso": ingreso,
             "tipos": Producto.Tipo.choices,
             "proveedores_filtro": proveedores_filtro,
         },
@@ -470,7 +480,7 @@ def productos_aumento(request):
             rows = []
             for p in productos_sel:
                 nuevo_costo = q2(p.costo * factor)
-                sugerido = q2(
+                sugerido = redondear_precio_mostrador_ars(
                     nuevo_costo
                     * (Decimal("1.0") + (p.porcentaje_ganancia / Decimal("100")))
                 )
@@ -487,6 +497,7 @@ def productos_aumento(request):
             ft = (request.POST.get("filtro_tipo") or "").strip()
             fp = (request.POST.get("filtro_proveedor") or "").strip()
             fe = (request.POST.get("filtro_estado") or "").strip()
+            fi = (request.POST.get("filtro_ingreso") or "").strip()
             back_q = {}
             if fq:
                 back_q["q"] = fq
@@ -496,6 +507,8 @@ def productos_aumento(request):
                 back_q["proveedor"] = fp
             if fe:
                 back_q["estado"] = fe
+            if fi:
+                back_q["ingreso"] = fi
             aumento_back_url = reverse("productos_aumento")
             if back_q:
                 aumento_back_url += "?" + urlencode(back_q)
@@ -511,6 +524,7 @@ def productos_aumento(request):
                     "filtro_tipo": ft,
                     "filtro_proveedor": fp,
                     "filtro_estado": fe,
+                    "filtro_ingreso": fi,
                     "aumento_back_url": aumento_back_url,
                     "proveedores_filtro": proveedores_filtro,
                 },
@@ -527,6 +541,7 @@ def productos_aumento(request):
             "tipo": filtros_ctx["tipo"],
             "proveedor": filtros_ctx["proveedor"],
             "estado": filtros_ctx["estado"],
+            "ingreso": filtros_ctx["ingreso"],
             "tipos": Producto.Tipo.choices,
             "proveedores_filtro": proveedores_filtro,
         },

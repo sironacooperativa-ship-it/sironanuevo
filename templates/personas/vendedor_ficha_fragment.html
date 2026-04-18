@@ -1,0 +1,15 @@
+{# Solo para fetch → modal (sin {% extends %}). #}
+<div class="modal-header border-0 pb-2 align-items-center">
+  <div>
+    <h5 class="modal-title fw-semibold mb-0">Ficha del vendedor</h5>
+    <div class="text-muted small mt-1"><code>{{ vendedor.codigo }}</code> · {{ vendedor.apellido }}, {{ vendedor.nombre }}</div>
+  </div>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+</div>
+<div class="modal-body pt-0 px-3 px-md-4">
+  {% include "personas/includes/vendedor_ficha_datos.html" %}
+</div>
+<div class="modal-footer border-0 bg-transparent pt-0 px-3 px-md-4 pb-3">
+  <a class="btn btn-primary rounded-pill" href="{% url 'vendedor_update' vendedor.pk %}">Editar</a>
+  <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cerrar</button>
+</div>

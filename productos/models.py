@@ -1,9 +1,11 @@
 import re
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils.text import slugify
+
+from core.money_decimal import redondear_precio_mostrador_ars
 
 
 class Producto(models.Model):
@@ -24,7 +26,7 @@ class Producto(models.Model):
     precio_venta = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     precio_venta_editado = models.BooleanField(default=False)
     habilitado = models.BooleanField(default=True)
-    en_lista_precios = models.BooleanField(default=True)
+    en_lista_precios = models.BooleanField(default=False)
 
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
@@ -35,14 +37,11 @@ class Producto(models.Model):
     def __str__(self) -> str:
         return f"{self.codigo} - {self.descripcion}"
 
-    @staticmethod
-    def _redondear_2(value: Decimal) -> Decimal:
-        return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-
     def calcular_precio_venta(self) -> Decimal:
         costo = Decimal(self.costo or 0)
         pct = Decimal(self.porcentaje_ganancia or 0)
-        return self._redondear_2(costo * (Decimal("1.0") + (pct / Decimal("100"))))
+        raw = costo * (Decimal("1.0") + (pct / Decimal("100")))
+        return redondear_precio_mostrador_ars(raw)
 
     def clean(self):
         super().clean()
@@ -109,10 +108,9 @@ class Producto(models.Model):
                     paso_a_positivo = True
             if paso_a_positivo:
                 self.habilitado = True
-                self.en_lista_precios = True
                 uf = kwargs.get("update_fields")
                 if uf is not None:
-                    kwargs["update_fields"] = sorted(set(uf) | {"habilitado", "en_lista_precios"})
+                    kwargs["update_fields"] = sorted(set(uf) | {"habilitado"})
 
         super().save(*args, **kwargs)
 

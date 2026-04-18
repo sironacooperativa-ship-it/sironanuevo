@@ -26,7 +26,7 @@
             <div class="text-muted small">Slug: <code>{{ l.slug }}</code></div>
           </div>
           <div class="d-flex flex-wrap gap-2">
-            <a class="btn btn-sm btn-outline-primary rounded-pill" href="{% url 'lista_precios_trabajar' l.pk %}">Trabajar</a>
+            <a class="btn btn-sm btn-outline-primary rounded-pill" href="{% url 'lista_precios_trabajar' l.pk %}">Editar</a>
             {% if not l.es_farmacia %}
               <a class="btn btn-sm btn-outline-secondary rounded-pill" href="{% url 'lista_precios_renombrar' l.pk %}">Renombrar</a>
               <form method="post" action="{% url 'lista_precios_eliminar' l.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar esta lista y sus precios de rubro?');">

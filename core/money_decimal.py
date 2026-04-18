@@ -25,6 +25,25 @@ def q2(value) -> Decimal:
     return d.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
+def redondear_precio_mostrador_ars(value) -> Decimal:
+    """
+    Precio de venta sugerido: solo termina en ,00 o ,50.
+    Cualquier otro centavo redondea hacia arriba al próximo medio peso o peso entero.
+    """
+    d = q2(value)
+    if d <= 0:
+        return Decimal("0.00")
+    cents = int((d * Decimal("100")).to_integral_value(rounding=ROUND_HALF_UP))
+    mod = cents % 100
+    if mod in (0, 50):
+        return (Decimal(cents) / Decimal("100")).quantize(Decimal("0.01"))
+    if mod < 50:
+        out_cents = (cents // 100) * 100 + 50
+    else:
+        out_cents = (cents // 100 + 1) * 100
+    return (Decimal(out_cents) / Decimal("100")).quantize(Decimal("0.01"))
+
+
 def parse_decimal_from_input(raw: str | None) -> Decimal:
     """
     Interpreta montos ingresados en formulario: acepta salida de format_monto_ars (`$ 1.234,56`),

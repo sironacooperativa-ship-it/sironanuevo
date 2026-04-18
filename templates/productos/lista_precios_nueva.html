@@ -10,11 +10,20 @@
       <form method="post">
         {% csrf_token %}
         <label class="form-label small text-muted">Nombre</label>
-        <input type="text" name="nombre" class="form-control rounded-3 mb-3" required maxlength="100" placeholder="Nombre del rubro" />
-        <div class="d-flex gap-2">
-          <a class="btn btn-outline-secondary rounded-pill" href="{% url 'productos_listas_precios' %}">Cancelar</a>
-          <button type="submit" class="btn btn-primary rounded-pill">Crear y continuar</button>
+        <input
+          type="text"
+          name="nombre"
+          class="form-control rounded-3 mb-3"
+          required
+          maxlength="100"
+          placeholder="Nombre del rubro"
+          value="{{ nombre_borrador }}"
+        />
+        <div class="d-flex gap-2 flex-wrap">
+          <a class="btn btn-outline-secondary rounded-pill" href="{% url 'productos_listas_precios' %}?cancel_nueva=1">Cancelar</a>
+          <button type="submit" class="btn btn-primary rounded-pill">Siguiente</button>
         </div>
+        <p class="text-muted small mt-2 mb-0">En el paso siguiente podés confirmar o cancelar; la lista no se guarda hasta que confirmes.</p>
       </form>
     </div>
   </div>

@@ -41,11 +41,10 @@ def _safe_relative_next(path: str) -> str:
 
 @login_required
 def home(request):
-    # Si el usuario está en modo vendedor, mostrar un inicio reducido con datos propios.
-    if not request.user.is_staff and (
-        bool(request.session.get("modo_vendedor", False))
-        or bool(getattr(getattr(request.user, "perfil_acceso", None), "solo_vendedor", False))
-    ):
+    # Si el usuario está en modo vendedor, mostrar un inicio reducido con datos propios (también si es staff).
+    modo_v = bool(request.session.get("modo_vendedor", False))
+    solo_v = bool(getattr(getattr(request.user, "perfil_acceso", None), "solo_vendedor", False))
+    if modo_v or solo_v:
         v = getattr(request.user, "vendedor_perfil", None)
         if v is not None:
             today = timezone.localdate()
@@ -221,33 +220,30 @@ def login_view(request):
             if next_url:
                 return redirect(next_url)
             try:
-                if not user.is_staff:
-                    solo_vendedor = bool(
-                        getattr(getattr(user, "perfil_acceso", None), "solo_vendedor", False)
+                solo_vendedor = bool(
+                    getattr(getattr(user, "perfil_acceso", None), "solo_vendedor", False)
+                )
+                entrar = (request.POST.get("entrar_como_vendedor") or "0") == "1"
+                # Si corresponde, asegurar perfil Vendedor (usuarios viejos o creados sin vínculo)
+                v = getattr(user, "vendedor_perfil", None)
+                if (solo_vendedor or entrar) and v is None:
+                    nombre = (user.first_name or "").strip() or user.username
+                    apellido = (user.last_name or "").strip() or "—"
+                    v = Vendedor.objects.create(
+                        nombre=nombre,
+                        apellido=apellido,
+                        usuario=user,
+                        habilitado=True,
                     )
-                    entrar = (request.POST.get("entrar_como_vendedor") or "0") == "1"
-                    # Si corresponde, asegurar perfil Vendedor (usuarios viejos o creados sin vínculo)
-                    v = getattr(user, "vendedor_perfil", None)
-                    if (solo_vendedor or entrar) and v is None:
-                        nombre = (user.first_name or "").strip() or user.username
-                        apellido = (user.last_name or "").strip() or "—"
-                        v = Vendedor.objects.create(
-                            nombre=nombre,
-                            apellido=apellido,
-                            usuario=user,
-                            habilitado=True,
-                        )
 
-                    # Guardar modo en sesión (para menú/layout). Si entró como vendedor, lo activamos.
-                    modo = bool(solo_vendedor or (entrar and v is not None))
-                    request.session["modo_vendedor"] = modo
+                # Guardar modo en sesión (para menú/layout). Staff puede entrar como vendedor con el checkbox.
+                modo = bool(solo_vendedor or (entrar and v is not None))
+                request.session["modo_vendedor"] = modo
 
-                    # Usuario marcado como vendedor: siempre portal reducido
-                    if solo_vendedor:
-                        return redirect("vendedor_home")
-                    # Usuario con acceso completo: opcionalmente puede entrar al portal si tiene perfil vendedor.
-                    if entrar and v is not None:
-                        return redirect("vendedor_home")
+                if solo_vendedor:
+                    return redirect("vendedor_home")
+                if entrar and v is not None:
+                    return redirect("vendedor_home")
             except Exception:
                 pass
             return redirect("home")

@@ -122,6 +122,78 @@
         </table>
       </div>
 
+      {% if productos_pedido_listas %}
+        <div class="no-print border rounded p-3 mb-4 bg-white">
+          <h2 class="h6 text-uppercase text-muted mb-2">Listas de precio por producto</h2>
+          <p class="small text-muted mb-3">
+            Marcá en qué listas de rubro querés incluir cada producto del pedido.
+            <strong>{% if lista_farmacia %}{{ lista_farmacia.nombre }}{% else %}Farmacia{% endif %} (PDF)</strong> queda siempre activada al guardar.
+          </p>
+          <div class="row g-3">
+            {% for bloque in productos_pedido_listas %}
+              <div class="col-12 col-lg-6">
+                <div class="card border shadow-sm h-100">
+                  <div class="card-body p-3">
+                    <div class="fw-semibold small mb-2">
+                      <code>{{ bloque.producto.codigo }}</code> — {{ bloque.producto.descripcion }}
+                    </div>
+                    <form
+                      method="post"
+                      action="{% url 'venta_producto_listas_precio' venta.pk bloque.producto.pk %}"
+                      class="mb-0"
+                    >
+                      {% csrf_token %}
+                      <input type="hidden" name="listas_extra_present" value="1" />
+                      <div class="form-check mb-2">
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          checked
+                          disabled
+                          id="farmacia-{{ bloque.producto.pk }}"
+                        />
+                        <label class="form-check-label small" for="farmacia-{{ bloque.producto.pk }}">
+                          {% if lista_farmacia %}{{ lista_farmacia.nombre }}{% else %}Farmacia{% endif %}
+                          (lista PDF del producto) — siempre activo
+                        </label>
+                      </div>
+                      {% if bloque.listas_extra_opciones %}
+                        <div class="small text-muted mb-1">Otras listas (rubros)</div>
+                        {% for l in bloque.listas_extra_opciones %}
+                          <div class="form-check">
+                            <input
+                              class="form-check-input"
+                              type="checkbox"
+                              name="listas_extra"
+                              value="{{ l.pk }}"
+                              id="lista-{{ bloque.producto.pk }}-{{ l.pk }}"
+                              {% if l.pk in bloque.listas_extra_marcados %}checked{% endif %}
+                            />
+                            <label class="form-check-label small" for="lista-{{ bloque.producto.pk }}-{{ l.pk }}">
+                              {{ l.nombre }}
+                            </label>
+                          </div>
+                        {% endfor %}
+                      {% else %}
+                        <p class="small text-muted mb-2 mb-lg-0">
+                          No hay listas de rubro además de Farmacia. Creá más en
+                          <a href="{% url 'productos_listas_precios' %}">Listas de precio</a>.
+                        </p>
+                      {% endif %}
+                      <div class="mt-2 pt-2 border-top">
+                        <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill">
+                          Guardar listas para este producto
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
       <div class="row justify-content-end mb-4">
         <div class="col-12 col-md-6 col-lg-5">
           <table class="table table-sm mb-0">

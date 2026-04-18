@@ -16,6 +16,9 @@ from core.money_decimal import q2
 
 from .models import ListaPrecioItem, ListaPrecios, Producto
 
+# Borrador de nombre para el paso de confirmación al crear una lista nueva (session key).
+SESSION_LISTA_PRECIO_NUEVA_NOMBRE = "lista_precio_nueva_nombre"
+
 
 def producto_listas_extra_context(producto: Producto | None) -> dict:
     opciones = ListaPrecios.objects.filter(es_farmacia=False).order_by("nombre")
@@ -63,6 +66,10 @@ def _parse_precio(raw: str) -> Decimal | None:
 @login_required
 @require_http_methods(["GET"])
 def listas_precios_menu(request):
+    if request.GET.get("cancel_nueva") == "1":
+        request.session.pop(SESSION_LISTA_PRECIO_NUEVA_NOMBRE, None)
+        messages.info(request, "No se creó ninguna lista.")
+        return redirect("productos_listas_precios")
     listas = list(ListaPrecios.objects.all().order_by("-es_farmacia", "nombre"))
     return render(request, "productos/listas_precios_index.html", {"listas": listas})
 
@@ -70,6 +77,10 @@ def listas_precios_menu(request):
 @login_required
 @require_http_methods(["GET", "POST"])
 def lista_precios_nueva(request):
+    if request.method == "GET" and request.GET.get("cancel") == "1":
+        request.session.pop(SESSION_LISTA_PRECIO_NUEVA_NOMBRE, None)
+        messages.info(request, "No se creó ninguna lista.")
+        return redirect("productos_listas_precios")
     if request.method == "POST":
         nombre = (request.POST.get("nombre") or "").strip()
         if not nombre:
@@ -78,10 +89,39 @@ def lista_precios_nueva(request):
         if ListaPrecios.objects.filter(nombre__iexact=nombre).exists():
             messages.error(request, "Ya existe una lista con ese nombre.")
             return redirect("productos_listas_precios")
+        request.session[SESSION_LISTA_PRECIO_NUEVA_NOMBRE] = nombre
+        return redirect("lista_precios_nueva_confirmar")
+    nombre_borrador = (request.session.get(SESSION_LISTA_PRECIO_NUEVA_NOMBRE) or "").strip()
+    return render(
+        request,
+        "productos/lista_precios_nueva.html",
+        {"nombre_borrador": nombre_borrador},
+    )
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def lista_precios_nueva_confirmar(request):
+    nombre = request.session.get(SESSION_LISTA_PRECIO_NUEVA_NOMBRE)
+    if not nombre:
+        messages.warning(request, "No hay ninguna lista pendiente de confirmación.")
+        return redirect("lista_precios_nueva")
+    if request.method == "POST":
+        if request.POST.get("confirmar") != "1":
+            request.session.pop(SESSION_LISTA_PRECIO_NUEVA_NOMBRE, None)
+            messages.info(request, "Creación cancelada.")
+            return redirect("productos_listas_precios")
+        nombre = request.session.pop(SESSION_LISTA_PRECIO_NUEVA_NOMBRE, None)
+        if not nombre:
+            messages.error(request, "La sesión expiró. Volvé a ingresar el nombre.")
+            return redirect("lista_precios_nueva")
+        if ListaPrecios.objects.filter(nombre__iexact=nombre).exists():
+            messages.error(request, "Ya existe una lista con ese nombre.")
+            return redirect("productos_listas_precios")
         lista = ListaPrecios.objects.create(nombre=nombre)
         messages.success(request, f"Lista creada: {lista.nombre}")
         return redirect("lista_precios_trabajar", pk=lista.pk)
-    return render(request, "productos/lista_precios_nueva.html", {})
+    return render(request, "productos/lista_precios_nueva_confirmar.html", {"nombre": nombre})
 
 
 @login_required

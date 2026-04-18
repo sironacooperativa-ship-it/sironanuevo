@@ -43,7 +43,9 @@
   <div class="col-12 col-sm-6">
     <label class="form-label small text-muted mb-1">Precio de venta</label>
     {{ form.precio_venta }}
-    <div class="form-text small">Vacío = calculado (30% por defecto).</div>
+    <div class="form-text small">
+      Si cambiás el costo o el % ganancia, se completa el precio con redondeo a pesos enteros o con ,50 (el resto sube). Podés editar el precio a mano cuando quieras.
+    </div>
     {% if form.precio_venta.errors %}<div class="text-danger small">{{ form.precio_venta.errors }}</div>{% endif %}
   </div>
 

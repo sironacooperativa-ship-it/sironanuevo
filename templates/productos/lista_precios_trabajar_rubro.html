@@ -77,8 +77,7 @@
                 <td class="text-end">
                   <button
                     type="submit"
-                    name="quitar_item"
-                    value="{{ it.pk }}"
+                    form="formQuitarItem{{ it.pk }}"
                     class="btn btn-sm btn-outline-danger py-0"
                     onclick="return confirm('¿Quitar de esta lista?');"
                   >
@@ -99,4 +98,11 @@
       {% endif %}
     </div>
   </form>
+  {% for it in items %}
+    <form id="formQuitarItem{{ it.pk }}" method="post" class="d-none" aria-hidden="true">
+      {% csrf_token %}
+      <input type="hidden" name="q" value="{{ q }}" />
+      <input type="hidden" name="quitar_item" value="{{ it.pk }}" />
+    </form>
+  {% endfor %}
 {% endblock %}

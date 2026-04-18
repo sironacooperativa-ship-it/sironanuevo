@@ -29,6 +29,11 @@ urlpatterns = [
     path("listas/aplicar/", views.lista_precios_aplicar, name="lista_precios_aplicar"),
     path("listas-precio/", listas_precios_views.listas_precios_menu, name="productos_listas_precios"),
     path("listas-precio/nueva/", listas_precios_views.lista_precios_nueva, name="lista_precios_nueva"),
+    path(
+        "listas-precio/nueva/confirmar/",
+        listas_precios_views.lista_precios_nueva_confirmar,
+        name="lista_precios_nueva_confirmar",
+    ),
     path("listas-precio/<int:pk>/", listas_precios_views.lista_precios_trabajar, name="lista_precios_trabajar"),
     path("listas-precio/<int:pk>/renombrar/", listas_precios_views.lista_precios_renombrar, name="lista_precios_renombrar"),
     path("listas-precio/<int:pk>/eliminar/", listas_precios_views.lista_precios_eliminar, name="lista_precios_eliminar"),

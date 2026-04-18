@@ -3,6 +3,7 @@ from decimal import Decimal
 from django import forms
 
 from core.date_fields import DATE_INPUT_FORMATS, date_input_widget
+from core.money_decimal import redondear_precio_mostrador_ars
 
 from .models import Producto
 
@@ -65,8 +66,8 @@ class ProductoForm(forms.ModelForm):
         # Si el usuario deja el precio vacío, lo calculamos.
         if precio in (None, ""):
             cleaned["precio_venta_editado"] = False
-            cleaned["precio_venta"] = (costo * (Decimal("1.0") + (pct / Decimal("100")))).quantize(
-                Decimal("0.01")
+            cleaned["precio_venta"] = redondear_precio_mostrador_ars(
+                costo * (Decimal("1.0") + (pct / Decimal("100")))
             )
             return cleaned
 
@@ -83,7 +84,6 @@ class ProductoForm(forms.ModelForm):
                 prev = int(self.instance.stock) if self.instance.pk else 0
                 if not self.instance.pk or prev <= 0:
                     cleaned["habilitado"] = True
-                    cleaned["en_lista_precios"] = True
 
         return cleaned
 

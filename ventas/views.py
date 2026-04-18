@@ -18,6 +18,10 @@ from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_dashboard, pa
 from calendario.models import Evento
 from caja.models import MovimientoCaja
 from personas.models import Comprador, Vendedor
+from productos.listas_precios_views import (
+    producto_listas_extra_context,
+    sync_producto_listas_extras_from_post,
+)
 from productos.models import ListaPrecios, Producto
 
 from .forms import VentaCabeceraEditForm, VentaPagoForm
@@ -381,7 +385,48 @@ def venta_detalle(request, pk: int):
     venta = get_object_or_404(_venta_detalle_queryset(), pk=pk)
     if parse_export(request) == "pdf":
         return remito_venta_pdf_response(venta)
-    return render(request, "ventas/detalle.html", {"venta": venta})
+    productos_pedido_listas: list[dict] = []
+    seen_pids: set[int] = set()
+    for ln in venta.lineas.select_related("producto").order_by("id"):
+        if ln.producto_id in seen_pids:
+            continue
+        seen_pids.add(ln.producto_id)
+        productos_pedido_listas.append(
+            {"producto": ln.producto, **producto_listas_extra_context(ln.producto)}
+        )
+    lista_farmacia = ListaPrecios.objects.filter(es_farmacia=True).order_by("id").first()
+    return render(
+        request,
+        "ventas/detalle.html",
+        {
+            "venta": venta,
+            "productos_pedido_listas": productos_pedido_listas,
+            "lista_farmacia": lista_farmacia,
+        },
+    )
+
+
+@login_required
+@require_http_methods(["POST"])
+def venta_producto_listas_precio(request, pk: int, producto_pk: int):
+    """Desde la ficha del pedido: activa Farmacia (PDF) y asocia el producto a listas de rubro."""
+    venta = get_object_or_404(Venta, pk=pk)
+    if not VentaLinea.objects.filter(venta_id=venta.pk, producto_id=producto_pk).exists():
+        messages.error(request, "Este producto no forma parte del pedido.")
+        return redirect("venta_detalle", pk=pk)
+    producto = get_object_or_404(Producto, pk=producto_pk)
+    if request.POST.get("listas_extra_present") != "1":
+        messages.error(request, "Solicitud inválida.")
+        return redirect("venta_detalle", pk=pk)
+    with transaction.atomic():
+        producto.en_lista_precios = True
+        producto.save(update_fields=["en_lista_precios"])
+        sync_producto_listas_extras_from_post(request, producto)
+    messages.success(
+        request,
+        f"Listas actualizadas para {producto.codigo}: Farmacia (PDF) activada; rubros según lo marcado.",
+    )
+    return redirect("venta_detalle", pk=pk)
 
 
 @login_required

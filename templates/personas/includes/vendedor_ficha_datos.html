@@ -1,0 +1,40 @@
+{# Datos cargados del vendedor (reutilizable en modal y página). #}
+<dl class="row small mb-0">
+  <dt class="col-sm-4 text-muted">Código</dt>
+  <dd class="col-sm-8"><code>{{ vendedor.codigo }}</code></dd>
+  <dt class="col-sm-4 text-muted">Apellido y nombre</dt>
+  <dd class="col-sm-8">{{ vendedor.apellido }}, {{ vendedor.nombre }}</dd>
+  <dt class="col-sm-4 text-muted">DNI</dt>
+  <dd class="col-sm-8">{{ vendedor.dni|default:"—" }}</dd>
+  <dt class="col-sm-4 text-muted">Teléfono</dt>
+  <dd class="col-sm-8">{{ vendedor.telefono|default:"—" }}</dd>
+  <dt class="col-sm-4 text-muted">Mail</dt>
+  <dd class="col-sm-8">{% if vendedor.mail %}<a href="mailto:{{ vendedor.mail }}">{{ vendedor.mail }}</a>{% else %}—{% endif %}</dd>
+  <dt class="col-sm-4 text-muted">Dirección</dt>
+  <dd class="col-sm-8">{{ vendedor.direccion|default:"—" }}</dd>
+  <dt class="col-sm-4 text-muted">Estado</dt>
+  <dd class="col-sm-8">
+    {% if vendedor.habilitado %}
+      <span class="badge text-bg-success">Habilitado</span>
+    {% else %}
+      <span class="badge text-bg-secondary">Inhabilitado</span>
+    {% endif %}
+  </dd>
+  <dt class="col-sm-4 text-muted">Comisión %</dt>
+  <dd class="col-sm-8">{{ vendedor.comision_porcentaje }}%</dd>
+  <dt class="col-sm-4 text-muted">Acceso portal</dt>
+  <dd class="col-sm-8">{{ vendedor.get_acceso_display }}</dd>
+  <dt class="col-sm-4 text-muted">Usuario vinculado</dt>
+  <dd class="col-sm-8">
+    {% if vendedor.usuario_id %}
+      <code>{{ vendedor.usuario.username }}</code>
+    {% else %}
+      <span class="text-muted">Sin usuario</span>
+    {% endif %}
+  </dd>
+  <dt class="col-sm-4 text-muted">Alta / actualización</dt>
+  <dd class="col-sm-8">
+    Creado: {{ vendedor.creado_en|date:"d/m/Y H:i" }}<br />
+    Actualizado: {{ vendedor.actualizado_en|date:"d/m/Y H:i" }}
+  </dd>
+</dl>

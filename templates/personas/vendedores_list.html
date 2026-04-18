@@ -15,11 +15,8 @@
             <th>Apellido</th>
             <th>Nombre</th>
             <th class="text-center">Estado</th>
-            <th>DNI</th>
-            <th>Teléfono</th>
-            <th>Mail</th>
-            <th>Dirección</th>
             <th class="text-end">Comisión</th>
+            <th class="text-end">Ficha</th>
             <th class="text-end">Acciones</th>
           </tr>
         </thead>
@@ -36,13 +33,20 @@
                   <span class="badge text-bg-secondary">Inhabilitado</span>
                 {% endif %}
               </td>
-              <td>{{ v.dni }}</td>
-              <td>{{ v.telefono }}</td>
-              <td>{{ v.mail }}</td>
-              <td>{{ v.direccion }}</td>
               <td class="text-end">{{ v.comision_porcentaje }}%</td>
               <td class="text-end">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary rounded-pill"
+                  data-sirona-modal-url="{% url 'vendedor_ficha' v.pk %}?modal=1"
+                  title="Ver datos cargados"
+                >
+                  Ficha
+                </button>
+              </td>
+              <td class="text-end">
                 <div class="d-flex justify-content-end gap-2 flex-wrap">
+                  <a class="btn btn-sm btn-outline-dark" href="{% url 'vendedor_actividad' v.id %}" title="Clientes, pedidos y caja">Ver actividad</a>
                   <a class="btn btn-sm btn-outline-secondary" href="{% url 'vendedor_detalle' v.id %}" title="Pedidos y comisiones">Pedidos</a>
                   <a class="btn btn-sm btn-outline-primary" href="{% url 'vendedor_update' v.id %}">Editar</a>
                   <form method="post" action="{% url 'vendedor_toggle' v.id %}">
@@ -76,7 +80,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="10" class="text-center text-muted py-5">No hay vendedores.</td></tr>
+            <tr><td colspan="7" class="text-center text-muted py-5">No hay vendedores.</td></tr>
           {% endfor %}
         </tbody>
       </table>

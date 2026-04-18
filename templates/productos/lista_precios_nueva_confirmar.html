@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Confirmar nueva lista{% endblock %}
+{% block content %}
+  <div class="app-page-header mb-3">
+    <h1 class="app-page-title mb-1">Confirmar creación</h1>
+    <p class="text-muted small mb-0">
+      La lista se guardará en el sistema solo si confirmás abajo. Podés volver a editar el nombre o cancelar.
+    </p>
+  </div>
+  <div class="card app-card border-0 shadow-sm" style="max-width: 32rem">
+    <div class="card-body p-3">
+      <p class="mb-3">
+        Se creará la lista <strong>{{ nombre }}</strong>. ¿Continuar?
+      </p>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="confirmar" value="1" />
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-outline-secondary rounded-pill" href="{% url 'lista_precios_nueva' %}?cancel=1">Cancelar</a>
+          <a class="btn btn-outline-secondary rounded-pill" href="{% url 'lista_precios_nueva' %}">Corregir nombre</a>
+          <button type="submit" class="btn btn-primary rounded-pill">Sí, crear lista</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
