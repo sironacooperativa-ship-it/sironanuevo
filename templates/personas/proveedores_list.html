@@ -41,18 +41,26 @@
               <td>{{ p.direccion }}</td>
               <td class="text-end">
                 <div class="d-flex justify-content-end gap-2">
-                  <a class="btn btn-sm btn-outline-primary" href="{% url 'proveedor_update' p.id %}">Editar</a>
+                  <a class="btn btn-sm btn-outline-primary px-2" href="{% url 'proveedor_update' p.id %}" title="Editar" aria-label="Editar">
+                    <i data-lucide="pencil"></i>
+                  </a>
                   <form method="post" action="{% url 'proveedor_toggle' p.id %}">
                     {% csrf_token %}
                     {% if p.habilitado %}
-                      <button class="btn btn-sm btn-outline-secondary" type="submit" onclick="return confirm('¿Inhabilitar {{ p.codigo }}?');">Inhabilitar</button>
+                      <button class="btn btn-sm btn-outline-secondary px-2" type="submit" onclick="return confirm('¿Inhabilitar {{ p.codigo }}?');" title="Inhabilitar" aria-label="Inhabilitar">
+                        <i data-lucide="check" class="text-success"></i>
+                      </button>
                     {% else %}
-                      <button class="btn btn-sm btn-outline-success" type="submit">Habilitar</button>
+                      <button class="btn btn-sm btn-outline-secondary px-2" type="submit" title="Habilitar" aria-label="Habilitar">
+                        <i data-lucide="check" class="text-secondary"></i>
+                      </button>
                     {% endif %}
                   </form>
                   <form method="post" action="{% url 'proveedor_delete' p.id %}" onsubmit="return confirm('¿Eliminar {{ p.codigo }}?');">
                     {% csrf_token %}
-                    <button class="btn btn-sm btn-outline-danger" type="submit">Eliminar</button>
+                    <button class="btn btn-sm btn-outline-danger px-2" type="submit" title="Eliminar" aria-label="Eliminar">
+                      <i data-lucide="x" class="text-danger"></i>
+                    </button>
                   </form>
                 </div>
               </td>

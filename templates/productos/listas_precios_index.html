@@ -26,12 +26,15 @@
             <div class="text-muted small">Slug: <code>{{ l.slug }}</code></div>
           </div>
           <div class="d-flex flex-wrap gap-2">
-            <a class="btn btn-sm btn-outline-primary rounded-pill" href="{% url 'lista_precios_trabajar' l.pk %}">Editar</a>
+            <a class="btn btn-sm btn-outline-primary rounded-pill px-2" href="{% url 'lista_precios_trabajar' l.pk %}" title="Editar" aria-label="Editar">
+              <i data-lucide="pencil"></i>
+            </a>
             {% if not l.es_farmacia %}
-              <a class="btn btn-sm btn-outline-secondary rounded-pill" href="{% url 'lista_precios_renombrar' l.pk %}">Renombrar</a>
               <form method="post" action="{% url 'lista_precios_eliminar' l.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar esta lista y sus precios de rubro?');">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill">Eliminar</button>
+                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Eliminar" aria-label="Eliminar">
+                  <i data-lucide="x" class="text-danger"></i>
+                </button>
               </form>
             {% endif %}
           </div>

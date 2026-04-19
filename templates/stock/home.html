@@ -4,67 +4,79 @@
 {% block content %}
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Stock</h1>
+    <button
+      class="btn btn-primary btn-sm ms-auto"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#stockCargaCollapse"
+      aria-expanded="{% if form.errors %}true{% else %}false{% endif %}"
+      aria-controls="stockCargaCollapse"
+    >
+      Nuevo movimiento
+    </button>
   </div>
 
-  <div class="card shadow-sm mb-3">
-    <div class="card-body">
-      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-        <h2 class="h5 mb-0">Cargar stock</h2>
-        <div class="text-muted small">
-          Actualiza el stock disponible del producto. Boleta, proveedor, Nº factura y destinatario son <strong>opcionales</strong> (referencia del movimiento).
+  <div class="collapse {% if form.errors %}show{% endif %}" id="stockCargaCollapse">
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+          <h2 class="h5 mb-0">Cargar stock</h2>
+          <div class="text-muted small">
+            Actualiza el stock disponible del producto. Boleta, proveedor, Nº factura y destinatario son <strong>opcionales</strong> (referencia del movimiento).
+          </div>
         </div>
+        <form method="post" novalidate class="row g-2 g-md-3 align-items-end">
+          {% csrf_token %}
+
+          <div class="col-12 col-lg-4">
+            <label class="form-label">Producto</label>
+            {{ form.producto }}
+            {% if form.producto.errors %}<div class="text-danger small">{{ form.producto.errors }}</div>{% endif %}
+          </div>
+
+          <div class="col-12 col-sm-6 col-lg-2">
+            <label class="form-label">Movimiento</label>
+            {{ form.tipo }}
+            {% if form.tipo.errors %}<div class="text-danger small">{{ form.tipo.errors }}</div>{% endif %}
+          </div>
+
+          <div class="col-12 col-sm-6 col-lg-2">
+            <label class="form-label">Cantidad</label>
+            {{ form.cantidad }}
+            {% if form.cantidad.errors %}<div class="text-danger small">{{ form.cantidad.errors }}</div>{% endif %}
+          </div>
+
+          <div class="col-12 col-lg-3">
+            <div id="entradaFields">
+              <label class="form-label">Nº Boleta</label>
+              {{ form.numero_boleta }}
+              {% if form.numero_boleta.errors %}<div class="text-danger small">{{ form.numero_boleta.errors }}</div>{% endif %}
+            </div>
+            <div id="salidaFields">
+              <label class="form-label">Nº Factura</label>
+              {{ form.numero_factura }}
+              {% if form.numero_factura.errors %}<div class="text-danger small">{{ form.numero_factura.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-3">
+            <div id="entradaFields2">
+              <label class="form-label">Proveedor</label>
+              {{ form.proveedor }}
+              {% if form.proveedor.errors %}<div class="text-danger small">{{ form.proveedor.errors }}</div>{% endif %}
+            </div>
+            <div id="salidaFields2">
+              <label class="form-label">Destinatario (vendedor)</label>
+              {{ form.destinatario }}
+              {% if form.destinatario.errors %}<div class="text-danger small">{{ form.destinatario.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-2 d-grid">
+            <button class="btn btn-primary" type="submit">Guardar</button>
+          </div>
+        </form>
       </div>
-      <form method="post" novalidate class="row g-2 g-md-3 align-items-end">
-        {% csrf_token %}
-
-        <div class="col-12 col-lg-4">
-          <label class="form-label">Producto</label>
-          {{ form.producto }}
-          {% if form.producto.errors %}<div class="text-danger small">{{ form.producto.errors }}</div>{% endif %}
-        </div>
-
-        <div class="col-12 col-sm-6 col-lg-2">
-          <label class="form-label">Movimiento</label>
-          {{ form.tipo }}
-          {% if form.tipo.errors %}<div class="text-danger small">{{ form.tipo.errors }}</div>{% endif %}
-        </div>
-
-        <div class="col-12 col-sm-6 col-lg-2">
-          <label class="form-label">Cantidad</label>
-          {{ form.cantidad }}
-          {% if form.cantidad.errors %}<div class="text-danger small">{{ form.cantidad.errors }}</div>{% endif %}
-        </div>
-
-        <div class="col-12 col-lg-3">
-          <div id="entradaFields">
-            <label class="form-label">Nº Boleta</label>
-            {{ form.numero_boleta }}
-            {% if form.numero_boleta.errors %}<div class="text-danger small">{{ form.numero_boleta.errors }}</div>{% endif %}
-          </div>
-          <div id="salidaFields">
-            <label class="form-label">Nº Factura</label>
-            {{ form.numero_factura }}
-            {% if form.numero_factura.errors %}<div class="text-danger small">{{ form.numero_factura.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <div class="col-12 col-lg-3">
-          <div id="entradaFields2">
-            <label class="form-label">Proveedor</label>
-            {{ form.proveedor }}
-            {% if form.proveedor.errors %}<div class="text-danger small">{{ form.proveedor.errors }}</div>{% endif %}
-          </div>
-          <div id="salidaFields2">
-            <label class="form-label">Destinatario (vendedor)</label>
-            {{ form.destinatario }}
-            {% if form.destinatario.errors %}<div class="text-danger small">{{ form.destinatario.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <div class="col-12 col-lg-2 d-grid">
-          <button class="btn btn-primary" type="submit">Guardar</button>
-        </div>
-      </form>
     </div>
   </div>
 

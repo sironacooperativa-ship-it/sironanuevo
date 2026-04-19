@@ -8,7 +8,9 @@
     <div class="d-flex gap-2 ms-auto flex-wrap">
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedores_list' %}">Volver</a>
       <a class="btn btn-outline-dark btn-sm" href="{% url 'vendedor_actividad' vendedor.pk %}">Ver actividad</a>
-      <a class="btn btn-outline-primary btn-sm" href="{% url 'vendedor_update' vendedor.pk %}">Editar</a>
+      <a class="btn btn-outline-primary btn-sm px-2" href="{% url 'vendedor_update' vendedor.pk %}" title="Editar" aria-label="Editar">
+        <i data-lucide="pencil"></i>
+      </a>
       <a class="btn btn-primary btn-sm" href="{% url 'ventas_historial' %}?vendedor={{ vendedor.pk }}">Historial de ventas (filtrado)</a>
       {% if user.is_staff and tiene_historial %}
         <a class="btn btn-outline-danger btn-sm" href="{% url 'vendedor_eliminar_admin' vendedor.pk %}">Eliminar vendedor e historial…</a>

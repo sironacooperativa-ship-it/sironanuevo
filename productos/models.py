@@ -43,6 +43,19 @@ class Producto(models.Model):
         raw = costo * (Decimal("1.0") + (pct / Decimal("100")))
         return redondear_precio_mostrador_ars(raw)
 
+    @property
+    def porcentaje_ganancia_calculado(self) -> Decimal | None:
+        """
+        % de ganancia implícito según costo y precio_venta actuales.
+        Útil para ver el margen real cuando hay redondeos del precio.
+        """
+        costo = Decimal(self.costo or 0)
+        if costo <= 0:
+            return None
+        precio = Decimal(self.precio_venta or 0)
+        pct = (precio - costo) * (Decimal("100.0") / costo)
+        return pct.quantize(Decimal("0.01"))
+
     def clean(self):
         super().clean()
         if self.costo is not None and self.costo < 0:

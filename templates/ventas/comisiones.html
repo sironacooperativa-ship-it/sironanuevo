@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Comisiones{% endblock %}
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-0">Comisiones</h1>
+      <div class="text-muted small">Según fecha de registro del pedido</div>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm ms-auto" href="{% url 'ventas_historial' %}">Volver al historial</a>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-12 col-md-4">
+          <label class="form-label small text-muted mb-0">Mes</label>
+          <select name="mes" class="form-select form-select-sm">
+            <option value="" {% if not f.mes %}selected{% endif %}>— Todos —</option>
+            {% for m in meses_opciones %}
+              <option value="{{ m.key }}" {% if f.mes == m.key %}selected{% endif %}>{{ m.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label small text-muted mb-0">Desde</label>
+          <input type="date" name="fecha_desde" class="form-control form-control-sm" value="{{ f.fecha_desde }}" />
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label small text-muted mb-0">Hasta</label>
+          <input type="date" name="fecha_hasta" class="form-control form-control-sm" value="{{ f.fecha_hasta }}" />
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-2">
+          <button type="submit" class="btn btn-sm btn-primary w-100">Filtrar</button>
+          <a class="btn btn-sm btn-outline-secondary w-100" href="{% url 'ventas_comisiones' %}">Limpiar</a>
+        </div>
+      </form>
+      <p class="small text-muted mb-0 mt-2">
+        Si elegís <strong>Mes</strong>, se aplica ese mes. Si lo dejás vacío, usa desde/hasta (si están).
+      </p>
+    </div>
+  </div>
+
+  {% if comisiones_por_mes %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header fw-semibold py-2">Comisiones mensuales acumuladas</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Mes</th>
+                <th class="text-end">Total comisiones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in comisiones_por_mes %}
+                <tr>
+                  <td class="text-capitalize">{{ r.mes_nombre }} {{ r.anio }}</td>
+                  <td class="text-end">{{ r.total|ars }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="alert alert-light border text-muted small mb-3">No hay comisiones con los filtros actuales.</div>
+  {% endif %}
+
+  {% if comisiones_por_vendedor %}
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold py-2">Comisión por vendedor (solo comisiones &gt; 0)</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Vendedor</th>
+                <th class="text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in comisiones_por_vendedor %}
+                <tr>
+                  <td>{{ r.vendedor__apellido }}, {{ r.vendedor__nombre }}</td>
+                  <td class="text-end">{{ r.total|ars }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}
+

@@ -197,6 +197,53 @@ def caja_list(request):
 
 
 @login_required
+@require_http_methods(["GET"])
+def caja_cheques(request):
+    """
+    Cheques a pagar y a cobrar (según fecha de vencimiento de cheque) con filtros:
+    - criterio: pagar / cobrar / todos
+    - desde/hasta (vencimiento)
+    """
+    criterio = (request.GET.get("criterio") or "todos").strip()
+    desde = (request.GET.get("desde") or "").strip()
+    hasta = (request.GET.get("hasta") or "").strip()
+
+    qs = MovimientoCaja.objects.filter(
+        medio_pago=MovimientoCaja.MedioPago.CHEQUE,
+        fecha_vencimiento_cheque__isnull=False,
+    ).order_by("fecha_vencimiento_cheque", "id")
+
+    if criterio == "pagar":
+        qs = qs.filter(tipo=MovimientoCaja.Tipo.EGRESO)
+    elif criterio == "cobrar":
+        qs = qs.filter(tipo=MovimientoCaja.Tipo.INGRESO)
+    else:
+        criterio = "todos"
+
+    d_desde = parse_fecha_param(desde) if desde else None
+    d_hasta = parse_fecha_param(hasta) if hasta else None
+    if d_desde:
+        qs = qs.filter(fecha_vencimiento_cheque__gte=d_desde)
+    if d_hasta:
+        qs = qs.filter(fecha_vencimiento_cheque__lte=d_hasta)
+
+    cheques = list(qs[:500])
+
+    return render(
+        request,
+        "caja/cheques.html",
+        {
+            "cheques": cheques,
+            "f": {
+                "criterio": criterio,
+                "desde": fecha_filtro_value_iso(request.GET.get("desde")),
+                "hasta": fecha_filtro_value_iso(request.GET.get("hasta")),
+            },
+        },
+    )
+
+
+@login_required
 @require_http_methods(["GET", "POST"])
 def caja_create(request):
     if request.method == "POST":

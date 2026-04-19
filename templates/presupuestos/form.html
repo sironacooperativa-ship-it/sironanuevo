@@ -21,7 +21,7 @@
           <select name="vendedor" class="form-select" required id="id_vendedor">
             <option value="">— Elegir —</option>
             {% for v in vendedores %}
-              <option value="{{ v.pk }}" {% if repoblar %}{% if repoblar.vendedor_id == v.pk %}selected{% endif %}{% elif presupuesto and presupuesto.vendedor_id == v.pk %}selected{% endif %}>
+              <option value="{{ v.pk }}" {% if repoblar %}{% if repoblar.vendedor_id == v.pk %}selected{% endif %}{% elif presupuesto and presupuesto.vendedor_id == v.pk %}selected{% elif vendedor_default_id and vendedor_default_id == v.pk %}selected{% endif %}>
                 {{ v.codigo }} — {{ v.apellido }}, {{ v.nombre }}
               </option>
             {% endfor %}
@@ -68,7 +68,7 @@
               name="aplica_comision"
               id="id_aplica_comision"
               value="1"
-              {% if repoblar %}{% if repoblar.aplica_comision %}checked{% endif %}{% elif presupuesto %}{% if presupuesto.aplica_comision %}checked{% endif %}{% else %}checked{% endif %}
+              {% if repoblar %}{% if repoblar.aplica_comision %}checked{% endif %}{% elif presupuesto %}{% if presupuesto.aplica_comision %}checked{% endif %}{% endif %}
             />
             <label class="form-check-label" for="id_aplica_comision">Aplicar comisión al vendedor</label>
           </div>

@@ -38,6 +38,12 @@ def rango_periodo(codigo: str) -> tuple[date | None, date | None]:
         return today - timedelta(days=6), today
     if codigo == "30d":
         return today - timedelta(days=29), today
+    if codigo == "60d":
+        return today - timedelta(days=59), today
+    if codigo == "180d":
+        return today - timedelta(days=179), today
+    if codigo == "365d":
+        return today - timedelta(days=364), today
     if codigo == "mes":
         y, m = today.year, today.month
         start = date(y, m, 1)

@@ -496,19 +496,19 @@ def vendedor_reportes(request):
     )
     neto_nonneg = Case(
         When(subtotal_lineas__gte=F("descuento_monto"), then=neto_expr),
-        default=Value(0),
+        default=Value(Decimal("0.00")),
         output_field=DecimalField(max_digits=14, decimal_places=2),
     )
     mis_ventas = Venta.objects.filter(vendedor_id=vendedor.pk)
     actividad = mis_ventas.aggregate(
         pedidos=Count("id"),
-        neto_total=Coalesce(Sum(neto_nonneg), Value(0)),
+        neto_total=Coalesce(Sum(neto_nonneg), Value(Decimal("0.00"))),
     )
 
     # Ranking por neto total acumulado (hasta la fecha)
     ranking_qs = (
         Venta.objects.values("vendedor_id", "vendedor__codigo", "vendedor__apellido", "vendedor__nombre")
-        .annotate(neto_total=Coalesce(Sum(neto_nonneg), Value(0)))
+        .annotate(neto_total=Coalesce(Sum(neto_nonneg), Value(Decimal("0.00"))))
         .order_by("-neto_total", "vendedor__apellido", "vendedor__nombre")
     )
     ranking = list(ranking_qs[:50])

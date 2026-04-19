@@ -319,18 +319,62 @@ def proveedor_toggle(request, pk: int):
 
 @login_required
 def compradores_list(request):
-    compradores = Comprador.objects.all().order_by("apellido", "nombre")
+    vid = (request.GET.get("vendedor") or "").strip()
+    compradores = Comprador.objects.select_related("vendedor_asignado").order_by("apellido", "nombre")
+    if vid.isdigit():
+        compradores = compradores.filter(vendedor_asignado_id=int(vid))
     exp = parse_export(request)
     if exp in ("xlsx", "pdf"):
-        headers = ["Código", "Apellido", "Nombre", "DNI", "Teléfono", "Mail", "Dirección"]
+        headers = ["Código", "Apellido", "Nombre", "Vendedor asignado", "Dirección"]
         rows = [
-            [c.codigo, c.apellido, c.nombre, c.dni, c.telefono, c.mail, c.direccion]
+            [
+                c.codigo,
+                c.apellido,
+                c.nombre,
+                str(c.vendedor_asignado) if c.vendedor_asignado_id else "",
+                c.direccion,
+            ]
             for c in compradores
         ]
         if exp == "xlsx":
             return xlsx_response("compradores", [("Compradores", headers, rows)])
         return pdf_response("compradores", "Compradores", [("Compradores", headers, rows)])
-    return render(request, "personas/compradores_list.html", {"compradores": compradores})
+    vendedores_filtro = Vendedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
+    return render(
+        request,
+        "personas/compradores_list.html",
+        {"compradores": compradores, "vendedores_filtro": vendedores_filtro, "f": {"vendedor": vid}},
+    )
+
+
+@login_required
+def comprador_ficha(request, pk: int):
+    """Ficha de datos del cliente; con ?modal=1 devuelve HTML para el popup del listado."""
+    c = get_object_or_404(
+        Comprador.objects.select_related("vendedor_asignado"),
+        pk=pk,
+    )
+    ventas = list(
+        Venta.objects.filter(comprador_id=c.pk)
+        .select_related("vendedor", "pago_movimiento")
+        .order_by("-creado_en", "-id")[:250]
+    )
+    pagos = list(
+        MovimientoCaja.objects.filter(venta__comprador_id=c.pk)
+        .select_related("venta", "cuenta_bancaria")
+        .order_by("-fecha", "-id")[:250]
+    )
+    if request.GET.get("modal") == "1":
+        return render(
+            request,
+            "personas/comprador_ficha_fragment.html",
+            {"comprador": c, "ventas": ventas, "pagos": pagos},
+        )
+    return render(
+        request,
+        "personas/comprador_ficha_standalone.html",
+        {"comprador": c, "ventas": ventas, "pagos": pagos},
+    )
 
 
 @login_required

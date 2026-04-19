@@ -75,7 +75,9 @@
         </button>
       {% endif %}
       {% if presupuesto.estado == "ACT" %}
-        <a class="btn btn-outline-primary btn-sm" href="{% url 'presupuesto_editar' presupuesto.pk %}">Editar</a>
+        <a class="btn btn-outline-primary btn-sm px-2" href="{% url 'presupuesto_editar' presupuesto.pk %}" title="Editar" aria-label="Editar">
+          <i data-lucide="pencil"></i>
+        </a>
         {% if alerta_catalogo %}
           <span class="align-self-center small text-danger fw-semibold" title="Resolvé la alerta abajo antes de aprobar.">!</span>
         {% else %}
@@ -96,7 +98,9 @@
           onsubmit="return confirm('¿Eliminar el presupuesto #{{ presupuesto.pk }}? Si estaba aprobado, también se elimina el pedido y se revierte stock y caja.');"
         >
           {% csrf_token %}
-          <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar</button>
+          <button type="submit" class="btn btn-outline-danger btn-sm px-2" title="Eliminar" aria-label="Eliminar">
+            <i data-lucide="x" class="text-danger"></i>
+          </button>
         </form>
       {% endif %}
     </div>

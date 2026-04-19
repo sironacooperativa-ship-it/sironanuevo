@@ -48,7 +48,10 @@
 {% endblock %}
 {% block content %}
   <div class="mb-3">
-    <h1 class="h3 mb-1">Inicio</h1>
+    <h1 class="h3 mb-1">
+      Inicio
+      <span class="text-muted fw-normal">· Hola {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user.username }}{% endif %}</span>
+    </h1>
     <div class="text-muted small mb-2">Resumen general y recordatorios</div>
     <div class="d-flex gap-2 flex-wrap">
       <a class="btn btn-primary btn-sm" href="{% url 'venta_nueva' %}">Nueva venta</a>
@@ -112,6 +115,85 @@
     </div>
   {% endif %}
 
+  {% if cheques_a_pagar or meds_venc_90 or meds_venc_180 %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header fw-semibold">Resumen del calendario</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12 col-lg-6">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+              <div class="fw-semibold">Vencimientos de cheques a pagar</div>
+              <a class="btn btn-sm btn-outline-secondary py-0" href="{% url 'caja_cheques' %}">Ver todos</a>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Vencimiento</th>
+                    <th>Detalle</th>
+                    <th class="text-end"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for m in cheques_a_pagar %}
+                    <tr>
+                      <td class="text-muted small">{% if m.fecha_vencimiento_cheque %}{{ m.fecha_vencimiento_cheque|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+                      <td class="small"><code>{{ m.numero_cheque }}</code> — {{ m.operacion }} — {{ m.monto|ars }}</td>
+                      <td class="text-end">
+                        <a class="btn btn-sm btn-outline-secondary py-0" href="{% url 'caja_detail' m.pk %}">Ver</a>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="3" class="text-muted text-center py-3">Sin cheques a pagar próximos.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-6">
+            <div class="fw-semibold mb-2">Medicamentos por vencer</div>
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Vencimiento</th>
+                    <th>Producto</th>
+                    <th class="text-end">Stock</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for p in meds_venc_90 %}
+                    <tr class="table-danger">
+                      <td class="small text-danger fw-semibold">{{ p.fecha_vencimiento|date:"d/m/Y" }}</td>
+                      <td class="small"><code>{{ p.codigo }}</code> — {{ p.descripcion }}</td>
+                      <td class="text-end small">{{ p.stock }}</td>
+                    </tr>
+                  {% endfor %}
+                  {% for p in meds_venc_180 %}
+                    <tr class="table-success">
+                      <td class="small text-success fw-semibold">{{ p.fecha_vencimiento|date:"d/m/Y" }}</td>
+                      <td class="small"><code>{{ p.codigo }}</code> — {{ p.descripcion }}</td>
+                      <td class="text-end small">{{ p.stock }}</td>
+                    </tr>
+                  {% empty %}
+                    {% if not meds_venc_90 %}
+                      <tr><td colspan="3" class="text-muted text-center py-3">Sin vencimientos de medicamentos en los próximos 6 meses.</td></tr>
+                    {% endif %}
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <p class="text-muted small mb-0 mt-2">
+              <span class="fw-semibold text-danger">Rojo:</span> próximos 90 días ·
+              <span class="fw-semibold text-success">Verde:</span> 90 a 180 días
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
   <div class="row g-3 mb-3 align-items-stretch home-kpi-row">
     <div class="col-12 col-lg-4 order-3 order-lg-1 h-100 d-flex flex-column">
       <div class="row g-3 flex-grow-1 w-100 mx-0 align-items-stretch flex-fill">
@@ -120,7 +202,6 @@
             <div class="card-body py-3">
               <div class="text-muted small">Productos habilitados</div>
               <div class="home-kpi-monto-compact mt-1">{{ resumen.productos_habilitados }}</div>
-              <div class="small text-muted mt-2 mb-0">{{ resumen.productos_en_lista }} en lista de precios</div>
             </div>
           </div>
         </div>

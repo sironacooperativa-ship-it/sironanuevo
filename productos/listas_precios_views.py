@@ -198,6 +198,19 @@ def lista_precios_trabajar(request, pk: int):
     if request.method == "POST":
         accion = (request.POST.get("accion") or "").strip()
         quitar = (request.POST.get("quitar_item") or "").strip()
+        if accion == "renombrar":
+            nombre = (request.POST.get("nombre") or "").strip()
+            if not nombre:
+                messages.error(request, "El nombre no puede quedar vacío.")
+                return redirect(f"{request.path}?q={q}" if q else request.path)
+            if ListaPrecios.objects.filter(nombre__iexact=nombre).exclude(pk=lista.pk).exists():
+                messages.error(request, "Ya existe otra lista con ese nombre.")
+                return redirect(f"{request.path}?q={q}" if q else request.path)
+            lista.nombre = nombre
+            lista.slug = ""
+            lista.save(update_fields=["nombre", "slug"])
+            messages.success(request, "Nombre de lista actualizado.")
+            return redirect(f"{request.path}?q={q}" if q else request.path)
         if quitar.isdigit():
             ListaPrecioItem.objects.filter(pk=int(quitar), lista=lista).delete()
             messages.info(request, "Producto quitado de la lista.")

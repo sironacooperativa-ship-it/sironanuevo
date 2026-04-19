@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Resolver duplicados{% endblock %}
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-0">Resolver productos ya existentes</h1>
+      <div class="text-muted small">
+        Lista: <strong>{{ lista.nombre }}</strong> · Selección: {{ total }}
+      </div>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm ms-auto" href="{% url 'productos_list' %}">Volver</a>
+  </div>
+
+  <div class="alert alert-warning small">
+    Algunos productos ya estaban en esta lista. Elegí qué precio querés que quede para cada uno.
+  </div>
+
+  <form method="post" action="{% url 'productos_acciones_masa' %}">
+    {% csrf_token %}
+    <input type="hidden" name="accion" value="lista_precio" />
+    <input type="hidden" name="lista_id" value="{{ lista.pk }}" />
+    <input type="hidden" name="lista_modo" value="add" />
+    <input type="hidden" name="resolve_present" value="1" />
+
+    {% for id in ids %}
+      <input type="hidden" name="producto_id" value="{{ id }}" />
+    {% endfor %}
+
+    <input type="hidden" name="retorno_q" value="{{ retorno.q }}" />
+    <input type="hidden" name="retorno_tipo" value="{{ retorno.tipo }}" />
+    <input type="hidden" name="retorno_proveedor" value="{{ retorno.proveedor }}" />
+    <input type="hidden" name="retorno_lista" value="{{ retorno.lista }}" />
+    <input type="hidden" name="retorno_estado" value="{{ retorno.estado }}" />
+    <input type="hidden" name="retorno_ingreso" value="{{ retorno.ingreso }}" />
+
+    <div class="card shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Producto</th>
+              <th class="text-end">Precio en lista</th>
+              <th class="text-end">Precio del producto</th>
+              <th>Qué queda</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in conflictos %}
+              <tr>
+                <td>
+                  <div class="fw-semibold"><code>{{ r.producto.codigo }}</code> — {{ r.producto.descripcion }}</div>
+                  <div class="text-muted small">ID #{{ r.producto.pk }}</div>
+                </td>
+                <td class="text-end">{{ r.precio_existente|ars }}</td>
+                <td class="text-end">{{ r.precio_nuevo|ars }}</td>
+                <td>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="conf_{{ r.producto.pk }}" id="keep-{{ r.producto.pk }}" value="keep" checked />
+                    <label class="form-check-label small" for="keep-{{ r.producto.pk }}">Mantener precio actual de la lista</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="conf_{{ r.producto.pk }}" id="over-{{ r.producto.pk }}" value="overwrite" />
+                    <label class="form-check-label small" for="over-{{ r.producto.pk }}">Reemplazar por el precio del producto</label>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="card-body border-top d-flex justify-content-end gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'productos_list' %}">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Aplicar</button>
+      </div>
+    </div>
+  </form>
+{% endblock %}
+

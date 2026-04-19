@@ -5,6 +5,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Sum, Value
+from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
@@ -304,6 +306,76 @@ def _filtrar_ventas_queryset(request):
     }
 
 
+def _parse_ym(raw: str) -> tuple[int, int] | None:
+    s = (raw or "").strip()
+    if len(s) != 7 or s[4] != "-":
+        return None
+    y, m = s.split("-", 1)
+    if not (y.isdigit() and m.isdigit()):
+        return None
+    yi = int(y)
+    mi = int(m)
+    if yi < 2000 or yi > 2100 or mi < 1 or mi > 12:
+        return None
+    return yi, mi
+
+
+@login_required
+@require_http_methods(["GET"])
+def venta_comisiones(request):
+    """
+    Vista de comisiones: filtros por mes (YYYY-MM) o desde/hasta (fecha registro).
+    Muestra acumulado mensual y desglose por vendedor (solo totales > 0).
+    """
+    ventas, _ = _filtrar_ventas_queryset(request)
+
+    mes = (request.GET.get("mes") or "").strip()
+    ym = _parse_ym(mes) if mes else None
+    if ym:
+        y, m = ym
+        ventas = ventas.filter(creado_en__year=y, creado_en__month=m)
+
+    # Solo ventas con comisión aplicada y comisión > 0.
+    ventas_com = ventas.filter(aplica_comision=True, comision_porcentaje__gt=0)
+
+    comisiones_por_mes = comisiones_acumuladas_por_mes(ventas_com)
+
+    por_vendedor = (
+        ventas_com.values("vendedor_id", "vendedor__codigo", "vendedor__apellido", "vendedor__nombre")
+        .annotate(total=Coalesce(Sum("monto_comision"), Value(Decimal("0.00"))))
+        .order_by("-total", "vendedor__apellido", "vendedor__nombre")
+    )
+    por_vendedor = [r for r in por_vendedor if (r.get("total") or Decimal("0.00")) > 0]
+
+    # Opciones de meses: meses con comisiones en el conjunto (sin filtro de mes).
+    meses_opciones = []
+    seen = set()
+    for row in comisiones_acumuladas_por_mes(
+        _filtrar_ventas_queryset(request)[0].filter(aplica_comision=True, comision_porcentaje__gt=0)
+    ):
+        key = f"{row['anio']}-{int(row['mes']):02d}"
+        if key in seen:
+            continue
+        seen.add(key)
+        meses_opciones.append({"key": key, "label": f"{row['mes_nombre'].capitalize()} {row['anio']}"})
+
+    return render(
+        request,
+        "ventas/comisiones.html",
+        {
+            "f": {
+                "mes": mes,
+                "fecha_desde": fecha_filtro_value_iso(request.GET.get("fecha_desde")),
+                "fecha_hasta": fecha_filtro_value_iso(request.GET.get("fecha_hasta")),
+                "periodo": (request.GET.get("periodo") or "").strip(),
+            },
+            "meses_opciones": meses_opciones,
+            "comisiones_por_mes": comisiones_por_mes,
+            "comisiones_por_vendedor": por_vendedor,
+        },
+    )
+
+
 @login_required
 def venta_historial(request):
     ventas, filtros_ctx = _filtrar_ventas_queryset(request)
@@ -350,7 +422,6 @@ def venta_historial(request):
     productos = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
     vendedores = Vendedor.objects.order_by("apellido", "nombre", "codigo")
     compradores = Comprador.objects.order_by("apellido", "nombre", "codigo")
-    comisiones_por_mes = comisiones_acumuladas_por_mes(ventas)
     return render(
         request,
         "ventas/historial.html",
@@ -360,7 +431,6 @@ def venta_historial(request):
             "productos_filtro": productos,
             "vendedores_filtro": vendedores,
             "compradores_filtro": compradores,
-            "comisiones_por_mes": comisiones_por_mes,
         },
     )
 

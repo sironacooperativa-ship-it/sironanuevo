@@ -6,6 +6,28 @@
     <a class="btn btn-primary" href="{% url 'comprador_create' %}">Nuevo</a>
   </div>
 
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-12 col-md-6 col-lg-4">
+          <label class="form-label small text-muted mb-0">Vendedor asignado</label>
+          <select name="vendedor" class="form-select form-select-sm">
+            <option value="">Todos</option>
+            {% for v in vendedores_filtro %}
+              <option value="{{ v.pk }}" {% if f.vendedor == v.pk|stringformat:"s" %}selected{% endif %}>
+                {{ v.codigo }} — {{ v.apellido }}, {{ v.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3 d-flex gap-2">
+          <button type="submit" class="btn btn-sm btn-primary w-100">Filtrar</button>
+          <a class="btn btn-sm btn-outline-secondary w-100" href="{% url 'compradores_list' %}">Limpiar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div class="card shadow-sm">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
@@ -14,10 +36,8 @@
             <th>Código</th>
             <th>Apellido</th>
             <th>Nombre</th>
+            <th>Vendedor</th>
             <th class="text-center">Estado</th>
-            <th>DNI</th>
-            <th>Teléfono</th>
-            <th>Mail</th>
             <th>Dirección</th>
             <th class="text-end">Acciones</th>
           </tr>
@@ -28,6 +48,13 @@
               <td><code>{{ c.codigo }}</code></td>
               <td>{{ c.apellido }}</td>
               <td>{{ c.nombre }}</td>
+              <td class="small">
+                {% if c.vendedor_asignado %}
+                  {{ c.vendedor_asignado.apellido }}, {{ c.vendedor_asignado.nombre }}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
               <td class="text-center">
                 {% if c.habilitado %}
                   <span class="badge text-bg-success">Habilitado</span>
@@ -35,30 +62,43 @@
                   <span class="badge text-bg-secondary">Inhabilitado</span>
                 {% endif %}
               </td>
-              <td>{{ c.dni }}</td>
-              <td>{{ c.telefono }}</td>
-              <td>{{ c.mail }}</td>
               <td>{{ c.direccion }}</td>
               <td class="text-end">
                 <div class="d-flex justify-content-end gap-2">
-                  <a class="btn btn-sm btn-outline-primary" href="{% url 'comprador_update' c.id %}">Editar</a>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary rounded-pill"
+                    data-sirona-modal-url="{% url 'comprador_ficha' c.pk %}?modal=1"
+                    title="Ficha"
+                  >
+                    Ficha
+                  </button>
+                  <a class="btn btn-sm btn-outline-primary px-2" href="{% url 'comprador_update' c.id %}" title="Editar" aria-label="Editar">
+                    <i data-lucide="pencil"></i>
+                  </a>
                   <form method="post" action="{% url 'comprador_toggle' c.id %}">
                     {% csrf_token %}
                     {% if c.habilitado %}
-                      <button class="btn btn-sm btn-outline-secondary" type="submit" onclick="return confirm('¿Inhabilitar {{ c.codigo }}?');">Inhabilitar</button>
+                      <button class="btn btn-sm btn-outline-secondary px-2" type="submit" onclick="return confirm('¿Inhabilitar {{ c.codigo }}?');" title="Inhabilitar" aria-label="Inhabilitar">
+                        <i data-lucide="check" class="text-success"></i>
+                      </button>
                     {% else %}
-                      <button class="btn btn-sm btn-outline-success" type="submit">Habilitar</button>
+                      <button class="btn btn-sm btn-outline-secondary px-2" type="submit" title="Habilitar" aria-label="Habilitar">
+                        <i data-lucide="check" class="text-secondary"></i>
+                      </button>
                     {% endif %}
                   </form>
                   <form method="post" action="{% url 'comprador_delete' c.id %}" onsubmit="return confirm('¿Eliminar {{ c.codigo }}?');">
                     {% csrf_token %}
-                    <button class="btn btn-sm btn-outline-danger" type="submit">Eliminar</button>
+                    <button class="btn btn-sm btn-outline-danger px-2" type="submit" title="Eliminar" aria-label="Eliminar">
+                      <i data-lucide="x" class="text-danger"></i>
+                    </button>
                   </form>
                 </div>
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="9" class="text-center text-muted py-5">No hay clientes.</td></tr>
+            <tr><td colspan="7" class="text-center text-muted py-5">No hay clientes.</td></tr>
           {% endfor %}
         </tbody>
       </table>

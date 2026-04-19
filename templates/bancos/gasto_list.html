@@ -34,7 +34,9 @@
               <td class="text-end">
                 <form method="post" action="{% url 'banco_gasto_eliminar' g.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar este gasto y el movimiento de caja?');">
                   {% csrf_token %}
-                  <button type="submit" class="btn btn-sm btn-outline-danger py-0">Eliminar</button>
+                  <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Eliminar" aria-label="Eliminar">
+                    <i data-lucide="x" class="text-danger"></i>
+                  </button>
                 </form>
               </td>
             </tr>

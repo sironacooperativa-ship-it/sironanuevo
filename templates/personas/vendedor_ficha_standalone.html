@@ -6,7 +6,9 @@
     <span class="text-muted small"><code>{{ vendedor.codigo }}</code></span>
     <div class="d-flex gap-2 ms-auto flex-wrap">
       <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'vendedores_list' %}">Volver</a>
-      <a class="btn btn-primary btn-sm rounded-pill" href="{% url 'vendedor_update' vendedor.pk %}">Editar</a>
+      <a class="btn btn-outline-primary btn-sm rounded-pill px-2" href="{% url 'vendedor_update' vendedor.pk %}" title="Editar" aria-label="Editar">
+        <i data-lucide="pencil"></i>
+      </a>
     </div>
   </div>
   <div class="card shadow-sm border-0">

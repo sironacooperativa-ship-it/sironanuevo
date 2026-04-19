@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Cheques{% endblock %}
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-0">Cheques</h1>
+      <div class="text-muted small">A pagar y a cobrar (por vencimiento)</div>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm ms-auto" href="{% url 'home' %}">Volver</a>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'caja_list' %}">Caja</a>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-12 col-md-4">
+          <label class="form-label small text-muted mb-0">Criterio</label>
+          <select name="criterio" class="form-select form-select-sm">
+            <option value="todos" {% if f.criterio == "todos" %}selected{% endif %}>Todos</option>
+            <option value="pagar" {% if f.criterio == "pagar" %}selected{% endif %}>A pagar</option>
+            <option value="cobrar" {% if f.criterio == "cobrar" %}selected{% endif %}>A cobrar</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label small text-muted mb-0">Desde (venc.)</label>
+          <input type="date" name="desde" class="form-control form-control-sm" value="{{ f.desde }}" />
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label small text-muted mb-0">Hasta (venc.)</label>
+          <input type="date" name="hasta" class="form-control form-control-sm" value="{{ f.hasta }}" />
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-2">
+          <button type="submit" class="btn btn-sm btn-primary w-100">Filtrar</button>
+          <a class="btn btn-sm btn-outline-secondary w-100" href="{% url 'caja_cheques' %}">Limpiar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Vencimiento</th>
+            <th>Tipo</th>
+            <th>Cheque</th>
+            <th>Operación</th>
+            <th class="text-end">Monto</th>
+            <th class="text-end"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in cheques %}
+            <tr>
+              <td class="text-muted small">{{ m.fecha_vencimiento_cheque|date:"d/m/Y" }}</td>
+              <td class="small">
+                {% if m.tipo == "IN" %}
+                  <span class="badge text-bg-success">A cobrar</span>
+                {% else %}
+                  <span class="badge text-bg-danger">A pagar</span>
+                {% endif %}
+              </td>
+              <td><code>{{ m.numero_cheque }}</code></td>
+              <td class="small">{{ m.operacion }}</td>
+              <td class="text-end">{{ m.monto|ars }}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-secondary py-0" href="{% url 'caja_detail' m.pk %}">Ver</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-5">No hay cheques con los filtros actuales.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+

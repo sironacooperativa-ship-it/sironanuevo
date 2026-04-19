@@ -14,15 +14,25 @@
 
   <div class="card shadow-sm mb-3">
     <div class="card-body">
+      <div class="fw-semibold mb-2">Búsqueda de Pedidos</div>
       <form method="get" class="row g-2 align-items-end">
         <div class="col-12 col-md-6 col-lg-2">
           <label class="form-label small text-muted mb-0">Período</label>
-          <select name="periodo" class="form-select form-select-sm">
+          <select name="periodo" class="form-select form-select-sm" id="id_periodo">
             <option value="" {% if not filtros.periodo %}selected{% endif %}>Personalizado / todos</option>
             <option value="7d" {% if filtros.periodo == "7d" %}selected{% endif %}>Últimos 7 días</option>
             <option value="30d" {% if filtros.periodo == "30d" %}selected{% endif %}>Últimos 30 días</option>
             <option value="mes" {% if filtros.periodo == "mes" %}selected{% endif %}>Mes actual</option>
             <option value="mes_ant" {% if filtros.periodo == "mes_ant" %}selected{% endif %}>Mes anterior</option>
+            <option value="custom" {% if filtros.periodo == "custom" %}selected{% endif %}>Personalizar…</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-6 col-lg-2" id="customPeriodoWrap" style="display: none;">
+          <label class="form-label small text-muted mb-0">Criterio</label>
+          <select name="custom_periodo" class="form-select form-select-sm" id="id_custom_periodo">
+            <option value="60d" {% if filtros.custom_periodo == "60d" %}selected{% endif %}>Último bimestre (60 días)</option>
+            <option value="180d" {% if filtros.custom_periodo == "180d" %}selected{% endif %}>Último semestre (180 días)</option>
+            <option value="365d" {% if filtros.custom_periodo == "365d" %}selected{% endif %}>Último año (365 días)</option>
           </select>
         </div>
         <div class="col-6 col-md-3 col-lg-2">
@@ -65,6 +75,19 @@
       </p>
     </div>
   </div>
+
+  <script>
+    (function () {
+      const sel = document.getElementById("id_periodo");
+      const wrap = document.getElementById("customPeriodoWrap");
+      function refresh() {
+        if (!sel || !wrap) return;
+        wrap.style.display = sel.value === "custom" ? "block" : "none";
+      }
+      if (sel) sel.addEventListener("change", refresh);
+      refresh();
+    })();
+  </script>
 
   <div class="card shadow-sm">
     <div class="table-responsive">
@@ -125,7 +148,9 @@
                 <div class="d-flex flex-wrap justify-content-end gap-1">
                   <a class="btn btn-sm btn-outline-secondary py-0" href="{% url 'presupuesto_detalle' p.pk %}">Ver</a>
                   {% if p.estado == "ACT" %}
-                    <a class="btn btn-sm btn-outline-primary py-0" href="{% url 'presupuesto_editar' p.pk %}">Editar</a>
+                    <a class="btn btn-sm btn-outline-primary py-0 px-2" href="{% url 'presupuesto_editar' p.pk %}" title="Editar" aria-label="Editar">
+                      <i data-lucide="pencil"></i>
+                    </a>
                     {% if p.alerta_catalogo %}
                       <a
                         class="btn btn-sm btn-success py-0"
@@ -142,7 +167,9 @@
                   {% if p.estado == "ACT" or user.is_staff %}
                     <form method="post" action="{% url 'presupuesto_eliminar' p.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar el presupuesto #{{ p.pk }}? Si estaba aprobado, también se elimina el pedido y se revierte stock y caja.');">
                       {% csrf_token %}
-                      <button type="submit" class="btn btn-sm btn-outline-danger py-0">Eliminar</button>
+                      <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Eliminar" aria-label="Eliminar">
+                        <i data-lucide="x" class="text-danger"></i>
+                      </button>
                     </form>
                   {% endif %}
                 </div>

@@ -24,6 +24,12 @@ from calendario.models import Evento
 def _es_staff(user) -> bool:
     return bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
 
+def _get_vendedor_from_user(user) -> Vendedor | None:
+    if not user or not user.is_authenticated:
+        return None
+    v = getattr(user, "vendedor_perfil", None)
+    return v if isinstance(v, Vendedor) else None
+
 from .models import Presupuesto, PresupuestoLinea, presupuesto_tiene_alerta_catalogo
 from .presupuesto_pdf import presupuesto_pdf_response
 from .share_utils import contexto_compartir_presupuesto, pk_desde_token_compartir
@@ -237,7 +243,13 @@ def _guardar_presupuesto_desde_lineas(
 
 def _filtrar_presupuestos_queryset(request):
     periodo = (request.GET.get("periodo") or "").strip()
-    if periodo in ("7d", "30d", "mes", "mes_ant"):
+    custom_periodo = (request.GET.get("custom_periodo") or "").strip()
+    if periodo == "custom":
+        if custom_periodo in ("60d", "180d", "365d"):
+            fecha_desde, fecha_hasta = rango_periodo(custom_periodo)
+        else:
+            fecha_desde, fecha_hasta = None, None
+    elif periodo in ("7d", "30d", "mes", "mes_ant"):
         fecha_desde, fecha_hasta = rango_periodo(periodo)
     else:
         fecha_desde = parse_fecha_dashboard(request.GET.get("fecha_desde"))
@@ -263,6 +275,7 @@ def _filtrar_presupuestos_queryset(request):
 
     return qs, {
         "periodo": periodo,
+        "custom_periodo": custom_periodo,
         "fecha_desde": fecha_filtro_value_iso(request.GET.get("fecha_desde")),
         "fecha_hasta": fecha_filtro_value_iso(request.GET.get("fecha_hasta")),
         "vendedor": vid,
@@ -351,6 +364,10 @@ def presupuesto_nuevo(request):
     productos_catalogo = _productos_payload()
     lineas_iniciales: list = []
     repoblar = None
+    vendedor_default_id = None
+    vuser = _get_vendedor_from_user(request.user)
+    if vuser is not None and getattr(vuser, "habilitado", True):
+        vendedor_default_id = vuser.pk
 
     if request.method == "POST":
         err, line_specs, subtotal, meta = _validar_lineas_post(request)
@@ -397,6 +414,7 @@ def presupuesto_nuevo(request):
             "presupuesto": None,
             "lineas_iniciales": lineas_iniciales,
             "repoblar": repoblar,
+            "vendedor_default_id": vendedor_default_id,
         },
     )
 

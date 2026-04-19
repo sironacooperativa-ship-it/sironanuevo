@@ -24,6 +24,7 @@ urlpatterns = [
     path("proveedores/<int:pk>/toggle/", views.proveedor_toggle, name="proveedor_toggle"),
     path("compradores/", views.compradores_list, name="compradores_list"),
     path("compradores/nuevo/", views.comprador_create, name="comprador_create"),
+    path("compradores/<int:pk>/ficha/", views.comprador_ficha, name="comprador_ficha"),
     path("compradores/<int:pk>/editar/", views.comprador_update, name="comprador_update"),
     path("compradores/<int:pk>/eliminar/", views.comprador_delete, name="comprador_delete"),
     path("compradores/<int:pk>/toggle/", views.comprador_toggle, name="comprador_toggle"),

@@ -5,6 +5,7 @@
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Historial de pedidos</h1>
     <a class="btn btn-primary btn-sm" href="{% url 'venta_nueva' %}">Nueva venta</a>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'ventas_comisiones' %}">Comisiones</a>
   </div>
 
   <div class="card shadow-sm mb-3">
@@ -82,36 +83,6 @@
     </div>
   </div>
 
-  {% if comisiones_por_mes %}
-    <div class="card shadow-sm mb-3">
-      <div class="card-header fw-semibold py-2">Comisiones acumuladas por mes</div>
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-sm mb-0">
-            <thead class="table-light">
-              <tr>
-                <th>Mes (registro del pedido)</th>
-                <th class="text-end">Total comisiones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for r in comisiones_por_mes %}
-                <tr>
-                  <td class="text-capitalize">{{ r.mes_nombre }} {{ r.anio }}</td>
-                  <td class="text-end">{{ r.total|ars }}</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        <p class="small text-muted mb-0 px-3 py-2 border-top">
-          Suma de comisiones de los pedidos listados abajo (según filtros actuales). Por vendedor, ver también
-          <a href="{% url 'vendedores_list' %}">Vendedores</a> → detalle.
-        </p>
-      </div>
-    </div>
-  {% endif %}
-
   <div class="card shadow-sm">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
@@ -161,7 +132,9 @@
               </td>
               <td class="text-end text-nowrap">
                 <a class="btn btn-sm btn-outline-secondary" href="{% url 'venta_detalle' v.pk %}">Ver</a>
-                <a class="btn btn-sm btn-outline-primary" href="{% url 'venta_editar' v.pk %}">Editar</a>
+                <a class="btn btn-sm btn-outline-primary px-2" href="{% url 'venta_editar' v.pk %}" title="Editar" aria-label="Editar">
+                  <i data-lucide="pencil"></i>
+                </a>
                 {% if v.estado == "PEN" %}
                   <a class="btn btn-sm btn-primary" href="{% url 'venta_registrar_pago' v.pk %}">Pago</a>
                 {% elif v.pago_movimiento %}
@@ -170,7 +143,9 @@
                 {% if user.is_staff %}
                   <form method="post" action="{% url 'venta_eliminar' v.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar el pedido #{{ v.pk }}? Se revierte stock y, si estaba pagado, el ingreso en caja.');">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline-danger py-0">Eliminar</button>
+                    <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Eliminar" aria-label="Eliminar">
+                      <i data-lucide="x" class="text-danger"></i>
+                    </button>
                   </form>
                 {% endif %}
               </td>

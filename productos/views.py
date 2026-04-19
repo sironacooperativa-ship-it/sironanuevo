@@ -29,13 +29,13 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 
 from .forms import ProductoForm
 from .listas_precios_views import producto_listas_extra_context, sync_producto_listas_extras_from_post
-from .models import Producto
+from .models import ListaPrecioItem, ListaPrecios, Producto
 
 
 def _redirect_productos_con_filtros(request):
     """Vuelve al listado conservando búsqueda / filtros enviados como retorno_* en POST."""
     params = {}
-    for k in ("q", "tipo", "proveedor", "estado", "ingreso"):
+    for k in ("q", "tipo", "proveedor", "lista", "estado", "ingreso"):
         v = (request.POST.get(f"retorno_{k}") or "").strip()
         if v:
             params[k] = v
@@ -51,10 +51,12 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
         q = (request.POST.get("filtro_q") or "").strip()
         tipo = (request.POST.get("filtro_tipo") or "").strip()
         proveedor = (request.POST.get("filtro_proveedor") or "").strip()
+        lista = (request.POST.get("filtro_lista") or "").strip()
     else:
         q = (request.GET.get("q") or "").strip()
         tipo = (request.GET.get("tipo") or "").strip()
         proveedor = (request.GET.get("proveedor") or "").strip()
+        lista = (request.GET.get("lista") or "").strip()
 
     estado = (request.GET.get("estado") or "").strip()
     ingreso = (request.GET.get("ingreso") or "").strip()
@@ -66,6 +68,14 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
         productos = productos.filter(tipo=tipo)
     if proveedor.isdigit():
         productos = productos.filter(compras_origen__proveedor_id=int(proveedor)).distinct()
+    if lista.isdigit():
+        lid = int(lista)
+        lobj = ListaPrecios.objects.filter(pk=lid).first()
+        if lobj:
+            if lobj.es_farmacia:
+                productos = productos.filter(en_lista_precios=True)
+            else:
+                productos = productos.filter(items_lista_precio__lista_id=lid).distinct()
     if estado == "1":
         productos = productos.filter(habilitado=True)
     elif estado == "0":
@@ -77,7 +87,14 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
     else:
         productos = productos.order_by("descripcion", "codigo")
 
-    return productos, {"q": q, "tipo": tipo, "proveedor": proveedor, "estado": estado, "ingreso": ingreso}
+    return productos, {
+        "q": q,
+        "tipo": tipo,
+        "proveedor": proveedor,
+        "lista": lista,
+        "estado": estado,
+        "ingreso": ingreso,
+    }
 
 
 def _parse_pct_aumento(request) -> Decimal | None:
@@ -360,6 +377,7 @@ def productos_list(request):
     q = filtros_ctx["q"]
     tipo = filtros_ctx["tipo"]
     proveedor = filtros_ctx["proveedor"]
+    lista = filtros_ctx["lista"]
     estado = filtros_ctx["estado"]
     ingreso = filtros_ctx["ingreso"]
 
@@ -399,6 +417,7 @@ def productos_list(request):
         return pdf_response(base, "Listado de productos", [("Productos", headers, rows)])
 
     proveedores_filtro = Proveedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
+    listas_precios_filtro = ListaPrecios.objects.all().order_by("-es_farmacia", "nombre")
 
     return render(
         request,
@@ -408,10 +427,12 @@ def productos_list(request):
             "q": q,
             "tipo": tipo,
             "proveedor": proveedor,
+            "lista": lista,
             "estado": estado,
             "ingreso": ingreso,
             "tipos": Producto.Tipo.choices,
             "proveedores_filtro": proveedores_filtro,
+            "listas_precios_filtro": listas_precios_filtro,
         },
     )
 
@@ -717,19 +738,111 @@ def productos_acciones_masa(request):
             messages.info(request, "Los productos elegidos ya estaban habilitados.")
     elif accion == "deshabilitar":
         n = Producto.objects.filter(pk__in=ids).update(habilitado=False, en_lista_precios=False)
-        messages.success(request, f"Se deshabilitaron {n} producto(s) y se sacaron de la lista PDF.")
-    elif accion == "lista_si":
-        deshab = Producto.objects.filter(pk__in=ids, habilitado=False).count()
-        n = Producto.objects.filter(pk__in=ids, habilitado=True).update(en_lista_precios=True)
-        messages.success(request, f"{n} producto(s) marcados para la lista de precios PDF.")
-        if deshab:
-            messages.info(
+        messages.success(request, f"Se deshabilitaron {n} producto(s).")
+    elif accion == "lista_precio":
+        raw_lista = (request.POST.get("lista_id") or "").strip()
+        modo = (request.POST.get("lista_modo") or "").strip()  # add/remove
+        if not raw_lista.isdigit():
+            messages.error(request, "Elegí una lista de precio.")
+            return _redirect_productos_con_filtros(request)
+        if modo not in ("add", "remove"):
+            messages.error(request, "Acción de lista no válida.")
+            return _redirect_productos_con_filtros(request)
+
+        lista = ListaPrecios.objects.filter(pk=int(raw_lista)).first()
+        if not lista:
+            messages.error(request, "La lista de precio no existe.")
+            return _redirect_productos_con_filtros(request)
+
+        if lista.es_farmacia:
+            # Farmacia: marca booleana en el producto.
+            if modo == "add":
+                deshab = Producto.objects.filter(pk__in=ids, habilitado=False).count()
+                n = Producto.objects.filter(pk__in=ids, habilitado=True).update(en_lista_precios=True)
+                messages.success(request, f"{n} producto(s) agregados a «{lista.nombre}».")
+                if deshab:
+                    messages.info(
+                        request,
+                        f"{deshab} producto(s) deshabilitados no se agregan a la lista hasta habilitarlos.",
+                    )
+            else:
+                n = Producto.objects.filter(pk__in=ids).update(en_lista_precios=False)
+                messages.success(request, f"Se quitó «{lista.nombre}» en {n} producto(s).")
+            return _redirect_productos_con_filtros(request)
+
+        # Listas de rubro: through table con precio.
+        if modo == "remove":
+            n, _ = ListaPrecioItem.objects.filter(lista_id=lista.pk, producto_id__in=ids).delete()
+            messages.success(request, f"Se quitaron {n} producto(s) de «{lista.nombre}».")
+            return _redirect_productos_con_filtros(request)
+
+        # add: detectar conflictos (ya existe item)
+        productos = list(Producto.objects.filter(pk__in=ids).order_by("descripcion", "codigo"))
+        existentes = {
+            it.producto_id: it
+            for it in ListaPrecioItem.objects.filter(lista_id=lista.pk, producto_id__in=ids).select_related("producto")
+        }
+        conflictos = [p for p in productos if p.pk in existentes]
+
+        if conflictos and request.POST.get("resolve_present") != "1":
+            # Mostrar pantalla para decidir qué precio queda para los que ya estaban.
+            filas = []
+            for p in conflictos:
+                it = existentes[p.pk]
+                filas.append(
+                    {
+                        "producto": p,
+                        "precio_existente": q2(it.precio_venta),
+                        "precio_nuevo": q2(p.precio_venta),
+                    }
+                )
+            return render(
                 request,
-                f"{deshab} producto(s) deshabilitados no se incluyen en lista hasta habilitarlos.",
+                "productos/acciones_masa_lista_confirmar.html",
+                {
+                    "lista": lista,
+                    "ids": ids,
+                    "conflictos": filas,
+                    "total": len(ids),
+                    "retorno": {
+                        "q": request.POST.get("retorno_q") or "",
+                        "tipo": request.POST.get("retorno_tipo") or "",
+                        "proveedor": request.POST.get("retorno_proveedor") or "",
+                        "lista": request.POST.get("retorno_lista") or "",
+                        "estado": request.POST.get("retorno_estado") or "",
+                        "ingreso": request.POST.get("retorno_ingreso") or "",
+                    },
+                },
             )
-    elif accion == "lista_no":
-        n = Producto.objects.filter(pk__in=ids).update(en_lista_precios=False)
-        messages.success(request, f"Se quitó la marca de lista PDF en {n} producto(s).")
+
+        # Aplicar: crear faltantes y resolver conflictos según elección.
+        creados = 0
+        mantenidos = 0
+        sobrescritos = 0
+        with transaction.atomic():
+            for p in productos:
+                it = existentes.get(p.pk)
+                if it is None:
+                    ListaPrecioItem.objects.create(
+                        lista_id=lista.pk,
+                        producto_id=p.pk,
+                        precio_venta=q2(p.precio_venta),
+                    )
+                    creados += 1
+                    continue
+                choice = (request.POST.get(f"conf_{p.pk}") or "keep").strip()
+                if choice == "overwrite":
+                    ListaPrecioItem.objects.filter(pk=it.pk).update(precio_venta=q2(p.precio_venta))
+                    sobrescritos += 1
+                else:
+                    mantenidos += 1
+
+        if creados:
+            messages.success(request, f"Se agregaron {creados} producto(s) a «{lista.nombre}».")
+        if sobrescritos:
+            messages.warning(request, f"Se actualizaron {sobrescritos} precio(s) en «{lista.nombre}».")
+        if mantenidos:
+            messages.info(request, f"{mantenidos} producto(s) ya estaban en «{lista.nombre}» (se mantuvo su precio).")
     elif accion == "eliminar":
         ok = 0
         protegidos = []

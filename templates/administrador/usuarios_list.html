@@ -133,7 +133,9 @@
                 {% endif %}
               </td>
               <td class="text-center">
-                <a class="btn btn-sm btn-outline-primary" href="{% url 'admin_usuario_update' u.pk %}">Editar</a>
+                <a class="btn btn-sm btn-outline-primary px-2" href="{% url 'admin_usuario_update' u.pk %}" title="Editar" aria-label="Editar">
+                  <i data-lucide="pencil"></i>
+                </a>
                 <a class="btn btn-sm btn-outline-secondary" href="{% url 'admin_usuario_password' u.pk %}">Contraseña</a>
               </td>
             </tr>

@@ -83,6 +83,8 @@ def home(request):
     ult_30 = today - timedelta(days=29)
     prox_7 = today + timedelta(days=7)
     prox_30 = today + timedelta(days=30)
+    prox_90 = today + timedelta(days=90)
+    prox_180 = today + timedelta(days=180)
 
     pendientes = (
         Venta.objects.filter(estado=Venta.Estado.PENDIENTE)
@@ -138,10 +140,40 @@ def home(request):
         .order_by("id")[:50]
     )
 
+    cheques_a_pagar = (
+        MovimientoCaja.objects.filter(
+            tipo=MovimientoCaja.Tipo.EGRESO,
+            medio_pago=MovimientoCaja.MedioPago.CHEQUE,
+            fecha_vencimiento_cheque__isnull=False,
+            fecha_vencimiento_cheque__gte=today,
+            fecha_vencimiento_cheque__lte=prox_30,
+        )
+        .order_by("fecha_vencimiento_cheque", "id")[:50]
+    )
+
     stock_critico = Producto.objects.filter(habilitado=True, stock__lte=0).order_by("descripcion", "codigo")[:30]
     vencimientos_prod = (
         Producto.objects.filter(habilitado=True, fecha_vencimiento__isnull=False, fecha_vencimiento__lte=prox_30)
         .order_by("fecha_vencimiento", "descripcion", "codigo")[:30]
+    )
+
+    meds_venc_90 = (
+        Producto.objects.filter(
+            tipo=Producto.Tipo.MEDICAMENTOS,
+            fecha_vencimiento__isnull=False,
+            fecha_vencimiento__gte=today,
+            fecha_vencimiento__lte=prox_90,
+        )
+        .order_by("fecha_vencimiento", "descripcion", "codigo")[:50]
+    )
+    meds_venc_180 = (
+        Producto.objects.filter(
+            tipo=Producto.Tipo.MEDICAMENTOS,
+            fecha_vencimiento__isnull=False,
+            fecha_vencimiento__gt=prox_90,
+            fecha_vencimiento__lte=prox_180,
+        )
+        .order_by("fecha_vencimiento", "descripcion", "codigo")[:50]
     )
 
     _tipo_labels = dict(Producto.Tipo.choices)
@@ -175,8 +207,11 @@ def home(request):
             "hoy_pagos": hoy_pagos,
             "hoy_cheques": hoy_cheques,
             "cheques_proximos": cheques,
+            "cheques_a_pagar": cheques_a_pagar,
             "stock_critico": stock_critico,
             "vencimientos_prod": vencimientos_prod,
+            "meds_venc_90": meds_venc_90,
+            "meds_venc_180": meds_venc_180,
             "hoy": today,
         },
     )
@@ -229,12 +264,26 @@ def login_view(request):
                 if (solo_vendedor or entrar) and v is None:
                     nombre = (user.first_name or "").strip() or user.username
                     apellido = (user.last_name or "").strip() or "—"
-                    v = Vendedor.objects.create(
-                        nombre=nombre,
-                        apellido=apellido,
-                        usuario=user,
-                        habilitado=True,
-                    )
+                    existente = Vendedor.objects.filter(
+                        usuario__isnull=True,
+                        nombre__iexact=nombre,
+                        apellido__iexact=apellido,
+                    ).first()
+                    if existente is not None:
+                        existente.usuario = user
+                        if not existente.habilitado:
+                            existente.habilitado = True
+                            existente.save(update_fields=["usuario", "habilitado"])
+                        else:
+                            existente.save(update_fields=["usuario"])
+                        v = existente
+                    else:
+                        v = Vendedor.objects.create(
+                            nombre=nombre,
+                            apellido=apellido,
+                            usuario=user,
+                            habilitado=True,
+                        )
 
                 # Guardar modo en sesión (para menú/layout). Staff puede entrar como vendedor con el checkbox.
                 modo = bool(solo_vendedor or (entrar and v is not None))

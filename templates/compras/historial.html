@@ -119,7 +119,9 @@
                 <td class="text-end text-nowrap">
                   <form method="post" action="{% url 'compra_admin_eliminar' c.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar definitivamente la compra #{{ c.pk }}? Se borrarán los movimientos de caja vinculados y se descontará la cantidad del stock.');">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                    <button type="submit" class="btn btn-sm btn-outline-danger px-2" title="Eliminar" aria-label="Eliminar">
+                      <i data-lucide="x" class="text-danger"></i>
+                    </button>
                   </form>
                   {% if not c.anulada and c.movimiento_caja %}
                     <form method="post" action="{% url 'compra_admin_anular' c.pk %}" class="d-inline ms-1" onsubmit="return confirm('¿Anular la compra #{{ c.pk }}? Quedará marcada como anulada y se registrará una nota de crédito en caja por el mismo monto.');">
