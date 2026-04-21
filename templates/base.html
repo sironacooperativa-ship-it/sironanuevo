@@ -16,6 +16,19 @@
       rel="stylesheet"
     />
     <link href="{% static 'css/theme.css' %}?v=calc-win-2026" rel="stylesheet" />
+    <link href="{% static 'css/sirona-calc.css' %}" rel="stylesheet" />
+    <style>
+      /* Respaldo en el HTML: grilla + flex sin min-width que rompa el teclado */
+      #sironaCalc .sirona-offcanvas-body,
+      #sironaCalc .sirona-calc {
+        min-width: 0 !important;
+      }
+      #sironaCalc .sirona-calc-keys {
+        display: grid !important;
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        gap: 0.4rem;
+      }
+    </style>
     <script src="{% static 'js/money-ars.js' %}"></script>
     {% block extra_head %}{% endblock %}
   </head>
@@ -143,7 +156,6 @@
               <button class="sirona-calc-mem-btn" type="button" data-calc="M+">M+</button>
               <button class="sirona-calc-mem-btn" type="button" data-calc="M-">M−</button>
               <button class="sirona-calc-mem-btn" type="button" data-calc="MS">MS</button>
-              <button class="sirona-calc-mem-btn" type="button" data-calc="NOP" disabled aria-hidden="true">M</button>
             </div>
 
             <div class="sirona-calc-keys" aria-label="Teclado de calculadora">
@@ -152,9 +164,9 @@
                 <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="C">C</button>
                 <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="BS">⌫</button>
 
-                <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="INV">¹/ₓ</button>
+                <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="INV">1/x</button>
                 <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="SQ">x²</button>
-                <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="SQRT">²√x</button>
+                <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="SQRT">√</button>
                 <button class="sirona-calc-key sirona-calc-key-op" type="button" data-calc="÷">÷</button>
 
                 <button class="sirona-calc-key sirona-calc-key-num" type="button" data-calc="7">7</button>
@@ -327,7 +339,7 @@
     <script src="{% static 'js/sirona-modal.js' %}?v=1"></script>
     <script src="{% static 'js/sirona-scroll-top.js' %}?v=1"></script>
     {% if request.user.is_authenticated %}
-      <script src="{% static 'js/sirona-calc.js' %}?v=1"></script>
+      <script src="{% static 'js/sirona-calc.js' %}?v=3"></script>
       <script src="{% static 'js/sirona-scroll-restore.js' %}?v=1"></script>
       <script src="{% static 'js/sirona-idle-logout.js' %}?v=2"></script>
     {% endif %}
