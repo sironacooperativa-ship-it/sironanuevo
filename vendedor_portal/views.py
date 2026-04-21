@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from decimal import Decimal
 from io import BytesIO
 
@@ -9,10 +10,12 @@ from django.db import transaction
 from django.db.models import Q
 from django.db.models import Case, Count, DecimalField, ExpressionWrapper, F, Sum, Value, When
 from django.db.models.functions import Coalesce
+from django.db.models.functions import TruncDay, TruncMonth, TruncWeek
 from django.http import FileResponse, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 
 from personas.models import Comprador, Vendedor
 from personas.forms import CompradorForm
@@ -505,6 +508,106 @@ def vendedor_reportes(request):
         neto_total=Coalesce(Sum(neto_nonneg), Value(Decimal("0.00"))),
     )
 
+    # --- Series temporales (gráficos) ---
+    # GET params:
+    # - g: day | week | month
+    # - r: weekly | monthly | bimonthly | annual | all
+    # - desde/hasta opcionales (si r=custom)
+    gran = (request.GET.get("g") or "month").strip().lower()
+    rango = (request.GET.get("r") or "annual").strip().lower()
+    desde = parse_date((request.GET.get("desde") or "").strip() or "") if rango == "custom" else None
+    hasta = parse_date((request.GET.get("hasta") or "").strip() or "") if rango == "custom" else None
+
+    hoy = timezone.localdate()
+    start = None
+    end = None
+    if rango == "weekly":
+        start = hoy - timedelta(days=6)
+    elif rango == "monthly":
+        start = hoy - timedelta(days=29)
+    elif rango == "bimonthly":
+        start = hoy - timedelta(days=59)
+    elif rango == "annual":
+        start = hoy - timedelta(days=364)
+    elif rango == "all":
+        start = None
+    elif rango == "custom":
+        start = desde
+        end = hasta
+
+    if gran not in ("day", "week", "month"):
+        gran = "month"
+    if rango not in ("weekly", "monthly", "bimonthly", "annual", "all", "custom"):
+        rango = "annual"
+
+    qs_ts = mis_ventas
+    if start is not None:
+        qs_ts = qs_ts.filter(creado_en__date__gte=start)
+    if end is not None:
+        qs_ts = qs_ts.filter(creado_en__date__lte=end)
+
+    if gran == "day":
+        bucket = TruncDay("creado_en")
+        label_fmt = "%d/%m"
+    elif gran == "week":
+        bucket = TruncWeek("creado_en")
+        label_fmt = "sem %W/%Y"
+    else:
+        bucket = TruncMonth("creado_en")
+        label_fmt = "%m/%Y"
+
+    rows = (
+        qs_ts.annotate(bucket=bucket)
+        .values("bucket")
+        .annotate(neto=Coalesce(Sum(neto_nonneg), Value(Decimal("0.00"))), pedidos=Count("id"))
+        .order_by("bucket")
+    )
+    labels = []
+    serie_neto = []
+    serie_pedidos = []
+    for r in rows:
+        b = r["bucket"]
+        if not b:
+            continue
+        b_local = timezone.localtime(b) if timezone.is_aware(b) else b
+        labels.append(b_local.strftime(label_fmt))
+        serie_neto.append(float(r["neto"] or 0))
+        serie_pedidos.append(int(r["pedidos"] or 0))
+
+    # Global: últimos ~3 meses, semana a semana, total de TODOS los vendedores
+    start_global = hoy - timedelta(days=7 * 12 - 1)  # ~12 semanas
+    global_rows = (
+        Venta.objects.filter(creado_en__date__gte=start_global)
+        .annotate(bucket=TruncWeek("creado_en"))
+        .values("bucket")
+        .annotate(neto=Coalesce(Sum(neto_nonneg), Value(Decimal("0.00"))), pedidos=Count("id"))
+        .order_by("bucket")
+    )
+    global_labels = []
+    global_neto = []
+    global_pedidos = []
+    for r in global_rows:
+        b = r["bucket"]
+        if not b:
+            continue
+        b_local = timezone.localtime(b) if timezone.is_aware(b) else b
+        global_labels.append(b_local.strftime("sem %W/%Y"))
+        global_neto.append(float(r["neto"] or 0))
+        global_pedidos.append(int(r["pedidos"] or 0))
+
+    chart = {
+        "labels": labels,
+        "neto": serie_neto,
+        "pedidos": serie_pedidos,
+        "gran": gran,
+        "rango": rango,
+        "desde": str(desde) if desde else "",
+        "hasta": str(hasta) if hasta else "",
+        "global_labels": global_labels,
+        "global_neto": global_neto,
+        "global_pedidos": global_pedidos,
+    }
+
     # Ranking por neto total acumulado (hasta la fecha)
     ranking_qs = (
         Venta.objects.values("vendedor_id", "vendedor__codigo", "vendedor__apellido", "vendedor__nombre")
@@ -521,6 +624,12 @@ def vendedor_reportes(request):
     return render(
         request,
         "vendedor_portal/reportes.html",
-        {"vendedor": vendedor, "actividad": actividad, "ranking": ranking, "posicion": pos},
+        {
+            "vendedor": vendedor,
+            "actividad": actividad,
+            "ranking": ranking,
+            "posicion": pos,
+            "chart": chart,
+        },
     )
 

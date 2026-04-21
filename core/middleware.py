@@ -66,9 +66,13 @@ class VendedorAccessMiddleware:
             # Si no existe el perfil aún (usuarios viejos), lo creamos.
             perfil = getattr(request.user, "perfil_acceso", None)
             if perfil is None:
+                try:
+                    tiene_vendedor = request.user.vendedor_perfil is not None
+                except Exception:
+                    tiene_vendedor = False
                 PerfilAcceso.objects.get_or_create(
                     usuario=request.user,
-                    defaults={"solo_vendedor": bool(getattr(request.user, "vendedor_perfil", None) is not None)},
+                    defaults={"solo_vendedor": bool(tiene_vendedor)},
                 )
                 perfil = getattr(request.user, "perfil_acceso", None)
 

@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Reportes{% endblock %}
+{% block extra_head %}
+  {{ chart|json_script:"vendedor-reportes-chart" }}
+{% endblock %}
 {% block content %}
   <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
     <div>
@@ -54,5 +57,145 @@
       </div>
     </div>
   </div>
+
+  <div class="card shadow-sm mt-3">
+    <div class="card-body">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+        <div>
+          <h2 class="h6 mb-0">Mis ventas (serie temporal)</h2>
+          <div class="text-muted small">Elegí la vista para ver por día, semana o mes.</div>
+        </div>
+        <form method="get" class="d-flex flex-wrap gap-2 align-items-center">
+          <select name="g" class="form-select form-select-sm" style="min-width: 10rem">
+            <option value="day" {% if chart.gran == "day" %}selected{% endif %}>Por día</option>
+            <option value="week" {% if chart.gran == "week" %}selected{% endif %}>Por semana</option>
+            <option value="month" {% if chart.gran == "month" %}selected{% endif %}>Por mes</option>
+          </select>
+          <select name="r" class="form-select form-select-sm" style="min-width: 12rem">
+            <option value="weekly" {% if chart.rango == "weekly" %}selected{% endif %}>Última semana</option>
+            <option value="monthly" {% if chart.rango == "monthly" %}selected{% endif %}>Últimos 30 días</option>
+            <option value="bimonthly" {% if chart.rango == "bimonthly" %}selected{% endif %}>Últimos 2 meses</option>
+            <option value="annual" {% if chart.rango == "annual" %}selected{% endif %}>Último año</option>
+            <option value="all" {% if chart.rango == "all" %}selected{% endif %}>Toda la trayectoria</option>
+          </select>
+          <button class="btn btn-sm btn-primary" type="submit">Ver</button>
+        </form>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12 col-lg-8">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <canvas id="chartMiNeto" height="110"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <canvas id="chartMiPedidos" height="160"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mt-3">
+    <div class="card-body">
+      <h2 class="h6 mb-2">Todos los vendedores (últimos 3 meses, semana a semana)</h2>
+      <div class="text-muted small mb-2">Totales globales: neto y pedidos por semana.</div>
+      <div class="row g-3">
+        <div class="col-12 col-lg-8">
+          <canvas id="chartGlobalNeto" height="110"></canvas>
+        </div>
+        <div class="col-12 col-lg-4">
+          <canvas id="chartGlobalPedidos" height="160"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    (function () {
+      const el = document.getElementById("vendedor-reportes-chart");
+      const payload = el ? JSON.parse(el.textContent || "{}") : {};
+      const teal = "#0097B2";
+      const teal2 = "rgba(0,151,178,0.25)";
+
+      function toNums(arr) {
+        return (arr || []).map((x) => Number(x) || 0);
+      }
+
+      function fmtArs(n) {
+        const v = Number(n);
+        if (!Number.isFinite(v)) return "$ 0,00";
+        const neg = v < 0;
+        const abs = Math.abs(v);
+        const parts = abs.toFixed(2).split(".");
+        const intPart = parts[0];
+        const dec = parts[1];
+        const withDots = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        return neg ? "$ -" + withDots + "," + dec : "$ " + withDots + "," + dec;
+      }
+
+      const pluginsMoney = {
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              const prefix = ctx.dataset.label ? ctx.dataset.label + ": " : "";
+              return prefix + fmtArs(ctx.raw);
+            },
+          },
+        },
+      };
+
+      const miNeto = document.getElementById("chartMiNeto");
+      if (miNeto) {
+        new Chart(miNeto, {
+          type: "line",
+          data: {
+            labels: payload.labels || [],
+            datasets: [
+              { label: "Neto", data: toNums(payload.neto), borderColor: teal, backgroundColor: teal2, fill: true, tension: 0.25 },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: Object.assign({ legend: { display: true } }, pluginsMoney),
+            scales: { y: { ticks: { callback: (v) => fmtArs(v) } } },
+          },
+        });
+      }
+
+      const miPedidos = document.getElementById("chartMiPedidos");
+      if (miPedidos) {
+        new Chart(miPedidos, {
+          type: "bar",
+          data: { labels: payload.labels || [], datasets: [{ label: "Pedidos", data: payload.pedidos || [], backgroundColor: teal2, borderColor: teal }] },
+          options: { responsive: true, plugins: { legend: { display: false } } },
+        });
+      }
+
+      const gN = document.getElementById("chartGlobalNeto");
+      if (gN) {
+        new Chart(gN, {
+          type: "line",
+          data: { labels: payload.global_labels || [], datasets: [{ label: "Neto global", data: toNums(payload.global_neto), borderColor: teal, tension: 0.25 }] },
+          options: { responsive: true, plugins: Object.assign({ legend: { display: true } }, pluginsMoney), scales: { y: { ticks: { callback: (v) => fmtArs(v) } } } },
+        });
+      }
+
+      const gP = document.getElementById("chartGlobalPedidos");
+      if (gP) {
+        new Chart(gP, {
+          type: "bar",
+          data: { labels: payload.global_labels || [], datasets: [{ label: "Pedidos global", data: payload.global_pedidos || [], backgroundColor: teal2, borderColor: teal }] },
+          options: { responsive: true, plugins: { legend: { display: false } } },
+        });
+      }
+    })();
+  </script>
 {% endblock %}
 

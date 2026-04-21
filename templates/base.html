@@ -30,6 +30,22 @@
             </a>
             <div class="d-flex align-items-center gap-3">
               <span class="small text-muted d-none d-md-inline">{{ request.user.username }}</span>
+              {% if (not request.user.perfil_acceso or not request.user.perfil_acceso.solo_vendedor) and has_vendedor_perfil %}
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'switch_to_full_mode' %}" title="Volver al sistema completo">
+                  Volver al modo completo
+                </a>
+              {% endif %}
+              <button
+                class="btn app-icon-btn"
+                type="button"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#sironaCalc"
+                aria-controls="sironaCalc"
+                aria-label="Abrir calculadora"
+                title="Calculadora"
+              >
+                <i data-lucide="calculator" class="app-lucide-toolbar"></i>
+              </button>
               <a class="btn app-icon-btn" href="{% url 'logout' %}" title="Salir" aria-label="Salir">
                 <i data-lucide="log-out" class="app-lucide-toolbar"></i>
               </a>
@@ -55,6 +71,22 @@
             </a>
             <div class="d-flex align-items-center gap-3">
               <span class="small text-muted d-none d-md-inline">{{ request.user.username }}</span>
+              {% if (not request.user.perfil_acceso or not request.user.perfil_acceso.solo_vendedor) and has_vendedor_perfil %}
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'switch_to_vendor_mode' %}" title="Cambiar a modo vendedor">
+                  Cambiar a modo vendedor
+                </a>
+              {% endif %}
+              <button
+                class="btn app-icon-btn"
+                type="button"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#sironaCalc"
+                aria-controls="sironaCalc"
+                aria-label="Abrir calculadora"
+                title="Calculadora"
+              >
+                <i data-lucide="calculator" class="app-lucide-toolbar"></i>
+              </button>
               <a class="btn app-icon-btn" href="{% url 'logout' %}" title="Salir" aria-label="Salir">
                 <i data-lucide="log-out" class="app-lucide-toolbar"></i>
               </a>
@@ -62,6 +94,68 @@
           </div>
         </nav>
       {% endif %}
+
+      <div
+        class="offcanvas offcanvas-start sirona-offcanvas"
+        tabindex="-1"
+        id="sironaCalc"
+        aria-labelledby="sironaCalcLabel"
+      >
+        <div class="offcanvas-header sirona-offcanvas-header border-0">
+          <div class="d-flex align-items-center gap-2 min-w-0">
+            <span class="sirona-offcanvas-title text-truncate" id="sironaCalcLabel">Calculadora</span>
+          </div>
+          <button type="button" class="btn app-icon-btn" data-bs-dismiss="offcanvas" aria-label="Cerrar" title="Cerrar">
+            <i data-lucide="x" class="app-lucide-toolbar"></i>
+          </button>
+        </div>
+        <div class="offcanvas-body sirona-offcanvas-body">
+          <div class="sirona-calc">
+            <div class="sirona-calc-top">
+              <div class="sirona-calc-brand">SIRONA</div>
+              <div class="sirona-calc-model">CALC</div>
+            </div>
+
+            <div class="sirona-calc-display-wrap mb-2">
+                <input
+                  id="sironaCalcDisplay"
+                  class="sirona-calc-display"
+                  inputmode="decimal"
+                  autocomplete="off"
+                  placeholder="0"
+                />
+                <div class="sirona-calc-hint" id="sironaCalcHint">Usá + − × ÷, paréntesis y Enter.</div>
+            </div>
+
+            <div class="sirona-calc-keys">
+                <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="C">C</button>
+                <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="(">(</button>
+                <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc=")">)</button>
+                <button class="sirona-calc-key sirona-calc-key-op" type="button" data-calc="÷">÷</button>
+
+                <button class="sirona-calc-key" type="button" data-calc="7">7</button>
+                <button class="sirona-calc-key" type="button" data-calc="8">8</button>
+                <button class="sirona-calc-key" type="button" data-calc="9">9</button>
+                <button class="sirona-calc-key sirona-calc-key-op" type="button" data-calc="×">×</button>
+
+                <button class="sirona-calc-key" type="button" data-calc="4">4</button>
+                <button class="sirona-calc-key" type="button" data-calc="5">5</button>
+                <button class="sirona-calc-key" type="button" data-calc="6">6</button>
+                <button class="sirona-calc-key sirona-calc-key-op" type="button" data-calc="-">−</button>
+
+                <button class="sirona-calc-key" type="button" data-calc="1">1</button>
+                <button class="sirona-calc-key" type="button" data-calc="2">2</button>
+                <button class="sirona-calc-key" type="button" data-calc="3">3</button>
+                <button class="sirona-calc-key sirona-calc-key-op" type="button" data-calc="+">+</button>
+
+                <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="BS">⌫</button>
+                <button class="sirona-calc-key" type="button" data-calc="0">0</button>
+                <button class="sirona-calc-key" type="button" data-calc=".">.</button>
+                <button class="sirona-calc-key sirona-calc-key-eq" type="button" data-calc="=">=</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {% if not vendor_mode %}
         <div
@@ -222,8 +316,126 @@
         if (menu) {
           menu.addEventListener("shown.bs.offcanvas", paintIcons);
         }
+        var calc = document.getElementById("sironaCalc");
+        if (calc) {
+          calc.addEventListener("shown.bs.offcanvas", paintIcons);
+        }
       })();
     </script>
+    {% if request.user.is_authenticated %}
+      <script>
+        (function () {
+          const display = document.getElementById("sironaCalcDisplay");
+          const root = document.getElementById("sironaCalc");
+          if (!display || !root) return;
+
+          function normalizeExpr(s) {
+            return String(s || "")
+              .replace(/×/g, "*")
+              .replace(/÷/g, "/")
+              .replace(/−/g, "-")
+              .replace(/,/g, ".")
+              .replace(/[^\d\.\+\-\*\/\(\)\s]/g, "");
+          }
+
+          function safeEval(expr) {
+            // Expr normalizada: solo números, ., + - * / ( ) y espacios.
+            // eslint-disable-next-line no-new-func
+            return Function('"use strict";return (' + expr + ")")();
+          }
+
+          function setValue(v) {
+            display.value = String(v ?? "");
+            try {
+              window.localStorage.setItem("sirona_calc_value", display.value);
+            } catch (e) {}
+          }
+
+          function append(t) {
+            const start = display.selectionStart ?? display.value.length;
+            const end = display.selectionEnd ?? display.value.length;
+            const before = display.value.slice(0, start);
+            const after = display.value.slice(end);
+            const next = before + t + after;
+            setValue(next);
+            window.setTimeout(function () {
+              try {
+                display.focus();
+                const pos = start + t.length;
+                display.setSelectionRange(pos, pos);
+              } catch (e) {}
+            }, 0);
+          }
+
+          function backspace() {
+            const start = display.selectionStart ?? display.value.length;
+            const end = display.selectionEnd ?? display.value.length;
+            if (start !== end) {
+              const before = display.value.slice(0, start);
+              const after = display.value.slice(end);
+              setValue(before + after);
+              return;
+            }
+            if (start <= 0) return;
+            const before = display.value.slice(0, start - 1);
+            const after = display.value.slice(end);
+            setValue(before + after);
+          }
+
+          function clear() {
+            setValue("");
+          }
+
+          function compute() {
+            const expr = normalizeExpr(display.value);
+            if (!expr.trim()) return;
+            try {
+              const out = safeEval(expr);
+              if (typeof out === "number" && Number.isFinite(out)) {
+                setValue(String(out));
+              }
+            } catch (e) {
+              // Mantener el input tal cual si hay error de expresión.
+            }
+          }
+
+          root.addEventListener("click", function (ev) {
+            const btn = ev.target.closest("[data-calc]");
+            if (!btn) return;
+            const v = btn.getAttribute("data-calc");
+            if (v === "C") return clear();
+            if (v === "BS") return backspace();
+            if (v === "=") return compute();
+            if (v === "÷") return append("÷");
+            if (v === "×") return append("×");
+            if (v === ".") return append(".");
+            if (v === "+") return append("+");
+            if (v === "-") return append("−");
+            return append(v);
+          });
+
+          display.addEventListener("keydown", function (ev) {
+            if (ev.key === "Enter") {
+              ev.preventDefault();
+              compute();
+              return;
+            }
+          });
+
+          root.addEventListener("shown.bs.offcanvas", function () {
+            try {
+              display.focus();
+              display.setSelectionRange(display.value.length, display.value.length);
+            } catch (e) {}
+          });
+
+          try {
+            const saved = window.localStorage.getItem("sirona_calc_value");
+            if (saved) display.value = saved;
+          } catch (e) {}
+        })();
+      </script>
+    {% endif %}
     <script>
       (function () {
         var menu = document.getElementById("sironaMenu");
@@ -306,6 +518,45 @@
       })();
     </script>
     {% if request.user.is_authenticated %}
+      <script>
+        (function () {
+          // Preserva posición de scroll después de un POST (ediciones en tablas, etc.).
+          // Se guarda al submit y se restaura una sola vez al recargar.
+          const KEY = "sirona_scroll_restore:" + window.location.pathname + window.location.search;
+          const DISABLE_ATTR = "data-sirona-no-scroll-restore";
+
+          function getScrollY() {
+            return window.scrollY || document.documentElement.scrollTop || 0;
+          }
+
+          // Restaurar al cargar (solo si existe valor guardado)
+          try {
+            const raw = window.sessionStorage.getItem(KEY);
+            if (raw) {
+              window.sessionStorage.removeItem(KEY);
+              const y = Math.max(0, parseInt(raw, 10) || 0);
+              // Esperar layout (tablas grandes) antes de scrollear
+              window.setTimeout(function () {
+                window.scrollTo({ top: y, left: 0, behavior: "instant" });
+              }, 0);
+            }
+          } catch (e) {}
+
+          // Guardar al enviar formulario
+          document.addEventListener(
+            "submit",
+            function (ev) {
+              const form = ev.target;
+              if (!form || form.nodeName !== "FORM") return;
+              if (form.hasAttribute(DISABLE_ATTR)) return;
+              try {
+                window.sessionStorage.setItem(KEY, String(getScrollY()));
+              } catch (e) {}
+            },
+            true
+          );
+        })();
+      </script>
       <script>
         (function () {
           // Logout por inactividad (cliente): permite cerrar sesión sin esperar a la próxima navegación.

@@ -39,6 +39,16 @@ def _safe_relative_next(path: str) -> str:
     return path
 
 
+def _safe_get_vendedor_perfil(user) -> Vendedor | None:
+    if user is None or not getattr(user, "is_authenticated", False):
+        return None
+    try:
+        v = user.vendedor_perfil
+        return v if isinstance(v, Vendedor) else None
+    except Exception:
+        return None
+
+
 @login_required
 def home(request):
     # Si el usuario está en modo vendedor, mostrar un inicio reducido con datos propios (también si es staff).
@@ -259,40 +269,23 @@ def login_view(request):
                     getattr(getattr(user, "perfil_acceso", None), "solo_vendedor", False)
                 )
                 entrar = (request.POST.get("entrar_como_vendedor") or "0") == "1"
-                # Si corresponde, asegurar perfil Vendedor (usuarios viejos o creados sin vínculo)
-                v = getattr(user, "vendedor_perfil", None)
-                if (solo_vendedor or entrar) and v is None:
-                    nombre = (user.first_name or "").strip() or user.username
-                    apellido = (user.last_name or "").strip() or "—"
-                    existente = Vendedor.objects.filter(
-                        usuario__isnull=True,
-                        nombre__iexact=nombre,
-                        apellido__iexact=apellido,
-                    ).first()
-                    if existente is not None:
-                        existente.usuario = user
-                        if not existente.habilitado:
-                            existente.habilitado = True
-                            existente.save(update_fields=["usuario", "habilitado"])
-                        else:
-                            existente.save(update_fields=["usuario"])
-                        v = existente
-                    else:
-                        v = Vendedor.objects.create(
-                            nombre=nombre,
-                            apellido=apellido,
-                            usuario=user,
-                            habilitado=True,
-                        )
+                # Importante: NO autocrear ni autovincular vendedor (evita duplicados).
+                v = _safe_get_vendedor_perfil(user)
 
                 # Guardar modo en sesión (para menú/layout). Staff puede entrar como vendedor con el checkbox.
                 modo = bool(solo_vendedor or (entrar and v is not None))
                 request.session["modo_vendedor"] = modo
 
                 if solo_vendedor:
+                    if v is None:
+                        messages.error(request, "Tu usuario está marcado como 'solo vendedor' pero no tiene perfil de vendedor asignado.")
+                        logout(request)
+                        return redirect("login")
                     return redirect("vendedor_home")
                 if entrar and v is not None:
                     return redirect("vendedor_home")
+                if entrar and v is None:
+                    messages.error(request, "Este usuario no tiene perfil de vendedor asignado.")
             except Exception:
                 pass
             return redirect("home")
@@ -325,6 +318,35 @@ def logout_view(request):
     except Exception:
         pass
     return redirect("login")
+
+
+@login_required
+@require_http_methods(["GET"])
+def switch_to_vendor_mode(request):
+    # Si ya es solo_vendedor, el modo viene dado por perfil; pero igual marcamos sesión para el layout.
+    solo_vendedor = bool(getattr(getattr(request.user, "perfil_acceso", None), "solo_vendedor", False))
+    v = _safe_get_vendedor_perfil(request.user)
+    if (solo_vendedor or v is not None) and v is not None:
+        request.session["modo_vendedor"] = True
+        return redirect("vendedor_home")
+
+    messages.error(request, "Este usuario no tiene perfil de vendedor.")
+    return redirect("home")
+
+
+@login_required
+@require_http_methods(["GET"])
+def switch_to_full_mode(request):
+    # Solo permitir salir del modo vendedor a quienes no son 'solo_vendedor'
+    solo_vendedor = bool(getattr(getattr(request.user, "perfil_acceso", None), "solo_vendedor", False))
+    if solo_vendedor:
+        return redirect("vendedor_home")
+    try:
+        request.session["modo_vendedor"] = False
+        request.session.pop("modo_vendedor", None)
+    except Exception:
+        pass
+    return redirect("home")
 
 
 @login_required

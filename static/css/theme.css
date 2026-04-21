@@ -392,6 +392,140 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   background: var(--cg-bg);
 }
 
+.sirona-calc {
+  border-radius: 1.05rem;
+  padding: 0.85rem 0.85rem 0.95rem;
+  background: linear-gradient(180deg, #2a2f35 0%, #1a1e23 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.sirona-calc-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.sirona-calc-brand {
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.78);
+  text-transform: uppercase;
+}
+
+.sirona-calc-model {
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.sirona-calc-display-wrap {
+  border-radius: 0.85rem;
+  padding: 0.55rem 0.6rem 0.45rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -10px 18px rgba(0, 0, 0, 0.25);
+}
+
+.sirona-calc-display {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: radial-gradient(120% 120% at 10% 0%, #17211a 0%, #0c1410 55%, #09100d 100%);
+  border-radius: 0.7rem;
+  padding: 0.7rem 0.75rem;
+  color: #c7ffd2;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  text-align: right;
+  font-size: 1.35rem;
+  box-shadow:
+    inset 0 0 0 1px rgba(199, 255, 210, 0.12),
+    inset 0 10px 18px rgba(0, 0, 0, 0.35);
+}
+
+.sirona-calc-display::placeholder {
+  color: rgba(199, 255, 210, 0.35);
+}
+
+.sirona-calc-hint {
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.sirona-calc-keys {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+
+.sirona-calc-key {
+  border: none;
+  border-radius: 0.9rem;
+  padding: 0.7rem 0.2rem;
+  font-weight: 800;
+  font-size: 1.05rem;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.92);
+  background: linear-gradient(180deg, #3a4048 0%, #2b3037 100%);
+  box-shadow:
+    0 6px 12px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+  transition:
+    transform 0.06s ease,
+    filter 0.12s ease,
+    box-shadow 0.12s ease;
+  user-select: none;
+}
+
+.sirona-calc-key:hover {
+  filter: brightness(1.07);
+}
+
+.sirona-calc-key:active {
+  transform: translateY(1px);
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.sirona-calc-key:focus-visible {
+  outline: 2px solid rgba(199, 255, 210, 0.55);
+  outline-offset: 2px;
+}
+
+.sirona-calc-key-op {
+  background: linear-gradient(180deg, #0e6b7b 0%, #084c58 100%);
+  box-shadow:
+    0 6px 12px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.sirona-calc-key-fn {
+  background: linear-gradient(180deg, #525a66 0%, #3b424d 100%);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.sirona-calc-key-eq {
+  background: linear-gradient(180deg, #1a8f4f 0%, #0f6b3a 100%);
+  color: #fff;
+}
+
 .sirona-offcanvas-nav {
   display: flex;
   flex-direction: column;
