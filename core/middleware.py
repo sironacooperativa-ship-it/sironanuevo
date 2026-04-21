@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib.auth import logout
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseRedirect
 from django.shortcuts import resolve_url
 
@@ -68,7 +69,7 @@ class VendedorAccessMiddleware:
             if perfil is None:
                 try:
                     tiene_vendedor = request.user.vendedor_perfil is not None
-                except Exception:
+                except ObjectDoesNotExist:
                     tiene_vendedor = False
                 PerfilAcceso.objects.get_or_create(
                     usuario=request.user,

@@ -628,7 +628,8 @@ def presupuesto_eliminar(request, pk: int):
                 eliminar_venta_admin(pr.venta)
             pr.delete()
     except Exception as exc:
-        messages.error(request, f"No se pudo eliminar el presupuesto: {exc}")
+        detalle = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
+        messages.error(request, "No se pudo eliminar el presupuesto." + detalle)
         return redirect("presupuesto_lista")
     messages.success(request, f"Presupuesto #{nid} eliminado.")
     return redirect("presupuesto_lista")
@@ -741,7 +742,8 @@ def presupuesto_aprobar(request, pk: int):
                 ]
             )
     except Exception as exc:
-        messages.error(request, f"No se pudo generar el pedido: {exc}")
+        detalle = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
+        messages.error(request, "No se pudo generar el pedido." + detalle)
         return redirect("presupuesto_detalle", pk=pk)
 
     messages.success(

@@ -906,9 +906,10 @@ def productos_import_excel(request):
             return redirect("productos_import_excel")
         wb = load_workbook(filename=BytesIO(raw), data_only=True)
     except Exception as exc:
+        detalle = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
         messages.error(
             request,
-            f"No se pudo leer el archivo. Comprobá que sea un .xlsx válido. Detalle: {exc}",
+            "No se pudo leer el archivo. Comprobá que sea un .xlsx válido." + detalle,
         )
         return redirect("productos_import_excel")
 

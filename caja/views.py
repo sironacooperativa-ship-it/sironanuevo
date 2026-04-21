@@ -122,7 +122,15 @@ def caja_list(request):
     if d_desde:
         saldo_previo = (
             MovimientoCaja.objects.filter(fecha__lt=d_desde)
-            .aggregate(s=Coalesce(Sum(delta_expr), Value(Decimal("0.00"))))
+            .aggregate(
+                s=Coalesce(
+                    Sum(delta_expr),
+                    Value(
+                        Decimal("0.00"),
+                        output_field=DecimalField(max_digits=14, decimal_places=2),
+                    ),
+                )
+            )
             .get("s")
             or Decimal("0.00")
         )

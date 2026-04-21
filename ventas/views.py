@@ -454,7 +454,8 @@ def venta_eliminar(request, pk: int):
     try:
         eliminar_venta_admin(venta)
     except Exception as exc:
-        messages.error(request, f"No se pudo eliminar el pedido: {exc}")
+        detalle = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
+        messages.error(request, "No se pudo eliminar el pedido." + detalle)
         return redirect("ventas_historial")
     messages.success(request, f"Pedido #{nid} eliminado (stock y caja/calendario revertidos si correspondía).")
     return redirect("ventas_historial")

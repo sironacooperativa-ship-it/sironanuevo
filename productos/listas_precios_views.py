@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -58,7 +58,7 @@ def _parse_precio(raw: str) -> Decimal | None:
         return None
     try:
         d = Decimal(s)
-    except Exception:
+    except (InvalidOperation, ValueError):
         return None
     if d < 0:
         return None

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django.core.exceptions import ObjectDoesNotExist
 from personas.models import Vendedor
 
 def vendor_mode(request):
@@ -25,7 +26,7 @@ def vendor_mode(request):
         try:
             v = user.vendedor_perfil
             has_vendedor_perfil = isinstance(v, Vendedor)
-        except Exception:
+        except ObjectDoesNotExist:
             has_vendedor_perfil = False
 
     return {

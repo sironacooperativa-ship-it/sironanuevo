@@ -221,7 +221,8 @@ def vendedor_eliminar_admin(request, pk: int):
         try:
             codigo = eliminar_vendedor_y_historial_admin(v)
         except Exception as exc:
-            messages.error(request, f"No se pudo eliminar al vendedor: {exc}")
+            detalle = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
+            messages.error(request, "No se pudo eliminar al vendedor." + detalle)
             return redirect("vendedores_list")
         messages.success(
             request,

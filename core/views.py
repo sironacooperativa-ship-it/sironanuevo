@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import connections
 from django.db.utils import OperationalError
 from django.http import HttpResponse
@@ -45,7 +46,7 @@ def _safe_get_vendedor_perfil(user) -> Vendedor | None:
     try:
         v = user.vendedor_perfil
         return v if isinstance(v, Vendedor) else None
-    except Exception:
+    except ObjectDoesNotExist:
         return None
 
 
