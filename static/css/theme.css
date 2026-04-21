@@ -565,6 +565,41 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   padding: 0.85rem 1.15rem;
 }
 
+/* Tarjeta con tabla (p. ej. pedidos pendiente): celeste + borde teal logo — reemplaza warning/naranja */
+.card.sirona-card-table-accent {
+  border-color: rgba(0, 151, 178, 0.58) !important;
+  border-width: 1px;
+}
+
+.card.sirona-card-table-accent > .card-header.sirona-card-header-table-accent {
+  background: var(--sirona-sky-soft) !important;
+  color: var(--sirona-teal-deep) !important;
+  border-bottom: 1px solid rgba(0, 151, 178, 0.38) !important;
+}
+
+.card.sirona-card-table-accent > .card-footer {
+  border-top-color: rgba(0, 151, 178, 0.28);
+  background: #fff;
+}
+
+.badge.sirona-badge-table-accent {
+  background: var(--sirona-sky) !important;
+  color: var(--sirona-teal-deep) !important;
+  font-weight: 600;
+  border: 1px solid rgba(0, 151, 178, 0.35);
+}
+
+/* Misma apariencia si alguna plantilla sigue usando Bootstrap warning en la tarjeta */
+.card.border-warning {
+  border-color: rgba(0, 151, 178, 0.58) !important;
+}
+
+.card.border-warning > .card-header.bg-warning.bg-opacity-25 {
+  background: var(--sirona-sky-soft) !important;
+  color: var(--sirona-teal-deep) !important;
+  border-bottom-color: rgba(0, 151, 178, 0.38) !important;
+}
+
 .card-body {
   padding: 1.15rem 1.25rem;
 }

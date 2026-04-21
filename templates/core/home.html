@@ -67,11 +67,11 @@
     </div>
   </div>
 
-  <div class="card shadow-sm border-warning mb-3">
-    <div class="card-header bg-warning bg-opacity-25 fw-semibold d-flex flex-wrap align-items-center gap-2">
+  <div class="card shadow-sm sirona-card-table-accent mb-3">
+    <div class="card-header sirona-card-header-table-accent fw-semibold d-flex flex-wrap align-items-center gap-2">
       <span class="me-auto">Pedidos con pago pendiente</span>
       {% if ventas_pendientes_total %}
-        <span class="badge text-bg-warning text-dark">{{ ventas_pendientes_total }} sin cobrar</span>
+        <span class="badge rounded-pill sirona-badge-table-accent">{{ ventas_pendientes_total }} sin cobrar</span>
       {% endif %}
     </div>
     <div class="card-body p-0">
