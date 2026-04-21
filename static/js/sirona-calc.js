@@ -4,6 +4,8 @@
   const root = document.getElementById("sironaCalc");
   if (!display || !root) return;
 
+  const STORAGE_KEY = "sirona_calc_value";
+
   function normalizeExpr(s) {
     return String(s || "")
       .replace(/×/g, "*")
@@ -21,9 +23,6 @@
 
   function setValue(v) {
     display.value = String(v ?? "");
-    try {
-      window.localStorage.setItem("sirona_calc_value", display.value);
-    } catch (e) {}
   }
 
   function setHistory(v) {
@@ -228,10 +227,30 @@
     } catch (e) {}
   });
 
-  try {
-    const saved = window.localStorage.getItem("sirona_calc_value");
-    if (saved) display.value = saved;
-  } catch (e) {}
+  // Al cerrar el offcanvas, resetea (y elimina cualquier valor persistido viejo).
+  root.addEventListener("hidden.bs.offcanvas", function () {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {}
+    clear();
+  });
+
+  // Si el usuario cierra sesión (clic en Salir), limpiar también.
+  document.addEventListener(
+    "click",
+    function (ev) {
+      const a = ev.target && ev.target.closest ? ev.target.closest("a[href]") : null;
+      if (!a) return;
+      const href = String(a.getAttribute("href") || "");
+      if (!href) return;
+      if (href.indexOf("/logout") === -1) return;
+      try {
+        window.localStorage.removeItem(STORAGE_KEY);
+      } catch (e) {}
+    },
+    true
+  );
+
   setHistory("");
 })();
 

@@ -23,6 +23,11 @@
       const logoutUrl = document.body && document.body.dataset ? document.body.dataset.logoutUrl : "";
       const loginUrl = document.body && document.body.dataset ? document.body.dataset.loginUrl : "";
 
+      // Limpiar estado local (ej. calculadora) al cerrar sesión.
+      try {
+        window.localStorage.removeItem("sirona_calc_value");
+      } catch (e) {}
+
       try {
         if (logoutUrl) {
           fetch(logoutUrl, { method: "GET", credentials: "same-origin", keepalive: true });
