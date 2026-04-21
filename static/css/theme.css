@@ -584,14 +584,29 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   border-bottom-width: 1px;
 }
 
-/* Encabezados de tabla (estética marca: celeste/teal) */
+/* Encabezados: celeste frío como el logo (evita tonos cálidos de .table-light de Bootstrap) */
 .table thead.table-light {
-  background: linear-gradient(180deg, var(--sirona-sky) 0%, var(--sirona-sky-soft) 100%);
+  --bs-table-color: var(--sirona-teal);
+  --bs-table-bg: #dff6fc;
+  --bs-table-border-color: rgba(0, 151, 178, 0.22);
+  background: linear-gradient(180deg, #c5ecf7 0%, #e8f8fc 100%) !important;
+  color: var(--sirona-teal);
 }
 
-.table thead.table-light th {
-  color: var(--sirona-teal-deep);
-  border-bottom-color: rgba(0, 151, 178, 0.22) !important;
+.table thead.table-light tr {
+  --bs-table-color: var(--sirona-teal);
+  --bs-table-bg: transparent;
+}
+
+.table thead.table-light th,
+.table thead.table-light td {
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: var(--sirona-teal) !important;
+  background-color: transparent !important;
+  border-bottom-color: rgba(0, 151, 178, 0.28) !important;
+  --bs-table-bg-state: transparent;
+  --bs-table-color-state: var(--sirona-teal);
 }
 
 /* Formularios */
@@ -753,9 +768,15 @@ h2.h6 {
   font-size: 0.8125rem;
 }
 
+.app-table thead.table-light th,
 .app-table thead th {
   font-weight: 600;
-  border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+  border-bottom-color: rgba(0, 151, 178, 0.28) !important;
+}
+
+.app-table thead.table-light th {
+  color: var(--sirona-teal) !important;
+  background-color: transparent !important;
 }
 
 .app-table tbody td {
