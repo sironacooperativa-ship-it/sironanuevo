@@ -12,26 +12,18 @@ DEBUG = os.environ.get("DEBUG", "0") == "1"
 
 
 def _management_command_skips_secret_check() -> bool:
-    """collectstatic/migrate durante el build de Render suelen ejecutarse sin SECRET_KEY en env."""
+    """
+    Build/start de Render: migrate, collectstatic, ensure_superuser, etc. a veces corren
+    sin SECRET_KEY aún definida. Gunicorn/uWSGI no usa manage.py → ahí sí exigimos clave larga.
+
+    Excepción: `manage.py runserver` con DEBUG=0 debe seguir exigiendo SECRET_KEY (evita prod informal).
+    """
     if len(sys.argv) < 2:
         return False
-    return sys.argv[1] in (
-        "collectstatic",
-        "migrate",
-        "makemigrations",
-        "showmigrations",
-        "squashmigrations",
-        "shell",
-        "createsuperuser",
-        "test",
-        "check",
-        "dumpdata",
-        "loaddata",
-        "flush",
-        "inspectdb",
-        "compilemessages",
-        "makemessages",
-    )
+    argv0 = (sys.argv[0] or "").replace("\\", "/")
+    if not (argv0.endswith("/manage.py") or os.path.basename(argv0) == "manage.py"):
+        return False
+    return sys.argv[1] != "runserver"
 
 
 if (
