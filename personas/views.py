@@ -6,6 +6,7 @@ from django.views.decorators.http import require_http_methods
 
 from core.comision_agg import comisiones_acumuladas_por_mes
 from core.export_utils import parse_export, pdf_response, xlsx_response
+from core.authz import staff_required
 
 from caja.models import MovimientoCaja
 from presupuestos.models import Presupuesto
@@ -17,6 +18,7 @@ from .services import eliminar_vendedor_y_historial_admin, resumen_historial_ven
 
 
 def _es_staff(user) -> bool:
+    # Legacy helper (usado en 1-2 lugares). Preferir `core.authz.is_staff_user`.
     return bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
 
 
@@ -166,7 +168,7 @@ def vendedor_update(request, pk: int):
     )
 
 
-@login_required
+@staff_required
 @require_http_methods(["POST"])
 def vendedor_delete(request, pk: int):
     v = get_object_or_404(Vendedor, pk=pk)
@@ -189,8 +191,7 @@ def vendedor_delete(request, pk: int):
     return redirect("vendedores_list")
 
 
-@login_required
-@user_passes_test(_es_staff)
+@staff_required
 @require_http_methods(["GET", "POST"])
 def vendedor_eliminar_admin(request, pk: int):
     v = get_object_or_404(Vendedor, pk=pk)
@@ -228,7 +229,7 @@ def vendedor_eliminar_admin(request, pk: int):
     )
 
 
-@login_required
+@staff_required
 @require_http_methods(["POST"])
 def vendedor_toggle(request, pk: int):
     v = get_object_or_404(Vendedor, pk=pk)
@@ -288,7 +289,7 @@ def proveedor_update(request, pk: int):
     )
 
 
-@login_required
+@staff_required
 @require_http_methods(["POST"])
 def proveedor_delete(request, pk: int):
     p = get_object_or_404(Proveedor, pk=pk)
@@ -304,7 +305,7 @@ def proveedor_delete(request, pk: int):
     return redirect("proveedores_list")
 
 
-@login_required
+@staff_required
 @require_http_methods(["POST"])
 def proveedor_toggle(request, pk: int):
     p = get_object_or_404(Proveedor, pk=pk)
@@ -408,7 +409,7 @@ def comprador_update(request, pk: int):
     )
 
 
-@login_required
+@staff_required
 @require_http_methods(["POST"])
 def comprador_delete(request, pk: int):
     c = get_object_or_404(Comprador, pk=pk)
@@ -424,7 +425,7 @@ def comprador_delete(request, pk: int):
     return redirect("compradores_list")
 
 
-@login_required
+@staff_required
 @require_http_methods(["POST"])
 def comprador_toggle(request, pk: int):
     c = get_object_or_404(Comprador, pk=pk)
