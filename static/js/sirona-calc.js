@@ -5,6 +5,7 @@
   if (!display || !root) return;
 
   const STORAGE_KEY = "sirona_calc_value";
+  let mem = null;
 
   function normalizeExpr(s) {
     return String(s || "")
@@ -64,6 +65,39 @@
   function clear() {
     setValue("");
     setHistory("");
+  }
+
+  function getCurrentNumberValue() {
+    const s = String(display.value || "").trim();
+    if (!s) return null;
+    const norm = normalizeExpr(s);
+    try {
+      if (norm.trim()) {
+        const out = safeEval(norm);
+        if (typeof out === "number" && Number.isFinite(out)) return out;
+      }
+    } catch (e) {}
+    const mNum = s.match(/(-?\d+(?:[.,]\d+)?)\s*$/);
+    if (!mNum) return null;
+    return parseFloat(mNum[1].replace(",", "."));
+  }
+
+  function replaceLastUnary(mapper) {
+    const s = String(display.value || "");
+    const mNum = s.match(/(-?\d+(?:[.,]\d+)?)\s*$/);
+    if (!mNum) return;
+    const raw = mNum[1];
+    const n = parseFloat(raw.replace(",", "."));
+    if (!Number.isFinite(n)) return;
+    const out = mapper(n);
+    if (!Number.isFinite(out)) return;
+    const rounded = Math.round(out * 1e12) / 1e12;
+    const useComma = raw.indexOf(",") >= 0;
+    let outStr = String(rounded);
+    if (useComma) outStr = outStr.replace(".", ",");
+    const before = s.slice(0, mNum.index || 0);
+    const after = s.slice((mNum.index || 0) + raw.length);
+    setValue(before + outStr + after);
   }
 
   function clearEntry() {
@@ -171,8 +205,51 @@
     if (v === "PM") return toggleSign();
     if (v === "=") return compute();
     if (v === "NOP") return;
+    if (v === "MC") {
+      mem = null;
+      return;
+    }
+    if (v === "MR") {
+      if (mem == null) return;
+      setValue(String(mem));
+      return;
+    }
+    if (v === "MS") {
+      const n = getCurrentNumberValue();
+      if (n == null) return;
+      mem = n;
+      return;
+    }
+    if (v === "M+") {
+      const n = getCurrentNumberValue();
+      if (n == null) return;
+      mem = (mem ?? 0) + n;
+      return;
+    }
+    if (v === "M-") {
+      const n = getCurrentNumberValue();
+      if (n == null) return;
+      mem = (mem ?? 0) - n;
+      return;
+    }
+    if (v === "INV") {
+      return replaceLastUnary(function (n) {
+        return n === 0 ? NaN : 1 / n;
+      });
+    }
+    if (v === "SQ") {
+      return replaceLastUnary(function (n) {
+        return n * n;
+      });
+    }
+    if (v === "SQRT") {
+      return replaceLastUnary(function (n) {
+        return n < 0 ? NaN : Math.sqrt(n);
+      });
+    }
     if (v === "÷") return append("÷");
     if (v === "×") return append("×");
+    if (v === ",") return append(",");
     if (v === ".") return append(".");
     if (v === "+") return append("+");
     if (v === "-") return append("−");
@@ -191,7 +268,12 @@
     }
     if (ev.key === ",") {
       ev.preventDefault();
-      append(".");
+      append(",");
+      return;
+    }
+    if (ev.key === ".") {
+      ev.preventDefault();
+      append(",");
       return;
     }
     if (ev.key === "Enter") {
@@ -232,6 +314,7 @@
     try {
       window.localStorage.removeItem(STORAGE_KEY);
     } catch (e) {}
+    mem = null;
     clear();
   });
 

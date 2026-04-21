@@ -392,6 +392,16 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   background: var(--cg-bg);
 }
 
+/* Calculadora: offcanvas más ancho (4 columnas) y cuerpo con aire */
+.offcanvas.sirona-offcanvas-calc,
+#sironaCalc.sirona-offcanvas {
+  width: min(404px, 96vw) !important;
+}
+
+#sironaCalc .sirona-offcanvas-body {
+  padding: 0.55rem 0.65rem 0.9rem !important;
+}
+
 .sirona-calc {
   font-family: "Segoe UI", system-ui, -apple-system, "Inter", sans-serif;
   border-radius: 0.9rem;
@@ -405,9 +415,61 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
 .sirona-calc-top {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 0.75rem;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.45rem;
+}
+
+.sirona-calc-mode {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.78);
+  letter-spacing: -0.02em;
+}
+
+.sirona-calc-mem {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+  margin-bottom: 0.05rem;
+}
+
+.sirona-calc-mem-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 0.35rem;
+  padding: 0.34rem 0.1rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: rgba(0, 0, 0, 0.76);
+  background: linear-gradient(180deg, #fafafa 0%, #e4e4e4 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset;
+  user-select: none;
+  transition:
+    transform 0.06s ease,
+    background 0.12s ease;
+}
+
+.sirona-calc-mem-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #fff 0%, #ececec 100%);
+}
+
+.sirona-calc-mem-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.sirona-calc-mem-btn:focus-visible {
+  outline: 2px solid rgba(0, 120, 212, 0.55);
+  outline-offset: 2px;
+}
+
+.sirona-calc-mem-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .sirona-calc-brand {
@@ -477,7 +539,16 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   grid-auto-rows: 3.05rem;
 }
 
+#sironaCalc .sirona-calc-keys {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 0.42rem;
+  margin-top: 0.5rem;
+  grid-auto-rows: minmax(2.85rem, auto);
+}
+
 .sirona-calc-key {
+  min-width: 0;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 0.45rem;
   padding: 0;
@@ -514,6 +585,12 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
 
 .sirona-calc-key-fn {
   background: #f0f0f0;
+}
+
+.sirona-calc-key-num {
+  background: #fdfdfd;
+  font-weight: 700;
+  font-size: 1.12rem;
 }
 
 .sirona-calc-key-eq {
