@@ -128,13 +128,13 @@
                   autocomplete="off"
                   placeholder="0"
                 />
-                <div class="sirona-calc-hint" id="sironaCalcHint">Usá + − × ÷, paréntesis y Enter.</div>
+                <div class="sirona-calc-hint" id="sironaCalcHint">Usá %, + − × ÷ y Enter.</div>
             </div>
 
             <div class="sirona-calc-keys">
                 <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="C">C</button>
-                <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="(">(</button>
-                <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc=")">)</button>
+                <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="%">%</button>
+                <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="BS">⌫</button>
                 <button class="sirona-calc-key sirona-calc-key-op" type="button" data-calc="÷">÷</button>
 
                 <button class="sirona-calc-key" type="button" data-calc="7">7</button>
@@ -152,8 +152,7 @@
                 <button class="sirona-calc-key" type="button" data-calc="3">3</button>
                 <button class="sirona-calc-key sirona-calc-key-op" type="button" data-calc="+">+</button>
 
-                <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="BS">⌫</button>
-                <button class="sirona-calc-key" type="button" data-calc="0">0</button>
+                <button class="sirona-calc-key sirona-calc-key-0" type="button" data-calc="0">0</button>
                 <button class="sirona-calc-key" type="button" data-calc=".">.</button>
                 <button class="sirona-calc-key sirona-calc-key-eq" type="button" data-calc="=">=</button>
             </div>
@@ -390,6 +389,60 @@
             setValue("");
           }
 
+          function applyPercent() {
+            // Estilo Windows:
+            // - A + B%  => A + (A*B/100)
+            // - A − B%  => A − (A*B/100)
+            // - A × B%  => A × (B/100)
+            // - A ÷ B%  => A ÷ (B/100)
+            // Si no hay operador previo, aplica n -> n/100 al último número.
+            const s = String(display.value || "");
+            const mNum = s.match(/(-?\d+(?:[.,]\d+)?)\s*$/);
+            if (!mNum) return;
+            const rightRaw = mNum[1].replace(",", ".");
+            const right = parseFloat(rightRaw);
+            if (!Number.isFinite(right)) return;
+
+            const beforeNum = s.slice(0, mNum.index || 0);
+            // Buscar último operador visible (+, −, ×, ÷) antes del número final
+            let opIdx = -1;
+            let op = "";
+            for (let i = beforeNum.length - 1; i >= 0; i--) {
+              const ch = beforeNum[i];
+              if (ch === "+" || ch === "−" || ch === "×" || ch === "÷") {
+                opIdx = i;
+                op = ch;
+                break;
+              }
+              // cortar si encontramos un número/.)? no, seguimos buscando hasta operador o inicio
+            }
+
+            // Sin operador: simple n/100
+            if (opIdx < 0) {
+              const pct = right / 100;
+              setValue(beforeNum + String(pct));
+              return;
+            }
+
+            const leftExpr = beforeNum.slice(0, opIdx);
+            const leftNorm = normalizeExpr(leftExpr);
+            let leftVal = NaN;
+            try {
+              leftVal = leftNorm.trim() ? safeEval(leftNorm) : NaN;
+            } catch (e) {
+              leftVal = NaN;
+            }
+
+            let replacement = right / 100;
+            if ((op === "+" || op === "−") && Number.isFinite(leftVal)) {
+              replacement = (leftVal * right) / 100;
+            }
+            // × y ÷ mantienen right/100 (Windows)
+
+            const fullBefore = s.slice(0, mNum.index || 0);
+            setValue(fullBefore + String(replacement));
+          }
+
           function compute() {
             const expr = normalizeExpr(display.value);
             if (!expr.trim()) return;
@@ -408,6 +461,7 @@
             if (!btn) return;
             const v = btn.getAttribute("data-calc");
             if (v === "C") return clear();
+            if (v === "%") return applyPercent();
             if (v === "BS") return backspace();
             if (v === "=") return compute();
             if (v === "÷") return append("÷");
@@ -422,6 +476,11 @@
             if (ev.key === "Enter") {
               ev.preventDefault();
               compute();
+              return;
+            }
+            if (ev.key === "%") {
+              ev.preventDefault();
+              applyPercent();
               return;
             }
           });
