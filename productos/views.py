@@ -18,6 +18,7 @@ from openpyxl import load_workbook
 from urllib.parse import urlencode
 
 from core.export_utils import parse_export, pdf_response, xlsx_response
+from core.authz import staff_required
 from core.money_decimal import format_monto_ars, q2, redondear_precio_mostrador_ars
 from core.pdf_membrete import platypus_membrete
 from personas.models import Proveedor
@@ -672,7 +673,7 @@ def producto_inline_update(request, pk: int):
     return _redirect_productos_con_filtros(request)
 
 
-@login_required
+@staff_required
 @require_http_methods(["POST"])
 def producto_delete(request, pk: int):
     producto = get_object_or_404(Producto, pk=pk)
@@ -682,7 +683,7 @@ def producto_delete(request, pk: int):
     return redirect("productos_list")
 
 
-@login_required
+@staff_required
 @require_http_methods(["POST"])
 def producto_toggle_habilitado(request, pk: int):
     producto = get_object_or_404(Producto, pk=pk)
@@ -696,7 +697,7 @@ def producto_toggle_habilitado(request, pk: int):
     return redirect("productos_list")
 
 
-@login_required
+@staff_required
 @require_http_methods(["POST"])
 def producto_toggle_lista(request, pk: int):
     producto = get_object_or_404(Producto, pk=pk)
@@ -708,7 +709,7 @@ def producto_toggle_lista(request, pk: int):
     return redirect("productos_list")
 
 
-@login_required
+@staff_required
 @require_http_methods(["POST"])
 def productos_acciones_masa(request):
     """Habilitar / deshabilitar / lista PDF sobre varios productos seleccionados."""

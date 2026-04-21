@@ -8,6 +8,7 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
+from core.authz import staff_required
 from core.export_utils import parse_export, pdf_response, xlsx_response
 
 from productos.models import Producto
@@ -25,7 +26,7 @@ def _stock_productos_queryset(request):
     return qs, q
 
 
-@login_required
+@staff_required
 @require_http_methods(["POST"])
 def stock_ajuste_inline(request):
     """Actualiza el stock disponible a mano; persiste en el producto y aplica reglas de habilitado/lista."""

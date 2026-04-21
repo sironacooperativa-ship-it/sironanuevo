@@ -8,6 +8,7 @@ from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
+from core.authz import staff_required
 from core.export_utils import parse_export, pdf_response, xlsx_response
 from core.money_decimal import q2
 from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_param
@@ -269,7 +270,7 @@ def caja_detail(request, pk: int):
     return render(request, "caja/detail.html", {"mov": mov})
 
 
-@login_required
+@staff_required
 @require_http_methods(["POST"])
 def caja_delete(request, pk: int):
     mov = get_object_or_404(MovimientoCaja, pk=pk)

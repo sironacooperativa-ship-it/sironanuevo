@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 
+from core.authz import staff_required
 from core.export_utils import parse_export
 from core.money_decimal import COMISION_PORCENTAJE_DEFECTO, format_monto_ars, parse_decimal_from_input, q2
 from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_param, parse_fecha_dashboard, rango_periodo
@@ -601,7 +602,7 @@ def presupuesto_editar(request, pk: int):
     )
 
 
-@login_required
+@staff_required
 @require_http_methods(["POST"])
 def presupuesto_eliminar(request, pk: int):
     presupuesto = get_object_or_404(Presupuesto, pk=pk)

@@ -11,6 +11,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
+from core.authz import staff_required
 from core.comision_agg import comisiones_acumuladas_por_mes
 from core.export_utils import parse_export, pdf_response, xlsx_response
 from core.money_decimal import COMISION_PORCENTAJE_DEFECTO, format_monto_ars, q2
@@ -476,7 +477,7 @@ def venta_detalle(request, pk: int):
     )
 
 
-@login_required
+@staff_required
 @require_http_methods(["POST"])
 def venta_producto_listas_precio(request, pk: int, producto_pk: int):
     """Desde la ficha del pedido: activa Farmacia (PDF) y asocia el producto a listas de rubro."""

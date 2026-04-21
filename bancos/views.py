@@ -10,6 +10,7 @@ from django.views.decorators.http import require_http_methods
 
 from caja.models import MovimientoCaja
 
+from core.authz import staff_required
 from core.export_utils import parse_export, pdf_response, xlsx_response
 
 from .forms import AjusteCuentaForm, CuentaBancariaForm, GastoTransferenciaForm
@@ -97,7 +98,7 @@ def banco_cuenta_detalle(request, pk: int):
     )
 
 
-@login_required
+@staff_required
 @require_http_methods(["POST"])
 def banco_cuenta_ajuste(request, pk: int):
     cuenta = get_object_or_404(CuentaBancaria, pk=pk)
@@ -197,7 +198,7 @@ def banco_gasto_nuevo(request):
     return render(request, "bancos/gasto_form.html", {"form": form})
 
 
-@login_required
+@staff_required
 @require_http_methods(["POST"])
 def banco_gasto_eliminar(request, pk: int):
     gasto = get_object_or_404(Gasto.objects.select_related("movimiento_caja"), pk=pk)

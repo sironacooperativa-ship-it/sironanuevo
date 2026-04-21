@@ -12,6 +12,7 @@ from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
+from core.authz import staff_required
 from core.money_decimal import q2
 
 from .models import ListaPrecioItem, ListaPrecios, Producto
@@ -145,7 +146,7 @@ def lista_precios_renombrar(request, pk: int):
     return render(request, "productos/lista_precios_renombrar.html", {"lista": lista})
 
 
-@login_required
+@staff_required
 @require_http_methods(["POST"])
 def lista_precios_eliminar(request, pk: int):
     lista = get_object_or_404(ListaPrecios, pk=pk)
