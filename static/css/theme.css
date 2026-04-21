@@ -107,10 +107,12 @@
   max-height: 26px;
 }
 
-/* Barra superior tipo iOS (vidrio + borde fino) */
-.sirona-topbar {
+/* Barra superior tipo iOS (vidrio). Gana a .navbar.bg-white de Bootstrap (misma especificidad + orden). */
+nav.navbar.sirona-topbar.bg-white {
   z-index: 1030;
+  --bs-bg-opacity: 0;
   background: rgba(255, 255, 255, 0.72) !important;
+  background-color: rgba(255, 255, 255, 0.72) !important;
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 0.5px solid rgba(60, 60, 67, 0.12) !important;

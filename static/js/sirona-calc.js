@@ -62,9 +62,25 @@
     setValue(before + after);
   }
 
+  function persistToStorage() {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, display.value);
+    } catch (e) {}
+  }
+
+  function loadFromStorage() {
+    try {
+      const v = window.localStorage.getItem(STORAGE_KEY);
+      if (v !== null) setValue(v);
+    } catch (e) {}
+  }
+
   function clear() {
     setValue("");
     setHistory("");
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {}
   }
 
   function getCurrentNumberValue() {
@@ -303,22 +319,19 @@
   });
 
   root.addEventListener("shown.bs.offcanvas", function () {
+    loadFromStorage();
     try {
       display.focus();
       display.setSelectionRange(display.value.length, display.value.length);
     } catch (e) {}
   });
 
-  // Al cerrar el offcanvas, resetea (y elimina cualquier valor persistido viejo).
+  // Al ocultar el panel: guardar el número (localStorage). No borrar memoria en RAM.
   root.addEventListener("hidden.bs.offcanvas", function () {
-    try {
-      window.localStorage.removeItem(STORAGE_KEY);
-    } catch (e) {}
-    mem = null;
-    clear();
+    persistToStorage();
   });
 
-  // Si el usuario cierra sesión (clic en Salir), limpiar también.
+  // Cerrar sesión (enlace Salir): borrar valor guardado para que vuelva a cero al próximo login.
   document.addEventListener(
     "click",
     function (ev) {
@@ -330,10 +343,14 @@
       try {
         window.localStorage.removeItem(STORAGE_KEY);
       } catch (e) {}
+      mem = null;
+      setValue("");
+      setHistory("");
     },
     true
   );
 
+  loadFromStorage();
   setHistory("");
 })();
 
