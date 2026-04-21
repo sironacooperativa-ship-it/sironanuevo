@@ -30,10 +30,12 @@
             </a>
             <div class="d-flex align-items-center gap-3">
               <span class="small text-muted d-none d-md-inline">{{ request.user.username }}</span>
-              {% if (not request.user.perfil_acceso or not request.user.perfil_acceso.solo_vendedor) and has_vendedor_perfil %}
-                <a class="btn btn-sm btn-outline-secondary" href="{% url 'switch_to_full_mode' %}" title="Volver al sistema completo">
-                  Volver al modo completo
-                </a>
+              {% if has_vendedor_perfil %}
+                {% if not request.user.perfil_acceso or not request.user.perfil_acceso.solo_vendedor %}
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'switch_to_full_mode' %}" title="Volver al sistema completo">
+                    Volver al modo completo
+                  </a>
+                {% endif %}
               {% endif %}
               <button
                 class="btn app-icon-btn"
@@ -71,10 +73,12 @@
             </a>
             <div class="d-flex align-items-center gap-3">
               <span class="small text-muted d-none d-md-inline">{{ request.user.username }}</span>
-              {% if (not request.user.perfil_acceso or not request.user.perfil_acceso.solo_vendedor) and has_vendedor_perfil %}
-                <a class="btn btn-sm btn-outline-primary" href="{% url 'switch_to_vendor_mode' %}" title="Cambiar a modo vendedor">
-                  Cambiar a modo vendedor
-                </a>
+              {% if has_vendedor_perfil %}
+                {% if not request.user.perfil_acceso or not request.user.perfil_acceso.solo_vendedor %}
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'switch_to_vendor_mode' %}" title="Cambiar a modo vendedor">
+                    Cambiar a modo vendedor
+                  </a>
+                {% endif %}
               {% endif %}
               <button
                 class="btn app-icon-btn"
