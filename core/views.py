@@ -79,10 +79,10 @@ def home(request):
             )
             kpis["neto_total"] = q2(kpis["neto_total"])
 
-            pendientes = (
+            pendientes = list(
                 Venta.objects.filter(vendedor_id=v.pk, estado=Venta.Estado.PENDIENTE)
                 .select_related("comprador")
-                .order_by("fecha_vencimiento_pago", "id")[:25]
+                .order_by("-creado_en", "-id")[:80]
             )
             return render(
                 request,
@@ -97,11 +97,11 @@ def home(request):
     prox_90 = today + timedelta(days=90)
     prox_180 = today + timedelta(days=180)
 
-    pendientes = (
-        Venta.objects.filter(estado=Venta.Estado.PENDIENTE)
-        .select_related("vendedor")
-        .order_by("fecha_vencimiento_pago", "id")[:25]
+    pendientes_qs = Venta.objects.filter(estado=Venta.Estado.PENDIENTE).select_related(
+        "vendedor", "comprador"
     )
+    ventas_pendientes_total = pendientes_qs.count()
+    pendientes = list(pendientes_qs.order_by("-creado_en", "-id")[:80])
 
     neto_expr = ExpressionWrapper(
         F("subtotal_lineas") - F("descuento_monto"),
@@ -211,6 +211,7 @@ def home(request):
         {
             "resumen": resumen,
             "ventas_pendientes": pendientes,
+            "ventas_pendientes_total": ventas_pendientes_total,
             "kpis_ventas": kpis_ventas,
             "kpis_compras": kpis_compras,
             "recordatorios": recordatorios,

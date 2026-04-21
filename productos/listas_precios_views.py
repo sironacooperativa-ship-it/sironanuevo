@@ -11,11 +11,13 @@ from django.db.models import Q
 from django.http import HttpResponseForbidden
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from core.authz import staff_required
-from core.money_decimal import q2
+from core.money_decimal import format_monto_ars, q2
 
+from .lista_precios_pdf import filas_lista_precios, lista_precios_pdf_file_response
 from .models import ListaPrecioItem, ListaPrecios, Producto
 
 # Borrador de nombre para el paso de confirmación al crear una lista nueva (session key).
@@ -297,5 +299,85 @@ def lista_precios_trabajar(request, pk: int):
             "q": q,
             "page_obj": page_obj,
             "page_disp_obj": page_disp_obj,
+        },
+    )
+
+
+@login_required
+@require_http_methods(["GET"])
+def lista_precios_ver(request, pk: int):
+    """Vista de solo lectura con membrete y enlaces a exportar PDF/PNG."""
+    lista = get_object_or_404(ListaPrecios, pk=pk)
+    q = (request.GET.get("q") or "").strip()
+    page = (request.GET.get("page") or "").strip()
+    emitido_en = timezone.localtime()
+
+    if lista.es_farmacia:
+        qs = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
+        if q:
+            qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
+        paginator = Paginator(qs, 120)
+        page_obj = paginator.get_page(page or 1)
+        return render(
+            request,
+            "productos/lista_precios_ver.html",
+            {
+                "lista": lista,
+                "es_farmacia": True,
+                "productos": list(page_obj),
+                "page_obj": page_obj,
+                "q": q,
+                "emitido_en": emitido_en,
+            },
+        )
+
+    items = (
+        ListaPrecioItem.objects.filter(lista=lista)
+        .select_related("producto")
+        .order_by("producto__descripcion", "producto__codigo")
+    )
+    if q:
+        items = items.filter(
+            Q(producto__descripcion__icontains=q) | Q(producto__codigo__icontains=q)
+        )
+    paginator = Paginator(items, 120)
+    page_obj = paginator.get_page(page or 1)
+    return render(
+        request,
+        "productos/lista_precios_ver.html",
+        {
+            "lista": lista,
+            "es_farmacia": False,
+            "items": list(page_obj),
+            "page_obj": page_obj,
+            "q": q,
+            "emitido_en": emitido_en,
+        },
+    )
+
+
+@login_required
+@require_http_methods(["GET"])
+def lista_precios_export_pdf(request, pk: int):
+    lista = get_object_or_404(ListaPrecios, pk=pk)
+    return lista_precios_pdf_file_response(lista=lista)
+
+
+@login_required
+@require_http_methods(["GET"])
+def lista_precios_export_png(request, pk: int):
+    lista = get_object_or_404(ListaPrecios, pk=pk)
+    filas = filas_lista_precios(lista)
+    payload = [
+        {"codigo": p.codigo, "descripcion": p.descripcion, "precio": format_monto_ars(precio)}
+        for p, precio in filas
+    ]
+    return render(
+        request,
+        "productos/lista_precios_compartir.html",
+        {
+            "lista": lista,
+            "titulo": f"Lista de precios — {lista.nombre}",
+            "productos": payload,
         },
     )

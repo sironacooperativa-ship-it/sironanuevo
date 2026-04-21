@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import timedelta
 from decimal import Decimal
-from io import BytesIO
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -24,18 +23,12 @@ from presupuestos.models import Presupuesto, PresupuestoLinea, presupuesto_tiene
 from presupuestos.presupuesto_pdf import presupuesto_pdf_response
 from presupuestos.share_utils import contexto_compartir_presupuesto
 from presupuestos.views import _lineas_presupuesto_desde_post, _productos_payload, _validar_lineas_post
+from productos.lista_precios_pdf import filas_lista_precios, lista_precios_pdf_file_response
 from productos.models import ListaPrecioItem, ListaPrecios, Producto
 from core.money_decimal import format_monto_ars
-from core.pdf_membrete import platypus_membrete
 from ventas.models import Venta
 from ventas.servicios import unpack_linea_spec
 from caja.models import MovimientoCaja
-
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.units import mm
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 
 def _get_vendedor_from_user(user) -> Vendedor | None:
     if not user or not user.is_authenticated:
@@ -300,72 +293,6 @@ def _get_lista_precios_por_slug(slug: str) -> ListaPrecios | None:
     return ListaPrecios.objects.filter(slug=s).first()
 
 
-def _filas_lista_precios(lista: ListaPrecios) -> list[tuple[Producto, "Decimal"]]:
-    if lista.es_farmacia:
-        qs = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
-            "descripcion", "codigo"
-        )
-        return [(p, p.precio_venta) for p in qs]
-    items = (
-        ListaPrecioItem.objects.filter(lista=lista, producto__habilitado=True)
-        .select_related("producto")
-        .order_by("producto__descripcion", "producto__codigo")
-    )
-    return [(i.producto, i.precio_venta) for i in items]
-
-
-def _build_lista_precios_pdf(*, titulo: str, filas: list[tuple[Producto, "Decimal"]]) -> HttpResponse:
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=A4,
-        rightMargin=14 * mm,
-        leftMargin=14 * mm,
-        topMargin=12 * mm,
-        bottomMargin=12 * mm,
-    )
-    styles = getSampleStyleSheet()
-    story = platypus_membrete(titulo, doc.width, styles)
-
-    headers = ["Código", "Descripción", "Precio"]
-    data = [headers]
-    for p, precio in filas:
-        desc = p.descripcion
-        if len(desc) > 110:
-            desc = desc[:107] + "..."
-        data.append([p.codigo, desc, format_monto_ars(precio)])
-
-    if len(data) == 1:
-        data.append(["—", "—", "—"])
-
-    tw = doc.width
-    col_w = [tw * 0.16, tw * 0.58, tw * 0.26]
-    t = Table(data, colWidths=col_w, repeatRows=1)
-    t.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0097B2")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cccccc")),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f0f9fb")]),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("ALIGN", (0, 1), (0, -1), "LEFT"),
-                ("ALIGN", (-1, 1), (-1, -1), "RIGHT"),
-            ]
-        )
-    )
-    story.append(t)
-    doc.build(story)
-    buffer.seek(0)
-
-    fecha = timezone.localtime().strftime("%d-%m-%Y")
-    safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in titulo)[:60]
-    filename = f"{safe}_{fecha}.pdf"
-    return FileResponse(buffer, as_attachment=True, filename=filename, content_type="application/pdf")
-
-
 @login_required
 def vendedor_listas(request):
     vendedor = _get_vendedor_from_user(request.user)
@@ -399,8 +326,7 @@ def vendedor_lista_pdf(request, slug: str):
     lista = _get_lista_precios_por_slug(slug)
     if lista is None:
         return HttpResponseBadRequest("Lista no válida o no configurada.")
-    filas = _filas_lista_precios(lista)
-    return _build_lista_precios_pdf(titulo=f"Lista de precios — {lista.nombre}", filas=filas)
+    return lista_precios_pdf_file_response(lista=lista)
 
 
 @login_required
@@ -412,7 +338,7 @@ def vendedor_lista_png(request, slug: str):
     lista = _get_lista_precios_por_slug(slug)
     if lista is None:
         return HttpResponseBadRequest("Lista no válida o no configurada.")
-    filas = _filas_lista_precios(lista)
+    filas = filas_lista_precios(lista)
     payload = [
         {"codigo": p.codigo, "descripcion": p.descripcion, "precio": format_monto_ars(precio)}
         for p, precio in filas

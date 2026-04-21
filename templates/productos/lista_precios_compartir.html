@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+      <h1 class="h5 mb-1">{{ titulo }}</h1>
+      <div class="text-muted small">Generá un PNG para compartir por WhatsApp (o descargá el PDF).</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'lista_precios_ver' lista.pk %}">Volver a la vista</a>
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'lista_precios_export_pdf' lista.pk %}">PDF</a>
+    </div>
+  </div>
+
+  {{ productos|json_script:"lp-productos" }}
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-4">
+          <label class="form-label">Página</label>
+          <input type="number" class="form-control" id="inpPage" min="1" value="1" />
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">Filas por página</label>
+          <input type="number" class="form-control" id="inpPageSize" min="10" max="60" value="35" />
+        </div>
+        <div class="col-12 col-md-4 d-grid">
+          <button class="btn btn-primary" type="button" id="btnRender" style="background: #0097b2; border-color: #007a91">Generar</button>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        <button class="btn btn-outline-primary" type="button" id="btnDownload" disabled>Descargar PNG</button>
+        <button class="btn btn-outline-secondary" type="button" id="btnShare" disabled>Compartir</button>
+      </div>
+      <div class="text-muted small mt-2" id="meta"></div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <div class="text-muted small mb-2">Vista previa</div>
+      <canvas id="cnv" style="max-width: 100%; height: auto; border: 1px solid #eee"></canvas>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const productosEl = document.getElementById("lp-productos");
+      const productos = productosEl ? JSON.parse(productosEl.textContent) : [];
+      const cnv = document.getElementById("cnv");
+      const meta = document.getElementById("meta");
+      const btnRender = document.getElementById("btnRender");
+      const btnDownload = document.getElementById("btnDownload");
+      const btnShare = document.getElementById("btnShare");
+      const inpPage = document.getElementById("inpPage");
+      const inpPageSize = document.getElementById("inpPageSize");
+
+      let lastBlob = null;
+
+      function clamp(n, a, b) {
+        n = Number(n || 0);
+        if (!Number.isFinite(n)) n = a;
+        return Math.max(a, Math.min(b, n));
+      }
+
+      function render() {
+        const pageSize = clamp(inpPageSize.value, 10, 60);
+        const pages = Math.max(1, Math.ceil(productos.length / pageSize));
+        const page = clamp(inpPage.value, 1, pages);
+        inpPage.value = String(page);
+
+        const start = (page - 1) * pageSize;
+        const chunk = productos.slice(start, start + pageSize);
+
+        const w = 1080;
+        const pad = 48;
+        const headerH = 150;
+        const rowH = 54;
+        const h = headerH + pad + Math.max(1, chunk.length) * rowH + pad;
+        cnv.width = w;
+        cnv.height = h;
+        const ctx = cnv.getContext("2d");
+        if (!ctx) return;
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = "#0097B2";
+        ctx.fillRect(0, 0, w, headerH);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 42px system-ui, -apple-system, Segoe UI, Arial";
+        ctx.fillText("{{ titulo|escapejs }}", pad, 62);
+        ctx.font = "26px system-ui, -apple-system, Segoe UI, Arial";
+        const fecha = new Date().toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
+        ctx.fillText("Emitido: " + fecha + "  ·  Página " + page + "/" + pages, pad, 112);
+
+        let y = headerH + 18;
+        ctx.fillStyle = "#505050";
+        ctx.font = "22px system-ui, -apple-system, Segoe UI, Arial";
+        ctx.fillText("Código", pad, y + 22);
+        ctx.fillText("Descripción", pad + 210, y + 22);
+        ctx.textAlign = "right";
+        ctx.fillText("Precio", w - pad - 10, y + 22);
+        ctx.textAlign = "left";
+        y += 42;
+        ctx.strokeStyle = "#dcdcdc";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(pad, y);
+        ctx.lineTo(w - pad, y);
+        ctx.stroke();
+        y += 18;
+
+        ctx.font = "26px system-ui, -apple-system, Segoe UI, Arial";
+        for (let i = 0; i < chunk.length; i++) {
+          const p = chunk[i];
+          if (i % 2 === 1) {
+            ctx.fillStyle = "#f0f9fb";
+            ctx.fillRect(0, y - 8, w, rowH);
+          }
+          ctx.fillStyle = "#1e1e1e";
+          ctx.fillText(String(p.codigo || ""), pad, y + 30);
+          let desc = String(p.descripcion || "");
+          if (desc.length > 42) desc = desc.slice(0, 39) + "...";
+          ctx.fillText(desc, pad + 210, y + 30);
+          ctx.textAlign = "right";
+          ctx.fillText(String(p.precio || ""), w - pad - 10, y + 30);
+          ctx.textAlign = "left";
+          y += rowH;
+        }
+
+        meta.textContent =
+          "Productos: " + productos.length + " · Página " + page + "/" + pages + " · Filas: " + chunk.length;
+
+        btnDownload.disabled = false;
+        btnShare.disabled = false;
+        lastBlob = null;
+      }
+
+      function canvasToBlob() {
+        return new Promise((resolve) => {
+          cnv.toBlob((b) => resolve(b), "image/png");
+        });
+      }
+
+      btnRender.addEventListener("click", render);
+
+      btnDownload.addEventListener("click", async function () {
+        const blob = lastBlob || (lastBlob = await canvasToBlob());
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "{{ lista.slug|escapejs }}.png";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      });
+
+      btnShare.addEventListener("click", async function () {
+        const blob = lastBlob || (lastBlob = await canvasToBlob());
+        if (!blob) return;
+        const file = new File([blob], "{{ lista.slug|escapejs }}.png", { type: "image/png" });
+        if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+          try {
+            await navigator.share({ title: "Lista de precios", files: [file] });
+            return;
+          } catch (e) {}
+        }
+        alert("Tu navegador no permite compartir archivos directo. Usá 'Descargar PNG' y compartilo desde el teléfono.");
+      });
+
+      render();
+    })();
+  </script>
+{% endblock %}

@@ -1,40 +1,40 @@
-/* SIRONA — estética inspirada en ChatGPT: lateral claro, tipografía sobria, acentos oscuros */
+/* SIRONA — estética inspirada en iOS: grupos claros, barra con vidrio, acento sistema */
 :root {
-  /* Marca (acentos suaves en enlaces / detalles) */
+  /* Marca (tablas / enlaces cooperativa) */
   --sirona-teal: #0097b2;
   --sirona-teal-dark: #007a91;
   --sirona-teal-deep: #005f72;
   --sirona-sky: #c7f1f9;
   --sirona-sky-soft: #e8f8fc;
 
-  /* Superficie tipo ChatGPT (claro) */
-  --cg-bg: #f9f9f9;
+  /* Superficie tipo iOS (grouped + sheets) */
+  --cg-bg: #f2f2f7;
   --cg-surface: #ffffff;
-  --cg-border: #e5e5e5;
-  --cg-border-strong: #d0d0d0;
-  --cg-text: #0d0d0d;
-  --cg-muted: #6e6e6e;
-  --cg-hover: rgba(0, 0, 0, 0.06);
-  --cg-accent: #111111;
-  --cg-accent-hover: #2a2a2a;
+  --cg-border: rgba(60, 60, 67, 0.14);
+  --cg-border-strong: rgba(60, 60, 67, 0.22);
+  --cg-text: #1c1c1e;
+  --cg-muted: rgba(60, 60, 67, 0.62);
+  --cg-hover: rgba(60, 60, 67, 0.08);
+  --cg-accent: #007aff;
+  --cg-accent-hover: #0066d6;
 
   --sirona-text: var(--cg-text);
   --sirona-muted: var(--cg-muted);
   --sirona-page: var(--cg-bg);
 
-  --app-radius-sm: 0.45rem;
-  --app-radius: 0.5rem;
-  --app-radius-lg: 0.75rem;
-  --app-radius-xl: 1rem;
-  --app-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --app-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-  --app-transition: 0.18s ease;
+  --app-radius-sm: 0.5rem;
+  --app-radius: 0.65rem;
+  --app-radius-lg: 0.9rem;
+  --app-radius-xl: 1.125rem;
+  --app-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --app-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --app-transition: 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
 
-  --app-topbar-h: 3.25rem;
+  --app-topbar-h: 0rem;
   --app-sidebar-w: 272px;
 
   --bs-primary: var(--cg-accent);
-  --bs-primary-rgb: 17, 17, 17;
+  --bs-primary-rgb: 0, 122, 255;
   --bs-link-color: var(--sirona-teal-dark);
   --bs-link-hover-color: var(--sirona-teal);
   --bs-body-bg: var(--cg-bg);
@@ -47,7 +47,17 @@
 }
 
 .app-body {
-  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    "Inter",
+    system-ui,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
@@ -63,8 +73,9 @@
 
 @media (min-width: 768px) {
   .app-main {
-    border-radius: var(--app-radius-lg);
+    border-radius: var(--app-radius-xl);
     box-shadow: var(--app-shadow-sm);
+    border: 1px solid rgba(60, 60, 67, 0.08);
     padding-left: 1.5rem !important;
     padding-right: 1.5rem !important;
     margin-top: 0.5rem;
@@ -83,28 +94,7 @@
   }
 }
 
-/* Barra superior */
-.app-topbar {
-  position: sticky;
-  top: 0;
-  z-index: 1030;
-  background: var(--cg-surface);
-  border-color: var(--cg-border) !important;
-  padding-top: 0.45rem;
-  padding-bottom: 0.45rem;
-  min-height: var(--app-topbar-h);
-}
-
-.app-topbar .navbar-brand {
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--cg-text) !important;
-}
-
-.app-topbar-user {
-  color: var(--cg-muted);
-  font-weight: 500;
-}
+/* Barra superior (removida) */
 
 .brand-logo {
   max-height: 40px;
@@ -117,12 +107,32 @@
   max-height: 26px;
 }
 
+/* Barra superior tipo iOS (vidrio). Gana a .navbar.bg-white de Bootstrap (misma especificidad + orden). */
+nav.navbar.sirona-topbar.bg-white {
+  z-index: 1030;
+  --bs-bg-opacity: 0;
+  background: rgba(255, 255, 255, 0.72) !important;
+  background-color: rgba(255, 255, 255, 0.72) !important;
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid rgba(60, 60, 67, 0.12) !important;
+  box-shadow: none !important;
+}
+
+.sirona-topbar .navbar-brand {
+  padding: 0;
+}
+
+.sirona-topbar .brand-logo {
+  max-height: 28px;
+}
+
 /* Botón icono (menú / cerrar lateral) */
 .app-icon-btn {
   color: var(--cg-text);
   background: transparent;
   border: none;
-  border-radius: var(--app-radius);
+  border-radius: 0.65rem;
   padding: 0.35rem 0.5rem;
   line-height: 1;
   transition: background var(--app-transition);
@@ -154,8 +164,8 @@
   --bs-btn-border-color: var(--cg-accent);
   --bs-btn-hover-bg: var(--cg-accent-hover);
   --bs-btn-hover-border-color: var(--cg-accent-hover);
-  --bs-btn-active-bg: #000;
-  --bs-btn-active-border-color: #000;
+  --bs-btn-active-bg: #0051b3;
+  --bs-btn-active-border-color: #0051b3;
   font-weight: 600;
   border-radius: 999px;
   padding: 0.35rem 1rem;
@@ -185,7 +195,7 @@
   position: fixed;
   left: 0;
   right: 0;
-  top: var(--app-topbar-h);
+  top: 0;
   bottom: 0;
   background: rgba(15, 15, 15, 0.32);
   z-index: 1018;
@@ -194,7 +204,7 @@
 
 @media (max-width: 991.98px) {
   body:not(.app-sidebar-collapsed) .app-sidebar-backdrop {
-    display: block;
+    display: none;
   }
 }
 
@@ -205,7 +215,7 @@ aside#appSidebar.app-sidebar-fixed,
   position: fixed !important;
   left: 0 !important;
   right: auto !important;
-  top: var(--app-topbar-h) !important;
+  top: 0 !important;
   bottom: 0 !important;
   width: var(--app-sidebar-w) !important;
   max-width: min(var(--app-sidebar-w), 100vw) !important;
@@ -222,20 +232,38 @@ aside#appSidebar.app-sidebar-fixed,
   box-sizing: border-box;
 }
 
+/* Botón hamburguesa removido: se deja el menú fijo */
+
+.app-sidebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.app-sidebar-logo {
+  width: 60%;
+  max-width: 170px;
+  height: auto;
+  max-height: 60px;
+}
+
 body.app-sidebar-collapsed .app-sidebar-fixed {
-  transform: translateX(-100%);
+  transform: translateX(0);
 }
 
 /* Evita que un borde invisible capture clics cuando el panel está oculto (escritorio) */
 @media (min-width: 992px) {
   body.app-sidebar-collapsed .app-sidebar-fixed {
-    pointer-events: none;
+    pointer-events: auto;
   }
 }
 
 @media (max-width: 991.98px) {
   body:not(.app-sidebar-collapsed) .app-sidebar-fixed {
-    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.1);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.06);
   }
 }
 
@@ -257,10 +285,7 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   color: var(--cg-text);
 }
 
-.app-sidebar-pin svg {
-  width: 1.25rem;
-  height: 1.25rem;
-}
+/* Flecha de colapsar removida */
 
 /* Lista vertical estricta: una fila por ítem, sin wrap horizontal */
 .app-sidebar-nav {
@@ -277,6 +302,8 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
+
+/* Footer removido (Salir va como opción del menú) */
 
 .app-sidebar-link {
   display: flex;
@@ -345,6 +372,58 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   background: rgba(0, 0, 0, 0.07);
 }
 
+.app-sidebar-link-logout .app-sidebar-label {
+  color: #b42318;
+}
+
+.app-sidebar-link-logout:hover .app-sidebar-label,
+.app-sidebar-link-logout:focus .app-sidebar-label {
+  color: #7f1d1d;
+}
+
+.app-sidebar-link-logout .app-sidebar-icon-wrap {
+  color: #b42318;
+}
+
+/* Panel lateral (offcanvas) — hoja iOS */
+.sirona-offcanvas {
+  width: min(300px, 92vw) !important;
+  border-right: 1px solid var(--cg-border);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.sirona-offcanvas-header {
+  padding: 0.65rem 0.75rem;
+  background: rgba(255, 255, 255, 0.55);
+  border-bottom: 0.5px solid var(--cg-border) !important;
+}
+
+.sirona-offcanvas-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: -0.02em;
+  color: var(--cg-text);
+}
+
+.sirona-offcanvas-body {
+  padding: 0.5rem 0.55rem 1rem !important;
+  background: var(--cg-bg);
+}
+
+/* Estilos de la calculadora: static/css/sirona-calc.css (+ respaldo en base.html) */
+
+.sirona-offcanvas-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.sirona-offcanvas .app-sidebar-link {
+  border-radius: var(--app-radius);
+}
+
 /* Contenido principal: menú offcanvas (sin rail fijo; sin margen lateral). */
 .app-content-area {
   margin-left: 0;
@@ -352,6 +431,7 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   transition: margin-left 0.22s ease;
 }
 
+/* Login / páginas sin sesión: evita hueco a la izquierda si quedó CSS antiguo (p. ej. staticfiles con rail). */
 .app-guest .app-content-area {
   margin-left: 0 !important;
 }
@@ -375,10 +455,10 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--cg-accent);
+  background: linear-gradient(180deg, #0a84ff 0%, #007aff 100%);
   color: #fff;
   border: none;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.4);
   opacity: 0;
   transform: translateY(8px);
   pointer-events: none;
@@ -413,7 +493,7 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   gap: 0.4rem;
   line-height: 1.2;
   font-weight: 600;
-  border-radius: var(--app-radius);
+  border-radius: var(--app-radius-lg);
   padding: 0.42rem 0.85rem;
   transition:
     background var(--app-transition),
@@ -433,16 +513,16 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   --bs-btn-border-color: var(--cg-accent);
   --bs-btn-hover-bg: var(--cg-accent-hover);
   --bs-btn-hover-border-color: var(--cg-accent-hover);
-  --bs-btn-active-bg: #000;
-  --bs-btn-active-border-color: #000;
-  --bs-btn-focus-shadow-rgb: 17, 17, 17;
+  --bs-btn-active-bg: #0051b3;
+  --bs-btn-active-border-color: #0051b3;
+  --bs-btn-focus-shadow-rgb: 0, 122, 255;
   color: #fff;
   font-weight: 600;
 }
 
 .btn-primary:hover {
   color: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 12px rgba(0, 122, 255, 0.35);
 }
 
 .btn-outline-primary {
@@ -463,12 +543,13 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   font-weight: 500;
 }
 
-/* Cards */
+/* Cards — agrupación tipo lista iOS */
 .card {
   border: 1px solid var(--cg-border);
-  border-radius: var(--app-radius-lg);
+  border-radius: var(--app-radius-xl);
   overflow: hidden;
   background: var(--cg-surface);
+  box-shadow: var(--app-shadow-sm);
 }
 
 .card.shadow-sm {
@@ -478,7 +559,7 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
 .card-header {
   font-weight: 600;
   letter-spacing: -0.02em;
-  background: #fafafa;
+  background: rgba(242, 242, 247, 0.85);
   border-bottom-color: var(--cg-border);
   color: var(--cg-text);
   padding: 0.85rem 1.15rem;
@@ -493,7 +574,43 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
 }
 
 .table {
-  --bs-table-hover-bg: rgba(0, 0, 0, 0.03);
+  --sirona-table-line: rgba(0, 151, 178, 0.42);
+  --sirona-table-line-strong: rgba(0, 151, 178, 0.62);
+  --bs-table-border-color: var(--sirona-table-line);
+  --bs-table-hover-bg: rgba(0, 151, 178, 0.07);
+  border-collapse: collapse;
+}
+
+/* Grilla con bordes color logo; encabezado celeste; cuerpo blanco (área principal y modales) */
+.app-main .table,
+.sirona-modal .table {
+  --bs-table-bg: #ffffff;
+  --bs-table-color: var(--cg-text);
+  border: 1px solid var(--sirona-table-line-strong);
+  border-radius: var(--app-radius-sm);
+  overflow: hidden;
+}
+
+.app-main .table > :not(caption) > * > *,
+.sirona-modal .table > :not(caption) > * > * {
+  border: 1px solid var(--sirona-table-line) !important;
+}
+
+.app-main .table tbody > tr > *,
+.sirona-modal .table tbody > tr > * {
+  background-color: #ffffff !important;
+  --bs-table-bg-state: #ffffff;
+}
+
+.app-main .table.table-striped > tbody > tr:nth-of-type(odd) > *,
+.sirona-modal .table.table-striped > tbody > tr:nth-of-type(odd) > * {
+  --bs-table-bg-type: #ffffff;
+  background-color: #ffffff !important;
+}
+
+.app-main .table.table-hover > tbody > tr:hover > *,
+.sirona-modal .table.table-hover > tbody > tr:hover > * {
+  background-color: rgba(0, 151, 178, 0.08) !important;
 }
 
 .table thead th {
@@ -501,6 +618,40 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   font-size: 0.78rem;
   color: var(--cg-muted);
   border-bottom-width: 1px;
+}
+
+/* Encabezado: relleno celeste marca, texto y bordes azul verdoso */
+.table thead.table-light {
+  --bs-table-color: var(--sirona-teal-deep);
+  --bs-table-bg: var(--sirona-sky-soft);
+  --bs-table-border-color: var(--sirona-table-line, rgba(0, 151, 178, 0.42));
+  background-color: var(--sirona-sky-soft) !important;
+  color: var(--sirona-teal-deep);
+}
+
+.table thead.table-light > tr {
+  --bs-table-color: var(--sirona-teal-deep);
+  --bs-table-bg: var(--sirona-sky-soft);
+}
+
+.table thead.table-light th,
+.table thead.table-light td {
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: var(--sirona-teal-deep) !important;
+  background-color: var(--sirona-sky-soft) !important;
+  background-image: none !important;
+  border-color: var(--sirona-table-line-strong) !important;
+  --bs-table-bg-state: var(--sirona-sky-soft);
+  --bs-table-color-state: var(--sirona-teal-deep);
+}
+
+.table thead > tr.table-light th,
+.table thead > tr.table-light td {
+  color: var(--sirona-teal-deep) !important;
+  background-color: var(--sirona-sky-soft) !important;
+  background-image: none !important;
+  border-color: var(--sirona-table-line-strong) !important;
 }
 
 /* Formularios */
@@ -516,8 +667,8 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
 
 .form-control:focus,
 .form-select:focus {
-  border-color: rgba(0, 0, 0, 0.35);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 122, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.18);
 }
 
 .form-label {
@@ -576,7 +727,7 @@ h2.h6 {
 
 .page-heading {
   color: var(--cg-text);
-  border-left: 3px solid var(--cg-accent);
+  border-left: 3px solid rgba(0, 122, 255, 0.65);
   padding-left: 0.85rem;
   border-radius: 2px;
 }
@@ -602,7 +753,7 @@ h2.h6 {
 }
 
 .login-card-wrap .card {
-  border-top: 3px solid var(--cg-accent);
+  border-top: 3px solid rgba(0, 122, 255, 0.75);
   box-shadow: var(--app-shadow);
 }
 
@@ -638,7 +789,7 @@ h2.h6 {
 }
 
 .form-check.form-switch.sirona-switch .form-check-input:focus {
-  box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.12);
+  box-shadow: 0 0 0 0.2rem rgba(0, 122, 255, 0.28);
 }
 
 .form-check.form-switch.sirona-switch .form-check-input:disabled {
@@ -662,18 +813,26 @@ h2.h6 {
   font-size: 0.8125rem;
 }
 
+.app-table thead.table-light th,
 .app-table thead th {
   font-weight: 600;
-  border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+  border-bottom-color: rgba(0, 151, 178, 0.35) !important;
+}
+
+.app-table thead.table-light th {
+  color: var(--sirona-teal-deep) !important;
+  background-color: var(--sirona-sky-soft) !important;
+  background-image: none !important;
 }
 
 .app-table tbody td {
   padding-top: 0.45rem;
   padding-bottom: 0.45rem;
+  background-color: #ffffff !important;
 }
 
 .app-table-row:hover td {
-  background-color: rgba(0, 0, 0, 0.025);
+  background-color: rgba(0, 151, 178, 0.08) !important;
 }
 
 .app-pill {
@@ -697,9 +856,10 @@ h2.h6 {
 }
 
 .sirona-modal .modal-content {
-  border-radius: 1rem;
+  border-radius: 1.125rem;
   overflow: hidden;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.16);
+  border: 1px solid rgba(60, 60, 67, 0.1);
 }
 
 .sirona-modal-dialog {
@@ -715,4 +875,39 @@ h2.h6 {
   .sirona-modal-dialog {
     margin: 0.35rem auto;
   }
+}
+
+/* Historial de pedidos: estado y acciones con íconos */
+.ventas-hist-pendiente-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.28rem;
+  height: 1.28rem;
+  border-radius: 50%;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+  background: var(--bs-warning);
+  color: #1c1c1e;
+}
+
+.ventas-hist-pagada-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.28rem;
+  height: 1.28rem;
+  border-radius: 50%;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  background: var(--bs-success);
+  color: #fff;
+}
+
+td .ventas-hist-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
 }
