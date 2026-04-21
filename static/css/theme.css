@@ -609,43 +609,9 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
 }
 
 .table {
-  --sirona-table-line: rgba(0, 151, 178, 0.42);
-  --sirona-table-line-strong: rgba(0, 151, 178, 0.62);
-  --bs-table-border-color: var(--sirona-table-line);
-  --bs-table-hover-bg: rgba(0, 151, 178, 0.07);
-  border-collapse: collapse;
-}
-
-/* Grilla con bordes color logo; encabezado celeste; cuerpo blanco (área principal y modales) */
-.app-main .table,
-.sirona-modal .table {
-  --bs-table-bg: #ffffff;
-  --bs-table-color: var(--cg-text);
-  border: 1px solid var(--sirona-table-line-strong);
-  border-radius: var(--app-radius-sm);
-  overflow: hidden;
-}
-
-.app-main .table > :not(caption) > * > *,
-.sirona-modal .table > :not(caption) > * > * {
-  border: 1px solid var(--sirona-table-line) !important;
-}
-
-.app-main .table tbody > tr > *,
-.sirona-modal .table tbody > tr > * {
-  background-color: #ffffff !important;
-  --bs-table-bg-state: #ffffff;
-}
-
-.app-main .table.table-striped > tbody > tr:nth-of-type(odd) > *,
-.sirona-modal .table.table-striped > tbody > tr:nth-of-type(odd) > * {
-  --bs-table-bg-type: #ffffff;
-  background-color: #ffffff !important;
-}
-
-.app-main .table.table-hover > tbody > tr:hover > *,
-.sirona-modal .table.table-hover > tbody > tr:hover > * {
-  background-color: rgba(0, 151, 178, 0.08) !important;
+  --sirona-table-line: rgba(0, 151, 178, 0.28);
+  --bs-table-border-color: rgba(60, 60, 67, 0.12);
+  --bs-table-hover-bg: rgba(0, 0, 0, 0.03);
 }
 
 .table thead th {
@@ -655,11 +621,11 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   border-bottom-width: 1px;
 }
 
-/* Encabezado: relleno celeste marca, texto y bordes azul verdoso */
+/* Encabezado: celeste marca; solo línea inferior (sin cuadrícula) */
 .table thead.table-light {
   --bs-table-color: var(--sirona-teal-deep);
   --bs-table-bg: var(--sirona-sky-soft);
-  --bs-table-border-color: var(--sirona-table-line, rgba(0, 151, 178, 0.42));
+  --bs-table-border-color: var(--sirona-table-line);
   background-color: var(--sirona-sky-soft) !important;
   color: var(--sirona-teal-deep);
 }
@@ -676,7 +642,10 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   color: var(--sirona-teal-deep) !important;
   background-color: var(--sirona-sky-soft) !important;
   background-image: none !important;
-  border-color: var(--sirona-table-line-strong) !important;
+  border-bottom: 1px solid rgba(0, 151, 178, 0.32) !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
   --bs-table-bg-state: var(--sirona-sky-soft);
   --bs-table-color-state: var(--sirona-teal-deep);
 }
@@ -686,7 +655,10 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   color: var(--sirona-teal-deep) !important;
   background-color: var(--sirona-sky-soft) !important;
   background-image: none !important;
-  border-color: var(--sirona-table-line-strong) !important;
+  border-bottom: 1px solid rgba(0, 151, 178, 0.32) !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
 }
 
 /* Formularios */
@@ -863,11 +835,10 @@ h2.h6 {
 .app-table tbody td {
   padding-top: 0.45rem;
   padding-bottom: 0.45rem;
-  background-color: #ffffff !important;
 }
 
 .app-table-row:hover td {
-  background-color: rgba(0, 151, 178, 0.08) !important;
+  background-color: rgba(0, 0, 0, 0.025);
 }
 
 .app-pill {

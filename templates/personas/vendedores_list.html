@@ -66,10 +66,13 @@
                     </form>
                     {% if v.nv or v.np or v.nc %}
                       <a
-                        class="btn btn-sm btn-outline-danger"
+                        class="btn btn-sm btn-outline-danger px-2"
                         href="{% url 'vendedor_eliminar_admin' v.pk %}"
-                        title="Ver historial y confirmar borrado completo"
-                      >Eliminar…</a>
+                        title="Eliminar"
+                        aria-label="Eliminar"
+                      >
+                        <i data-lucide="x" class="text-danger"></i>
+                      </a>
                     {% else %}
                       <form method="post" action="{% url 'vendedor_delete' v.id %}" onsubmit="return confirm('¿Eliminar {{ v.codigo }}?');">
                         {% csrf_token %}
