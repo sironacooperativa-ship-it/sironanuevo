@@ -514,6 +514,16 @@ def venta_editar(request, pk: int):
         return render(request, "ventas/editar_bloqueado.html", {"venta": venta})
 
     if request.method == "POST":
+        # No permitir líneas ni montos de cabecera por POST fuera del formulario acotado.
+        if request.POST.getlist("linea_producto") or request.POST.getlist("linea_cantidad"):
+            messages.error(
+                request,
+                "No se pueden modificar productos, cantidades ni precios del pedido al editar la cabecera.",
+            )
+            return redirect("venta_editar", pk=pk)
+        if (request.POST.get("descuento_monto") or "").strip():
+            messages.error(request, "El descuento del pedido no se puede cambiar desde la edición.")
+            return redirect("venta_editar", pk=pk)
         form = VentaCabeceraEditForm(request.POST, instance=venta)
         if form.is_valid():
             v = form.save(commit=False)

@@ -12,6 +12,8 @@ from .models import Venta
 
 
 class VentaCabeceraEditForm(forms.ModelForm):
+    """Solo cabecera del pedido pendiente: sin productos, cantidades, precios ni descuento."""
+
     fecha_vencimiento_pago = forms.DateField(
         required=False,
         input_formats=list(DATE_INPUT_FORMATS),
@@ -23,15 +25,11 @@ class VentaCabeceraEditForm(forms.ModelForm):
         fields = [
             "comprador",
             "fecha_vencimiento_pago",
-            "descuento_monto",
             "comision_porcentaje",
             "aplica_comision",
         ]
         widgets = {
             "comprador": forms.Select(attrs={"class": "form-select"}),
-            "descuento_monto": forms.TextInput(
-                attrs={"class": "form-control", "inputmode": "decimal", "placeholder": "0"}
-            ),
             "comision_porcentaje": forms.TextInput(
                 attrs={"class": "form-control", "inputmode": "decimal", "placeholder": "4"}
             ),
@@ -48,19 +46,6 @@ class VentaCabeceraEditForm(forms.ModelForm):
         self.fields["comprador"].queryset = qs
         self.fields["comprador"].required = False
         self.fields["aplica_comision"].label = "Aplicar comisión (se descuenta del ingreso en caja al cobrar)"
-
-    def clean_descuento_monto(self):
-        raw = (self.data.get("descuento_monto") or "").strip().replace(",", ".")
-        try:
-            d = Decimal(raw or "0")
-        except InvalidOperation:
-            raise forms.ValidationError("Monto no válido.")
-        if d < 0:
-            raise forms.ValidationError("El descuento no puede ser negativo.")
-        sub = self.instance.subtotal_lineas
-        if d > sub:
-            raise forms.ValidationError("El descuento no puede superar el subtotal de líneas.")
-        return d
 
     def clean_comision_porcentaje(self):
         raw = (self.data.get("comision_porcentaje") or "").strip().replace(",", ".")

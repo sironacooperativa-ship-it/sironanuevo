@@ -8,7 +8,7 @@
   </div>
 
   <p class="text-muted small">
-    Podés modificar comprador, vencimiento, descuento, porcentaje de comisión y si la comisión aplica al pedido. Si aplica, el ingreso en caja al cobrar será el neto menos la comisión. Las líneas de productos no se editan desde aquí.
+    Podés modificar solo <strong>comprador</strong>, <strong>vencimiento del pago</strong>, <strong>porcentaje de comisión</strong> y si <strong>aplica comisión</strong>. No se pueden cambiar productos, cantidades, precios ni el descuento del pedido (quedan como al crear el pedido).
   </p>
 
   <div class="card shadow-sm">
@@ -27,11 +27,6 @@
             {% if form.fecha_vencimiento_pago.errors %}
               <div class="text-danger small">{{ form.fecha_vencimiento_pago.errors }}</div>
             {% endif %}
-          </div>
-          <div class="col-12 col-md-4">
-            <label class="form-label">Descuento ($)</label>
-            {{ form.descuento_monto }}
-            {% if form.descuento_monto.errors %}<div class="text-danger small">{{ form.descuento_monto.errors }}</div>{% endif %}
           </div>
           <div class="col-12 col-md-4">
             <label class="form-label">Comisión (%)</label>
