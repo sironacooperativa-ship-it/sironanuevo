@@ -8,6 +8,7 @@ from django.views.decorators.http import require_http_methods
 from core.comision_agg import comisiones_acumuladas_por_mes
 from core.export_utils import parse_export, pdf_response, xlsx_response
 from core.authz import staff_required
+from core.authz import is_staff_user
 
 from caja.models import MovimientoCaja
 from presupuestos.models import Presupuesto
@@ -20,7 +21,7 @@ from .services import eliminar_vendedor_y_historial_admin, resumen_historial_ven
 
 def _es_staff(user) -> bool:
     # Legacy helper (usado en 1-2 lugares). Preferir `core.authz.is_staff_user`.
-    return bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
+    return is_staff_user(user)
 
 
 @login_required

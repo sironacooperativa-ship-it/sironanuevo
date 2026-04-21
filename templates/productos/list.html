@@ -130,18 +130,22 @@
         <input type="hidden" name="retorno_estado" value="{{ estado|default:'' }}" />
         <input type="hidden" name="retorno_ingreso" value="{{ ingreso|default:'' }}" />
         <span class="small text-muted me-1">Selección múltiple:</span>
-        <button type="button" class="btn btn-sm btn-outline-success rounded-pill" data-productos-bulk="habilitar">
-          Habilitar
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" data-productos-bulk="deshabilitar">
-          Deshabilitar
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill" data-productos-bulk="lista_precio">
-          Sumar a lista de precio
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill" data-productos-bulk="eliminar">
-          Eliminar
-        </button>
+        {% if user.is_staff %}
+          <button type="button" class="btn btn-sm btn-outline-success rounded-pill" data-productos-bulk="habilitar">
+            Habilitar
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" data-productos-bulk="deshabilitar">
+            Deshabilitar
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-primary rounded-pill" data-productos-bulk="lista_precio">
+            Sumar a lista de precio
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger rounded-pill" data-productos-bulk="eliminar">
+            Eliminar
+          </button>
+        {% else %}
+          <span class="text-muted small">Acciones masivas: solo staff.</span>
+        {% endif %}
       </form>
     </div>
     <div class="table-responsive">
@@ -293,23 +297,25 @@
                     >
                       <i data-lucide="pencil"></i>
                     </button>
-                    <form method="post" action="{% url 'producto_toggle_habilitado' p.id %}" class="d-inline">
-                      {% csrf_token %}
-                      <button
-                        class="btn btn-sm btn-outline-secondary rounded-pill px-2"
-                        type="submit"
-                        title="{% if p.habilitado %}Inhabilitar{% else %}Habilitar{% endif %}"
-                        aria-label="{% if p.habilitado %}Inhabilitar{% else %}Habilitar{% endif %}"
-                      >
-                        <i data-lucide="check" class="{% if p.habilitado %}text-success{% else %}text-secondary{% endif %}"></i>
-                      </button>
-                    </form>
-                    <form method="post" action="{% url 'producto_delete' p.id %}" class="d-inline" onsubmit="return confirm('¿Eliminar {{ p.codigo }}?');">
-                      {% csrf_token %}
-                      <button class="btn btn-sm btn-outline-danger rounded-pill px-2" type="submit" title="Eliminar" aria-label="Eliminar">
-                        <i data-lucide="x" class="text-danger"></i>
-                      </button>
-                    </form>
+                    {% if user.is_staff %}
+                      <form method="post" action="{% url 'producto_toggle_habilitado' p.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button
+                          class="btn btn-sm btn-outline-secondary rounded-pill px-2"
+                          type="submit"
+                          title="{% if p.habilitado %}Inhabilitar{% else %}Habilitar{% endif %}"
+                          aria-label="{% if p.habilitado %}Inhabilitar{% else %}Habilitar{% endif %}"
+                        >
+                          <i data-lucide="check" class="{% if p.habilitado %}text-success{% else %}text-secondary{% endif %}"></i>
+                        </button>
+                      </form>
+                      <form method="post" action="{% url 'producto_delete' p.id %}" class="d-inline" onsubmit="return confirm('¿Eliminar {{ p.codigo }}?');">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-danger rounded-pill px-2" type="submit" title="Eliminar" aria-label="Eliminar">
+                          <i data-lucide="x" class="text-danger"></i>
+                        </button>
+                      </form>
+                    {% endif %}
                   </div>
                   <div class="producto-edit producto-edit-actions d-none flex-wrap gap-1 justify-content-end align-items-center">
                     <label class="form-check form-switch sirona-switch mb-0 me-1 small">

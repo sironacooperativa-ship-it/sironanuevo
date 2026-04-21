@@ -146,6 +146,25 @@ def _usa_sqlite() -> bool:
     return "sqlite" in eng.lower()
 
 
+def _dangerous_admin_actions_enabled() -> bool:
+    """
+    Permite bloquear acciones destructivas en producción.
+    Default: habilitado solo en DEBUG, o si se setea explícitamente el flag.
+    """
+    if bool(getattr(settings, "DEBUG", False)):
+        return True
+    return str(os.environ.get("SIRONA_ENABLE_DANGEROUS_ADMIN_ACTIONS", "")).strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+
+
+def _is_sqlite_file_header(raw16: bytes) -> bool:
+    return bool(raw16 and raw16.startswith(b"SQLite format 3\x00"))
+
+
 def _backup_completo_zip() -> tuple[BytesIO, str]:
     """
     ZIP con datos.json (dumpdata) y, si aplica, copia de SQLite.
@@ -207,10 +226,19 @@ def _backup_completo_zip() -> tuple[BytesIO, str]:
 @admin_required
 @require_http_methods(["GET"])
 def backup_descargar(request):
+    if not getattr(request.user, "is_superuser", False):
+        messages.error(request, "Solo un superusuario puede descargar backups.")
+        return redirect("admin_usuarios_list")
+
+    if not _dangerous_admin_actions_enabled():
+        messages.error(request, "Descargar backup está deshabilitado en este entorno.")
+        return redirect("admin_usuarios_list")
+
     try:
         buf, filename = _backup_completo_zip()
     except Exception as exc:
-        return HttpResponseBadRequest(f"No se pudo generar el backup: {exc}")
+        detalle = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
+        return HttpResponseBadRequest("No se pudo generar el backup." + detalle)
 
     return FileResponse(
         buf,
@@ -223,6 +251,18 @@ def backup_descargar(request):
 @admin_required
 @require_http_methods(["POST"])
 def backup_restaurar(request):
+    if not getattr(request.user, "is_superuser", False):
+        messages.error(request, "Solo un superusuario puede restaurar un backup.")
+        return redirect("admin_usuarios_list")
+
+    if not _dangerous_admin_actions_enabled():
+        messages.error(request, "Restaurar backup está deshabilitado en este entorno.")
+        return redirect("admin_usuarios_list")
+
+    if not _usa_sqlite():
+        messages.error(request, "Este servidor no usa SQLite, no se puede restaurar un archivo .sqlite3 acá.")
+        return redirect("admin_usuarios_list")
+
     confirm = (request.POST.get("confirm") or "").strip()
     if confirm != "1":
         messages.error(request, "Marcá la confirmación para restaurar el backup.")
@@ -238,6 +278,11 @@ def backup_restaurar(request):
         messages.error(request, "Formato no válido. Subí un archivo .sqlite3/.db/.sqlite")
         return redirect("admin_usuarios_list")
 
+    max_mb = int(os.environ.get("SIRONA_MAX_SQLITE_UPLOAD_MB", "200"))
+    if getattr(f, "size", 0) and f.size > (max_mb * 1024 * 1024):
+        messages.error(request, f"El archivo es demasiado grande (máx. {max_mb} MB).")
+        return redirect("admin_usuarios_list")
+
     dest = _db_path()
     if not dest.exists():
         messages.error(request, "No se encontró la base de datos actual.")
@@ -245,6 +290,23 @@ def backup_restaurar(request):
 
     # Guardar en temporal y reemplazar de forma atómica.
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        # Chequear cabecera SQLite.
+        try:
+            header = f.read(16)
+        except Exception:
+            header = b""
+        if not _is_sqlite_file_header(header):
+            messages.error(request, "El archivo no parece ser una base SQLite válida.")
+            try:
+                f.seek(0)
+            except Exception:
+                pass
+            return redirect("admin_usuarios_list")
+        try:
+            f.seek(0)
+        except Exception:
+            pass
+
         for chunk in f.chunks():
             tmp.write(chunk)
         tmp_path = Path(tmp.name)
@@ -278,6 +340,14 @@ def reset_datos(request):
     Borra datos operativos para empezar de cero (no toca usuarios ni migraciones).
     Requiere confirmación escribiendo RESET.
     """
+    if not getattr(request.user, "is_superuser", False):
+        messages.error(request, "Solo un superusuario puede resetear datos.")
+        return redirect("admin_usuarios_list")
+
+    if not _dangerous_admin_actions_enabled():
+        messages.error(request, "Resetear datos está deshabilitado en este entorno.")
+        return redirect("admin_usuarios_list")
+
     texto = (request.POST.get("confirm_text") or "").strip().upper()
     if texto != "RESET":
         messages.error(request, "Escribí RESET para confirmar.")

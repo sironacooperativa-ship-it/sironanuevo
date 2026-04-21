@@ -121,28 +121,32 @@
               <td>{{ p.descripcion }}</td>
               <td class="text-muted">{{ p.get_tipo_display }}</td>
               <td class="text-end">
-                <form
-                  method="post"
-                  action="{% url 'stock_ajuste_inline' %}"
-                  class="d-inline-flex align-items-center gap-1 justify-content-end flex-wrap"
-                >
-                  {% csrf_token %}
-                  <input type="hidden" name="producto_id" value="{{ p.pk }}" />
-                  <input type="hidden" name="retorno_q" value="{{ q|default:'' }}" />
-                  <input
-                    type="number"
-                    name="stock"
-                    id="stock-input-{{ p.pk }}"
-                    class="form-control form-control-sm text-end"
-                    style="width: 5.25rem; max-width: 100%"
-                    min="0"
-                    step="1"
-                    value="{{ p.stock }}"
-                    title="Editar stock y aplicar"
-                    aria-label="Stock {{ p.codigo }}"
-                  />
-                  <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-2">Aplicar</button>
-                </form>
+                {% if user.is_staff %}
+                  <form
+                    method="post"
+                    action="{% url 'stock_ajuste_inline' %}"
+                    class="d-inline-flex align-items-center gap-1 justify-content-end flex-wrap"
+                  >
+                    {% csrf_token %}
+                    <input type="hidden" name="producto_id" value="{{ p.pk }}" />
+                    <input type="hidden" name="retorno_q" value="{{ q|default:'' }}" />
+                    <input
+                      type="number"
+                      name="stock"
+                      id="stock-input-{{ p.pk }}"
+                      class="form-control form-control-sm text-end"
+                      style="width: 5.25rem; max-width: 100%"
+                      min="0"
+                      step="1"
+                      value="{{ p.stock }}"
+                      title="Editar stock y aplicar"
+                      aria-label="Stock {{ p.codigo }}"
+                    />
+                    <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-2">Aplicar</button>
+                  </form>
+                {% else %}
+                  <span class="small text-muted">{{ p.stock }}</span>
+                {% endif %}
               </td>
               <td class="text-end">{{ p.precio_venta|ars }}</td>
             </tr>
@@ -156,19 +160,7 @@
         </tbody>
       </table>
     </div>
-    {% if page_obj and page_obj.paginator.num_pages > 1 %}
-      <div class="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2 small">
-        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-        <div class="d-flex gap-2">
-          {% if page_obj.has_previous %}
-            <a class="btn btn-sm btn-outline-secondary" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>
-          {% endif %}
-          {% if page_obj.has_next %}
-            <a class="btn btn-sm btn-outline-secondary" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>
-          {% endif %}
-        </div>
-      </div>
-    {% endif %}
+    {% include "includes/pagination_footer.html" %}
   </div>
 
   <div class="card shadow-sm">

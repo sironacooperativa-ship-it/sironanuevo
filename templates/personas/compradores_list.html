@@ -76,24 +76,26 @@
                   <a class="btn btn-sm btn-outline-primary px-2" href="{% url 'comprador_update' c.id %}" title="Editar" aria-label="Editar">
                     <i data-lucide="pencil"></i>
                   </a>
-                  <form method="post" action="{% url 'comprador_toggle' c.id %}">
-                    {% csrf_token %}
-                    {% if c.habilitado %}
-                      <button class="btn btn-sm btn-outline-secondary px-2" type="submit" onclick="return confirm('¿Inhabilitar {{ c.codigo }}?');" title="Inhabilitar" aria-label="Inhabilitar">
-                        <i data-lucide="check" class="text-success"></i>
+                  {% if user.is_staff %}
+                    <form method="post" action="{% url 'comprador_toggle' c.id %}">
+                      {% csrf_token %}
+                      {% if c.habilitado %}
+                        <button class="btn btn-sm btn-outline-secondary px-2" type="submit" onclick="return confirm('¿Inhabilitar {{ c.codigo }}?');" title="Inhabilitar" aria-label="Inhabilitar">
+                          <i data-lucide="check" class="text-success"></i>
+                        </button>
+                      {% else %}
+                        <button class="btn btn-sm btn-outline-secondary px-2" type="submit" title="Habilitar" aria-label="Habilitar">
+                          <i data-lucide="check" class="text-secondary"></i>
+                        </button>
+                      {% endif %}
+                    </form>
+                    <form method="post" action="{% url 'comprador_delete' c.id %}" onsubmit="return confirm('¿Eliminar {{ c.codigo }}?');">
+                      {% csrf_token %}
+                      <button class="btn btn-sm btn-outline-danger px-2" type="submit" title="Eliminar" aria-label="Eliminar">
+                        <i data-lucide="x" class="text-danger"></i>
                       </button>
-                    {% else %}
-                      <button class="btn btn-sm btn-outline-secondary px-2" type="submit" title="Habilitar" aria-label="Habilitar">
-                        <i data-lucide="check" class="text-secondary"></i>
-                      </button>
-                    {% endif %}
-                  </form>
-                  <form method="post" action="{% url 'comprador_delete' c.id %}" onsubmit="return confirm('¿Eliminar {{ c.codigo }}?');">
-                    {% csrf_token %}
-                    <button class="btn btn-sm btn-outline-danger px-2" type="submit" title="Eliminar" aria-label="Eliminar">
-                      <i data-lucide="x" class="text-danger"></i>
-                    </button>
-                  </form>
+                    </form>
+                  {% endif %}
                 </div>
               </td>
             </tr>

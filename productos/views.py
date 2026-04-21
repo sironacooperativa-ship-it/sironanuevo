@@ -899,10 +899,19 @@ def productos_import_excel(request):
         )
         return redirect("productos_import_excel")
 
+    max_mb = int(os.environ.get("SIRONA_MAX_XLSX_UPLOAD_MB", "25"))
+    if getattr(f, "size", 0) and f.size > (max_mb * 1024 * 1024):
+        messages.error(request, f"El archivo es demasiado grande (máx. {max_mb} MB).")
+        return redirect("productos_import_excel")
+
     try:
         raw = f.read()
         if not raw:
             messages.error(request, "El archivo está vacío.")
+            return redirect("productos_import_excel")
+        # XLSX es un ZIP; validación rápida para evitar basura/errores raros.
+        if not raw.startswith(b"PK"):
+            messages.error(request, "El archivo no parece ser un .xlsx válido.")
             return redirect("productos_import_excel")
         wb = load_workbook(filename=BytesIO(raw), data_only=True)
     except Exception as exc:

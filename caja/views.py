@@ -277,12 +277,17 @@ def caja_cheques(request):
     page_obj = paginator.get_page(page or 1)
     cheques = list(page_obj)
 
+    qcopy = request.GET.copy()
+    qcopy.pop("page", None)
+    querystring = qcopy.urlencode()
+
     return render(
         request,
         "caja/cheques.html",
         {
             "cheques": cheques,
             "page_obj": page_obj,
+            "querystring": querystring,
             "f": {
                 "criterio": criterio,
                 "desde": fecha_filtro_value_iso(request.GET.get("desde")),

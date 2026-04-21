@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import DatabaseError, transaction
@@ -10,6 +10,7 @@ from django.views.decorators.http import require_http_methods
 
 from calendario.models import Evento
 from caja.models import MovimientoCaja
+from core.authz import is_staff_user, staff_required
 from core.export_utils import parse_export, pdf_response, xlsx_response
 from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_dashboard, rango_periodo
 from personas.models import Proveedor
@@ -18,10 +19,6 @@ from productos.models import Producto
 from .forms import CompraRegistrarForm
 from .models import Compra
 from .servicios import compra_anular_por_admin, compra_eliminar_por_admin
-
-
-def _es_staff(user) -> bool:
-    return bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
 
 
 def _filtrar_compras_queryset(request):
@@ -116,7 +113,7 @@ def compra_historial(request):
             "filtros": filtros_ctx,
             "productos_filtro": productos,
             "proveedores_filtro": proveedores,
-            "es_admin_compras": _es_staff(request.user),
+            "es_admin_compras": is_staff_user(request.user),
             "page_obj": page_obj,
             "querystring": querystring,
         },
@@ -124,7 +121,7 @@ def compra_historial(request):
 
 
 @login_required
-@user_passes_test(_es_staff)
+@staff_required
 @require_http_methods(["POST"])
 def compra_admin_eliminar(request, pk: int):
     compra = get_object_or_404(Compra, pk=pk)
@@ -138,7 +135,7 @@ def compra_admin_eliminar(request, pk: int):
 
 
 @login_required
-@user_passes_test(_es_staff)
+@staff_required
 @require_http_methods(["POST"])
 def compra_admin_anular(request, pk: int):
     compra = get_object_or_404(Compra, pk=pk)

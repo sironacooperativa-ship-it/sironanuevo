@@ -51,19 +51,19 @@
                   <a class="btn btn-sm btn-outline-primary px-2" href="{% url 'vendedor_update' v.id %}" title="Editar" aria-label="Editar">
                     <i data-lucide="pencil"></i>
                   </a>
-                  <form method="post" action="{% url 'vendedor_toggle' v.id %}">
-                    {% csrf_token %}
-                    {% if v.habilitado %}
-                      <button class="btn btn-sm btn-outline-secondary px-2" type="submit" onclick="return confirm('¿Inhabilitar {{ v.codigo }}?');" title="Inhabilitar" aria-label="Inhabilitar">
-                        <i data-lucide="check" class="text-success"></i>
-                      </button>
-                    {% else %}
-                      <button class="btn btn-sm btn-outline-secondary px-2" type="submit" title="Habilitar" aria-label="Habilitar">
-                        <i data-lucide="check" class="text-secondary"></i>
-                      </button>
-                    {% endif %}
-                  </form>
                   {% if user.is_staff %}
+                    <form method="post" action="{% url 'vendedor_toggle' v.id %}">
+                      {% csrf_token %}
+                      {% if v.habilitado %}
+                        <button class="btn btn-sm btn-outline-secondary px-2" type="submit" onclick="return confirm('¿Inhabilitar {{ v.codigo }}?');" title="Inhabilitar" aria-label="Inhabilitar">
+                          <i data-lucide="check" class="text-success"></i>
+                        </button>
+                      {% else %}
+                        <button class="btn btn-sm btn-outline-secondary px-2" type="submit" title="Habilitar" aria-label="Habilitar">
+                          <i data-lucide="check" class="text-secondary"></i>
+                        </button>
+                      {% endif %}
+                    </form>
                     {% if v.nv or v.np or v.nc %}
                       <a
                         class="btn btn-sm btn-outline-danger"
@@ -78,13 +78,6 @@
                         </button>
                       </form>
                     {% endif %}
-                  {% else %}
-                    <form method="post" action="{% url 'vendedor_delete' v.id %}" onsubmit="return confirm('¿Eliminar {{ v.codigo }}?');">
-                      {% csrf_token %}
-                      <button class="btn btn-sm btn-outline-danger px-2" type="submit" title="Eliminar" aria-label="Eliminar">
-                        <i data-lucide="x" class="text-danger"></i>
-                      </button>
-                    </form>
                   {% endif %}
                 </div>
               </td>

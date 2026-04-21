@@ -127,6 +127,7 @@
             </div>
 
             <div class="sirona-calc-display-wrap mb-2">
+                <div class="sirona-calc-history" id="sironaCalcHistory" aria-live="polite"></div>
                 <input
                   id="sironaCalcDisplay"
                   class="sirona-calc-display"
@@ -134,32 +135,41 @@
                   autocomplete="off"
                   placeholder="0"
                 />
-                <div class="sirona-calc-hint" id="sironaCalcHint">Usá %, + − × ÷ y Enter.</div>
+                <div class="sirona-calc-hint" id="sironaCalcHint">Teclado: + − × ÷, %, Enter. Esc borra.</div>
             </div>
 
-            <div class="sirona-calc-keys">
-                <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="C">C</button>
+            <div class="sirona-calc-keys" aria-label="Teclado de calculadora">
+                <!-- Fila funciones (Windows) -->
                 <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="%">%</button>
+                <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="CE">CE</button>
+                <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="C">C</button>
                 <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="BS">⌫</button>
-                <button class="sirona-calc-key sirona-calc-key-op" type="button" data-calc="÷">÷</button>
 
+                <!-- Números + operadores siempre en última columna -->
                 <button class="sirona-calc-key" type="button" data-calc="7">7</button>
                 <button class="sirona-calc-key" type="button" data-calc="8">8</button>
                 <button class="sirona-calc-key" type="button" data-calc="9">9</button>
-                <button class="sirona-calc-key sirona-calc-key-op" type="button" data-calc="×">×</button>
+                <button class="sirona-calc-key sirona-calc-key-op" type="button" data-calc="÷">÷</button>
 
                 <button class="sirona-calc-key" type="button" data-calc="4">4</button>
                 <button class="sirona-calc-key" type="button" data-calc="5">5</button>
                 <button class="sirona-calc-key" type="button" data-calc="6">6</button>
-                <button class="sirona-calc-key sirona-calc-key-op" type="button" data-calc="-">−</button>
+                <button class="sirona-calc-key sirona-calc-key-op" type="button" data-calc="×">×</button>
 
                 <button class="sirona-calc-key" type="button" data-calc="1">1</button>
                 <button class="sirona-calc-key" type="button" data-calc="2">2</button>
                 <button class="sirona-calc-key" type="button" data-calc="3">3</button>
+                <button class="sirona-calc-key sirona-calc-key-op" type="button" data-calc="-">−</button>
+
+                <button class="sirona-calc-key sirona-calc-key-fn" type="button" data-calc="PM">±</button>
+                <button class="sirona-calc-key" type="button" data-calc="0">0</button>
+                <button class="sirona-calc-key" type="button" data-calc=".">.</button>
                 <button class="sirona-calc-key sirona-calc-key-op" type="button" data-calc="+">+</button>
 
-                <button class="sirona-calc-key sirona-calc-key-0" type="button" data-calc="0">0</button>
-                <button class="sirona-calc-key" type="button" data-calc=".">.</button>
+                <!-- Fila final: "=" abajo a la derecha (relleno invisible para mantener grilla) -->
+                <button class="sirona-calc-key sirona-calc-key-fill" type="button" data-calc="NOP" disabled aria-hidden="true"></button>
+                <button class="sirona-calc-key sirona-calc-key-fill" type="button" data-calc="NOP" disabled aria-hidden="true"></button>
+                <button class="sirona-calc-key sirona-calc-key-fill" type="button" data-calc="NOP" disabled aria-hidden="true"></button>
                 <button class="sirona-calc-key sirona-calc-key-eq" type="button" data-calc="=">=</button>
             </div>
           </div>

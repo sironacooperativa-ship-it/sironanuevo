@@ -11,6 +11,7 @@ from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 
 from core.authz import staff_required
+from core.authz import is_staff_user
 from core.export_utils import parse_export
 from core.money_decimal import COMISION_PORCENTAJE_DEFECTO, format_monto_ars, parse_decimal_from_input, q2
 from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_param, parse_fecha_dashboard, rango_periodo
@@ -20,10 +21,6 @@ from productos.models import Producto
 from ventas.servicios import crear_venta_confirmada, eliminar_venta_admin, unpack_linea_spec
 from ventas.models import Venta, VentaLinea
 from calendario.models import Evento
-
-
-def _es_staff(user) -> bool:
-    return bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
 
 def _get_vendedor_from_user(user) -> Vendedor | None:
     if not user or not user.is_authenticated:
@@ -606,7 +603,7 @@ def presupuesto_editar(request, pk: int):
 @require_http_methods(["POST"])
 def presupuesto_eliminar(request, pk: int):
     presupuesto = get_object_or_404(Presupuesto, pk=pk)
-    es_admin = _es_staff(request.user)
+    es_admin = is_staff_user(request.user)
     if presupuesto.estado != Presupuesto.Estado.ACTIVO and not es_admin:
         messages.warning(
             request,

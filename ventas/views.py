@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
@@ -32,10 +32,6 @@ from .forms import VentaCabeceraEditForm, VentaPagoForm
 from .models import Venta, VentaLinea
 from .remito_pdf import remito_venta_pdf_response
 from .servicios import crear_venta_confirmada, eliminar_venta_admin
-
-
-def _es_staff(user) -> bool:
-    return bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
 
 
 def _sync_evento_pedido_pendiente(venta: Venta) -> None:
@@ -446,7 +442,7 @@ def venta_historial(request):
 
 
 @login_required
-@user_passes_test(_es_staff)
+@staff_required
 @require_http_methods(["POST"])
 def venta_eliminar(request, pk: int):
     venta = get_object_or_404(Venta, pk=pk)
