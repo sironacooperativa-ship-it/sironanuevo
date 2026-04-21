@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 import dj_database_url
@@ -9,10 +10,38 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-change-me")
 DEBUG = os.environ.get("DEBUG", "0") == "1"
 
-if not DEBUG and len(SECRET_KEY) < 50:
+
+def _management_command_skips_secret_check() -> bool:
+    """collectstatic/migrate durante el build de Render suelen ejecutarse sin SECRET_KEY en env."""
+    if len(sys.argv) < 2:
+        return False
+    return sys.argv[1] in (
+        "collectstatic",
+        "migrate",
+        "makemigrations",
+        "showmigrations",
+        "squashmigrations",
+        "shell",
+        "createsuperuser",
+        "test",
+        "check",
+        "dumpdata",
+        "loaddata",
+        "flush",
+        "inspectdb",
+        "compilemessages",
+        "makemessages",
+    )
+
+
+if (
+    not DEBUG
+    and not _management_command_skips_secret_check()
+    and len(SECRET_KEY) < 50
+):
     raise ImproperlyConfigured(
         "En producción (DEBUG=0) SECRET_KEY debe tener al menos 50 caracteres aleatorios. "
-        "Configurá la variable de entorno en el hosting (p. ej. Render)."
+        "Configurá la variable de entorno en Render (para el servicio web; opcional también en build)."
     )
 ALLOWED_HOSTS = [h.strip() for h in (os.environ.get("ALLOWED_HOSTS", "")).split(",") if h.strip()]
 if not ALLOWED_HOSTS:
