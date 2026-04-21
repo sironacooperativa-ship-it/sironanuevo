@@ -829,3 +829,63 @@ h2.h6 {
     margin: 0.35rem auto;
   }
 }
+
+/* Historial de pedidos: leyenda de iconos (tabla + menú offcanvas) */
+.ventas-hist-pendiente-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.28rem;
+  height: 1.28rem;
+  border-radius: 50%;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+  background: var(--bs-warning);
+  color: #1c1c1e;
+}
+
+.ventas-hist-pagada-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.28rem;
+  height: 1.28rem;
+  border-radius: 50%;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  background: var(--bs-success);
+  color: #fff;
+}
+
+.ventas-historial-leyenda .ventas-hist-icon,
+td .ventas-hist-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.ventas-historial-leyenda--compact {
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.ventas-historial-leyenda--compact .ventas-hist-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.ventas-historial-leyenda--compact .ventas-hist-pendiente-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  font-size: 0.65rem;
+}
+
+.sirona-offcanvas-pedidos-leyenda {
+  margin: 0.15rem 0 0.5rem 0.35rem;
+  padding: 0.35rem 0.45rem 0.45rem 0.6rem;
+  border-left: 2px solid var(--cg-border);
+  border-radius: 0 0.35rem 0.35rem 0;
+  background: rgba(60, 60, 67, 0.04);
+}

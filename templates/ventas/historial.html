@@ -1,42 +1,6 @@
 {% extends "base.html" %}
 {% load money %}
 {% block title %}Pedidos{% endblock %}
-{% block extra_head %}
-  <style>
-    .ventas-hist-pendiente-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 1.28rem;
-      height: 1.28rem;
-      border-radius: 50%;
-      font-size: 0.78rem;
-      font-weight: 800;
-      line-height: 1;
-      background: var(--bs-warning);
-      color: #1c1c1e;
-    }
-    .ventas-hist-pagada-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 1.28rem;
-      height: 1.28rem;
-      border-radius: 50%;
-      font-size: 0.68rem;
-      font-weight: 700;
-      line-height: 1;
-      background: var(--bs-success);
-      color: #fff;
-    }
-    .ventas-historial-leyenda .ventas-hist-icon,
-    td .ventas-hist-icon {
-      width: 1rem;
-      height: 1rem;
-      flex-shrink: 0;
-    }
-  </style>
-{% endblock %}
 {% block content %}
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Historial de pedidos</h1>
@@ -121,27 +85,7 @@
 
   <div class="card shadow-sm">
     <div class="card-body pb-0">
-      <p class="small text-muted mb-2 ventas-historial-leyenda">
-        <strong>Leyenda:</strong>
-        <span class="ms-1 d-inline-flex align-items-center gap-1">
-          <span class="ventas-hist-pendiente-icon" aria-hidden="true">!</span> pedido pendiente de pago;
-        </span>
-        <span class="ms-2 d-inline-flex align-items-center gap-1">
-          <i data-lucide="eye" class="ventas-hist-icon"></i> ver pedido;
-        </span>
-        <span class="ms-2 d-inline-flex align-items-center gap-1">
-          <i data-lucide="pencil" class="ventas-hist-icon"></i> editar pedido;
-        </span>
-        <span class="ms-2 d-inline-flex align-items-center gap-1">
-          <i data-lucide="wallet" class="ventas-hist-icon"></i> pagar pedido;
-        </span>
-        <span class="ms-2 d-inline-flex align-items-center gap-1">
-          <i data-lucide="x" class="ventas-hist-icon text-danger"></i> eliminar pedido.
-        </span>
-        <span class="ms-2 d-inline-block">
-          Si está <strong>pagado</strong>, el ícono de <i data-lucide="landmark" class="ventas-hist-icon"></i> abre el movimiento en caja.
-        </span>
-      </p>
+      {% include "includes/ventas_pedidos_leyenda.html" %}
     </div>
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">

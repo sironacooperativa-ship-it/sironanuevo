@@ -1,0 +1,24 @@
+{# Leyenda de iconos del historial de pedidos (tabla y menú lateral). compact=True para offcanvas. #}
+<p
+  class="mb-0 text-muted ventas-historial-leyenda{% if compact %} ventas-historial-leyenda--compact{% endif %}{% if not compact %} small{% endif %}"
+>
+  <strong>Leyenda:</strong>
+  <span class="ms-1 d-inline-flex align-items-center gap-1">
+    <span class="ventas-hist-pendiente-icon" aria-hidden="true">!</span> pedido pendiente de pago;
+  </span>
+  <span class="ms-2 d-inline-flex align-items-center gap-1">
+    <i data-lucide="eye" class="ventas-hist-icon"></i> ver pedido;
+  </span>
+  <span class="ms-2 d-inline-flex align-items-center gap-1">
+    <i data-lucide="pencil" class="ventas-hist-icon"></i> editar pedido;
+  </span>
+  <span class="ms-2 d-inline-flex align-items-center gap-1">
+    <i data-lucide="wallet" class="ventas-hist-icon"></i> pagar pedido;
+  </span>
+  <span class="ms-2 d-inline-flex align-items-center gap-1">
+    <i data-lucide="x" class="ventas-hist-icon text-danger"></i> eliminar pedido.
+  </span>
+  <span class="ms-2 d-inline-block">
+    Si está <strong>pagado</strong>, el ícono de <i data-lucide="landmark" class="ventas-hist-icon"></i> abre el movimiento en caja.
+  </span>
+</p>
