@@ -5,6 +5,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Sum
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
@@ -228,13 +229,17 @@ def caja_cheques(request):
     if d_hasta:
         qs = qs.filter(fecha_vencimiento_cheque__lte=d_hasta)
 
-    cheques = list(qs[:500])
+    page = (request.GET.get("page") or "").strip()
+    paginator = Paginator(qs, 120)
+    page_obj = paginator.get_page(page or 1)
+    cheques = list(page_obj)
 
     return render(
         request,
         "caja/cheques.html",
         {
             "cheques": cheques,
+            "page_obj": page_obj,
             "f": {
                 "criterio": criterio,
                 "desde": fecha_filtro_value_iso(request.GET.get("desde")),

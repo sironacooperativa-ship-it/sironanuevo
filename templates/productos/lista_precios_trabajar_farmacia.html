@@ -29,6 +29,7 @@
   <form method="post">
     {% csrf_token %}
     <input type="hidden" name="q" value="{{ q }}" />
+    {% if page_obj %}<input type="hidden" name="page" value="{{ page_obj.number }}" />{% endif %}
     <div class="card app-card border-0 shadow-sm">
       <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
@@ -61,7 +62,22 @@
         </table>
       </div>
       {% if productos %}
-        <div class="card-body border-top py-3 d-flex justify-content-end">
+        <div class="card-body border-top py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+          {% if page_obj and page_obj.paginator.num_pages > 1 %}
+            <div class="small text-muted">
+              Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </div>
+            <div class="d-flex gap-2">
+              {% if page_obj.has_previous %}
+                <a class="btn btn-sm btn-outline-secondary rounded-pill" href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+              {% endif %}
+              {% if page_obj.has_next %}
+                <a class="btn btn-sm btn-outline-secondary rounded-pill" href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+              {% endif %}
+            </div>
+          {% else %}
+            <span></span>
+          {% endif %}
           <button type="submit" class="btn btn-primary rounded-pill px-4">Guardar precios</button>
         </div>
       {% endif %}

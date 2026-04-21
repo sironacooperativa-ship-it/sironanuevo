@@ -9,6 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponseForbidden
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
@@ -164,12 +165,16 @@ def lista_precios_eliminar(request, pk: int):
 def lista_precios_trabajar(request, pk: int):
     lista = get_object_or_404(ListaPrecios, pk=pk)
     q = (request.GET.get("q") or request.POST.get("q") or "").strip()
+    page = (request.GET.get("page") or "").strip()
+    page_disp = (request.GET.get("page_disp") or "").strip()
 
     if lista.es_farmacia:
         qs = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
         if q:
             qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
-        productos = list(qs[:800])
+        paginator = Paginator(qs, 120)
+        page_obj = paginator.get_page(page or 1)
+        productos = list(page_obj)
 
         if request.method == "POST":
             actualizados = 0
@@ -192,7 +197,12 @@ def lista_precios_trabajar(request, pk: int):
         return render(
             request,
             "productos/lista_precios_trabajar_farmacia.html",
-            {"lista": lista, "productos": productos, "q": q},
+            {
+                "lista": lista,
+                "productos": productos,
+                "q": q,
+                "page_obj": page_obj,
+            },
         )
 
     # Listas por rubro: ítems con precio propio
@@ -257,14 +267,19 @@ def lista_precios_trabajar(request, pk: int):
         items = items.filter(
             Q(producto__descripcion__icontains=q) | Q(producto__codigo__icontains=q)
         )
-    items = list(items[:800])
+    paginator = Paginator(items, 120)
+    page_obj = paginator.get_page(page or 1)
+    items = list(page_obj)
 
     en_lista_ids = {it.producto_id for it in items}
-    disponibles = list(
+    disp_qs = (
         Producto.objects.filter(habilitado=True)
         .exclude(pk__in=en_lista_ids)
-        .order_by("descripcion", "codigo")[:400]
+        .order_by("descripcion", "codigo")
     )
+    disp_paginator = Paginator(disp_qs, 120)
+    page_disp_obj = disp_paginator.get_page(page_disp or 1)
+    disponibles = list(page_disp_obj)
 
     return render(
         request,
@@ -274,5 +289,7 @@ def lista_precios_trabajar(request, pk: int):
             "items": items,
             "disponibles": disponibles,
             "q": q,
+            "page_obj": page_obj,
+            "page_disp_obj": page_disp_obj,
         },
     )

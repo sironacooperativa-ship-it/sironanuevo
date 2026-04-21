@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.core.paginator import Paginator
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
@@ -66,13 +67,16 @@ def vendedor_ficha(request, pk: int):
 @login_required
 def vendedor_detalle(request, pk: int):
     v = get_object_or_404(Vendedor, pk=pk)
+    page = (request.GET.get("page") or "").strip()
     ventas_qs = (
         Venta.objects.filter(vendedor=v)
         .select_related("comprador", "pago_movimiento")
         .prefetch_related("lineas__producto")
         .order_by("-creado_en", "-id")
     )
-    ventas = list(ventas_qs[:400])
+    paginator = Paginator(ventas_qs, 80)
+    page_obj = paginator.get_page(page or 1)
+    ventas = list(page_obj)
     comisiones_por_mes = comisiones_acumuladas_por_mes(ventas_qs)
     hist = resumen_historial_vendedor(v)
     tiene_historial = any(
@@ -87,6 +91,7 @@ def vendedor_detalle(request, pk: int):
             "comisiones_por_mes": comisiones_por_mes,
             "resumen_historial": hist,
             "tiene_historial": tiene_historial,
+            "page_obj": page_obj,
         },
     )
 
@@ -95,6 +100,8 @@ def vendedor_detalle(request, pk: int):
 def vendedor_actividad(request, pk: int):
     """Clientes vinculados, pedidos y movimientos de caja que involucran al vendedor."""
     v = get_object_or_404(Vendedor, pk=pk)
+    page_v = (request.GET.get("page_v") or "").strip()
+    page_m = (request.GET.get("page_m") or "").strip()
     ids_en_pedidos = set(
         Venta.objects.filter(vendedor=v, comprador_id__isnull=False).values_list("comprador_id", flat=True)
     )
@@ -115,24 +122,29 @@ def vendedor_actividad(request, pk: int):
                 }
             )
 
-    ventas = list(
+    ventas_qs = (
         Venta.objects.filter(vendedor=v)
         .select_related("comprador", "pago_movimiento")
-        .order_by("-creado_en", "-id")[:400]
+        .order_by("-creado_en", "-id")
     )
-    movimientos = list(
+    ventas_page = Paginator(ventas_qs, 80).get_page(page_v or 1)
+
+    movs_qs = (
         MovimientoCaja.objects.filter(vendedor=v)
         .select_related("venta", "cuenta_bancaria")
-        .order_by("-fecha", "-creado_en", "-id")[:400]
+        .order_by("-fecha", "-creado_en", "-id")
     )
+    movs_page = Paginator(movs_qs, 80).get_page(page_m or 1)
     return render(
         request,
         "personas/vendedor_actividad.html",
         {
             "vendedor": v,
             "filas_clientes": filas_clientes,
-            "ventas": ventas,
-            "movimientos": movimientos,
+            "ventas": list(ventas_page),
+            "movimientos": list(movs_page),
+            "ventas_page": ventas_page,
+            "movs_page": movs_page,
         },
     )
 

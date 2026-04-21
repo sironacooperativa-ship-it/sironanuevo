@@ -104,6 +104,19 @@
         </tbody>
       </table>
     </div>
+    {% if ventas_page and ventas_page.paginator.num_pages > 1 %}
+      <div class="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2 small">
+        <span>Pedidos · página {{ ventas_page.number }} de {{ ventas_page.paginator.num_pages }}</span>
+        <div class="d-flex gap-2">
+          {% if ventas_page.has_previous %}
+            <a class="btn btn-sm btn-outline-secondary" href="?page_v={{ ventas_page.previous_page_number }}&page_m={{ movs_page.number }}">Anterior</a>
+          {% endif %}
+          {% if ventas_page.has_next %}
+            <a class="btn btn-sm btn-outline-secondary" href="?page_v={{ ventas_page.next_page_number }}&page_m={{ movs_page.number }}">Siguiente</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
   </div>
 
   <div class="card shadow-sm mb-4">
@@ -152,5 +165,18 @@
         </tbody>
       </table>
     </div>
+    {% if movs_page and movs_page.paginator.num_pages > 1 %}
+      <div class="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2 small">
+        <span>Caja · página {{ movs_page.number }} de {{ movs_page.paginator.num_pages }}</span>
+        <div class="d-flex gap-2">
+          {% if movs_page.has_previous %}
+            <a class="btn btn-sm btn-outline-secondary" href="?page_v={{ ventas_page.number }}&page_m={{ movs_page.previous_page_number }}">Anterior</a>
+          {% endif %}
+          {% if movs_page.has_next %}
+            <a class="btn btn-sm btn-outline-secondary" href="?page_v={{ ventas_page.number }}&page_m={{ movs_page.next_page_number }}">Siguiente</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
   </div>
 {% endblock %}
