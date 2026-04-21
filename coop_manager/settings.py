@@ -2,11 +2,18 @@ import os
 from pathlib import Path
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-change-me")
 DEBUG = os.environ.get("DEBUG", "0") == "1"
+
+if not DEBUG and len(SECRET_KEY) < 50:
+    raise ImproperlyConfigured(
+        "En producción (DEBUG=0) SECRET_KEY debe tener al menos 50 caracteres aleatorios. "
+        "Configurá la variable de entorno en el hosting (p. ej. Render)."
+    )
 ALLOWED_HOSTS = [h.strip() for h in (os.environ.get("ALLOWED_HOSTS", "")).split(",") if h.strip()]
 if not ALLOWED_HOSTS:
     ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
@@ -122,9 +129,12 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "1") == "1"
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "0") or "0")
+    # HSTS: por defecto 1 año; usar SECURE_HSTS_SECONDS=0 solo si hay que desactivar (p. ej. dominio mixto).
+    SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "31536000") or "0")
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+    SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+    SECURE_REFERRER_POLICY = "same-origin"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -138,6 +148,16 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_IDLE_TIMEOUT_SECONDS = int(os.environ.get("SESSION_IDLE_TIMEOUT_SECONDS", str(30 * 60)))
 SESSION_COOKIE_AGE = SESSION_IDLE_TIMEOUT_SECONDS
 SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+
+# Caché en memoria (proceso): suficiente para rate-limit de login; en varios workers cada uno tiene su contador.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "sirona-default",
+    }
+}
 
 # Logs a consola (Render)
 LOGGING = {

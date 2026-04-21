@@ -11,6 +11,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import resolve_url
 
 from core.models import PerfilAcceso
+from core.security import safe_internal_path
 
 _SESSION_LAST_ACTIVITY = "_session_last_activity"
 
@@ -31,7 +32,8 @@ class IdleSessionTimeoutMiddleware:
             now = time.time()
             last = request.session.get(_SESSION_LAST_ACTIVITY)
             if last is not None and (now - last) > self.timeout:
-                next_path = request.get_full_path()
+                # Solo path interno (evita open redirect vía query en `next` tras re-login).
+                next_path = safe_internal_path(request.path) or "/"
                 logout(request)
                 login_url = resolve_url(settings.LOGIN_URL)
                 query = urlencode({"idle": "1", "next": next_path})

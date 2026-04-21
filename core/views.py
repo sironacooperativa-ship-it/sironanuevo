@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connections
 from django.db.utils import OperationalError
@@ -16,6 +17,7 @@ from django.views.decorators.http import require_http_methods
 
 from .forms import SironaPasswordChangeForm
 from .money_decimal import q2
+from .security import client_ip, safe_internal_path
 
 from calendario.models import Evento
 from caja.models import MovimientoCaja
@@ -25,19 +27,6 @@ from ventas.models import Venta
 
 from administrador.models import RegistroActividad
 from personas.models import Vendedor
-
-
-def _safe_relative_next(path: str) -> str:
-    """
-    Evita redirecciones abiertas: solo permite rutas internas relativas.
-    Acepta solo strings que empiezan con '/' y rechaza '//' (scheme-relative).
-    """
-    if not path:
-        return ""
-    path = str(path).strip()
-    if not path.startswith("/") or path.startswith("//"):
-        return ""
-    return path
 
 
 def _safe_get_vendedor_perfil(user) -> Vendedor | None:
@@ -249,7 +238,7 @@ def login_view(request):
     if request.user.is_authenticated:
         return redirect("home")
 
-    next_url = _safe_relative_next(request.GET.get("next") or "")
+    next_url = safe_internal_path(request.GET.get("next") or "")
     idle_timeout = request.GET.get("idle") == "1" or request.POST.get("idle") == "1"
 
     error = None
@@ -258,40 +247,55 @@ def login_view(request):
     vendedor_option_checked = False
     vendedor_option_locked = False
     if request.method == "POST":
-        next_url = _safe_relative_next(request.POST.get("next") or "") or next_url
+        next_url = safe_internal_path(request.POST.get("next") or "") or next_url
         username = request.POST.get("username", "").strip()
         password = request.POST.get("password", "")
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            if next_url:
-                return redirect(next_url)
-            try:
-                solo_vendedor = bool(
-                    getattr(getattr(user, "perfil_acceso", None), "solo_vendedor", False)
-                )
-                entrar = (request.POST.get("entrar_como_vendedor") or "0") == "1"
-                # Importante: NO autocrear ni autovincular vendedor (evita duplicados).
-                v = _safe_get_vendedor_perfil(user)
+        ip = client_ip(request)
+        block_key = f"login:block:{ip}"
+        fail_key = f"login:fail:{ip}"
+        if cache.get(block_key):
+            error = "Demasiados intentos fallidos. Esperá unos minutos y volvé a intentar."
+        else:
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                cache.delete(fail_key)
+                cache.delete(block_key)
+                login(request, user)
+                if next_url:
+                    return redirect(next_url)
+                try:
+                    solo_vendedor = bool(
+                        getattr(getattr(user, "perfil_acceso", None), "solo_vendedor", False)
+                    )
+                    entrar = (request.POST.get("entrar_como_vendedor") or "0") == "1"
+                    # Importante: NO autocrear ni autovincular vendedor (evita duplicados).
+                    v = _safe_get_vendedor_perfil(user)
 
-                # Guardar modo en sesión (para menú/layout). Staff puede entrar como vendedor con el checkbox.
-                modo = bool(solo_vendedor or (entrar and v is not None))
-                request.session["modo_vendedor"] = modo
+                    # Guardar modo en sesión (para menú/layout). Staff puede entrar como vendedor con el checkbox.
+                    modo = bool(solo_vendedor or (entrar and v is not None))
+                    request.session["modo_vendedor"] = modo
 
-                if solo_vendedor:
-                    if v is None:
-                        messages.error(request, "Tu usuario está marcado como 'solo vendedor' pero no tiene perfil de vendedor asignado.")
-                        logout(request)
-                        return redirect("login")
-                    return redirect("vendedor_home")
-                if entrar and v is not None:
-                    return redirect("vendedor_home")
-                if entrar and v is None:
-                    messages.error(request, "Este usuario no tiene perfil de vendedor asignado.")
-            except Exception:
-                pass
-            return redirect("home")
-        error = "Usuario o contraseña incorrectos."
+                    if solo_vendedor:
+                        if v is None:
+                            messages.error(
+                                request,
+                                "Tu usuario está marcado como 'solo vendedor' pero no tiene perfil de vendedor asignado.",
+                            )
+                            logout(request)
+                            return redirect("login")
+                        return redirect("vendedor_home")
+                    if entrar and v is not None:
+                        return redirect("vendedor_home")
+                    if entrar and v is None:
+                        messages.error(request, "Este usuario no tiene perfil de vendedor asignado.")
+                except Exception:
+                    pass
+                return redirect("home")
+            fails = int(cache.get(fail_key, 0) or 0) + 1
+            cache.set(fail_key, fails, 900)
+            if fails >= 10:
+                cache.set(block_key, 1, 600)
+            error = "Usuario o contraseña incorrectos."
 
     return render(
         request,
