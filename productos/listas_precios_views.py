@@ -178,6 +178,7 @@ def lista_precios_trabajar(request, pk: int):
 
         if request.method == "POST":
             actualizados = 0
+            to_update: list[Producto] = []
             with transaction.atomic():
                 for p in productos:
                     key = f"pv_{p.pk}"
@@ -189,8 +190,10 @@ def lista_precios_trabajar(request, pk: int):
                     if p.precio_venta != pr:
                         p.precio_venta = pr
                         p.precio_venta_editado = True
-                        p.save()
+                        to_update.append(p)
                         actualizados += 1
+                if to_update:
+                    Producto.objects.bulk_update(to_update, ["precio_venta", "precio_venta_editado"])
             messages.success(request, f"Se actualizaron {actualizados} precio(s) de Farmacia.")
             return redirect(f"{request.path}?q={q}" if q else request.path)
 
@@ -243,6 +246,7 @@ def lista_precios_trabajar(request, pk: int):
 
         items = ListaPrecioItem.objects.filter(lista=lista).select_related("producto")
         n = 0
+        to_update: list[ListaPrecioItem] = []
         with transaction.atomic():
             for it in items:
                 key = f"ip_{it.pk}"
@@ -253,8 +257,10 @@ def lista_precios_trabajar(request, pk: int):
                     continue
                 if it.precio_venta != pr:
                     it.precio_venta = pr
-                    it.save(update_fields=["precio_venta"])
+                    to_update.append(it)
                     n += 1
+            if to_update:
+                ListaPrecioItem.objects.bulk_update(to_update, ["precio_venta"])
         messages.success(request, f"Se guardaron {n} precio(s) de la lista.")
         return redirect(f"{request.path}?q={q}" if q else request.path)
 
