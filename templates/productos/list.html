@@ -345,6 +345,19 @@
       <div class="d-flex flex-wrap gap-2 align-items-center">
         <span class="text-muted small me-1">Exportar listado:</span>
         {% include "includes/export_buttons.html" %}
+        {% if page_obj and page_obj.paginator.num_pages > 1 %}
+          <div class="ms-auto d-flex flex-wrap align-items-center gap-2 small">
+            <span class="text-muted">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            <div class="d-flex gap-2">
+              {% if page_obj.has_previous %}
+                <a class="btn btn-sm btn-outline-secondary rounded-pill" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>
+              {% endif %}
+              {% if page_obj.has_next %}
+                <a class="btn btn-sm btn-outline-secondary rounded-pill" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
         <form class="d-flex align-items-center gap-2 flex-wrap" method="get" action="{% url 'productos_export_pdf' %}">
           <div class="form-check form-switch sirona-switch mb-0">
             <input class="form-check-input" type="checkbox" value="1" id="pdfStock" name="stock" />

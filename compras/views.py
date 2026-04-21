@@ -3,6 +3,7 @@ from datetime import datetime
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.db import DatabaseError, transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
@@ -96,17 +97,28 @@ def compra_historial(request):
             return xlsx_response("compras", [("Compras", headers, rows)])
         return pdf_response("compras", "Historial de compras", [("Compras", headers, rows)])
 
+    page = (request.GET.get("page") or "").strip()
+    paginator = Paginator(compras, 80)
+    page_obj = paginator.get_page(page or 1)
+    compras_page = list(page_obj)
+
+    qcopy = request.GET.copy()
+    qcopy.pop("page", None)
+    querystring = qcopy.urlencode()
+
     productos = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
     proveedores = Proveedor.objects.order_by("apellido", "nombre", "codigo")
     return render(
         request,
         "compras/historial.html",
         {
-            "compras": compras,
+            "compras": compras_page,
             "filtros": filtros_ctx,
             "productos_filtro": productos,
             "proveedores_filtro": proveedores,
             "es_admin_compras": _es_staff(request.user),
+            "page_obj": page_obj,
+            "querystring": querystring,
         },
     )
 

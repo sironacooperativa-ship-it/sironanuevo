@@ -14,6 +14,7 @@ from django.http import FileResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
+from django.core.paginator import Paginator
 from openpyxl import load_workbook
 from urllib.parse import urlencode
 
@@ -417,6 +418,14 @@ def productos_list(request):
             return xlsx_response(base, [("Productos", headers, rows)])
         return pdf_response(base, "Listado de productos", [("Productos", headers, rows)])
 
+    page = (request.GET.get("page") or "").strip()
+    paginator = Paginator(productos, 100)
+    page_obj = paginator.get_page(page or 1)
+    productos_page = list(page_obj)
+    qcopy = request.GET.copy()
+    qcopy.pop("page", None)
+    querystring = qcopy.urlencode()
+
     proveedores_filtro = Proveedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
     listas_precios_filtro = ListaPrecios.objects.all().order_by("-es_farmacia", "nombre")
 
@@ -424,7 +433,7 @@ def productos_list(request):
         request,
         "productos/list.html",
         {
-            "productos": productos,
+            "productos": productos_page,
             "q": q,
             "tipo": tipo,
             "proveedor": proveedor,
@@ -434,6 +443,8 @@ def productos_list(request):
             "tipos": Producto.Tipo.choices,
             "proveedores_filtro": proveedores_filtro,
             "listas_precios_filtro": listas_precios_filtro,
+            "page_obj": page_obj,
+            "querystring": querystring,
         },
     )
 

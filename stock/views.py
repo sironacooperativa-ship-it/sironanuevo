@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import F, Q
+from django.core.paginator import Paginator
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
@@ -156,12 +157,18 @@ def stock_home(request):
             [("Productos", hp, rp), ("Movimientos (últimos registros)", hm, rm)],
         )
 
-    productos = list(_stock_productos_queryset(request)[0])
+    productos_qs, q = _stock_productos_queryset(request)
+    page = (request.GET.get("page") or "").strip()
+    paginator = Paginator(productos_qs, 120)
+    page_obj = paginator.get_page(page or 1)
+    productos = list(page_obj)
     movimientos = (
         MovimientoStock.objects.select_related("producto", "usuario")
         .order_by("-creado_en", "-id")[:30]
     )
-    q = (request.GET.get("q") or "").strip()
+    qcopy = request.GET.copy()
+    qcopy.pop("page", None)
+    querystring = qcopy.urlencode()
 
     return render(
         request,
@@ -171,6 +178,8 @@ def stock_home(request):
             "productos": productos,
             "movimientos": movimientos,
             "q": q,
+            "page_obj": page_obj,
+            "querystring": querystring,
         },
     )
 

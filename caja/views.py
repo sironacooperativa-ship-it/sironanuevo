@@ -1,10 +1,11 @@
 from collections import defaultdict
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, Case, When, F, Value, DecimalField, ExpressionWrapper
+from django.db.models.functions import Coalesce
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
@@ -97,15 +98,43 @@ def caja_list(request):
 
     d_desde = parse_fecha_param(desde) if desde else None
     d_hasta = parse_fecha_param(hasta) if hasta else None
+    exp = parse_export(request)
+    auto_limitado = False
+    if not exp:
+        # Si no hay filtros, limitar por defecto a 90 días para evitar cargar todo el histórico.
+        if not any([q_operacion, tipo, medio_pago, vendedor, d_desde, d_hasta]):
+            d_desde = date.today() - timedelta(days=90)
+            auto_limitado = True
     if d_desde:
         qs = qs.filter(fecha__gte=d_desde)
     if d_hasta:
         qs = qs.filter(fecha__lte=d_hasta)
 
-    movimientos = list(qs.order_by("fecha", "id"))
+    # Delta en DB para poder sumar sin traer todo.
+    delta_expr = Case(
+        When(tipo=MovimientoCaja.Tipo.INGRESO, then=F("monto")),
+        default=ExpressionWrapper(Value(0) - F("monto"), output_field=DecimalField(max_digits=14, decimal_places=2)),
+        output_field=DecimalField(max_digits=14, decimal_places=2),
+    )
+
+    # Saldo previo al rango (si hay desde)
+    saldo_previo = Decimal("0.00")
+    if d_desde:
+        saldo_previo = (
+            MovimientoCaja.objects.filter(fecha__lt=d_desde)
+            .aggregate(s=Coalesce(Sum(delta_expr), Value(Decimal("0.00"))))
+            .get("s")
+            or Decimal("0.00")
+        )
+
+    movimientos_qs = qs.order_by("fecha", "id")
+    page = (request.GET.get("page") or "").strip()
+    paginator = Paginator(movimientos_qs, 200)
+    page_obj = paginator.get_page(page or 1)
+    movimientos = list(page_obj)
 
     # saldo acumulado
-    saldo = Decimal("0.00")
+    saldo = q2(saldo_previo)
     rows = []
     for m in movimientos:
         saldo = q2(saldo + m.delta)
@@ -130,7 +159,6 @@ def caja_list(request):
         "total_egreso": q2(totales.get("total_egreso")),
     }
 
-    exp = parse_export(request)
     hoy = date.today()
     resumen_caja = _resumen_caja_dashboard(hoy)
     filtros_activos = any(
@@ -175,17 +203,24 @@ def caja_list(request):
             return xlsx_response("caja_movimientos", [("Movimientos", headers, rows)])
         return pdf_response("caja_movimientos", "Movimientos de caja", [("Movimientos", headers, rows)])
 
+    qcopy = request.GET.copy()
+    qcopy.pop("page", None)
+    querystring = qcopy.urlencode()
+
     return render(
         request,
         "caja/list.html",
         {
             "periodos": periodos,
+            "page_obj": page_obj,
+            "querystring": querystring,
+            "auto_limitado": auto_limitado,
             "f": {
                 "operacion": q_operacion,
                 "tipo": tipo,
                 "medio_pago": medio_pago,
                 "vendedor": vendedor,
-                "desde": fecha_filtro_value_iso(request.GET.get("desde")),
+                "desde": (d_desde.isoformat() if d_desde and auto_limitado else fecha_filtro_value_iso(request.GET.get("desde"))),
                 "hasta": fecha_filtro_value_iso(request.GET.get("hasta")),
             },
             "tipos": MovimientoCaja.Tipo.choices,

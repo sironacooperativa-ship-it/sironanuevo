@@ -4,6 +4,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Sum, Value
 from django.db.models.functions import Coalesce
@@ -275,11 +276,8 @@ def _filtrar_ventas_queryset(request):
         fecha_desde = parse_fecha_dashboard(request.GET.get("fecha_desde"))
         fecha_hasta = parse_fecha_dashboard(request.GET.get("fecha_hasta"))
 
-    qs = (
-        Venta.objects.select_related("vendedor", "comprador", "pago_movimiento")
-        .prefetch_related("lineas__producto")
-        .order_by("-creado_en", "-id")
-    )
+    # Nota: para el historial no necesitamos las líneas; evitamos prefetch para bajar memoria/tiempo.
+    qs = Venta.objects.select_related("vendedor", "comprador", "pago_movimiento").order_by("-creado_en", "-id")
     if fecha_desde:
         qs = qs.filter(creado_en__date__gte=fecha_desde)
     if fecha_hasta:
@@ -420,6 +418,15 @@ def venta_historial(request):
             return xlsx_response("ventas", [("Ventas", headers, rows)])
         return pdf_response("ventas", "Historial de ventas", [("Ventas", headers, rows)])
 
+    page = (request.GET.get("page") or "").strip()
+    paginator = Paginator(ventas, 80)
+    page_obj = paginator.get_page(page or 1)
+    ventas_page = list(page_obj)
+
+    qcopy = request.GET.copy()
+    qcopy.pop("page", None)
+    querystring = qcopy.urlencode()
+
     productos = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
     vendedores = Vendedor.objects.order_by("apellido", "nombre", "codigo")
     compradores = Comprador.objects.order_by("apellido", "nombre", "codigo")
@@ -427,11 +434,13 @@ def venta_historial(request):
         request,
         "ventas/historial.html",
         {
-            "ventas": ventas,
+            "ventas": ventas_page,
             "filtros": filtros_ctx,
             "productos_filtro": productos,
             "vendedores_filtro": vendedores,
             "compradores_filtro": compradores,
+            "page_obj": page_obj,
+            "querystring": querystring,
         },
     )
 
