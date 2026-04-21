@@ -1,39 +1,22 @@
 import os
-import sys
+import warnings
 from pathlib import Path
 
 import dj_database_url
-from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-change-me")
 DEBUG = os.environ.get("DEBUG", "0") == "1"
 
-
-def _management_command_skips_secret_check() -> bool:
-    """
-    Build/start de Render: migrate, collectstatic, ensure_superuser, etc. a veces corren
-    sin SECRET_KEY aún definida. Gunicorn/uWSGI no usa manage.py → ahí sí exigimos clave larga.
-
-    Excepción: `manage.py runserver` con DEBUG=0 debe seguir exigiendo SECRET_KEY (evita prod informal).
-    """
-    if len(sys.argv) < 2:
-        return False
-    argv0 = (sys.argv[0] or "").replace("\\", "/")
-    if not (argv0.endswith("/manage.py") or os.path.basename(argv0) == "manage.py"):
-        return False
-    return sys.argv[1] != "runserver"
-
-
-if (
-    not DEBUG
-    and not _management_command_skips_secret_check()
-    and len(SECRET_KEY) < 50
-):
-    raise ImproperlyConfigured(
-        "En producción (DEBUG=0) SECRET_KEY debe tener al menos 50 caracteres aleatorios. "
-        "Configurá la variable de entorno en Render (para el servicio web; opcional también en build)."
+# No bloqueamos el arranque (Render a veces no inyecta SECRET_KEY hasta runtime o el build falla).
+# Sí avisamos: sin clave larga, sesiones y CSRF son mucho más débiles.
+if not DEBUG and len(SECRET_KEY) < 50:
+    warnings.warn(
+        "Producción (DEBUG=0): definí SECRET_KEY con al menos 50 caracteres aleatorios en Render "
+        "(Environment del Web Service → Generate). La app arranca igual; corregilo cuanto antes.",
+        UserWarning,
+        stacklevel=1,
     )
 ALLOWED_HOSTS = [h.strip() for h in (os.environ.get("ALLOWED_HOSTS", "")).split(",") if h.strip()]
 if not ALLOWED_HOSTS:
