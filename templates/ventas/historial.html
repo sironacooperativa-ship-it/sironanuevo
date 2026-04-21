@@ -1,6 +1,42 @@
 {% extends "base.html" %}
 {% load money %}
 {% block title %}Pedidos{% endblock %}
+{% block extra_head %}
+  <style>
+    .ventas-hist-pendiente-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.28rem;
+      height: 1.28rem;
+      border-radius: 50%;
+      font-size: 0.78rem;
+      font-weight: 800;
+      line-height: 1;
+      background: var(--bs-warning);
+      color: #1c1c1e;
+    }
+    .ventas-hist-pagada-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.28rem;
+      height: 1.28rem;
+      border-radius: 50%;
+      font-size: 0.68rem;
+      font-weight: 700;
+      line-height: 1;
+      background: var(--bs-success);
+      color: #fff;
+    }
+    .ventas-historial-leyenda .ventas-hist-icon,
+    td .ventas-hist-icon {
+      width: 1rem;
+      height: 1rem;
+      flex-shrink: 0;
+    }
+  </style>
+{% endblock %}
 {% block content %}
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Historial de pedidos</h1>
@@ -84,6 +120,29 @@
   </div>
 
   <div class="card shadow-sm">
+    <div class="card-body pb-0">
+      <p class="small text-muted mb-2 ventas-historial-leyenda">
+        <strong>Leyenda:</strong>
+        <span class="ms-1 d-inline-flex align-items-center gap-1">
+          <span class="ventas-hist-pendiente-icon" aria-hidden="true">!</span> pedido pendiente de pago;
+        </span>
+        <span class="ms-2 d-inline-flex align-items-center gap-1">
+          <i data-lucide="eye" class="ventas-hist-icon"></i> ver pedido;
+        </span>
+        <span class="ms-2 d-inline-flex align-items-center gap-1">
+          <i data-lucide="pencil" class="ventas-hist-icon"></i> editar pedido;
+        </span>
+        <span class="ms-2 d-inline-flex align-items-center gap-1">
+          <i data-lucide="wallet" class="ventas-hist-icon"></i> pagar pedido;
+        </span>
+        <span class="ms-2 d-inline-flex align-items-center gap-1">
+          <i data-lucide="x" class="ventas-hist-icon text-danger"></i> eliminar pedido.
+        </span>
+        <span class="ms-2 d-inline-block">
+          Si está <strong>pagado</strong>, el ícono de <i data-lucide="landmark" class="ventas-hist-icon"></i> abre el movimiento en caja.
+        </span>
+      </p>
+    </div>
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
@@ -123,28 +182,74 @@
                 {% endif %}
               </td>
               <td class="text-end fw-medium">{{ v.monto_ingreso_caja|ars }}</td>
-              <td>
+              <td class="text-center">
                 {% if v.estado == "PEN" %}
-                  <span class="badge text-bg-warning text-dark">Pendiente</span>
+                  <span
+                    class="ventas-hist-pendiente-icon"
+                    title="Pedido pendiente de pago"
+                    role="img"
+                    aria-label="Pedido pendiente de pago"
+                    >!</span>
                 {% else %}
-                  <span class="badge text-bg-success">Pagada</span>
+                  <span
+                    class="ventas-hist-pagada-icon"
+                    title="Pagada"
+                    role="img"
+                    aria-label="Pagada"
+                    >✓</span>
                 {% endif %}
               </td>
               <td class="text-end text-nowrap">
-                <a class="btn btn-sm btn-outline-secondary" href="{% url 'venta_detalle' v.pk %}">Ver</a>
-                <a class="btn btn-sm btn-outline-primary px-2" href="{% url 'venta_editar' v.pk %}" title="Editar" aria-label="Editar">
-                  <i data-lucide="pencil"></i>
+                <a
+                  class="btn btn-sm btn-outline-secondary px-2"
+                  href="{% url 'venta_detalle' v.pk %}"
+                  title="Ver pedido"
+                  aria-label="Ver pedido"
+                >
+                  <i data-lucide="eye" class="ventas-hist-icon"></i>
+                </a>
+                <a
+                  class="btn btn-sm btn-outline-primary px-2"
+                  href="{% url 'venta_editar' v.pk %}"
+                  title="Editar pedido"
+                  aria-label="Editar pedido"
+                >
+                  <i data-lucide="pencil" class="ventas-hist-icon"></i>
                 </a>
                 {% if v.estado == "PEN" %}
-                  <a class="btn btn-sm btn-primary" href="{% url 'venta_registrar_pago' v.pk %}">Pago</a>
+                  <a
+                    class="btn btn-sm btn-primary px-2"
+                    href="{% url 'venta_registrar_pago' v.pk %}"
+                    title="Registrar pago del pedido"
+                    aria-label="Pagar pedido"
+                  >
+                    <i data-lucide="wallet" class="ventas-hist-icon"></i>
+                  </a>
                 {% elif v.pago_movimiento %}
-                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'caja_detail' v.pago_movimiento.pk %}">Caja</a>
+                  <a
+                    class="btn btn-sm btn-outline-secondary px-2"
+                    href="{% url 'caja_detail' v.pago_movimiento.pk %}"
+                    title="Ver movimiento en caja"
+                    aria-label="Ver movimiento en caja"
+                  >
+                    <i data-lucide="landmark" class="ventas-hist-icon"></i>
+                  </a>
                 {% endif %}
                 {% if user.is_staff %}
-                  <form method="post" action="{% url 'venta_eliminar' v.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar el pedido #{{ v.pk }}? Se revierte stock y, si estaba pagado, el ingreso en caja.');">
+                  <form
+                    method="post"
+                    action="{% url 'venta_eliminar' v.pk %}"
+                    class="d-inline"
+                    onsubmit="return confirm('¿Eliminar el pedido #{{ v.pk }}? Se revierte stock y, si estaba pagado, el ingreso en caja.');"
+                  >
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Eliminar" aria-label="Eliminar">
-                      <i data-lucide="x" class="text-danger"></i>
+                    <button
+                      type="submit"
+                      class="btn btn-sm btn-outline-danger py-0 px-2"
+                      title="Eliminar pedido"
+                      aria-label="Eliminar pedido"
+                    >
+                      <i data-lucide="x" class="ventas-hist-icon text-danger"></i>
                     </button>
                   </form>
                 {% endif %}
