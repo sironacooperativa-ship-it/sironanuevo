@@ -880,9 +880,21 @@ h2.h6 {
   Bootstrap asume header/body/footer como hijos directos de .modal-content.
   En sirona-modal el <form> envuelve esos tres: sin esto el cuerpo no tiene
   altura máxima y el scroll (y el footer con Guardar) quedan fuera de vista.
+  Tope explícito con dvh mejora móviles (barra URL) y evita corte inferior.
 */
+.sirona-modal .modal-dialog-scrollable {
+  max-height: calc(100vh - 1.25rem);
+  max-height: min(92dvh, calc(100vh - 1.25rem));
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 .sirona-modal .modal-dialog-scrollable .modal-content {
   min-height: 0;
+  max-height: calc(100vh - 1.25rem);
+  max-height: min(92dvh, calc(100vh - 1.25rem));
+  display: flex;
+  flex-direction: column;
 }
 
 .sirona-modal-form {
@@ -890,6 +902,7 @@ h2.h6 {
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
+  max-height: 100%;
   overflow: hidden;
 }
 
@@ -900,14 +913,39 @@ h2.h6 {
 .sirona-modal-form > .modal-body {
   flex: 1 1 auto;
   min-height: 0;
+  max-height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 
 .sirona-modal-form > .modal-footer {
   flex-shrink: 0;
+}
+
+/* Leyendas del formulario producto (ficha y modal) */
+.producto-form-hint {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--bs-secondary-color);
+  margin-top: 0.2rem;
+}
+
+.sirona-modal-form .producto-form-hint {
+  font-size: 0.6875rem;
+  line-height: 1.35;
+}
+
+.listas-extra-hint {
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.sirona-modal-form .listas-extra-hint {
+  font-size: 0.7rem;
+  margin-bottom: 0.35rem !important;
 }
 
 .sirona-modal-dialog {
