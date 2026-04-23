@@ -161,13 +161,13 @@
                 title="Seleccionar / quitar todos"
               />
             </th>
-            <th scope="col" class="small text-muted text-uppercase" style="letter-spacing: 0.04em;">Código</th>
+            <th scope="col" class="col-producto-codigo text-center small text-muted text-uppercase" style="letter-spacing: 0.04em;">Código</th>
             <th scope="col" class="small text-muted text-uppercase" style="letter-spacing: 0.04em;">Descripción</th>
-            <th scope="col" class="small text-muted text-uppercase" style="letter-spacing: 0.04em;">Tipo</th>
-            <th scope="col" class="text-end col-monto small text-muted text-uppercase" style="letter-spacing: 0.04em;">Costo</th>
-            <th scope="col" class="text-end small text-muted text-uppercase" style="letter-spacing: 0.04em;">Stk</th>
-            <th scope="col" class="text-end small text-muted text-uppercase" style="letter-spacing: 0.04em;">%</th>
-            <th scope="col" class="text-end col-monto small text-muted text-uppercase" style="letter-spacing: 0.04em;">Precio</th>
+            <th scope="col" class="text-center small text-muted text-uppercase" style="letter-spacing: 0.04em;">Tipo</th>
+            <th scope="col" class="text-center col-monto small text-muted text-uppercase" style="letter-spacing: 0.04em;">Costo</th>
+            <th scope="col" class="text-center small text-muted text-uppercase" style="letter-spacing: 0.04em;">Stk</th>
+            <th scope="col" class="text-center small text-muted text-uppercase" style="letter-spacing: 0.04em;">%</th>
+            <th scope="col" class="text-center col-monto small text-muted text-uppercase" style="letter-spacing: 0.04em;">Precio</th>
             <th scope="col" class="text-end small text-muted text-uppercase" style="letter-spacing: 0.04em;"></th>
           </tr>
         </thead>
@@ -187,7 +187,7 @@
                   title="Seleccionar {{ p.codigo }}"
                 />
               </td>
-              <td class="font-monospace small align-middle">{{ p.codigo }}</td>
+              <td class="col-producto-codigo text-center font-monospace small align-middle">{{ p.codigo }}</td>
               <td class="small align-middle" style="min-width: 11rem">
                 <span class="producto-view">{{ p.descripcion }}</span>
                 <input
@@ -200,7 +200,7 @@
                   autocomplete="off"
                 />
               </td>
-              <td class="small align-middle">
+              <td class="small text-center align-middle">
                 <span class="producto-view text-muted">{{ p.get_tipo_display }}</span>
                 <select
                   name="tipo"
@@ -212,19 +212,19 @@
                   {% endfor %}
                 </select>
               </td>
-              <td class="text-end col-monto small align-middle">
+              <td class="text-center col-monto small align-middle">
                 <span class="producto-view">{{ p.costo|ars }}</span>
                 <input
                   type="number"
                   name="costo"
-                  class="form-control form-control-sm text-end rounded-3 producto-edit d-none"
+                  class="form-control form-control-sm text-center rounded-3 producto-edit d-none"
                   form="producto-inline-{{ p.pk }}"
                   value="{{ p.costo }}"
                   step="0.01"
                   min="0"
                 />
               </td>
-              <td class="text-end small text-nowrap align-middle">
+              <td class="text-center small text-nowrap align-middle">
                 <span class="producto-view">
                   {{ p.stock }}
                   {% if p.stock == 0 %}
@@ -234,7 +234,7 @@
                 <input
                   type="number"
                   name="stock"
-                  class="form-control form-control-sm text-end rounded-3 producto-edit d-none"
+                  class="form-control form-control-sm text-center rounded-3 producto-edit d-none"
                   form="producto-inline-{{ p.pk }}"
                   value="{{ p.stock }}"
                   min="0"

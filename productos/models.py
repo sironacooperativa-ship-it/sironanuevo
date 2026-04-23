@@ -109,7 +109,7 @@ class Producto(models.Model):
             if uf is not None:
                 kwargs["update_fields"] = sorted(set(uf) | {"habilitado", "en_lista_precios"})
         elif self.stock is not None and self.stock > 0:
-            # Al pasar de sin stock a con stock, queda habilitado para venta (y en lista de precios).
+            # Al pasar de sin stock a con stock, queda habilitado para venta (lista Farmacia/PDF es aparte).
             paso_a_positivo = False
             if self._state.adding:
                 paso_a_positivo = True

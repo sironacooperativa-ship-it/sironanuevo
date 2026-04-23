@@ -20,7 +20,7 @@ class ProductoForm(forms.ModelForm):
         help_texts = {
             "stock": (
                 "Si el stock pasa a 0, el producto se deshabilita solo. "
-                "Si pasa de 0 a un valor mayor, se habilita para la venta y vuelve a la lista de precios."
+                "Si pasa de 0 a un valor mayor, se habilita para la venta; la lista Farmacia (PDF) la marcás vos en el producto."
             ),
         }
         fields = [

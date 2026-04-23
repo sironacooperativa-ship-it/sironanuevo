@@ -783,6 +783,14 @@ h2.h6 {
   font-variant-numeric: tabular-nums;
 }
 
+/* Código: solo el ancho del contenido (sin columna ancha vacía) */
+.table-productos th.col-producto-codigo,
+.table-productos td.col-producto-codigo {
+  white-space: nowrap;
+  width: 0.1%;
+  vertical-align: middle;
+}
+
 .form-check.form-switch.sirona-switch .form-check-input {
   width: 2.75em;
   height: 1.45em;
