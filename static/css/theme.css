@@ -869,6 +869,11 @@ h2.h6 {
   color: #495057;
 }
 
+/* El scroll del modal #sironaModal se refuerza con estilos inline en base.html (WhiteNoise+hash). */
+#sironaModal.sirona-modal {
+  align-items: flex-start !important;
+}
+
 .sirona-modal .modal-content {
   border-radius: 1.125rem;
   overflow: hidden;
