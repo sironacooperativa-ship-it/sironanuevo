@@ -21,16 +21,20 @@ def vendor_mode(request):
     path = str(getattr(request, "path", "") or "")
     in_portal = path.startswith("/vendedor/")
     has_vendedor_perfil = False
+    vendedor_perfil_pk = None
     user = getattr(request, "user", None)
     if user is not None and getattr(user, "is_authenticated", False):
         try:
             v = user.vendedor_perfil
-            has_vendedor_perfil = isinstance(v, Vendedor)
+            if isinstance(v, Vendedor):
+                has_vendedor_perfil = True
+                vendedor_perfil_pk = v.pk
         except ObjectDoesNotExist:
             has_vendedor_perfil = False
 
     return {
         "vendor_mode": bool(solo_vendedor or session_flag or in_portal),
         "has_vendedor_perfil": has_vendedor_perfil,
+        "vendedor_perfil_pk": vendedor_perfil_pk,
     }
 

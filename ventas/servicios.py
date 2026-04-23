@@ -10,8 +10,8 @@ from django.db.models import F
 
 from calendario.models import Evento
 from caja.models import MovimientoCaja
-from core.money_decimal import format_monto_ars
-from productos.models import Producto
+from core.money_decimal import format_monto_ars, q2
+from productos.models import ListaPrecioItem, ListaPrecios, Producto
 
 from presupuestos.models import Presupuesto
 
@@ -29,6 +29,36 @@ def unpack_linea_spec(spec: tuple) -> tuple:
     else:
         cod, desc = prod.codigo, prod.descripcion
     return prod, qty, pu, st, cod, desc
+
+
+def sincronizar_productos_lista_elegida_en_venta(
+    lista: ListaPrecios | None,
+    line_specs: list[tuple],
+) -> None:
+    """
+    Después de armar un pedido con un rubro de lista elegido, refleja eso en catálogo/listas:
+    - Lista Farmacia: marca `en_lista_precios` en los productos vendidos (salen en PDF de Farmacia).
+    - Lista de rubro: agrega/actualiza `ListaPrecioItem` con el precio unitario usado en el pedido.
+    """
+    if lista is None or not line_specs:
+        return
+    por_producto: dict[int, tuple[Producto, Decimal]] = {}
+    for spec in line_specs:
+        prod, qty, pu, st, cod, desc = unpack_linea_spec(spec)
+        por_producto[prod.pk] = (prod, q2(pu))
+
+    with transaction.atomic():
+        if lista.es_farmacia:
+            pids = list(por_producto.keys())
+            if pids:
+                Producto.objects.filter(pk__in=pids).update(en_lista_precios=True)
+        else:
+            for pid, (_prod, pu) in por_producto.items():
+                ListaPrecioItem.objects.update_or_create(
+                    lista=lista,
+                    producto_id=pid,
+                    defaults={"precio_venta": pu},
+                )
 
 
 def crear_venta_confirmada(

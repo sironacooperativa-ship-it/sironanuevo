@@ -89,11 +89,56 @@
     })();
   </script>
 
+  <form
+    id="form-aprobacion-masiva"
+    method="post"
+    action="{% url 'presupuestos_aprobar_masivo' %}"
+  >
+    {% csrf_token %}
+    <input type="hidden" name="retorno_query" value="{{ request.GET.urlencode }}" />
+  </form>
   <div class="card shadow-sm">
+    {% if user.is_staff or has_vendedor_perfil %}
+    <div class="card-body border-bottom py-2">
+      <div class="row g-2 align-items-end small">
+        <div class="col-12 col-md-auto">
+          <label for="id_resolver_masivo_catalogo" class="form-label text-muted mb-0">Aprobación en lote (con alerta de catálogo)</label>
+          <select
+            class="form-select form-select-sm"
+            id="id_resolver_masivo_catalogo"
+            name="resolver_masivo_catalogo"
+            form="form-aprobacion-masiva"
+            style="max-width: 22rem"
+            title="Si un presupuesto tiene alerta de catálogo, con «Omitir» se lo salta; con conservar/actualizar se aplica a todos los que tengan alerta."
+          >
+            <option value="omitir">Omitir filas con alerta (aprobar el resto)</option>
+            <option value="conservar">Conservar textos e importes si hay alerta</option>
+            <option value="actualizar">Actualizar desde catálogo si hay alerta</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-auto">
+          <button
+            type="submit"
+            form="form-aprobacion-masiva"
+            class="btn btn-success btn-sm"
+            onclick="return (function(){ var n = document.querySelectorAll('input[form=form-aprobacion-masiva][name=presupuesto_id]:checked').length; if (!n) { alert('Seleccioná al menos un presupuesto pendiente (casilla a la izquierda).'); return false; } return confirm('¿Aprobar ' + n + ' presupuesto(s) y generar los pedidos? Se descontará stock.'); })();"
+          >Aprobar seleccionados</button>
+        </div>
+        <p class="col-12 text-muted small mb-0">Marcá las casillas de los <strong>pendientes</strong> que podés aprobar (mismo criterio que vendedor/admin). Con alerta de catálogo, elegí arriba cómo resolver o abrí el detalle.</p>
+      </div>
+    </div>
+    {% endif %}
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
+            {% if user.is_staff or has_vendedor_perfil %}
+            <th class="text-center" style="width:2.25rem" scope="col">
+              <input type="checkbox" class="form-check-input" id="js-masivo-todo" title="Marcar o desmarcar visibles" aria-label="Marcar o desmarcar visibles" />
+            </th>
+            {% else %}
+            <th class="text-center" style="width:0.5rem"></th>
+            {% endif %}
             <th>#</th>
             <th>Fecha</th>
             <th>Vendedor</th>
@@ -108,6 +153,25 @@
         <tbody>
           {% for p in presupuestos %}
             <tr>
+              <td class="text-center text-muted small">
+                {% if user.is_staff or vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
+                  {% if p.estado == "ACT" %}
+                    <input
+                      class="form-check-input js-cb-masivo"
+                      type="checkbox"
+                      name="presupuesto_id"
+                      value="{{ p.pk }}"
+                      form="form-aprobacion-masiva"
+                      title="Incluir en aprobación en lote"
+                      aria-label="Seleccionar presupuesto #{{ p.pk }} para aprobar en lote"
+                    />
+                  {% else %}
+                    <span class="d-inline-block" style="width:1rem" aria-hidden="true"> </span>
+                  {% endif %}
+                {% else %}
+                  <span class="d-inline-block" style="width:1rem" aria-hidden="true"> </span>
+                {% endif %}
+              </td>
               <td class="fw-semibold">
                 {{ p.pk }}
                 {% if p.estado == "ACT" and p.alerta_catalogo %}
@@ -147,7 +211,13 @@
               <td class="text-end">
                 <div class="d-flex flex-wrap justify-content-end gap-1">
                   <a class="btn btn-sm btn-outline-secondary py-0" href="{% url 'presupuesto_detalle' p.pk %}">Ver</a>
-                  {% if p.estado == "ACT" %}
+                  {% if user.is_staff or vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
+                    <form method="post" action="{% url 'presupuesto_duplicar' p.pk %}" class="d-inline">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-primary py-0" title="Copia en pendiente, mismas líneas y montos">Repetir</button>
+                    </form>
+                  {% endif %}
+                  {% if p.estado == "ACT" and user.is_staff or p.estado == "ACT" and vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
                     <a class="btn btn-sm btn-outline-primary py-0 px-2" href="{% url 'presupuesto_editar' p.pk %}" title="Editar" aria-label="Editar">
                       <i data-lucide="pencil"></i>
                     </a>
@@ -164,7 +234,7 @@
                       </form>
                     {% endif %}
                   {% endif %}
-                  {% if p.estado == "ACT" or user.is_staff %}
+                  {% if user.is_staff or p.estado == "ACT" and vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
                     <form method="post" action="{% url 'presupuesto_eliminar' p.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar el presupuesto #{{ p.pk }}? Si estaba aprobado, también se elimina el pedido y se revierte stock y caja.');">
                       {% csrf_token %}
                       <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Eliminar" aria-label="Eliminar">
@@ -176,10 +246,50 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="9" class="text-center text-muted py-5">No hay presupuestos con los filtros actuales.</td></tr>
+            <tr><td colspan="10" class="text-center text-muted py-5">No hay presupuestos con los filtros actuales.</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
+  <script>
+    (function () {
+      const maestro = document.getElementById("js-masivo-todo");
+      if (!maestro) return;
+      const sel = 'input[form=form-aprobacion-masiva].js-cb-masivo[name=presupuesto_id]';
+      function list() {
+        return document.querySelectorAll(sel);
+      }
+      maestro.addEventListener("change", function () {
+        list().forEach(function (cb) {
+          cb.checked = maestro.checked;
+        });
+        maestro.indeterminate = false;
+      });
+      var tb = document.querySelector(".card.shadow-sm .table tbody");
+      if (tb) {
+        tb.addEventListener("change", function (e) {
+          if (!e.target || !e.target.matches(sel)) return;
+          const all = list();
+          var n = 0, c = 0;
+          all.forEach(function (x) {
+            n++;
+            if (x.checked) c++;
+          });
+          if (!n) {
+            maestro.indeterminate = false;
+          } else if (c === 0) {
+            maestro.checked = false;
+            maestro.indeterminate = false;
+          } else if (c === n) {
+            maestro.checked = true;
+            maestro.indeterminate = false;
+          } else {
+            maestro.checked = false;
+            maestro.indeterminate = true;
+          }
+        });
+      }
+    })();
+  </script>
 {% endblock %}

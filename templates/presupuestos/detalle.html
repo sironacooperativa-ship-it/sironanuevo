@@ -74,6 +74,14 @@
           Copiar enlace
         </button>
       {% endif %}
+      {% if user.is_staff or vendedor_perfil_pk and vendedor_perfil_pk == presupuesto.vendedor_id %}
+        <form method="post" action="{% url 'presupuesto_duplicar' presupuesto.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-secondary btn-sm" title="Copia en pendiente con las mismas líneas y montos">
+            Repetir presupuesto
+          </button>
+        </form>
+      {% endif %}
       {% if presupuesto.estado == "ACT" %}
         <a class="btn btn-outline-primary btn-sm px-2" href="{% url 'presupuesto_editar' presupuesto.pk %}" title="Editar" aria-label="Editar">
           <i data-lucide="pencil"></i>
@@ -90,7 +98,7 @@
         <a class="btn btn-outline-secondary btn-sm" href="{% url 'venta_detalle' presupuesto.venta_id %}">Ver pedido #{{ presupuesto.venta_id }}</a>
         <a class="btn btn-primary btn-sm" href="{% url 'venta_registrar_pago' presupuesto.venta_id %}">Registrar pago (pedido)</a>
       {% endif %}
-      {% if presupuesto.estado == "ACT" or user.is_staff %}
+      {% if user.is_staff or presupuesto.estado == "ACT" and vendedor_perfil_pk and vendedor_perfil_pk == presupuesto.vendedor_id %}
         <form
           method="post"
           action="{% url 'presupuesto_eliminar' presupuesto.pk %}"

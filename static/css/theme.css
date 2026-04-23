@@ -121,6 +121,27 @@ nav.navbar.sirona-topbar.bg-white {
 
 .sirona-topbar .navbar-brand {
   padding: 0;
+  max-width: min(100%, 20rem);
+}
+
+.sirona-topbar .sirona-app-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  white-space: normal;
+}
+
+@media (min-width: 576px) {
+  .sirona-topbar .sirona-app-title {
+    font-size: 0.9rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .sirona-topbar .sirona-app-title {
+    font-size: 0.95rem;
+  }
 }
 
 .sirona-topbar .brand-logo {

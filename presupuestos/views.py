@@ -7,10 +7,10 @@ from django.db import transaction
 from django.db.models import F
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 
-from core.authz import staff_required
 from core.authz import is_staff_user
 from core.export_utils import parse_export
 from core.money_decimal import COMISION_PORCENTAJE_DEFECTO, format_monto_ars, parse_decimal_from_input, q2
@@ -31,6 +31,94 @@ def _get_vendedor_from_user(user) -> Vendedor | None:
 from .models import Presupuesto, PresupuestoLinea, presupuesto_tiene_alerta_catalogo
 from .presupuesto_pdf import presupuesto_pdf_response
 from .share_utils import contexto_compartir_presupuesto, pk_desde_token_compartir
+
+
+def _usuario_puede_gestionar_presupuesto(user, pr: Presupuesto) -> bool:
+    if not user or not user.is_authenticated:
+        return False
+    if is_staff_user(user):
+        return True
+    v = _get_vendedor_from_user(user)
+    return v is not None and int(v.pk) == int(pr.vendedor_id)
+
+
+def _ejecutar_aprobar_presupuesto_core(request, pr: Presupuesto, resolver: str) -> Venta:
+    """
+    `pr` debe estar bloqueada (select_for_update) y en ACT.
+    `resolver` si hay alerta de catálogo: "actualizar" o "conservar".
+    """
+    if pr.estado != Presupuesto.Estado.ACTIVO:
+        raise ValueError("Este presupuesto ya no está pendiente.")
+
+    lineas_list = list(pr.lineas.select_related("producto").order_by("id"))
+    if not lineas_list:
+        raise ValueError("El presupuesto no tiene líneas.")
+
+    for ln in lineas_list:
+        prod = ln.producto
+        if not prod.habilitado:
+            raise ValueError(f"El producto {prod.codigo} ya no está habilitado.")
+        if prod.stock < ln.cantidad:
+            raise ValueError(
+                f"Stock insuficiente para {prod.codigo} al aprobar (necesario: {ln.cantidad}, "
+                f"disponible: {prod.stock})."
+            )
+
+    if presupuesto_tiene_alerta_catalogo(pr):
+        if resolver == "actualizar":
+            _actualizar_presupuesto_lineas_desde_catalogo(pr)
+        elif resolver == "conservar":
+            _marcar_lineas_presupuesto_al_dia_con_catalogo(pr)
+        else:
+            raise ValueError(
+                "Elegí cómo resolver el catálogo: «Actualizar desde catálogo» o «Conservar presupuesto original»."
+            )
+
+    pr.refresh_from_db()
+    if pr.descuento_monto > pr.subtotal_lineas:
+        raise ValueError(
+            "El descuento supera el subtotal de líneas. Editá el presupuesto y ajustá descuento o líneas."
+        )
+
+    line_specs = []
+    for ln in pr.lineas.select_related("producto").order_by("id"):
+        prod = ln.producto
+        line_specs.append(
+            (
+                prod,
+                ln.cantidad,
+                ln.precio_unitario,
+                ln.subtotal,
+                ln.codigo_snapshot or prod.codigo,
+                ln.descripcion_snapshot or prod.descripcion,
+            )
+        )
+
+    venta = crear_venta_confirmada(
+        pr.vendedor_id,
+        pr.fecha_vencimiento_pago,
+        pr.descuento_monto,
+        pr.comision_porcentaje,
+        line_specs,
+        comprador_id=pr.comprador_id,
+        creado_por_id=request.user.id,
+        aplica_comision=pr.aplica_comision,
+    )
+    pr.estado = Presupuesto.Estado.APROBADO
+    pr.venta = venta
+    pr.aprobado_en = timezone.now()
+    pr.aprobado_por = request.user
+    pr.actualizado_por = request.user
+    pr.save(
+        update_fields=[
+            "estado",
+            "venta",
+            "aprobado_en",
+            "aprobado_por",
+            "actualizado_por",
+        ]
+    )
+    return venta
 
 
 def _actualizar_presupuesto_lineas_desde_catalogo(presupuesto: Presupuesto) -> None:
@@ -599,11 +687,19 @@ def presupuesto_editar(request, pk: int):
     )
 
 
-@staff_required
+@login_required
 @require_http_methods(["POST"])
 def presupuesto_eliminar(request, pk: int):
     presupuesto = get_object_or_404(Presupuesto, pk=pk)
     es_admin = is_staff_user(request.user)
+    if not es_admin:
+        vuser = _get_vendedor_from_user(request.user)
+        if vuser is None or int(vuser.pk) != int(presupuesto.vendedor_id):
+            messages.error(
+                request,
+                "No tenés permiso para eliminar este presupuesto. Solo el vendedor asignado o un administrador.",
+            )
+            return redirect("presupuesto_lista")
     if presupuesto.estado != Presupuesto.Estado.ACTIVO and not es_admin:
         messages.warning(
             request,
@@ -636,6 +732,12 @@ def presupuesto_eliminar(request, pk: int):
 @require_http_methods(["POST"])
 def presupuesto_aprobar(request, pk: int):
     presupuesto = get_object_or_404(Presupuesto, pk=pk)
+    if not _usuario_puede_gestionar_presupuesto(request.user, presupuesto):
+        messages.error(
+            request,
+            "No tenés permiso para aprobar este presupuesto (solo el vendedor asignado o un administrador).",
+        )
+        return redirect("presupuesto_lista")
     if presupuesto.estado != Presupuesto.Estado.ACTIVO:
         messages.warning(request, "Este presupuesto ya fue aprobado.")
         return redirect("presupuesto_lista")
@@ -650,94 +752,17 @@ def presupuesto_aprobar(request, pk: int):
         )
         return redirect("presupuesto_detalle", pk=pk)
 
+    venta = None
     try:
         with transaction.atomic():
             pr = Presupuesto.objects.select_for_update().get(pk=pk)
             if pr.estado != Presupuesto.Estado.ACTIVO:
                 messages.warning(request, "Este presupuesto ya fue aprobado.")
                 return redirect("presupuesto_lista")
-
-            lineas_qs = pr.lineas.select_related("producto").order_by("id")
-            lineas_list = list(lineas_qs)
-            if not lineas_list:
-                messages.error(request, "El presupuesto no tiene líneas.")
-                return redirect("presupuesto_detalle", pk=pk)
-
-            err = None
-            for ln in lineas_list:
-                prod = ln.producto
-                if not prod.habilitado:
-                    err = f"El producto {prod.codigo} ya no está habilitado."
-                    break
-                if prod.stock < ln.cantidad:
-                    err = (
-                        f"Stock insuficiente para {prod.codigo} al aprobar (necesario: {ln.cantidad}, "
-                        f"disponible: {prod.stock})."
-                    )
-                    break
-            if err:
-                messages.error(request, err)
-                return redirect("presupuesto_detalle", pk=pk)
-
-            if presupuesto_tiene_alerta_catalogo(pr):
-                if resolver == "actualizar":
-                    _actualizar_presupuesto_lineas_desde_catalogo(pr)
-                elif resolver == "conservar":
-                    _marcar_lineas_presupuesto_al_dia_con_catalogo(pr)
-                else:
-                    messages.error(
-                        request,
-                        "El catálogo de productos cambió después de armar este presupuesto. "
-                        "Elegí «Actualizar desde catálogo» o «Conservar presupuesto original» antes de aprobar.",
-                    )
-                    return redirect("presupuesto_detalle", pk=pk)
-
-            pr.refresh_from_db()
-            if pr.descuento_monto > pr.subtotal_lineas:
-                messages.error(
-                    request,
-                    "El descuento supera el subtotal de líneas. Editá el presupuesto y ajustá descuento o líneas.",
-                )
-                return redirect("presupuesto_detalle", pk=pk)
-
-            line_specs = []
-            for ln in pr.lineas.select_related("producto").order_by("id"):
-                prod = ln.producto
-                line_specs.append(
-                    (
-                        prod,
-                        ln.cantidad,
-                        ln.precio_unitario,
-                        ln.subtotal,
-                        ln.codigo_snapshot or prod.codigo,
-                        ln.descripcion_snapshot or prod.descripcion,
-                    )
-                )
-
-            venta = crear_venta_confirmada(
-                pr.vendedor_id,
-                pr.fecha_vencimiento_pago,
-                pr.descuento_monto,
-                pr.comision_porcentaje,
-                line_specs,
-                comprador_id=pr.comprador_id,
-                creado_por_id=request.user.id,
-                aplica_comision=pr.aplica_comision,
-            )
-            pr.estado = Presupuesto.Estado.APROBADO
-            pr.venta = venta
-            pr.aprobado_en = timezone.now()
-            pr.aprobado_por = request.user
-            pr.actualizado_por = request.user
-            pr.save(
-                update_fields=[
-                    "estado",
-                    "venta",
-                    "aprobado_en",
-                    "aprobado_por",
-                    "actualizado_por",
-                ]
-            )
+            venta = _ejecutar_aprobar_presupuesto_core(request, pr, resolver)
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect("presupuesto_detalle", pk=pk)
     except Exception as exc:
         detalle = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
         messages.error(request, "No se pudo generar el pedido." + detalle)
@@ -748,3 +773,130 @@ def presupuesto_aprobar(request, pk: int):
         f"Presupuesto aprobado. Pedido #{venta.pk} creado (mismo flujo que ventas: pago, caja, calendario).",
     )
     return redirect("ventas_historial")
+
+
+@login_required
+@require_http_methods(["POST"])
+def presupuesto_duplicar(request, pk: int):
+    orig = get_object_or_404(
+        Presupuesto.objects.select_related("vendedor", "comprador").prefetch_related("lineas__producto"),
+        pk=pk,
+    )
+    if not _usuario_puede_gestionar_presupuesto(request.user, orig):
+        messages.error(
+            request,
+            "No tenés permiso para duplicar este presupuesto (solo el vendedor asignado o un administrador).",
+        )
+        return redirect("presupuesto_lista")
+
+    try:
+        with transaction.atomic():
+            nuevo = Presupuesto.objects.create(
+                vendedor_id=orig.vendedor_id,
+                comprador_id=orig.comprador_id,
+                estado=Presupuesto.Estado.ACTIVO,
+                fecha_vencimiento_pago=orig.fecha_vencimiento_pago,
+                subtotal_lineas=orig.subtotal_lineas,
+                descuento_monto=orig.descuento_monto,
+                comision_porcentaje=orig.comision_porcentaje,
+                aplica_comision=orig.aplica_comision,
+                creado_por=request.user,
+                actualizado_por=request.user,
+            )
+            for ln in orig.lineas.select_related("producto").order_by("id"):
+                PresupuestoLinea.objects.create(
+                    presupuesto=nuevo,
+                    producto_id=ln.producto_id,
+                    cantidad=ln.cantidad,
+                    precio_unitario=ln.precio_unitario,
+                    subtotal=ln.subtotal,
+                    codigo_snapshot=ln.codigo_snapshot,
+                    descripcion_snapshot=ln.descripcion_snapshot,
+                    producto_capturado_en=ln.producto_capturado_en,
+                )
+    except Exception as exc:
+        detalle = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
+        messages.error(request, "No se pudo duplicar el presupuesto." + detalle)
+        return redirect("presupuesto_detalle", pk=pk)
+
+    messages.success(
+        request,
+        f"Copia creada: presupuesto #{nuevo.pk} (mismas líneas y montos). Podés editarla o aprobarla.",
+    )
+    return redirect("presupuesto_detalle", pk=nuevo.pk)
+
+
+@login_required
+@require_http_methods(["POST"])
+def presupuestos_aprobar_masivo(request):
+    raw = request.POST.getlist("presupuesto_id")
+    ids = sorted({int(x) for x in raw if str(x).isdigit()})
+    retorno = (request.POST.get("retorno_query") or "").strip()
+    lista_url = reverse("presupuesto_lista")
+    if retorno:
+        lista_url += "?" + retorno
+
+    if not ids:
+        messages.warning(request, "No seleccionaste presupuestos pendientes.")
+        return redirect(lista_url)
+
+    modo = (request.POST.get("resolver_masivo_catalogo") or "omitir").strip()
+    if modo not in ("omitir", "conservar", "actualizar"):
+        modo = "omitir"
+
+    ok: list[tuple[int, int]] = []
+    skip_alerta: list[int] = []
+    fallos: list[str] = []
+
+    for pid in ids:
+        try:
+            pr = Presupuesto.objects.filter(pk=pid).select_related("vendedor").first()
+            if not pr:
+                fallos.append(f"#{pid} no encontrado")
+                continue
+            if not _usuario_puede_gestionar_presupuesto(request.user, pr):
+                fallos.append(f"#{pid} sin permiso")
+                continue
+            if pr.estado != Presupuesto.Estado.ACTIVO:
+                fallos.append(f"#{pid} no está pendiente")
+                continue
+            if presupuesto_tiene_alerta_catalogo(pr):
+                if modo == "omitir":
+                    skip_alerta.append(pid)
+                    continue
+                res = "conservar" if modo == "conservar" else "actualizar"
+            else:
+                res = ""
+            with transaction.atomic():
+                bloqueado = Presupuesto.objects.select_for_update().get(pk=pr.pk)
+                if bloqueado.estado != Presupuesto.Estado.ACTIVO:
+                    fallos.append(f"#{pid} ya aprobado")
+                    continue
+                venta_creada = _ejecutar_aprobar_presupuesto_core(request, bloqueado, res)
+                ok.append((pid, venta_creada.pk))
+        except ValueError as e:
+            fallos.append(f"#{pid}: {e}")
+        except Exception as e:
+            det = str(e) if getattr(request.user, "is_staff", False) else ""
+            fallos.append(f"#{pid} error" + (f" ({det})" if det else ""))
+
+    partes: list[str] = []
+    if ok:
+        nums = ", ".join(f"#{p} → pedido #{vp}" for p, vp in ok)
+        partes.append(f"{len(ok)} aprobado(s): {nums}.")
+    if skip_alerta:
+        partes.append(
+            f"Omitidos {len(skip_alerta)} (alerta de catálogo: {', '.join(f'#{i}' for i in skip_alerta)}). "
+            f"Aprobalos desde el detalle o elegí «conservar/actualizar catálogo» arriba."
+        )
+    if fallos:
+        partes.append("No aprobados: " + " · ".join(fallos[:8]) + ("…" if len(fallos) > 8 else ""))
+
+    if ok:
+        messages.success(request, " ".join(partes) or "Listo.")
+    elif not fallos and skip_alerta:
+        messages.info(request, " ".join(partes))
+    else:
+        messages.warning(request, " ".join(partes) if partes else "Nada para aprobar.")
+
+    return redirect(lista_url)

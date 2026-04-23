@@ -31,7 +31,11 @@ from productos.models import ListaPrecios, Producto
 from .forms import VentaCabeceraEditForm, VentaPagoForm
 from .models import Venta, VentaLinea
 from .remito_pdf import remito_venta_pdf_response
-from .servicios import crear_venta_confirmada, eliminar_venta_admin
+from .servicios import (
+    crear_venta_confirmada,
+    eliminar_venta_admin,
+    sincronizar_productos_lista_elegida_en_venta,
+)
 
 
 def _sync_evento_pedido_pendiente(venta: Venta) -> None:
@@ -228,6 +232,7 @@ def venta_nueva(request):
                     creado_por_id=request.user.id,
                     aplica_comision=aplica_comision,
                 )
+                sincronizar_productos_lista_elegida_en_venta(lista_venta, line_specs)
                 messages.success(request, f"Venta #{venta.pk} registrada. Orden de pago y evento en calendario.")
                 return redirect("ventas_historial")
 

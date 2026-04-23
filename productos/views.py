@@ -1,4 +1,5 @@
 import math
+import os
 import unicodedata
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
@@ -16,7 +17,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
 from openpyxl import load_workbook
-from urllib.parse import urlencode
+from urllib.parse import parse_qsl, urlencode
 
 from core.export_utils import parse_export, pdf_response, xlsx_response
 from core.authz import staff_required
@@ -33,14 +34,38 @@ from .forms import ProductoForm
 from .listas_precios_views import producto_listas_extra_context, sync_producto_listas_extras_from_post
 from .models import ListaPrecioItem, ListaPrecios, Producto
 
+# Claves GET permitidas al volver a /productos/ (retorno_query o retorno_*).
+_REDIR_PRODUCTOS_LIST_KEYS = frozenset({"q", "tipo", "proveedor", "lista", "estado", "ingreso", "page"})
 
-def _redirect_productos_con_filtros(request):
-    """Vuelve al listado conservando búsqueda / filtros enviados como retorno_* en POST."""
+
+def _retorno_params_desde_post(request) -> dict:
+    """
+    Filtros para /productos/ leyendo retorno_query (misma query que la grilla) o, si no hay,
+    los retorno_q / retorno_tipo / … (compatibilidad).
+    """
+    raw = (request.POST.get("retorno_query") or "").strip()
+    if raw:
+        out = {}
+        for k, v in parse_qsl(raw, keep_blank_values=True):
+            if k not in _REDIR_PRODUCTOS_LIST_KEYS or v is None or v == "":
+                continue
+            out[k] = v
+        if out:
+            return out
     params = {}
     for k in ("q", "tipo", "proveedor", "lista", "estado", "ingreso"):
         v = (request.POST.get(f"retorno_{k}") or "").strip()
-        if v:
+        if v != "":
             params[k] = v
+    pgn = (request.POST.get("retorno_page") or "").strip()
+    if pgn.isdigit():
+        params["page"] = pgn
+    return params
+
+
+def _redirect_productos_con_filtros(request):
+    """Vuelve al listado con los mismos filtros que en la grilla (retorno_query o retorno_*)."""
+    params = _retorno_params_desde_post(request)
     url = reverse("productos_list")
     if params:
         url += "?" + urlencode(params)
@@ -126,18 +151,36 @@ def _parse_precio_venta_input(raw: str) -> Decimal | None:
 
 
 def _redirect_productos_aumento_filtros(request):
-    qstr = urlencode(
-        {
-            "q": (request.POST.get("filtro_q") or "").strip(),
-            "tipo": (request.POST.get("filtro_tipo") or "").strip(),
-            "proveedor": (request.POST.get("filtro_proveedor") or "").strip(),
-            "estado": (request.POST.get("filtro_estado") or "").strip(),
-            "ingreso": (request.POST.get("filtro_ingreso") or "").strip(),
-        }
-    )
+    p = {
+        "q": (request.POST.get("filtro_q") or "").strip(),
+        "tipo": (request.POST.get("filtro_tipo") or "").strip(),
+        "proveedor": (request.POST.get("filtro_proveedor") or "").strip(),
+        "lista": (request.POST.get("filtro_lista") or "").strip(),
+        "estado": (request.POST.get("filtro_estado") or "").strip(),
+        "ingreso": (request.POST.get("filtro_ingreso") or "").strip(),
+    }
+    p = {k: v for k, v in p.items() if v != ""}
+    qstr = urlencode(p) if p else ""
     url = reverse("productos_aumento")
     if qstr:
         url += "?" + qstr
+    return redirect(url)
+
+
+def _redirect_productos_lista_tras_aumento_guardado(request):
+    """Vuelve al listado de productos con los mismos criterios que al armar el aumento."""
+    p = {
+        "q": (request.POST.get("filtro_q") or "").strip(),
+        "tipo": (request.POST.get("filtro_tipo") or "").strip(),
+        "proveedor": (request.POST.get("filtro_proveedor") or "").strip(),
+        "lista": (request.POST.get("filtro_lista") or "").strip(),
+        "estado": (request.POST.get("filtro_estado") or "").strip(),
+        "ingreso": (request.POST.get("filtro_ingreso") or "").strip(),
+    }
+    p = {k: v for k, v in p.items() if v != ""}
+    url = reverse("productos_list")
+    if p:
+        url += "?" + urlencode(p)
     return redirect(url)
 
 
@@ -494,7 +537,7 @@ def productos_aumento(request):
                 request,
                 f"Aumento del {pct}% aplicado sobre el costo en {actualizados} producto(s).",
             )
-            return redirect("productos_list")
+            return _redirect_productos_lista_tras_aumento_guardado(request)
 
         if step == "preview":
             ids = [int(x) for x in request.POST.getlist("sel") if str(x).isdigit()]
@@ -529,6 +572,7 @@ def productos_aumento(request):
             fq = (request.POST.get("filtro_q") or "").strip()
             ft = (request.POST.get("filtro_tipo") or "").strip()
             fp = (request.POST.get("filtro_proveedor") or "").strip()
+            fl = (request.POST.get("filtro_lista") or "").strip()
             fe = (request.POST.get("filtro_estado") or "").strip()
             fi = (request.POST.get("filtro_ingreso") or "").strip()
             back_q = {}
@@ -538,6 +582,8 @@ def productos_aumento(request):
                 back_q["tipo"] = ft
             if fp:
                 back_q["proveedor"] = fp
+            if fl:
+                back_q["lista"] = fl
             if fe:
                 back_q["estado"] = fe
             if fi:
@@ -556,6 +602,7 @@ def productos_aumento(request):
                     "filtro_q": fq,
                     "filtro_tipo": ft,
                     "filtro_proveedor": fp,
+                    "filtro_lista": fl,
                     "filtro_estado": fe,
                     "filtro_ingreso": fi,
                     "aumento_back_url": aumento_back_url,
@@ -564,6 +611,7 @@ def productos_aumento(request):
             )
 
     productos, filtros_ctx = _filtrar_productos_queryset(request)
+    listas_filtro = ListaPrecios.objects.all().order_by("-es_farmacia", "nombre")
     return render(
         request,
         "productos/aumento.html",
@@ -573,10 +621,12 @@ def productos_aumento(request):
             "q": filtros_ctx["q"],
             "tipo": filtros_ctx["tipo"],
             "proveedor": filtros_ctx["proveedor"],
+            "lista": filtros_ctx["lista"],
             "estado": filtros_ctx["estado"],
             "ingreso": filtros_ctx["ingreso"],
             "tipos": Producto.Tipo.choices,
             "proveedores_filtro": proveedores_filtro,
+            "listas_precios_filtro": listas_filtro,
         },
     )
 
@@ -614,6 +664,7 @@ def _render_producto_form(request, *, template_full: str, modo: str, form, produ
         "modal_title": (
             f"Editar · {producto.codigo}" if producto else "Nuevo producto"
         ),
+        "retorno_query": request.GET.urlencode(),
         **producto_listas_extra_context(producto),
     }
     if request.GET.get("modal") == "1":
@@ -632,7 +683,7 @@ def producto_create(request):
             producto.save()
             sync_producto_listas_extras_from_post(request, producto)
             messages.success(request, f"Producto creado: {producto.codigo}")
-            return redirect("productos_list")
+            return _redirect_productos_con_filtros(request)
     else:
         form = ProductoForm()
     return _render_producto_form(request, template_full="productos/form.html", modo="nuevo", form=form)
@@ -650,7 +701,7 @@ def producto_update(request, pk: int):
             producto.save()
             sync_producto_listas_extras_from_post(request, producto)
             messages.success(request, f"Producto actualizado: {producto.codigo}")
-            return redirect("productos_list")
+            return _redirect_productos_con_filtros(request)
     else:
         form = ProductoForm(instance=producto)
     return _render_producto_form(
@@ -691,7 +742,7 @@ def producto_delete(request, pk: int):
     codigo = producto.codigo
     producto.delete()
     messages.success(request, f"Producto eliminado: {codigo}")
-    return redirect("productos_list")
+    return _redirect_productos_con_filtros(request)
 
 
 @staff_required
@@ -700,12 +751,12 @@ def producto_toggle_habilitado(request, pk: int):
     producto = get_object_or_404(Producto, pk=pk)
     if not producto.habilitado and producto.stock <= 0:
         messages.warning(request, "No se puede habilitar un producto sin stock.")
-        return redirect("productos_list")
+        return _redirect_productos_con_filtros(request)
     producto.habilitado = not producto.habilitado
     if not producto.habilitado:
         producto.en_lista_precios = False
     producto.save()
-    return redirect("productos_list")
+    return _redirect_productos_con_filtros(request)
 
 
 @staff_required
@@ -714,10 +765,10 @@ def producto_toggle_lista(request, pk: int):
     producto = get_object_or_404(Producto, pk=pk)
     if not producto.habilitado:
         messages.warning(request, "No podés poner en lista un producto deshabilitado.")
-        return redirect("productos_list")
+        return _redirect_productos_con_filtros(request)
     producto.en_lista_precios = request.POST.get("set_lista") == "1"
     producto.save(update_fields=["en_lista_precios"])
-    return redirect("productos_list")
+    return _redirect_productos_con_filtros(request)
 
 
 @staff_required
@@ -808,6 +859,22 @@ def productos_acciones_masa(request):
                         "precio_nuevo": q2(p.precio_venta),
                     }
                 )
+            rq = (request.POST.get("retorno_query") or "").strip()
+            if not rq:
+                rp = {
+                    "q": request.POST.get("retorno_q") or "",
+                    "tipo": request.POST.get("retorno_tipo") or "",
+                    "proveedor": request.POST.get("retorno_proveedor") or "",
+                    "lista": request.POST.get("retorno_lista") or "",
+                    "estado": request.POST.get("retorno_estado") or "",
+                    "ingreso": request.POST.get("retorno_ingreso") or "",
+                }
+                ponly = {k: v for k, v in rp.items() if v}
+                pg = (request.POST.get("retorno_page") or "").strip()
+                if pg.isdigit():
+                    ponly["page"] = pg
+                if ponly:
+                    rq = urlencode(ponly)
             return render(
                 request,
                 "productos/acciones_masa_lista_confirmar.html",
@@ -816,14 +883,7 @@ def productos_acciones_masa(request):
                     "ids": ids,
                     "conflictos": filas,
                     "total": len(ids),
-                    "retorno": {
-                        "q": request.POST.get("retorno_q") or "",
-                        "tipo": request.POST.get("retorno_tipo") or "",
-                        "proveedor": request.POST.get("retorno_proveedor") or "",
-                        "lista": request.POST.get("retorno_lista") or "",
-                        "estado": request.POST.get("retorno_estado") or "",
-                        "ingreso": request.POST.get("retorno_ingreso") or "",
-                    },
+                    "retorno_query": rq,
                 },
             )
 

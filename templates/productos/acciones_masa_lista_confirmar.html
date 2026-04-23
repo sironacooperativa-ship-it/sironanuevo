@@ -9,7 +9,7 @@
         Lista: <strong>{{ lista.nombre }}</strong> · Selección: {{ total }}
       </div>
     </div>
-    <a class="btn btn-outline-secondary btn-sm ms-auto" href="{% url 'productos_list' %}">Volver</a>
+    <a class="btn btn-outline-secondary btn-sm ms-auto" href="{% url 'productos_list' %}{% if retorno_query %}?{{ retorno_query }}{% endif %}">Volver</a>
   </div>
 
   <div class="alert alert-warning small">
@@ -27,12 +27,7 @@
       <input type="hidden" name="producto_id" value="{{ id }}" />
     {% endfor %}
 
-    <input type="hidden" name="retorno_q" value="{{ retorno.q }}" />
-    <input type="hidden" name="retorno_tipo" value="{{ retorno.tipo }}" />
-    <input type="hidden" name="retorno_proveedor" value="{{ retorno.proveedor }}" />
-    <input type="hidden" name="retorno_lista" value="{{ retorno.lista }}" />
-    <input type="hidden" name="retorno_estado" value="{{ retorno.estado }}" />
-    <input type="hidden" name="retorno_ingreso" value="{{ retorno.ingreso }}" />
+    <input type="hidden" name="retorno_query" value="{{ retorno_query|default:'' }}" />
 
     <div class="card shadow-sm">
       <div class="table-responsive">
@@ -70,7 +65,7 @@
         </table>
       </div>
       <div class="card-body border-top d-flex justify-content-end gap-2">
-        <a class="btn btn-outline-secondary" href="{% url 'productos_list' %}">Cancelar</a>
+        <a class="btn btn-outline-secondary" href="{% url 'productos_list' %}{% if retorno_query %}?{{ retorno_query }}{% endif %}">Cancelar</a>
         <button type="submit" class="btn btn-primary">Aplicar</button>
       </div>
     </div>

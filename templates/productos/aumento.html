@@ -27,6 +27,7 @@
       <input type="hidden" name="filtro_q" value="{{ filtro_q }}" />
       <input type="hidden" name="filtro_tipo" value="{{ filtro_tipo }}" />
       <input type="hidden" name="filtro_proveedor" value="{{ filtro_proveedor }}" />
+      <input type="hidden" name="filtro_lista" value="{{ filtro_lista|default:'' }}" />
       <input type="hidden" name="filtro_estado" value="{{ filtro_estado|default:'' }}" />
       <input type="hidden" name="filtro_ingreso" value="{{ filtro_ingreso|default:'' }}" />
       {% for row in rows %}
@@ -107,6 +108,17 @@
             <div class="form-text small">Solo productos con al menos una compra registrada a ese proveedor.</div>
           </div>
           <div class="col-12 col-md-4">
+            <label class="form-label small text-muted mb-1">Lista de precio</label>
+            <select class="form-select form-select-sm rounded-3" name="lista">
+              <option value="">Todas</option>
+              {% for l in listas_precios_filtro %}
+                <option value="{{ l.pk }}" {% if lista == l.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ l.nombre }}{% if l.es_farmacia %} (Farmacia/PDF){% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-4">
             <label class="form-label small text-muted mb-1">Estado</label>
             <select class="form-select form-select-sm rounded-3" name="estado">
               <option value="" {% if not estado %}selected{% endif %}>Todos</option>
@@ -135,6 +147,7 @@
       <input type="hidden" name="filtro_q" value="{{ q }}" />
       <input type="hidden" name="filtro_tipo" value="{{ tipo }}" />
       <input type="hidden" name="filtro_proveedor" value="{{ proveedor }}" />
+      <input type="hidden" name="filtro_lista" value="{{ lista|default:'' }}" />
       <input type="hidden" name="filtro_estado" value="{{ estado|default:'' }}" />
       <input type="hidden" name="filtro_ingreso" value="{{ ingreso|default:'' }}" />
 
