@@ -20,6 +20,10 @@
         <strong>Stock vacío = 0.</strong> Los números que Excel guarda como fecha (o fechas en celda) no se cargan como stock.
         <strong>Si el código ya existe:</strong> primero se cargan los productos nuevos; después te mostramos un resumen para elegir si aplicar la fila del Excel o mantener lo que hay en la base.
       </p>
+      <p class="text-muted small mb-3">
+        Los productos importados <strong>no</strong> se suman solos a la lista Farmacia (PDF) ni a listas por rubro:
+        eso lo definís en la ficha de cada producto (interruptor Farmacia y casillas de otras listas) o con acciones en masa en el listado.
+      </p>
 
       <form method="post" enctype="multipart/form-data">
         {% csrf_token %}

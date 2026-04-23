@@ -20,9 +20,11 @@ from .models import ListaPrecioItem, ListaPrecios, Producto
 
 
 def filas_lista_precios(lista: ListaPrecios) -> list[tuple[Producto, Decimal]]:
-    # Misma base que la pantalla de edición Farmacia: productos habilitados.
+    # Farmacia/PDF: solo productos marcados en lista (igual que export y ficha).
     if lista.es_farmacia:
-        qs = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
+        qs = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
+            "descripcion", "codigo"
+        )
         return [(p, p.precio_venta) for p in qs]
     items = (
         ListaPrecioItem.objects.filter(lista=lista, producto__habilitado=True)

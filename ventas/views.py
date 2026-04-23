@@ -486,7 +486,7 @@ def venta_detalle(request, pk: int):
 @staff_required
 @require_http_methods(["POST"])
 def venta_producto_listas_precio(request, pk: int, producto_pk: int):
-    """Desde la ficha del pedido: activa Farmacia (PDF) y asocia el producto a listas de rubro."""
+    """Desde la ficha del pedido: Farmacia (PDF) y listas de rubro según POST (no se fuerza Farmacia)."""
     venta = get_object_or_404(Venta, pk=pk)
     if not VentaLinea.objects.filter(venta_id=venta.pk, producto_id=producto_pk).exists():
         messages.error(request, "Este producto no forma parte del pedido.")
@@ -495,14 +495,16 @@ def venta_producto_listas_precio(request, pk: int, producto_pk: int):
     if request.POST.get("listas_extra_present") != "1":
         messages.error(request, "Solicitud inválida.")
         return redirect("venta_detalle", pk=pk)
+    en_farmacia = request.POST.get("en_lista_farmacia") == "1"
     with transaction.atomic():
-        producto.en_lista_precios = True
+        producto.en_lista_precios = en_farmacia
         producto.save(update_fields=["en_lista_precios"])
         sync_producto_listas_extras_from_post(request, producto)
-    messages.success(
-        request,
-        f"Listas actualizadas para {producto.codigo}: Farmacia (PDF) activada; rubros según lo marcado.",
-    )
+    if en_farmacia:
+        msg = f"Listas actualizadas para {producto.codigo}: Farmacia (PDF) activada; rubros según lo marcado."
+    else:
+        msg = f"Listas actualizadas para {producto.codigo}: Farmacia (PDF) desactivada; rubros según lo marcado."
+    messages.success(request, msg)
     return redirect("venta_detalle", pk=pk)
 
 

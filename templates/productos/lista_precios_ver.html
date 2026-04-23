@@ -78,7 +78,11 @@
                 <td class="text-end fw-medium">{{ p.precio_venta|ars }}</td>
               </tr>
             {% empty %}
-              <tr><td colspan="3" class="text-muted text-center py-4">No hay productos habilitados.</td></tr>
+              <tr>
+                <td colspan="3" class="text-muted text-center py-4">
+                  Ningún producto está marcado para esta lista. Activá <strong>En lista Farmacia (PDF)</strong> en cada producto o desde acciones en masa.
+                </td>
+              </tr>
             {% endfor %}
           {% else %}
             {% for it in items %}

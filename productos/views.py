@@ -1009,6 +1009,8 @@ def productos_import_excel(request):
                     "stock": stock,
                     "fecha_vencimiento": fecha_vencimiento,
                     "porcentaje_ganancia": pct,
+                    # Farmacia/PDF y rubros: se definen después en cada producto (no por importación).
+                    "en_lista_precios": False,
                 }
 
                 if precio is None:

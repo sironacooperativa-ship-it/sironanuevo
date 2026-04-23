@@ -171,7 +171,9 @@ def lista_precios_trabajar(request, pk: int):
     page_disp = (request.GET.get("page_disp") or "").strip()
 
     if lista.es_farmacia:
-        qs = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
+        qs = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
+            "descripcion", "codigo"
+        )
         if q:
             qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
         paginator = Paginator(qs, 120)
@@ -313,7 +315,9 @@ def lista_precios_ver(request, pk: int):
     emitido_en = timezone.localtime()
 
     if lista.es_farmacia:
-        qs = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
+        qs = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
+            "descripcion", "codigo"
+        )
         if q:
             qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
         paginator = Paginator(qs, 120)

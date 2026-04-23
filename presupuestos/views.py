@@ -421,7 +421,7 @@ def presupuesto_nuevo(request):
 @require_http_methods(["GET", "POST"])
 def presupuesto_editar(request, pk: int):
     presupuesto = get_object_or_404(Presupuesto, pk=pk)
-    es_admin = _es_staff(request.user)
+    es_admin = is_staff_user(request.user)
     if presupuesto.estado != Presupuesto.Estado.ACTIVO and not es_admin:
         messages.warning(request, "Solo administradores pueden editar presupuestos aprobados.")
         return redirect("presupuesto_lista")
