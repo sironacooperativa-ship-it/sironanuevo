@@ -876,6 +876,40 @@ h2.h6 {
   border: 1px solid rgba(60, 60, 67, 0.1);
 }
 
+/*
+  Bootstrap asume header/body/footer como hijos directos de .modal-content.
+  En sirona-modal el <form> envuelve esos tres: sin esto el cuerpo no tiene
+  altura máxima y el scroll (y el footer con Guardar) quedan fuera de vista.
+*/
+.sirona-modal .modal-dialog-scrollable .modal-content {
+  min-height: 0;
+}
+
+.sirona-modal-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sirona-modal-form > .modal-header {
+  flex-shrink: 0;
+}
+
+.sirona-modal-form > .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.sirona-modal-form > .modal-footer {
+  flex-shrink: 0;
+}
+
 .sirona-modal-dialog {
   max-width: min(32rem, calc(100vw - 1.5rem));
 }
