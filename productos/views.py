@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
-from django.db.models import Q
+from django.db.models import Case, CharField, Q, Value, When
 from django.utils import timezone
 from django.http import FileResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
@@ -35,7 +35,83 @@ from .listas_precios_views import producto_listas_extra_context, sync_producto_l
 from .models import ListaPrecioItem, ListaPrecios, Producto
 
 # Claves GET permitidas al volver a /productos/ (retorno_query o retorno_*).
-_REDIR_PRODUCTOS_LIST_KEYS = frozenset({"q", "tipo", "proveedor", "lista", "estado", "ingreso", "page"})
+_REDIR_PRODUCTOS_LIST_KEYS = frozenset(
+    {"q", "tipo", "proveedor", "lista", "estado", "ingreso", "page", "ord", "dir"}
+)
+
+# Orden en listado: clave en URL -> campo en modelo
+PRODUCTOS_SORT_FIELDS = {
+    "codigo": "codigo",
+    "descripcion": "descripcion",
+    "tipo": "tipo",
+    "costo": "costo",
+    "stock": "stock",
+    "pct": "porcentaje_ganancia",
+    "precio": "precio_venta",
+}
+
+
+def _annotar_orden_tipo_alfa(qs):
+    """Orden "alfabético" de rubro según el nombre en pantalla (no el código MED/AC/OT)."""
+    return qs.annotate(
+        _tipo_orden=Case(
+            When(tipo=Producto.Tipo.MEDICAMENTOS, then=Value("Medicamentos")),
+            When(tipo=Producto.Tipo.ACCESORIOS, then=Value("Accesorios")),
+            When(tipo=Producto.Tipo.OTROS, then=Value("Otros")),
+            default=Value(""),
+            output_field=CharField(),
+        )
+    )
+
+
+def _productos_ordenar_queryset(productos, request) -> tuple:
+    """
+    Sin ?ord= : rubro (nombre) → descripción A-Z → precio (e id).
+    Con ?ord= & ?dir=asc|desc : una sola columna; mismo cabecero alterna asc/desc.
+    """
+    ord_key = (request.GET.get("ord") or "").strip()
+    dir_raw = (request.GET.get("dir") or "").strip().lower()
+    if dir_raw not in ("asc", "desc"):
+        dir_raw = "asc"
+    if ord_key in PRODUCTOS_SORT_FIELDS:
+        f = PRODUCTOS_SORT_FIELDS[ord_key]
+        prefix = "-" if dir_raw == "desc" else ""
+        if f == "tipo":
+            q2 = _annotar_orden_tipo_alfa(productos)
+            return q2.order_by(f"{prefix}_tipo_orden", "id"), ord_key, dir_raw
+        return productos.order_by(f"{prefix}{f}", "id"), ord_key, dir_raw
+    qd = _annotar_orden_tipo_alfa(productos)
+    return qd.order_by("_tipo_orden", "descripcion", "precio_venta", "id"), "", "asc"
+
+
+def _productos_sort_links(request) -> dict[str, str]:
+    """Querystring (sin page) para enlace de ordenar por cada columna."""
+    out: dict[str, str] = {}
+    for key in PRODUCTOS_SORT_FIELDS:
+        q = request.GET.copy()
+        cur_o = (request.GET.get("ord") or "").strip()
+        cur_d = (request.GET.get("dir") or "asc").strip().lower()
+        if cur_d not in ("asc", "desc"):
+            cur_d = "asc"
+        if cur_o == key:
+            q["ord"] = key
+            q["dir"] = "desc" if cur_d == "asc" else "asc"
+        else:
+            q["ord"] = key
+            q["dir"] = "asc"
+        q.pop("page", None)
+        out[key] = q.urlencode()
+    return out
+
+
+def _productos_url_sin_orden_filtros(request) -> str:
+    """Filtros actuales sin ord/dir/page (volver a orden predeterminado)."""
+    q = request.GET.copy()
+    q.pop("ord", None)
+    q.pop("dir", None)
+    q.pop("page", None)
+    s = q.urlencode()
+    return s
 
 
 def _retorno_params_desde_post(request) -> dict:
@@ -110,9 +186,8 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
     if ingreso == "nuevos":
         desde = timezone.now() - timedelta(days=30)
         productos = productos.filter(creado_en__gte=desde)
-        productos = productos.order_by("-creado_en", "descripcion", "codigo")
-    else:
-        productos = productos.order_by("descripcion", "codigo")
+
+    productos, sort_ord, sort_dir = _productos_ordenar_queryset(productos, request)
 
     return productos, {
         "q": q,
@@ -121,6 +196,8 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
         "lista": lista,
         "estado": estado,
         "ingreso": ingreso,
+        "sort_ord": sort_ord,
+        "sort_dir": sort_dir,
     }
 
 
@@ -425,6 +502,8 @@ def productos_list(request):
     lista = filtros_ctx["lista"]
     estado = filtros_ctx["estado"]
     ingreso = filtros_ctx["ingreso"]
+    sort_ord = filtros_ctx["sort_ord"]
+    sort_dir = filtros_ctx["sort_dir"]
 
     exp = parse_export(request)
     if exp in ("xlsx", "pdf"):
@@ -483,6 +562,10 @@ def productos_list(request):
             "lista": lista,
             "estado": estado,
             "ingreso": ingreso,
+            "sort_ord": sort_ord,
+            "sort_dir": sort_dir,
+            "sort_links": _productos_sort_links(request),
+            "querystring_no_sort": _productos_url_sin_orden_filtros(request),
             "tipos": Producto.Tipo.choices,
             "proveedores_filtro": proveedores_filtro,
             "listas_precios_filtro": listas_precios_filtro,

@@ -27,6 +27,14 @@
     tr.producto-row-inline.is-editing td.col-monto {
       min-width: 5.25rem;
     }
+    .app-th-sort {
+      color: var(--bs-secondary-color, #6c757d) !important;
+      font-weight: 500;
+    }
+    .app-th-sort:hover,
+    .app-th-sort:focus {
+      color: var(--bs-primary) !important;
+    }
   </style>
 {% endblock %}
 {% block title %}Productos{% endblock %}
@@ -114,10 +122,18 @@
           <button class="btn btn-outline-dark btn-sm rounded-pill flex-grow-1" type="submit">Filtrar</button>
           <a class="btn btn-outline-secondary btn-sm rounded-pill flex-grow-1" href="{% url 'productos_list' %}">Limpiar</a>
         </div>
+        {% if sort_ord %}
+          <input type="hidden" name="ord" value="{{ sort_ord }}" />
+          <input type="hidden" name="dir" value="{{ sort_dir }}" />
+        {% endif %}
       </form>
       <p class="small text-muted mb-0 mt-2">
         <strong>Proveedor:</strong> muestra productos que tengan al menos una compra cargada con ese proveedor.
-        <strong>Nuevos ingresos:</strong> productos dados de alta en los últimos 30 días (ordenados por fecha de alta).
+        <strong>Nuevos ingresos:</strong> productos dados de alta en los últimos 30 días.
+        <strong>Orden de la tabla:</strong> por defecto, tipo (alfabético según rubro) → descripción A-Z → precio. Tocá un título de columna para ordenar; otro toque en la misma invierte el sentido.
+        {% if sort_ord %}
+          <a class="ms-1" href="{% url 'productos_list' %}{% if querystring_no_sort %}?{{ querystring_no_sort }}{% endif %}">Volver al orden predeterminado</a>.
+        {% endif %}
       </p>
     </div>
   </div>
@@ -167,13 +183,27 @@
                 title="Seleccionar / quitar todos"
               />
             </th>
-            <th scope="col" class="col-producto-codigo text-center small text-muted text-uppercase" style="letter-spacing: 0.04em;">Código</th>
-            <th scope="col" class="small text-muted text-uppercase" style="letter-spacing: 0.04em;">Descripción</th>
-            <th scope="col" class="text-center small text-muted text-uppercase" style="letter-spacing: 0.04em;">Tipo</th>
-            <th scope="col" class="text-center col-monto small text-muted text-uppercase" style="letter-spacing: 0.04em;">Costo</th>
-            <th scope="col" class="text-center small text-muted text-uppercase" style="letter-spacing: 0.04em;">Stk</th>
-            <th scope="col" class="text-center small text-muted text-uppercase" style="letter-spacing: 0.04em;">%</th>
-            <th scope="col" class="text-center col-monto small text-muted text-uppercase" style="letter-spacing: 0.04em;">Precio</th>
+            <th scope="col" class="text-center col-producto-codigo small text-uppercase" style="letter-spacing: 0.04em;">
+              <a class="app-th-sort" href="?{{ sort_links.codigo }}" title="Ordenar por código">Código{% if sort_ord == "codigo" %}<span class="ms-1 text-primary" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            </th>
+            <th scope="col" class="small text-uppercase" style="letter-spacing: 0.04em;">
+              <a class="app-th-sort" href="?{{ sort_links.descripcion }}" title="Ordenar por descripción">Descripción{% if sort_ord == "descripcion" %}<span class="ms-1 text-primary" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            </th>
+            <th scope="col" class="text-center small text-uppercase" style="letter-spacing: 0.04em;">
+              <a class="app-th-sort" href="?{{ sort_links.tipo }}" title="Ordenar por tipo">Tipo{% if sort_ord == "tipo" %}<span class="ms-1 text-primary" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            </th>
+            <th scope="col" class="text-center col-monto small text-uppercase" style="letter-spacing: 0.04em;">
+              <a class="app-th-sort" href="?{{ sort_links.costo }}" title="Ordenar por costo">Costo{% if sort_ord == "costo" %}<span class="ms-1 text-primary" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            </th>
+            <th scope="col" class="text-center small text-uppercase" style="letter-spacing: 0.04em;">
+              <a class="app-th-sort" href="?{{ sort_links.stock }}" title="Ordenar por stock">Stk{% if sort_ord == "stock" %}<span class="ms-1 text-primary" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            </th>
+            <th scope="col" class="text-center small text-uppercase" style="letter-spacing: 0.04em;">
+              <a class="app-th-sort" href="?{{ sort_links.pct }}" title="Ordenar por % de ganancia">%{% if sort_ord == "pct" %}<span class="ms-1 text-primary" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            </th>
+            <th scope="col" class="text-center col-monto small text-uppercase" style="letter-spacing: 0.04em;">
+              <a class="app-th-sort" href="?{{ sort_links.precio }}" title="Ordenar por precio de venta">Precio{% if sort_ord == "precio" %}<span class="ms-1 text-primary" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            </th>
             <th scope="col" class="text-end small text-muted text-uppercase" style="letter-spacing: 0.04em;"></th>
           </tr>
         </thead>
@@ -405,6 +435,35 @@
     </form>
   {% endfor %}
 
+  {# Debe existir en el DOM antes de los scripts que asocian los clics a "Agregar" / "Quitar". #}
+  <div class="modal fade" id="productosListaModal" tabindex="-1" aria-hidden="true" aria-labelledby="productosListaModalLabel">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="productosListaModalLabel">Sumar a lista de precio</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label" for="id_modal_lista_id">Lista de precio</label>
+          <select class="form-select" id="id_modal_lista_id" name="modal_lista_id">
+            <option value="">— Elegir —</option>
+            {% for l in listas_precios_filtro %}
+              <option value="{{ l.pk }}">{{ l.nombre }}{% if l.es_farmacia %} (Farmacia/PDF){% endif %}</option>
+            {% endfor %}
+          </select>
+          <p class="text-muted small mb-0 mt-2">
+            Podés <strong>agregar</strong> o <strong>quitar</strong> los productos seleccionados de la lista elegida.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-outline-dark" id="btnModalListaRemove">Quitar</button>
+          <button type="button" class="btn btn-primary" id="btnModalListaAdd">Agregar a la lista</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     (function () {
       document.querySelectorAll(".js-producto-editar").forEach(function (btn) {
@@ -489,17 +548,19 @@
       const listaIdIn = document.getElementById("id_productos_bulk_lista_id");
       const listaModoIn = document.getElementById("id_productos_bulk_lista_modo");
       const master = document.getElementById("chkProductosTodos");
-      if (!form || !accIn || !master) return;
+      if (!form || !accIn) return;
 
       function eachChk(fn) {
         document.querySelectorAll(".chk-bulk-producto").forEach(fn);
       }
 
-      master.addEventListener("change", function () {
-        eachChk(function (cb) {
-          cb.checked = master.checked;
+      if (master) {
+        master.addEventListener("change", function () {
+          eachChk(function (cb) {
+            cb.checked = master.checked;
+          });
         });
-      });
+      }
 
       document.querySelectorAll("[data-productos-bulk]").forEach(function (btn) {
         btn.addEventListener("click", function () {
@@ -544,11 +605,32 @@
         const addBtn = document.getElementById("btnModalListaAdd");
         const remBtn = document.getElementById("btnModalListaRemove");
         function submitLista(modo) {
+          let nSel = 0;
+          eachChk(function (cb) {
+            if (cb.checked) nSel += 1;
+          });
+          if (nSel === 0) {
+            alert("Seleccioná al menos un producto en la grilla (casilla al inicio de cada fila).");
+            return;
+          }
           const lid = sel ? String(sel.value || "").trim() : "";
           if (!lid) {
             alert("Elegí una lista de precio.");
             return;
           }
+          // Algunos navegadores con form.submit() no envían checkboxes con form=… : duplicar como hiddens en el form.
+          form.querySelectorAll("input.js-bulk-ghost-pid").forEach(function (el) {
+            el.remove();
+          });
+          eachChk(function (cb) {
+            if (!cb.checked) return;
+            const h = document.createElement("input");
+            h.type = "hidden";
+            h.className = "js-bulk-ghost-pid";
+            h.name = "producto_id";
+            h.value = cb.value;
+            form.appendChild(h);
+          });
           accIn.value = "lista_precio";
           if (listaIdIn) listaIdIn.value = lid;
           if (listaModoIn) listaModoIn.value = modo;
@@ -559,34 +641,6 @@
       })();
     })();
   </script>
-
-  <div class="modal fade" id="productosListaModal" tabindex="-1" aria-hidden="true" aria-labelledby="productosListaModalLabel">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="productosListaModalLabel">Sumar a lista de precio</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
-        <div class="modal-body">
-          <label class="form-label">Lista de precio</label>
-          <select class="form-select" id="id_modal_lista_id">
-            <option value="">— Elegir —</option>
-            {% for l in listas_precios_filtro %}
-              <option value="{{ l.pk }}">{{ l.nombre }}{% if l.es_farmacia %} (Farmacia/PDF){% endif %}</option>
-            {% endfor %}
-          </select>
-          <p class="text-muted small mb-0 mt-2">
-            Podés <strong>agregar</strong> o <strong>quitar</strong> los productos seleccionados de la lista elegida.
-          </p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-outline-dark" id="btnModalListaRemove">Quitar</button>
-          <button type="button" class="btn btn-primary" id="btnModalListaAdd">Agregar</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <p class="text-muted small mt-3 mb-0">
     Código automático: <code>ME/AC/OT</code> + 4 dígitos.
