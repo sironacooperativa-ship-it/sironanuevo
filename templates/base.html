@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700&display=swap"
       rel="stylesheet"
     />
     <link
@@ -104,10 +104,10 @@
         <nav class="navbar border-bottom bg-white sticky-top sirona-topbar">
           <div class="container-fluid px-3 px-xl-4 d-flex align-items-center justify-content-between">
             <a class="navbar-brand d-flex align-items-center py-1 m-0" href="{% url 'vendedor_home' %}">
-              <img class="brand-logo brand-logo-sm" src="{% static 'img/sirona-logo.png' %}" alt="SIRONA" />
+              <img class="brand-logo brand-logo-sm" src="{% static 'img/sirona-logo.png' %}" alt="Cooperativa Sirona" />
               <span class="ms-2 sirona-app-title d-flex flex-column text-start lh-sm">
-                <span class="text-body">SIRONA - Sistema de Gestión</span>
-                <span class="small text-muted">Portal vendedor</span>
+                <span class="text-body">COOPERATIVA SIRONA - Sistema de Gestión</span>
+                <span class="small text-muted sirona-app-title-sub">Portal vendedor</span>
               </span>
             </a>
             <div class="d-flex align-items-center gap-3">
@@ -151,8 +151,8 @@
               <i data-lucide="menu" class="app-lucide-toolbar"></i>
             </button>
             <a class="navbar-brand d-flex align-items-center py-1 m-0" href="{% url 'home' %}">
-              <img class="brand-logo brand-logo-sm" src="{% static 'img/sirona-logo.png' %}" alt="SIRONA" />
-              <span class="ms-2 sirona-app-title text-body">SIRONA - Sistema de Gestión</span>
+              <img class="brand-logo brand-logo-sm" src="{% static 'img/sirona-logo.png' %}" alt="Cooperativa Sirona" />
+              <span class="ms-2 sirona-app-title text-body">COOPERATIVA SIRONA - Sistema de Gestión</span>
             </a>
             <div class="d-flex align-items-center gap-3">
               <span class="small text-muted d-none d-md-inline">{{ request.user.username }}</span>

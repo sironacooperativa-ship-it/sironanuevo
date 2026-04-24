@@ -1,6 +1,19 @@
 {% extends "base.html" %}
 {% load money %}
 {% block title %}Pedidos{% endblock %}
+{% block extra_head %}
+  <style>
+    .ventas-historial-tabla .ventas-hist-venc,
+    .ventas-historial-tabla th.ventas-hist-venc {
+      font-size: 0.8rem;
+      line-height: 1.2;
+    }
+    .ventas-historial-tabla .ventas-hist-neto {
+      min-width: 9.25rem;
+      width: 9%;
+    }
+  </style>
+{% endblock %}
 {% block content %}
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Historial de pedidos</h1>
@@ -85,15 +98,15 @@
 
   <div class="card shadow-sm">
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table class="table table-hover align-middle mb-0 ventas-historial-tabla">
         <thead class="table-light">
           <tr>
             <th>Pedido</th>
             <th>Fecha registro</th>
             <th>Vendedor</th>
             <th>Comprador</th>
-            <th>Venc. pago</th>
-            <th class="text-end">Neto</th>
+            <th class="ventas-hist-venc">Venc. pago</th>
+            <th class="text-end text-nowrap ventas-hist-neto">Neto</th>
             <th class="text-end">Comisión</th>
             <th class="text-end">Ingreso caja</th>
             <th>Estado</th>
@@ -113,8 +126,8 @@
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td>{% if v.fecha_vencimiento_pago %}{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
-              <td class="text-end">{{ v.neto|ars }}</td>
+              <td class="ventas-hist-venc">{% if v.fecha_vencimiento_pago %}{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+              <td class="text-end text-nowrap ventas-hist-neto">{{ v.neto|ars }}</td>
               <td class="text-end small">
                 {% if v.aplica_comision %}
                   {{ v.comision_porcentaje }}% <span class="text-muted">({{ v.monto_comision|ars }})</span>

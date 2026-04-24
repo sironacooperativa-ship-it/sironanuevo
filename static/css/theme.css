@@ -121,15 +121,44 @@ nav.navbar.sirona-topbar.bg-white {
 
 .sirona-topbar .navbar-brand {
   padding: 0;
-  max-width: min(100%, 20rem);
+  max-width: min(100%, 26rem);
 }
 
+/* Tipografía alineada con el wordmark del logo (geométrica sans, peso logo). */
 .sirona-topbar .sirona-app-title {
+  font-family:
+    "Montserrat",
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    system-ui,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.01em;
   white-space: normal;
+}
+
+.sirona-topbar .sirona-app-title .sirona-app-title-sub {
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Inter",
+    "SF Pro Text",
+    system-ui,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
 @media (min-width: 576px) {

@@ -1,6 +1,34 @@
 {% extends "base.html" %}
 {% load money %}
 {% block title %}Presupuestos{% endblock %}
+{% block extra_head %}
+  <style>
+    .presu-lista .col-presu-neto {
+      min-width: 8.75rem;
+      width: 10%;
+    }
+    .presu-lista .col-presu-estado {
+      width: 2.5rem;
+      text-align: center;
+    }
+    .presu-lista .col-presu-acciones {
+      width: 1%;
+      white-space: nowrap;
+    }
+    .presu-lista .presu-act-btn {
+      --bs-btn-padding-y: 0.2rem;
+      --bs-btn-padding-x: 0.32rem;
+      min-width: 1.7rem;
+      line-height: 1;
+    }
+    .presu-lista .presu-act-btn svg,
+    .presu-lista .presu-est-ico {
+      width: 16px;
+      height: 16px;
+      display: block;
+    }
+  </style>
+{% endblock %}
 {% block content %}
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Presupuestos</h1>
@@ -129,11 +157,11 @@
     </div>
     {% endif %}
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table class="table table-hover table-sm align-middle mb-0 presu-lista">
         <thead class="table-light">
           <tr>
             {% if user.is_staff or has_vendedor_perfil %}
-            <th class="text-center" style="width:2.25rem" scope="col">
+            <th class="text-center" style="width:1.9rem" scope="col">
               <input type="checkbox" class="form-check-input" id="js-masivo-todo" title="Marcar o desmarcar visibles" aria-label="Marcar o desmarcar visibles" />
             </th>
             {% else %}
@@ -144,10 +172,10 @@
             <th>Vendedor</th>
             <th>Comprador</th>
             <th>Venc. pago</th>
-            <th class="text-end">Neto</th>
-            <th>Estado</th>
+            <th class="text-end col-presu-neto text-nowrap">Neto</th>
+            <th class="col-presu-estado" title="Estado">Estado</th>
             <th>Pedido</th>
-            <th class="text-end">Acciones</th>
+            <th class="text-end col-presu-acciones">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -193,12 +221,12 @@
                 {% endif %}
               </td>
               <td>{% if p.fecha_vencimiento_pago %}{{ p.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
-              <td class="text-end">{{ p.neto|ars }}</td>
-              <td>
+              <td class="text-end col-presu-neto text-nowrap">{{ p.neto|ars }}</td>
+              <td class="col-presu-estado text-center">
                 {% if p.estado == "ACT" %}
-                  <span class="badge text-bg-warning text-dark">Pendiente</span>
+                  <span class="d-inline-flex text-warning" title="Pendiente" role="img" aria-label="Pendiente"><i data-lucide="clock" class="presu-est-ico" aria-hidden="true"></i></span>
                 {% else %}
-                  <span class="badge text-bg-success">Aprobado</span>
+                  <span class="d-inline-flex text-success" title="Aprobado" role="img" aria-label="Aprobado"><i data-lucide="check-circle" class="presu-est-ico" aria-hidden="true"></i></span>
                 {% endif %}
               </td>
               <td>
@@ -208,37 +236,56 @@
                   —
                 {% endif %}
               </td>
-              <td class="text-end">
-                <div class="d-flex flex-wrap justify-content-end gap-1">
-                  <a class="btn btn-sm btn-outline-secondary py-0" href="{% url 'presupuesto_detalle' p.pk %}">Ver</a>
+              <td class="text-end col-presu-acciones">
+                <div class="d-inline-flex flex-nowrap align-items-center justify-content-end gap-1">
+                  <a
+                    class="btn btn-sm btn-outline-secondary presu-act-btn"
+                    href="{% url 'presupuesto_detalle' p.pk %}"
+                    title="Ver"
+                    aria-label="Ver"
+                  >
+                    <i data-lucide="eye" aria-hidden="true"></i>
+                  </a>
                   {% if user.is_staff or vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
-                    <form method="post" action="{% url 'presupuesto_duplicar' p.pk %}" class="d-inline">
+                    <form method="post" action="{% url 'presupuesto_duplicar' p.pk %}" class="d-inline m-0">
                       {% csrf_token %}
-                      <button type="submit" class="btn btn-sm btn-outline-primary py-0" title="Copia en pendiente, mismas líneas y montos">Repetir</button>
+                      <button type="submit" class="btn btn-sm btn-outline-primary presu-act-btn" title="Repetir (copia en pendiente, mismas líneas y montos)" aria-label="Repetir">
+                        <i data-lucide="refresh-cw" aria-hidden="true"></i>
+                      </button>
                     </form>
                   {% endif %}
                   {% if p.estado == "ACT" and user.is_staff or p.estado == "ACT" and vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
-                    <a class="btn btn-sm btn-outline-primary py-0 px-2" href="{% url 'presupuesto_editar' p.pk %}" title="Editar" aria-label="Editar">
-                      <i data-lucide="pencil"></i>
+                    <a
+                      class="btn btn-sm btn-outline-primary presu-act-btn"
+                      href="{% url 'presupuesto_editar' p.pk %}"
+                      title="Editar"
+                      aria-label="Editar"
+                    >
+                      <i data-lucide="pencil" aria-hidden="true"></i>
                     </a>
                     {% if p.alerta_catalogo %}
                       <a
-                        class="btn btn-sm btn-success py-0"
+                        class="btn btn-sm btn-success presu-act-btn"
                         href="{% url 'presupuesto_detalle' p.pk %}#aprobar-catalogo"
-                        title="Elegí en el detalle si actualizás desde catálogo o conservás el presupuesto"
-                      >Aprobar…</a>
+                        title="Aprobar (elegir catálogo en el detalle)"
+                        aria-label="Aprobar con resolución de catálogo en el detalle"
+                      >
+                        <i data-lucide="check" aria-hidden="true"></i>
+                      </a>
                     {% else %}
-                      <form method="post" action="{% url 'presupuesto_aprobar' p.pk %}" class="d-inline" onsubmit="return confirm('¿Aprobar y generar el pedido? Se descontará stock y quedará en Pedidos como pendiente de pago.');">
+                      <form method="post" action="{% url 'presupuesto_aprobar' p.pk %}" class="d-inline m-0" onsubmit="return confirm('¿Aprobar y generar el pedido? Se descontará stock y quedará en Pedidos como pendiente de pago.');">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-success py-0">Aprobar</button>
+                        <button type="submit" class="btn btn-sm btn-success presu-act-btn" title="Aprobar" aria-label="Aprobar">
+                          <i data-lucide="check" aria-hidden="true"></i>
+                        </button>
                       </form>
                     {% endif %}
                   {% endif %}
                   {% if user.is_staff or p.estado == "ACT" and vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
-                    <form method="post" action="{% url 'presupuesto_eliminar' p.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar el presupuesto #{{ p.pk }}? Si estaba aprobado, también se elimina el pedido y se revierte stock y caja.');">
+                    <form method="post" action="{% url 'presupuesto_eliminar' p.pk %}" class="d-inline m-0" onsubmit="return confirm('¿Eliminar el presupuesto #{{ p.pk }}? Si estaba aprobado, también se elimina el pedido y se revierte stock y caja.');">
                       {% csrf_token %}
-                      <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Eliminar" aria-label="Eliminar">
-                        <i data-lucide="x" class="text-danger"></i>
+                      <button type="submit" class="btn btn-sm btn-outline-danger presu-act-btn" title="Eliminar" aria-label="Eliminar">
+                        <i data-lucide="x" class="text-danger" aria-hidden="true"></i>
                       </button>
                     </form>
                   {% endif %}
