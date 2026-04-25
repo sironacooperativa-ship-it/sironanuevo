@@ -2,6 +2,7 @@
 <form method="post" action="{{ form_action_url }}" class="sirona-modal-form">
   {% csrf_token %}
   <input type="hidden" name="retorno_query" value="{{ retorno_query|default:'' }}" />
+  <input type="hidden" name="listas_extra_present" value="1" />
   <div class="modal-header border-0 pb-2 align-items-center">
     <div>
       <h5 class="modal-title fw-semibold mb-0">{{ modal_title }}</h5>
