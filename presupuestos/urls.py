@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
     path("", views.presupuesto_lista, name="presupuesto_lista"),
+    path("catalogo-precios/", views.presupuesto_catalogo_precios, name="presupuesto_catalogo_precios"),
     path("nuevo/", views.presupuesto_nuevo, name="presupuesto_nuevo"),
     path(
         "c/<str:token>/",

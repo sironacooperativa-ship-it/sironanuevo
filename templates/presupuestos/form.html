@@ -80,6 +80,27 @@
       <div class="card-body">
         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
           <h2 class="h6 mb-0">Productos</h2>
+          <div class="ms-auto d-flex flex-wrap align-items-center gap-2">
+            <label class="small text-muted mb-0" for="id_lista_precios">Listas de precio</label>
+            {% if listas_precio %}
+              <select name="lista_precios" class="form-select form-select-sm" id="id_lista_precios" required>
+                {% for l in listas_precio %}
+                  <option
+                    value="{{ l.pk }}"
+                    {% if repoblar %}
+                      {% if repoblar.lista_precios_id %}
+                        {% if repoblar.lista_precios_id == l.pk %}selected{% endif %}
+                      {% elif lista_default and lista_default.pk == l.pk %}selected{% endif %}
+                    {% elif lista_default and lista_default.pk == l.pk %}selected{% endif %}
+                  >
+                    {{ l.nombre }}{% if l.es_farmacia %} — base (producto){% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            {% else %}
+              <span class="badge text-bg-warning">Sin listas</span>
+            {% endif %}
+          </div>
           <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddLinea" title="Agregar línea">+ Agregar producto</button>
         </div>
         <p class="text-muted small mb-2">
@@ -138,9 +159,10 @@
 
   <script>
     (function () {
+      const catalogoPreciosUrl = "{% url 'presupuesto_catalogo_precios' %}";
       const el = document.getElementById("presupuestos-productos");
-      const productos = el ? JSON.parse(el.textContent) : [];
-      const byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
+      let productos = el ? JSON.parse(el.textContent) : [];
+      let byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
       const iniEl = document.getElementById("presupuestos-lineas-iniciales");
       const iniciales = iniEl ? JSON.parse(iniEl.textContent) : [];
 
@@ -150,6 +172,7 @@
       const sumSubtotal = document.getElementById("sumSubtotal");
       const sumDesc = document.getElementById("sumDesc");
       const sumNeto = document.getElementById("sumNeto");
+      const listaPreciosSel = document.getElementById("id_lista_precios");
 
       const fmtMoney =
         typeof formatMontoArs === "function"
@@ -250,14 +273,7 @@
         const sel = document.createElement("select");
         sel.name = "linea_producto";
         sel.className = "form-select form-select-sm";
-        sel.innerHTML =
-          '<option value="">— Producto —</option>' +
-          productos
-            .map(
-              (p) =>
-                `<option value="${p.id}">${p.codigo} — ${p.descripcion} (stock ${p.stock})</option>`
-            )
-            .join("");
+        sel.innerHTML = optionsHtml();
         sel.dataset.prevEmpty = sel.value ? "0" : "1";
         sel.addEventListener("change", () => {
           const wasEmpty = sel.dataset.prevEmpty === "1";
@@ -283,6 +299,15 @@
           }
         });
         return sel;
+      }
+
+      function optionsHtml() {
+        return (
+          '<option value="">— Producto —</option>' +
+          productos
+            .map((p) => `<option value="${p.id}">${p.codigo} — ${p.descripcion} (stock ${p.stock})</option>`)
+            .join("")
+        );
       }
 
       function addRow() {
@@ -314,6 +339,51 @@
       btnAdd.addEventListener("click", addRow);
       inpDesc.addEventListener("input", totals);
 
+      function setEnabled(enabled) {
+        btnAdd.disabled = !enabled;
+        tbody.querySelectorAll('select[name="linea_producto"]').forEach((sel) => {
+          sel.disabled = !enabled;
+        });
+      }
+
+      if (listaPreciosSel) {
+        listaPreciosSel.addEventListener("change", function () {
+          const lid = listaPreciosSel.value;
+          if (!lid) return;
+          setEnabled(false);
+          fetch(catalogoPreciosUrl + "?lista=" + encodeURIComponent(lid), {
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+            credentials: "same-origin",
+          })
+            .then(function (r) {
+              if (!r.ok) throw new Error("catálogo");
+              return r.json();
+            })
+            .then(function (data) {
+              productos = data.productos || [];
+              byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
+              tbody.querySelectorAll('select[name="linea_producto"]').forEach(function (sel) {
+                const v = sel.value;
+                sel.innerHTML = optionsHtml();
+                if (v && byId[v]) {
+                  sel.value = v;
+                } else {
+                  sel.value = "";
+                  sel.dataset.prevEmpty = "1";
+                }
+                const tr = sel.closest("tr");
+                if (tr) refreshRow(tr);
+              });
+              setEnabled(productos.length > 0);
+              totals();
+            })
+            .catch(function () {
+              setEnabled(true);
+              alert("No se pudo cargar el catálogo de precios para esa lista.");
+            });
+        });
+      }
+
       document.getElementById("presupuestoForm").addEventListener("submit", function () {
         tbody.querySelectorAll("tr").forEach((tr) => {
           const sel = tr.querySelector('select[name="linea_producto"]');
@@ -329,7 +399,7 @@
       });
 
       if (productos.length === 0) {
-        btnAdd.disabled = true;
+        setEnabled(false);
         tbody.innerHTML =
           '<tr><td colspan="5" class="text-muted text-center py-3">No hay productos habilitados.</td></tr>';
       } else if (iniciales.length > 0) {
@@ -378,6 +448,11 @@
         totals();
       } else {
         addRow();
+      }
+
+      // Estado inicial: si hay selector de lista, habilitar según catálogo cargado
+      if (listaPreciosSel) {
+        setEnabled(productos.length > 0);
       }
     })();
   </script>

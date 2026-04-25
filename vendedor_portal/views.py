@@ -97,7 +97,21 @@ def vendedor_home(request):
             .all()
         )
 
-    productos_catalogo = _productos_payload()
+    lista_default = (
+        ListaPrecios.objects.filter(es_farmacia=True).order_by("id").first()
+        or ListaPrecios.objects.order_by("id").first()
+    )
+    listas_precio = list(ListaPrecios.objects.all().order_by("-es_farmacia", "nombre"))
+    productos_catalogo = (
+        [{"id": p.id, "codigo": p.codigo, "descripcion": p.descripcion, "precio": str(lista_default.precio_para(p) or p.precio_venta), "stock": p.stock}
+         for p in (
+            (Producto.objects.filter(habilitado=True, en_lista_precios=True) if lista_default and lista_default.es_farmacia
+             else Producto.objects.filter(habilitado=True, items_lista_precio__lista_id=lista_default.pk).distinct()
+            ).order_by("descripcion", "codigo")
+         )]
+        if lista_default
+        else []
+    )
     lineas_iniciales: list = []
     repoblar = None
 
@@ -164,6 +178,8 @@ def vendedor_home(request):
             "comprador": comprador,
             "impagos": impagos,
             "productos_catalogo": productos_catalogo,
+            "listas_precio": listas_precio,
+            "lista_default": lista_default,
             "lineas_iniciales": lineas_iniciales,
             "repoblar": repoblar,
         },

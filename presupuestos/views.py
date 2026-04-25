@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import F
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
@@ -17,7 +17,7 @@ from core.money_decimal import COMISION_PORCENTAJE_DEFECTO, format_monto_ars, pa
 from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_param, parse_fecha_dashboard, rango_periodo
 from core.repoblar_lineas import repoblar_campos_cabecera_desde_post
 from personas.models import Comprador, Vendedor
-from productos.models import Producto
+from productos.models import ListaPrecios, Producto
 from ventas.servicios import crear_venta_confirmada, eliminar_venta_admin, unpack_linea_spec
 from ventas.models import Venta, VentaLinea
 from calendario.models import Evento
@@ -161,6 +161,62 @@ def _productos_payload():
     ]
 
 
+def _lista_farmacia_o_primera() -> ListaPrecios | None:
+    return (
+        ListaPrecios.objects.filter(es_farmacia=True).order_by("id").first()
+        or ListaPrecios.objects.order_by("id").first()
+    )
+
+
+def _lista_precios_desde_post(request) -> ListaPrecios | None:
+    raw = (request.POST.get("lista_precios") or "").strip()
+    if raw.isdigit():
+        lp = ListaPrecios.objects.filter(pk=int(raw)).first()
+        if lp:
+            return lp
+    return _lista_farmacia_o_primera()
+
+
+def _precio_producto_para_lista(lista: ListaPrecios, prod: Producto) -> Decimal:
+    p = lista.precio_para(prod)
+    if p is not None:
+        return q2(Decimal(str(p)))
+    return q2(prod.precio_venta)
+
+
+def _productos_queryset_para_lista(lista: ListaPrecios):
+    qs = Producto.objects.filter(habilitado=True)
+    if lista.es_farmacia:
+        return qs.filter(en_lista_precios=True)
+    return qs.filter(items_lista_precio__lista_id=lista.pk).distinct()
+
+
+def _productos_payload_lista(lista: ListaPrecios):
+    qs = _productos_queryset_para_lista(lista).order_by("descripcion", "codigo")
+    return [
+        {
+            "id": p.id,
+            "codigo": p.codigo,
+            "descripcion": p.descripcion,
+            "precio": str(_precio_producto_para_lista(lista, p)),
+            "stock": p.stock,
+        }
+        for p in qs
+    ]
+
+
+@login_required
+@require_http_methods(["GET"])
+def presupuesto_catalogo_precios(request):
+    lid = (request.GET.get("lista") or "").strip()
+    if not lid.isdigit():
+        return JsonResponse({"error": "Lista no válida"}, status=400)
+    lista = ListaPrecios.objects.filter(pk=int(lid)).first()
+    if lista is None:
+        return JsonResponse({"error": "Lista no encontrada"}, status=404)
+    return JsonResponse({"productos": _productos_payload_lista(lista)})
+
+
 def _lineas_presupuesto_desde_post(request) -> list[dict]:
     """
     Repuebla líneas tras error de validación: conserva producto, cantidad y precio tal como los envió el usuario
@@ -228,6 +284,10 @@ def _validar_lineas_post(request):
     if comision_pct is None or comision_pct < 0:
         return "El porcentaje de comisión no es válido.", None, None, None
 
+    lista_venta = _lista_precios_desde_post(request)
+    if lista_venta is None:
+        return "No hay listas de precio disponibles. Creá al menos una en Productos → Listas de precio.", None, None, None
+
     line_specs = []
     subtotal = Decimal("0.00")
     err = None
@@ -252,9 +312,13 @@ def _validar_lineas_post(request):
             err = "La cantidad debe ser mayor a cero."
             break
         try:
-            prod = Producto.objects.get(pk=int(pid), habilitado=True)
-        except (ValueError, Producto.DoesNotExist):
-            err = "Un producto seleccionado no existe o está deshabilitado."
+            prod_id = int(pid)
+        except ValueError:
+            err = "Producto no válido."
+            break
+        prod = _productos_queryset_para_lista(lista_venta).filter(pk=prod_id).first()
+        if prod is None:
+            err = "Un producto seleccionado no pertenece a la lista de precios elegida."
             break
         if prod.stock < qty:
             err = f"Stock insuficiente para {prod.codigo} (disponible: {prod.stock})."
@@ -267,7 +331,7 @@ def _validar_lineas_post(request):
                 err = f"El precio unitario no es válido en la línea de {prod.codigo}."
                 break
         else:
-            pu = prod.precio_venta
+            pu = _precio_producto_para_lista(lista_venta, prod)
         if pu <= 0:
             err = f"El precio unitario debe ser mayor a cero ({prod.codigo})."
             break
@@ -447,7 +511,9 @@ def presupuesto_detalle(request, pk: int):
 @require_http_methods(["GET", "POST"])
 def presupuesto_nuevo(request):
     vendedores = Vendedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
-    productos_catalogo = _productos_payload()
+    listas_precio = list(ListaPrecios.objects.all().order_by("-es_farmacia", "nombre"))
+    lista_default = _lista_farmacia_o_primera()
+    productos_catalogo = _productos_payload_lista(lista_default) if lista_default else []
     lineas_iniciales: list = []
     repoblar = None
     vendedor_default_id = None
@@ -497,10 +563,12 @@ def presupuesto_nuevo(request):
             "vendedores": vendedores,
             "compradores": Comprador.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo"),
             "productos_catalogo": productos_catalogo,
+            "listas_precio": listas_precio,
             "presupuesto": None,
             "lineas_iniciales": lineas_iniciales,
             "repoblar": repoblar,
             "vendedor_default_id": vendedor_default_id,
+            "lista_default": lista_default,
         },
     )
 
@@ -515,7 +583,9 @@ def presupuesto_editar(request, pk: int):
         return redirect("presupuesto_lista")
 
     vendedores = Vendedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
-    productos_catalogo = _productos_payload()
+    listas_precio = list(ListaPrecios.objects.all().order_by("-es_farmacia", "nombre"))
+    lista_default = _lista_farmacia_o_primera()
+    productos_catalogo = _productos_payload_lista(lista_default) if lista_default else []
     lineas_iniciales = [
         {
             "producto_id": ln.producto_id,
@@ -680,9 +750,11 @@ def presupuesto_editar(request, pk: int):
             "vendedores": vendedores,
             "compradores": Comprador.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo"),
             "productos_catalogo": productos_catalogo,
+            "listas_precio": listas_precio,
             "presupuesto": presupuesto,
             "lineas_iniciales": lineas_iniciales,
             "repoblar": repoblar,
+            "lista_default": lista_default,
         },
     )
 
