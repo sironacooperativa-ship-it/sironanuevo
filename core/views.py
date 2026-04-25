@@ -16,6 +16,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from .forms import SironaPasswordChangeForm
+from .models import NotaAdmin
 from .money_decimal import q2
 from .security import client_ip, safe_internal_path
 
@@ -369,4 +370,24 @@ def cambiar_password(request):
         form = SironaPasswordChangeForm(user=request.user)
 
     return render(request, "core/cambiar_password.html", {"form": form})
+
+
+@login_required
+@require_http_methods(["POST"])
+def nota_admin_enviar(request):
+    texto = (request.POST.get("nota_texto") or "").strip()
+    if not texto:
+        messages.error(request, "Escribí una nota antes de enviar.")
+        return redirect(safe_internal_path(request.POST.get("next") or "") or "home")
+
+    v = _safe_get_vendedor_perfil(request.user)
+    pagina = (request.POST.get("pagina") or "").strip()
+    NotaAdmin.objects.create(
+        usuario=request.user,
+        vendedor=v if v is not None else None,
+        texto=texto[:2000],
+        pagina=pagina[:255],
+    )
+    messages.success(request, "Nota enviada a administración.")
+    return redirect(safe_internal_path(request.POST.get("next") or "") or "home")
 

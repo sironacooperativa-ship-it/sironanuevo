@@ -7,6 +7,7 @@ from .models import Comprador, Proveedor, Vendedor
 class VendedorAdmin(admin.ModelAdmin):
     list_display = ("codigo", "apellido", "nombre", "dni", "telefono", "mail", "comision_porcentaje", "actualizado_en")
     search_fields = ("codigo", "apellido", "nombre", "dni", "mail")
+    filter_horizontal = ("listas_precios_bloqueadas",)
 
 
 @admin.register(Proveedor)

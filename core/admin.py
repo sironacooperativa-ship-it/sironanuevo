@@ -1,4 +1,18 @@
 from django.contrib import admin
 
-# Core no tiene modelos propios por ahora.
+from .models import NotaAdmin, PerfilAcceso
 
+
+@admin.register(PerfilAcceso)
+class PerfilAccesoAdmin(admin.ModelAdmin):
+    list_display = ("usuario", "solo_vendedor", "actualizado_en")
+    search_fields = ("usuario__username", "usuario__email")
+    list_filter = ("solo_vendedor",)
+
+
+@admin.register(NotaAdmin)
+class NotaAdminAdmin(admin.ModelAdmin):
+    list_display = ("creado_en", "usuario", "vendedor", "leida", "pagina", "texto")
+    list_filter = ("leida", "creado_en")
+    search_fields = ("usuario__username", "usuario__email", "vendedor__codigo", "vendedor__apellido", "texto")
+    ordering = ("-creado_en", "-id")

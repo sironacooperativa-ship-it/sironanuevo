@@ -77,6 +77,12 @@ class Vendedor(PersonaBase):
     comision_porcentaje = models.DecimalField(
         max_digits=6, decimal_places=2, default=Decimal("0.00")
     )
+    listas_precios_bloqueadas = models.ManyToManyField(
+        "productos.ListaPrecios",
+        blank=True,
+        related_name="vendedores_bloqueados",
+        help_text="Listas que este vendedor NO puede ver/descargar en el portal vendedor.",
+    )
 
     class Meta(PersonaBase.Meta):
         verbose_name = "Vendedor"

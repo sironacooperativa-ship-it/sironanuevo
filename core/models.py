@@ -24,3 +24,30 @@ class PerfilAcceso(models.Model):
     def __str__(self) -> str:
         return f"PerfilAcceso({self.usuario_id})"
 
+
+class NotaAdmin(models.Model):
+    """Mensaje corto del usuario para administración (sugerencias, cambios, pedidos)."""
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="notas_admin",
+    )
+    vendedor = models.ForeignKey(
+        "personas.Vendedor",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="notas_admin",
+    )
+    texto = models.TextField(max_length=2000)
+    pagina = models.CharField(max_length=255, blank=True, default="")
+    leida = models.BooleanField(default=False, db_index=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-creado_en", "-id"]
+
+    def __str__(self) -> str:
+        return f"NotaAdmin({self.pk}) de {self.usuario_id}"
+

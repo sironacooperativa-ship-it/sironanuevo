@@ -103,8 +103,20 @@ def _precio_producto_para_lista(lista: ListaPrecios, prod: Producto) -> Decimal:
     return q2(prod.precio_venta)
 
 
+def _productos_queryset_para_lista(lista: ListaPrecios):
+    """
+    Productos que se muestran/permiten seleccionar para una lista.
+    - Farmacia: solo los marcados `en_lista_precios` (lista PDF).
+    - Rubro: solo los que tengan precio configurado en `ListaPrecioItem` para esa lista.
+    """
+    qs = Producto.objects.filter(habilitado=True)
+    if lista.es_farmacia:
+        return qs.filter(en_lista_precios=True)
+    return qs.filter(items_lista_precio__lista_id=lista.pk).distinct()
+
+
 def _productos_payload_lista(lista: ListaPrecios):
-    qs = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
+    qs = _productos_queryset_para_lista(lista).order_by("descripcion", "codigo")
     return [
         {
             "id": p.id,
@@ -179,6 +191,8 @@ def venta_nueva(request):
             err = "El porcentaje de comisión no es válido."
         elif err is None:
             lista_venta = _lista_precios_desde_post(request)
+            if lista_venta is None:
+                err = "No hay listas de precio disponibles. Creá al menos una en Productos → Listas de precio."
             line_specs = []
             subtotal = Decimal("0.00")
             for pid, qraw in zip(pids, qtys):
@@ -198,17 +212,28 @@ def venta_nueva(request):
                     err = "La cantidad debe ser mayor a cero."
                     break
                 try:
-                    prod = Producto.objects.get(pk=int(pid), habilitado=True)
+                    prod_id = int(pid)
                 except (ValueError, Producto.DoesNotExist):
-                    err = "Un producto seleccionado no existe o está deshabilitado."
+                    err = "Producto no válido."
                     break
+                if lista_venta is not None:
+                    prod = (
+                        _productos_queryset_para_lista(lista_venta)
+                        .filter(pk=prod_id)
+                        .first()
+                    )
+                    if prod is None:
+                        err = "Un producto seleccionado no pertenece a la lista de precios elegida."
+                        break
+                else:
+                    prod = Producto.objects.filter(pk=prod_id, habilitado=True).first()
+                    if prod is None:
+                        err = "Un producto seleccionado no existe o está deshabilitado."
+                        break
                 if prod.stock < qty:
                     err = f"Stock insuficiente para {prod.codigo} (disponible: {prod.stock})."
                     break
-                if lista_venta is not None:
-                    pu = _precio_producto_para_lista(lista_venta, prod)
-                else:
-                    pu = q2(prod.precio_venta)
+                pu = _precio_producto_para_lista(lista_venta, prod) if lista_venta else q2(prod.precio_venta)
                 st = (pu * qty).quantize(Decimal("0.01"))
                 subtotal += st
                 line_specs.append((prod, qty, pu, st, prod.codigo, prod.descripcion))

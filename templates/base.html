@@ -130,6 +130,17 @@
               >
                 <i data-lucide="calculator" class="app-lucide-toolbar"></i>
               </button>
+              <button
+                class="btn app-icon-btn"
+                type="button"
+                data-bs-toggle="modal"
+                data-bs-target="#sironaNotas"
+                aria-controls="sironaNotas"
+                aria-label="Enviar nota a administración"
+                title="Notas"
+              >
+                <i data-lucide="message-square" class="app-lucide-toolbar"></i>
+              </button>
               <a class="btn app-icon-btn" href="{% url 'logout' %}" title="Salir" aria-label="Salir">
                 <i data-lucide="log-out" class="app-lucide-toolbar"></i>
               </a>
@@ -173,6 +184,17 @@
                 title="Calculadora"
               >
                 <i data-lucide="calculator" class="app-lucide-toolbar"></i>
+              </button>
+              <button
+                class="btn app-icon-btn"
+                type="button"
+                data-bs-toggle="modal"
+                data-bs-target="#sironaNotas"
+                aria-controls="sironaNotas"
+                aria-label="Enviar nota a administración"
+                title="Notas"
+              >
+                <i data-lucide="message-square" class="app-lucide-toolbar"></i>
               </button>
               <a class="btn app-icon-btn" href="{% url 'logout' %}" title="Salir" aria-label="Salir">
                 <i data-lucide="log-out" class="app-lucide-toolbar"></i>
@@ -397,6 +419,39 @@
         </div>
       </div>
     </div>
+
+    {% if request.user.is_authenticated %}
+      <div class="modal fade" id="sironaNotas" tabindex="-1" aria-labelledby="sironaNotasLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content border-0 shadow">
+            <form method="post" action="{% url 'nota_admin_enviar' %}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+              <input type="hidden" name="pagina" value="{{ request.path }}" />
+              <div class="modal-header">
+                <h5 class="modal-title" id="sironaNotasLabel">Notas</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+              </div>
+              <div class="modal-body">
+                <div class="text-muted small mb-2">Dejá un mensaje para administración (sugerencias, cambios, errores, etc.).</div>
+                <textarea
+                  class="form-control"
+                  name="nota_texto"
+                  rows="5"
+                  maxlength="2000"
+                  placeholder="Escribí tu nota…"
+                  required
+                ></textarea>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Enviar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    {% endif %}
 
     <script src="{% static 'js/producto-form-precio.js' %}?v=1"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

@@ -37,6 +37,15 @@ def _get_vendedor_from_user(user) -> Vendedor | None:
     return v if isinstance(v, Vendedor) else None
 
 
+def _listas_precios_accesibles(vendedor: Vendedor):
+    bloqueadas = vendedor.listas_precios_bloqueadas.values_list("pk", flat=True)
+    return ListaPrecios.objects.exclude(pk__in=bloqueadas)
+
+
+def _vendedor_puede_ver_lista(vendedor: Vendedor, lista: ListaPrecios) -> bool:
+    return not vendedor.listas_precios_bloqueadas.filter(pk=lista.pk).exists()
+
+
 @login_required
 @require_http_methods(["GET", "POST"])
 def vendedor_home(request):
@@ -300,7 +309,7 @@ def vendedor_listas(request):
         return HttpResponseForbidden("Este usuario no tiene perfil de vendedor.")
 
     items = []
-    for lista in ListaPrecios.objects.all().order_by("-es_farmacia", "nombre"):
+    for lista in _listas_precios_accesibles(vendedor).order_by("-es_farmacia", "nombre"):
         if lista.es_farmacia:
             cant = Producto.objects.filter(habilitado=True, en_lista_precios=True).count()
         else:
@@ -326,6 +335,8 @@ def vendedor_lista_pdf(request, slug: str):
     lista = _get_lista_precios_por_slug(slug)
     if lista is None:
         return HttpResponseBadRequest("Lista no válida o no configurada.")
+    if not _vendedor_puede_ver_lista(vendedor, lista):
+        return HttpResponseForbidden("No tenés acceso a esa lista de precios.")
     return lista_precios_pdf_file_response(lista=lista)
 
 
@@ -338,6 +349,8 @@ def vendedor_lista_png(request, slug: str):
     lista = _get_lista_precios_por_slug(slug)
     if lista is None:
         return HttpResponseBadRequest("Lista no válida o no configurada.")
+    if not _vendedor_puede_ver_lista(vendedor, lista):
+        return HttpResponseForbidden("No tenés acceso a esa lista de precios.")
     filas = filas_lista_precios(lista)
     payload = [
         {"codigo": p.codigo, "descripcion": p.descripcion, "precio": format_monto_ars(precio)}

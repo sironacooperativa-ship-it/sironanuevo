@@ -12,5 +12,6 @@ urlpatterns = [
     path("modo-vendedor/", views.switch_to_vendor_mode, name="switch_to_vendor_mode"),
     path("modo-completo/", views.switch_to_full_mode, name="switch_to_full_mode"),
     path("cuenta/contrasena/", views.cambiar_password, name="cambiar_password"),
+    path("notas/enviar/", views.nota_admin_enviar, name="nota_admin_enviar"),
 ]
 
