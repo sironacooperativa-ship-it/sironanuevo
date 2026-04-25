@@ -1280,7 +1280,9 @@ def productos_import_excel_modelo(request):
 def productos_export_pdf(request):
     incluir_stock = request.GET.get("stock") == "1"
     productos = list(
-        Producto.objects.filter(en_lista_precios=True, habilitado=True).order_by("descripcion", "codigo")
+        Producto.objects.filter(en_lista_precios=True, habilitado=True).order_by(
+            "tipo", "descripcion", "codigo"
+        )
     )
 
     buffer = BytesIO()
@@ -1295,7 +1297,7 @@ def productos_export_pdf(request):
     styles = getSampleStyleSheet()
     story = platypus_membrete("Lista de precios", doc.width, styles)
 
-    headers = ["Código", "Descripción"]
+    headers = ["Código", "Tipo", "Descripción"]
     if incluir_stock:
         headers.append("Stock")
     headers.append("Precio")
@@ -1303,16 +1305,16 @@ def productos_export_pdf(request):
     data = [headers]
     for p in productos:
         desc = p.descripcion
-        if len(desc) > 100:
-            desc = desc[:97] + "..."
-        row = [p.codigo, desc]
+        if len(desc) > 85:
+            desc = desc[:82] + "..."
+        row = [p.codigo, p.get_tipo_display(), desc]
         if incluir_stock:
             row.append(str(p.stock))
         row.append(format_monto_ars(p.precio_venta))
         data.append(row)
 
     if len(data) == 1:
-        row = ["—", "—"]
+        row = ["—", "—", "—"]
         if incluir_stock:
             row.append("—")
         row.append("—")
@@ -1320,9 +1322,9 @@ def productos_export_pdf(request):
 
     tw = doc.width
     if incluir_stock:
-        col_w = [tw * 0.14, tw * 0.46, tw * 0.12, tw * 0.28]
+        col_w = [tw * 0.14, tw * 0.17, tw * 0.39, tw * 0.10, tw * 0.20]
     else:
-        col_w = [tw * 0.16, tw * 0.54, tw * 0.30]
+        col_w = [tw * 0.15, tw * 0.18, tw * 0.45, tw * 0.22]
 
     t = Table(data, colWidths=col_w, repeatRows=1)
     t.setStyle(

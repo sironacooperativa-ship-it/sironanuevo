@@ -369,7 +369,12 @@ def vendedor_lista_png(request, slug: str):
         return HttpResponseForbidden("No tenés acceso a esa lista de precios.")
     filas = filas_lista_precios(lista)
     payload = [
-        {"codigo": p.codigo, "descripcion": p.descripcion, "precio": format_monto_ars(precio)}
+        {
+            "codigo": p.codigo,
+            "tipo": p.get_tipo_display(),
+            "descripcion": p.descripcion,
+            "precio": format_monto_ars(precio),
+        }
         for p, precio in filas
     ]
     return render(

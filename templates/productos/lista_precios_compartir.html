@@ -101,7 +101,8 @@
         ctx.fillStyle = "#505050";
         ctx.font = "22px system-ui, -apple-system, Segoe UI, Arial";
         ctx.fillText("Código", pad, y + 22);
-        ctx.fillText("Descripción", pad + 210, y + 22);
+        ctx.fillText("Tipo", pad + 160, y + 22);
+        ctx.fillText("Descripción", pad + 360, y + 22);
         ctx.textAlign = "right";
         ctx.fillText("Precio", w - pad - 10, y + 22);
         ctx.textAlign = "left";
@@ -123,9 +124,10 @@
           }
           ctx.fillStyle = "#1e1e1e";
           ctx.fillText(String(p.codigo || ""), pad, y + 30);
+          ctx.fillText(String(p.tipo || ""), pad + 160, y + 30);
           let desc = String(p.descripcion || "");
-          if (desc.length > 42) desc = desc.slice(0, 39) + "...";
-          ctx.fillText(desc, pad + 210, y + 30);
+          if (desc.length > 32) desc = desc.slice(0, 29) + "...";
+          ctx.fillText(desc, pad + 360, y + 30);
           ctx.textAlign = "right";
           ctx.fillText(String(p.precio || ""), w - pad - 10, y + 30);
           ctx.textAlign = "left";

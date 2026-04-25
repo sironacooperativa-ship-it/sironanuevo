@@ -373,7 +373,12 @@ def lista_precios_export_png(request, pk: int):
     lista = get_object_or_404(ListaPrecios, pk=pk)
     filas = filas_lista_precios(lista)
     payload = [
-        {"codigo": p.codigo, "descripcion": p.descripcion, "precio": format_monto_ars(precio)}
+        {
+            "codigo": p.codigo,
+            "tipo": p.get_tipo_display(),
+            "descripcion": p.descripcion,
+            "precio": format_monto_ars(precio),
+        }
         for p, precio in filas
     ]
     return render(
