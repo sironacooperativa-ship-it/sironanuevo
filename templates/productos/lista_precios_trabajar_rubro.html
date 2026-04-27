@@ -108,15 +108,19 @@
                     value="{{ it.precio_venta }}"
                   />
                 </td>
-                <td class="text-end">
-                  <button
-                    type="submit"
-                    form="formQuitarItem{{ it.pk }}"
-                    class="table-action-btn"
-                    onclick="return confirm('¿Quitar de esta lista?');"
-                  >
-                    Quitar
-                  </button>
+                <td>
+                  <div class="table-actions">
+                    <button
+                      type="submit"
+                      form="formQuitarItem{{ it.pk }}"
+                      class="table-action-btn"
+                      onclick="return confirm('¿Quitar de esta lista?');"
+                      title="Quitar"
+                      aria-label="Quitar"
+                    >
+                      <i data-lucide="x" class="text-danger"></i>
+                    </button>
+                  </div>
                 </td>
               </tr>
             {% empty %}

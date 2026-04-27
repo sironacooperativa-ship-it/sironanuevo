@@ -67,15 +67,16 @@
                 {% endif %}
               </td>
               <td>{{ c.direccion }}</td>
-              <td class="text-end">
-                <div class="d-flex justify-content-end gap-2">
+              <td>
+                <div class="table-actions">
                   <button
                     type="button"
                     class="table-action-btn"
                     data-sirona-modal-url="{% url 'comprador_ficha' c.pk %}?modal=1"
                     title="Ficha"
+                    aria-label="Ficha"
                   >
-                    Ficha
+                    <i data-lucide="id-card"></i>
                   </button>
                   <a class="table-action-btn" href="{% url 'comprador_update' c.id %}" title="Editar" aria-label="Editar">
                     <i data-lucide="pencil"></i>

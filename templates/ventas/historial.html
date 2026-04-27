@@ -122,8 +122,8 @@
             <tr>
               <td><span class="fw-semibold">#{{ v.pk }}</span></td>
               <td class="table-fecha">{{ v.creado_en|date:"d/m/Y H:i" }}</td>
-              <td>{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}</td>
-              <td class="small">
+              <td class="table-text" title="{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}">{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}</td>
+              <td class="table-text small" title="{% if v.comprador %}{{ v.comprador.apellido }}, {{ v.comprador.nombre }}{% endif %}">
                 {% if v.comprador %}
                   {{ v.comprador.apellido }}, {{ v.comprador.nombre }}
                 {% else %}
@@ -157,60 +157,61 @@
                     >✓</span>
                 {% endif %}
               </td>
-              <td class="text-end text-nowrap">
-                <a
-                  class="table-action-btn"
-                  href="{% url 'venta_detalle' v.pk %}"
-                  title="Ver pedido"
-                  aria-label="Ver pedido"
-                >
-                  <i data-lucide="eye" class="ventas-hist-icon"></i>
-                </a>
-                <a
-                  class="table-action-btn"
-                  href="{% url 'venta_editar' v.pk %}"
-                  title="Editar pedido"
-                  aria-label="Editar pedido"
-                >
-                  <i data-lucide="pencil" class="ventas-hist-icon"></i>
-                </a>
-                {% if v.estado == "PEN" %}
+              <td>
+                <div class="table-actions">
                   <a
                     class="table-action-btn"
-                    href="{% url 'venta_registrar_pago' v.pk %}"
-                    title="Registrar pago del pedido"
-                    aria-label="Pagar pedido"
+                    href="{% url 'venta_detalle' v.pk %}"
+                    title="Ver pedido"
+                    aria-label="Ver pedido"
                   >
-                    <i data-lucide="wallet" class="ventas-hist-icon"></i>
+                    <i data-lucide="eye" class="ventas-hist-icon"></i>
                   </a>
-                {% elif v.pago_movimiento %}
                   <a
                     class="table-action-btn"
-                    href="{% url 'caja_detail' v.pago_movimiento.pk %}"
-                    title="Ver movimiento en caja"
-                    aria-label="Ver movimiento en caja"
+                    href="{% url 'venta_editar' v.pk %}"
+                    title="Editar pedido"
+                    aria-label="Editar pedido"
                   >
-                    <i data-lucide="landmark" class="ventas-hist-icon"></i>
+                    <i data-lucide="pencil" class="ventas-hist-icon"></i>
                   </a>
-                {% endif %}
-                {% if user.is_staff %}
-                  <form
-                    method="post"
-                    action="{% url 'venta_eliminar' v.pk %}"
-                    class="d-inline"
-                    onsubmit="return confirm('¿Eliminar el pedido #{{ v.pk }}? Se revierte stock y, si estaba pagado, el ingreso en caja.');"
-                  >
-                    {% csrf_token %}
-                    <button
-                      type="submit"
+                  {% if v.estado == "PEN" %}
+                    <a
                       class="table-action-btn"
-                      title="Eliminar pedido"
-                      aria-label="Eliminar pedido"
+                      href="{% url 'venta_registrar_pago' v.pk %}"
+                      title="Registrar pago del pedido"
+                      aria-label="Pagar pedido"
                     >
-                      <i data-lucide="x" class="ventas-hist-icon text-danger"></i>
-                    </button>
-                  </form>
-                {% endif %}
+                      <i data-lucide="wallet" class="ventas-hist-icon"></i>
+                    </a>
+                  {% elif v.pago_movimiento %}
+                    <a
+                      class="table-action-btn"
+                      href="{% url 'caja_detail' v.pago_movimiento.pk %}"
+                      title="Ver movimiento en caja"
+                      aria-label="Ver movimiento en caja"
+                    >
+                      <i data-lucide="landmark" class="ventas-hist-icon"></i>
+                    </a>
+                  {% endif %}
+                  {% if user.is_staff %}
+                    <form
+                      method="post"
+                      action="{% url 'venta_eliminar' v.pk %}"
+                      onsubmit="return confirm('¿Eliminar el pedido #{{ v.pk }}? Se revierte stock y, si estaba pagado, el ingreso en caja.');"
+                    >
+                      {% csrf_token %}
+                      <button
+                        type="submit"
+                        class="table-action-btn"
+                        title="Eliminar pedido"
+                        aria-label="Eliminar pedido"
+                      >
+                        <i data-lucide="x" class="ventas-hist-icon text-danger"></i>
+                      </button>
+                    </form>
+                  {% endif %}
+                </div>
               </td>
             </tr>
           {% empty %}

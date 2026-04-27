@@ -212,8 +212,8 @@
                 {% endif %}
               </td>
               <td class="table-fecha">{{ p.creado_en|date:"d/m/Y H:i" }}</td>
-              <td>{{ p.vendedor.apellido }}, {{ p.vendedor.nombre }}</td>
-              <td class="small">
+              <td class="table-text" title="{{ p.vendedor.apellido }}, {{ p.vendedor.nombre }}">{{ p.vendedor.apellido }}, {{ p.vendedor.nombre }}</td>
+              <td class="table-text small" title="{% if p.comprador_id %}{{ p.comprador.apellido }}, {{ p.comprador.nombre }}{% endif %}">
                 {% if p.comprador_id %}
                   {{ p.comprador.apellido }}, {{ p.comprador.nombre }}
                 {% else %}
@@ -236,8 +236,8 @@
                   —
                 {% endif %}
               </td>
-              <td class="text-end col-presu-acciones">
-                <div class="d-inline-flex flex-nowrap align-items-center justify-content-end gap-1">
+              <td class="col-presu-acciones">
+                <div class="table-actions">
                   <a
                     class="table-action-btn presu-act-btn"
                     href="{% url 'presupuesto_detalle' p.pk %}"
@@ -247,7 +247,7 @@
                     <i data-lucide="eye" aria-hidden="true"></i>
                   </a>
                   {% if user.is_staff or vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
-                    <form method="post" action="{% url 'presupuesto_duplicar' p.pk %}" class="d-inline m-0">
+                    <form method="post" action="{% url 'presupuesto_duplicar' p.pk %}">
                       {% csrf_token %}
                       <button type="submit" class="table-action-btn presu-act-btn" title="Repetir (copia en pendiente, mismas líneas y montos)" aria-label="Repetir">
                         <i data-lucide="refresh-cw" aria-hidden="true"></i>
@@ -273,7 +273,7 @@
                         <i data-lucide="check" aria-hidden="true"></i>
                       </a>
                     {% else %}
-                      <form method="post" action="{% url 'presupuesto_aprobar' p.pk %}" class="d-inline m-0" onsubmit="return confirm('¿Aprobar y generar el pedido? Se descontará stock y quedará en Pedidos como pendiente de pago.');">
+                      <form method="post" action="{% url 'presupuesto_aprobar' p.pk %}" onsubmit="return confirm('¿Aprobar y generar el pedido? Se descontará stock y quedará en Pedidos como pendiente de pago.');">
                         {% csrf_token %}
                         <button type="submit" class="table-action-btn presu-act-btn" title="Aprobar" aria-label="Aprobar">
                           <i data-lucide="check" aria-hidden="true"></i>
@@ -282,7 +282,7 @@
                     {% endif %}
                   {% endif %}
                   {% if user.is_staff or p.estado == "ACT" and vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
-                    <form method="post" action="{% url 'presupuesto_eliminar' p.pk %}" class="d-inline m-0" onsubmit="return confirm('¿Eliminar el presupuesto #{{ p.pk }}? Si estaba aprobado, también se elimina el pedido y se revierte stock y caja.');">
+                    <form method="post" action="{% url 'presupuesto_eliminar' p.pk %}" onsubmit="return confirm('¿Eliminar el presupuesto #{{ p.pk }}? Si estaba aprobado, también se elimina el pedido y se revierte stock y caja.');">
                       {% csrf_token %}
                       <button type="submit" class="table-action-btn presu-act-btn" title="Eliminar" aria-label="Eliminar">
                         <i data-lucide="x" class="text-danger" aria-hidden="true"></i>

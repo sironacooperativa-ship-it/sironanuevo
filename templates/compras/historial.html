@@ -102,15 +102,22 @@
               <td class="table-monto">{{ c.cantidad }}</td>
               <td class="table-monto">{{ c.monto|ars }}</td>
               <td class="small">{{ c.get_medio_pago_display }}</td>
-              <td class="text-center small">
-                {% if c.movimiento_caja %}
-                  <a class="table-action-btn" href="{% url 'caja_detail' c.movimiento_caja.pk %}">Egreso</a>
-                {% else %}
-                  <span class="text-muted">—</span>
-                {% endif %}
-                {% if c.movimiento_credito %}
-                  <a class="table-action-btn ms-1" href="{% url 'caja_detail' c.movimiento_credito.pk %}" title="Nota de crédito">N.C.</a>
-                {% endif %}
+              <td>
+                <div class="table-actions">
+                  {% if c.movimiento_caja %}
+                    <a class="table-action-btn" href="{% url 'caja_detail' c.movimiento_caja.pk %}" title="Ver egreso" aria-label="Ver egreso">
+                      <i data-lucide="landmark"></i>
+                    </a>
+                  {% endif %}
+                  {% if c.movimiento_credito %}
+                    <a class="table-action-btn" href="{% url 'caja_detail' c.movimiento_credito.pk %}" title="Nota de crédito" aria-label="Nota de crédito">
+                      <i data-lucide="receipt"></i>
+                    </a>
+                  {% endif %}
+                  {% if not c.movimiento_caja and not c.movimiento_credito %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </div>
               </td>
               <td class="small">
                 {% if c.anulada %}
@@ -120,19 +127,23 @@
                 {% endif %}
               </td>
               {% if es_admin_compras %}
-                <td class="text-end text-nowrap">
-                  <form method="post" action="{% url 'compra_admin_eliminar' c.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar definitivamente la compra #{{ c.pk }}? Se borrarán los movimientos de caja vinculados y se descontará la cantidad del stock.');">
-                    {% csrf_token %}
-                    <button type="submit" class="table-action-btn" title="Eliminar" aria-label="Eliminar">
-                      <i data-lucide="x" class="text-danger"></i>
-                    </button>
-                  </form>
-                  {% if not c.anulada and c.movimiento_caja %}
-                    <form method="post" action="{% url 'compra_admin_anular' c.pk %}" class="d-inline ms-1" onsubmit="return confirm('¿Anular la compra #{{ c.pk }}? Quedará marcada como anulada y se registrará una nota de crédito en caja por el mismo monto.');">
+                <td>
+                  <div class="table-actions">
+                    <form method="post" action="{% url 'compra_admin_eliminar' c.pk %}" onsubmit="return confirm('¿Eliminar definitivamente la compra #{{ c.pk }}? Se borrarán los movimientos de caja vinculados y se descontará la cantidad del stock.');">
                       {% csrf_token %}
-                      <button type="submit" class="table-action-btn">Anular</button>
+                      <button type="submit" class="table-action-btn" title="Eliminar" aria-label="Eliminar">
+                        <i data-lucide="x" class="text-danger"></i>
+                      </button>
                     </form>
-                  {% endif %}
+                    {% if not c.anulada and c.movimiento_caja %}
+                      <form method="post" action="{% url 'compra_admin_anular' c.pk %}" onsubmit="return confirm('¿Anular la compra #{{ c.pk }}? Quedará marcada como anulada y se registrará una nota de crédito en caja por el mismo monto.');">
+                        {% csrf_token %}
+                        <button type="submit" class="table-action-btn" title="Anular" aria-label="Anular">
+                          <i data-lucide="rotate-ccw"></i>
+                        </button>
+                      </form>
+                    {% endif %}
+                  </div>
                 </td>
               {% endif %}
             </tr>

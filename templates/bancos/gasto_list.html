@@ -32,16 +32,22 @@
               <td>{{ g.descripcion }}</td>
               <td class="small">{{ g.cuenta_bancaria.banco }}</td>
               <td class="table-monto">{{ g.monto|ars }}</td>
-              <td class="text-center">
-                <a class="table-action-btn" href="{% url 'caja_detail' g.movimiento_caja_id %}">Ver</a>
+              <td>
+                <div class="table-actions">
+                  <a class="table-action-btn" href="{% url 'caja_detail' g.movimiento_caja_id %}" title="Ver caja" aria-label="Ver caja">
+                    <i data-lucide="landmark"></i>
+                  </a>
+                </div>
               </td>
-              <td class="text-end">
-                <form method="post" action="{% url 'banco_gasto_eliminar' g.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar este gasto y el movimiento de caja?');">
-                  {% csrf_token %}
-                  <button type="submit" class="table-action-btn" title="Eliminar" aria-label="Eliminar">
-                    <i data-lucide="x" class="text-danger"></i>
-                  </button>
-                </form>
+              <td>
+                <div class="table-actions">
+                  <form method="post" action="{% url 'banco_gasto_eliminar' g.pk %}" onsubmit="return confirm('¿Eliminar este gasto y el movimiento de caja?');">
+                    {% csrf_token %}
+                    <button type="submit" class="table-action-btn" title="Eliminar" aria-label="Eliminar">
+                      <i data-lucide="x" class="text-danger"></i>
+                    </button>
+                  </form>
+                </div>
               </td>
             </tr>
           {% empty %}

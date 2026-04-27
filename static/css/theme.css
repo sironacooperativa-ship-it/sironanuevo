@@ -625,10 +625,9 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   padding: 1.15rem 1.25rem;
 }
 
-/* Sistema global de tablas Sirona. Las clases nuevas conviven con las tablas Bootstrap existentes. */
+/* Sistema global de tablas Sirona. */
 .table-card,
-.card:has(.sirona-table),
-.card:has(.table) {
+.card:has(.sirona-table) {
   margin-top: 14px;
   background: #fff;
   border: 1px solid var(--sirona-border);
@@ -638,8 +637,7 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
 }
 
 .table-card-header,
-.card:has(.sirona-table) > .card-header,
-.card:has(.table) > .card-header {
+.card:has(.sirona-table) > .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -672,15 +670,12 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   border-radius: 0;
 }
 
-.sirona-table,
-.table {
+.sirona-table {
   --sirona-table-line: rgba(15, 23, 42, 0.065);
-  --bs-table-border-color: transparent;
-  --bs-table-hover-bg: #f9fbfc;
   width: 100%;
+  table-layout: fixed;
   margin: 0;
   border-collapse: collapse;
-  border-color: transparent !important;
   color: var(--sirona-text);
   font-size: 14px;
   line-height: 1.38;
@@ -688,76 +683,64 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   vertical-align: middle;
 }
 
-.sirona-table th,
-.table th {
+.sirona-table th {
   text-align: left;
   padding: 12px 14px;
-  background: #f8fafc !important;
-  color: var(--sirona-text-soft) !important;
+  background: #f8fafc;
+  color: var(--sirona-text-soft);
   font-size: 12px;
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0.035em;
   text-transform: uppercase;
   vertical-align: middle;
-  border: 0 !important;
-  border-bottom: 1px solid var(--sirona-border) !important;
-  box-shadow: none !important;
+  border: 0;
+  border-bottom: 1px solid var(--sirona-border);
+  box-shadow: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.sirona-table td,
-.table td {
+.sirona-table td {
   padding: 12px 14px;
   color: var(--sirona-text);
   font-weight: 400;
   vertical-align: middle;
-  border: 0 !important;
-  border-bottom: 1px solid var(--sirona-table-line) !important;
-  box-shadow: none !important;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  word-break: normal;
+  border: 0;
+  border-bottom: 1px solid var(--sirona-table-line);
+  box-shadow: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.sirona-table tbody tr:last-child td,
-.table tbody tr:last-child td {
-  border-bottom: 0 !important;
+.sirona-table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
-.sirona-table tbody tr:hover,
-.table tbody tr:hover {
+.sirona-table tbody tr:hover {
   background: #f9fbfc;
 }
 
-.sirona-table tbody tr:hover > *,
-.table tbody tr:hover > * {
+.sirona-table tbody tr:hover > * {
   --bs-table-bg-state: #f9fbfc;
-  background-color: #f9fbfc !important;
+  background-color: #f9fbfc;
 }
 
-.sirona-table a,
-.table a {
+.sirona-table a {
   color: var(--sirona-primary);
   font-weight: 600;
   text-decoration: none;
 }
 
-.sirona-table a:hover,
-.table a:hover {
+.sirona-table a:hover {
   color: var(--sirona-primary);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-.sirona-table.table-sm th,
-.table.table-sm th,
-.sirona-table.table-sm td,
-.table.table-sm td {
-  padding: 10px 12px;
-}
-
-.sirona-table code,
-.table code {
+.sirona-table code {
   color: #475569;
   background: transparent;
   padding: 0;
@@ -765,42 +748,53 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
 }
 
 .table-fecha,
-.sirona-table .table-fecha,
-.table .table-fecha {
+.sirona-table .table-fecha {
   color: var(--sirona-text-soft);
   font-size: 13px;
   white-space: nowrap;
 }
 
 .table-monto,
-.sirona-table .table-monto,
-.table .table-monto,
-.sirona-table .text-end,
-.table .text-end {
+.sirona-table .table-monto {
   text-align: right !important;
   font-weight: 600;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
-.table-action-btn,
-.sirona-table .btn,
-.table .btn {
-  min-height: 0;
-  border: 1px solid var(--sirona-border);
-  background: #fff;
-  color: var(--sirona-text);
-  border-radius: 10px;
-  padding: 6px 9px;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.1;
-  box-shadow: none;
+.table-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
 }
 
-.table-action-btn:hover,
-.sirona-table .btn:hover,
-.table .btn:hover {
+.table-actions form {
+  display: flex;
+  margin: 0;
+}
+
+.table-action-btn {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 1px solid var(--sirona-border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--sirona-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.1;
+  box-shadow: none;
+  appearance: none;
+  text-decoration: none;
+  overflow: hidden;
+}
+
+.table-action-btn:hover {
   background: var(--sirona-primary-soft);
   border-color: var(--sirona-primary-light);
   color: var(--sirona-text);
@@ -808,9 +802,14 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   box-shadow: none;
 }
 
+.table-action-btn svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
 .table-empty,
-.sirona-table td[colspan],
-.table td[colspan] {
+.sirona-table td[colspan] {
   padding: 24px !important;
   text-align: center;
   color: var(--sirona-text-soft);
@@ -818,10 +817,103 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   font-weight: 500;
 }
 
-.table-light {
-  --bs-table-color: var(--sirona-text-soft);
-  --bs-table-bg: #f8fafc;
-  --bs-table-border-color: var(--sirona-border);
+.sirona-table .table-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ventas-historial-tabla th:nth-child(1),
+.ventas-historial-tabla td:nth-child(1) {
+  width: 60px;
+}
+
+.ventas-historial-tabla {
+  min-width: 1180px;
+}
+
+.ventas-historial-tabla th:nth-child(2),
+.ventas-historial-tabla td:nth-child(2) {
+  width: 160px;
+}
+
+.ventas-historial-tabla th:nth-child(3),
+.ventas-historial-tabla td:nth-child(3) {
+  width: 180px;
+}
+
+.ventas-historial-tabla th:nth-child(5),
+.ventas-historial-tabla td:nth-child(5) {
+  width: 140px;
+}
+
+.ventas-historial-tabla th:nth-child(6),
+.ventas-historial-tabla td:nth-child(6),
+.ventas-historial-tabla th:nth-child(7),
+.ventas-historial-tabla td:nth-child(7),
+.ventas-historial-tabla th:nth-child(8),
+.ventas-historial-tabla td:nth-child(8) {
+  width: 140px;
+}
+
+.ventas-historial-tabla th:nth-child(9),
+.ventas-historial-tabla td:nth-child(9) {
+  width: 100px;
+  text-align: center;
+}
+
+.ventas-historial-tabla th:nth-child(10),
+.ventas-historial-tabla td:nth-child(10) {
+  width: 160px;
+}
+
+.presu-lista th:nth-child(1),
+.presu-lista td:nth-child(1) {
+  width: 40px;
+  text-align: center;
+}
+
+.presu-lista {
+  min-width: 1120px;
+}
+
+.presu-lista th:nth-child(2),
+.presu-lista td:nth-child(2) {
+  width: 60px;
+}
+
+.presu-lista th:nth-child(3),
+.presu-lista td:nth-child(3) {
+  width: 160px;
+}
+
+.presu-lista th:nth-child(4),
+.presu-lista td:nth-child(4) {
+  width: 180px;
+}
+
+.presu-lista th:nth-child(6),
+.presu-lista td:nth-child(6),
+.presu-lista th:nth-child(7),
+.presu-lista td:nth-child(7) {
+  width: 140px;
+}
+
+.presu-lista th:nth-child(8),
+.presu-lista td:nth-child(8) {
+  width: 100px;
+  text-align: center;
+}
+
+.presu-lista th:nth-child(9),
+.presu-lista td:nth-child(9) {
+  width: 80px;
+}
+
+.presu-lista th:nth-child(10),
+.presu-lista td:nth-child(10) {
+  width: 160px;
 }
 
 .card.sirona-card-table-accent,
@@ -1006,31 +1098,6 @@ h2.h6 {
   background: var(--cg-surface);
 }
 
-.app-table {
-  font-size: 14px;
-}
-
-.app-table thead.table-light th,
-.app-table thead th {
-  font-weight: 600;
-  border-bottom-color: var(--sirona-border) !important;
-}
-
-.app-table thead.table-light th {
-  color: var(--sirona-text-soft) !important;
-  background-color: #f8fafc !important;
-  background-image: none !important;
-}
-
-.app-table tbody td {
-  padding-top: 10px;
-  padding-bottom: 10px;
-}
-
-.app-table-row:hover td {
-  background-color: #f9fbfc;
-}
-
 .app-pill {
   display: inline-block;
   font-size: 0.62rem;
@@ -1179,8 +1246,3 @@ h2.h6 {
   color: #fff;
 }
 
-td .ventas-hist-icon {
-  width: 1rem;
-  height: 1rem;
-  flex-shrink: 0;
-}

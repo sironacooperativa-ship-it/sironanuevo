@@ -317,7 +317,7 @@
           '<td class="text-end"><input type="number" name="linea_cantidad" class="form-control form-control-sm text-end" min="1" step="1" value="" placeholder="1" title="Cantidad" /></td>' +
           '<td class="text-end"><input type="text" name="linea_precio_unitario" class="form-control form-control-sm text-end js-precio-input" inputmode="decimal" placeholder="Lista" autocomplete="off" title="Vacío = precio de lista del producto" /></td>' +
           '<td class="text-end fw-semibold js-subtotal">—</td>' +
-          '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger py-0 js-remove" title="Quitar">×</button></td>';
+          '<td><div class="table-actions"><button type="button" class="table-action-btn js-remove" title="Quitar" aria-label="Quitar"><i data-lucide="x"></i></button></div></td>';
         tr.children[0].appendChild(buildSelect(tr));
         tr.querySelector('input[name="linea_cantidad"]').addEventListener("input", () => {
           refreshRow(tr);

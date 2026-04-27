@@ -47,19 +47,26 @@
                 {% endif %}
               </td>
               <td>
+                <div class="table-actions">
                 <button
                   type="button"
                   class="table-action-btn"
                   data-sirona-modal-url="{% url 'vendedor_ficha' v.pk %}?modal=1"
                   title="Ver datos cargados"
+                  aria-label="Ficha"
                 >
-                  Ficha
+                  <i data-lucide="id-card"></i>
                 </button>
+                </div>
               </td>
               <td>
-                <div class="d-flex justify-content-center gap-2 flex-wrap">
-                  <a class="table-action-btn" href="{% url 'vendedor_actividad' v.id %}" title="Clientes, pedidos y caja">Ver actividad</a>
-                  <a class="table-action-btn" href="{% url 'vendedor_detalle' v.id %}" title="Pedidos y comisiones">Pedidos</a>
+                <div class="table-actions">
+                  <a class="table-action-btn" href="{% url 'vendedor_actividad' v.id %}" title="Clientes, pedidos y caja" aria-label="Clientes, pedidos y caja">
+                    <i data-lucide="activity"></i>
+                  </a>
+                  <a class="table-action-btn" href="{% url 'vendedor_detalle' v.id %}" title="Pedidos y comisiones" aria-label="Pedidos y comisiones">
+                    <i data-lucide="file-text"></i>
+                  </a>
                   <a class="table-action-btn" href="{% url 'vendedor_update' v.id %}" title="Editar" aria-label="Editar">
                     <i data-lucide="pencil"></i>
                   </a>

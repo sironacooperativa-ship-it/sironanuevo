@@ -43,8 +43,8 @@
               <td>{{ p.telefono }}</td>
               <td>{{ p.mail }}</td>
               <td>{{ p.direccion }}</td>
-              <td class="text-end">
-                <div class="d-flex justify-content-end gap-2">
+              <td>
+                <div class="table-actions">
                   <a class="table-action-btn" href="{% url 'proveedor_update' p.id %}" title="Editar" aria-label="Editar">
                     <i data-lucide="pencil"></i>
                   </a>

@@ -69,8 +69,12 @@
               <td><code>{{ m.numero_cheque }}</code></td>
               <td class="small">{{ m.operacion }}</td>
               <td class="table-monto">{{ m.monto|ars }}</td>
-              <td class="text-end">
-                <a class="table-action-btn" href="{% url 'caja_detail' m.pk %}">Ver</a>
+              <td>
+                <div class="table-actions">
+                  <a class="table-action-btn" href="{% url 'caja_detail' m.pk %}" title="Ver movimiento" aria-label="Ver movimiento">
+                    <i data-lucide="eye"></i>
+                  </a>
+                </div>
               </td>
             </tr>
           {% empty %}

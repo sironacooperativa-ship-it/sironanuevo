@@ -145,9 +145,11 @@
                 <td>{% if r.m.vendedor %}{{ r.m.vendedor.apellido }}, {{ r.m.vendedor.nombre }}{% else %}-{% endif %}</td>
                 <td class="table-monto">{{ r.m.delta|ars }}</td>
                 <td class="table-monto">{{ r.saldo|ars }}</td>
-                <td class="text-end">
-                  <div class="d-flex justify-content-end gap-2">
-                    <a class="table-action-btn" href="{% url 'caja_detail' r.m.id %}">Detalles</a>
+                <td>
+                  <div class="table-actions">
+                    <a class="table-action-btn" href="{% url 'caja_detail' r.m.id %}" title="Detalles" aria-label="Detalles">
+                      <i data-lucide="eye"></i>
+                    </a>
                     {% if user.is_staff %}
                       <form method="post" action="{% url 'caja_delete' r.m.id %}" onsubmit="return confirm('¿Eliminar movimiento?');">
                         {% csrf_token %}

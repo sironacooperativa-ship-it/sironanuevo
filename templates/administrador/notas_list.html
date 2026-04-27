@@ -85,26 +85,26 @@
                   <span class="badge text-bg-warning text-dark">No leída</span>
                 {% endif %}
               </td>
-              <td class="text-center">
-                <div class="d-inline-flex flex-wrap justify-content-center gap-1">
-                  <form method="post" class="d-inline">
+              <td>
+                <div class="table-actions">
+                  <form method="post">
                     {% csrf_token %}
                     <input type="hidden" name="nota_id" value="{{ nota.pk }}" />
                     {% if nota.leida %}
-                      <button class="table-action-btn" type="submit" name="accion" value="marcar_no_leida">
-                        Marcar no leída
+                      <button class="table-action-btn" type="submit" name="accion" value="marcar_no_leida" title="Marcar no leída" aria-label="Marcar no leída">
+                        <i data-lucide="mail"></i>
                       </button>
                     {% else %}
-                      <button class="table-action-btn" type="submit" name="accion" value="marcar_leida">
-                        Marcar leída
+                      <button class="table-action-btn" type="submit" name="accion" value="marcar_leida" title="Marcar leída" aria-label="Marcar leída">
+                        <i data-lucide="mail-check"></i>
                       </button>
                     {% endif %}
                   </form>
-                  <form method="post" class="d-inline" onsubmit="return confirm('¿Eliminar esta nota?');">
+                  <form method="post" onsubmit="return confirm('¿Eliminar esta nota?');">
                     {% csrf_token %}
                     <input type="hidden" name="nota_id" value="{{ nota.pk }}" />
-                    <button class="table-action-btn" type="submit" name="accion" value="eliminar">
-                      Eliminar
+                    <button class="table-action-btn" type="submit" name="accion" value="eliminar" title="Eliminar" aria-label="Eliminar">
+                      <i data-lucide="x" class="text-danger"></i>
                     </button>
                   </form>
                 </div>

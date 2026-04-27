@@ -144,11 +144,15 @@
                   <span class="badge text-bg-light text-dark border">No</span>
                 {% endif %}
               </td>
-              <td class="text-center">
-                <a class="table-action-btn" href="{% url 'admin_usuario_update' u.pk %}" title="Editar" aria-label="Editar">
-                  <i data-lucide="pencil"></i>
-                </a>
-                <a class="table-action-btn" href="{% url 'admin_usuario_password' u.pk %}">Contraseña</a>
+              <td>
+                <div class="table-actions">
+                  <a class="table-action-btn" href="{% url 'admin_usuario_update' u.pk %}" title="Editar" aria-label="Editar">
+                    <i data-lucide="pencil"></i>
+                  </a>
+                  <a class="table-action-btn" href="{% url 'admin_usuario_password' u.pk %}" title="Contraseña" aria-label="Contraseña">
+                    <i data-lucide="key-round"></i>
+                  </a>
+                </div>
               </td>
             </tr>
           {% empty %}

@@ -122,28 +122,32 @@
               <td class="text-muted">{{ p.get_tipo_display }}</td>
               <td class="table-monto">
                 {% if user.is_staff %}
-                  <form
-                    method="post"
-                    action="{% url 'stock_ajuste_inline' %}"
-                    class="d-inline-flex align-items-center gap-1 justify-content-end flex-wrap"
-                  >
-                    {% csrf_token %}
-                    <input type="hidden" name="producto_id" value="{{ p.pk }}" />
-                    <input type="hidden" name="retorno_q" value="{{ q|default:'' }}" />
-                    <input
-                      type="number"
-                      name="stock"
-                      id="stock-input-{{ p.pk }}"
-                      class="form-control form-control-sm text-end"
-                      style="width: 5.25rem; max-width: 100%"
-                      min="0"
-                      step="1"
-                      value="{{ p.stock }}"
-                      title="Editar stock y aplicar"
-                      aria-label="Stock {{ p.codigo }}"
-                    />
-                    <button type="submit" class="table-action-btn">Aplicar</button>
-                  </form>
+                  <div class="table-actions">
+                    <form
+                      method="post"
+                      action="{% url 'stock_ajuste_inline' %}"
+                      class="d-inline-flex align-items-center gap-1 justify-content-end flex-wrap"
+                    >
+                      {% csrf_token %}
+                      <input type="hidden" name="producto_id" value="{{ p.pk }}" />
+                      <input type="hidden" name="retorno_q" value="{{ q|default:'' }}" />
+                      <input
+                        type="number"
+                        name="stock"
+                        id="stock-input-{{ p.pk }}"
+                        class="form-control form-control-sm text-end"
+                        style="width: 5.25rem; max-width: 100%"
+                        min="0"
+                        step="1"
+                        value="{{ p.stock }}"
+                        title="Editar stock y aplicar"
+                        aria-label="Stock {{ p.codigo }}"
+                      />
+                      <button type="submit" class="table-action-btn" title="Aplicar" aria-label="Aplicar">
+                        <i data-lucide="check"></i>
+                      </button>
+                    </form>
+                  </div>
                 {% else %}
                   <span class="small text-muted">{{ p.stock }}</span>
                 {% endif %}
