@@ -92,8 +92,12 @@
                 {% endif %}
               </td>
               <td class="text-end">{{ ve.neto|ars }}</td>
-              <td class="text-end">
-                <a class="btn btn-sm btn-outline-primary" href="{% url 'venta_detalle' ve.pk %}">Abrir</a>
+              <td class="table-actions-cell">
+                <div class="table-actions">
+                  <a class="table-action-btn" href="{% url 'venta_detalle' ve.pk %}" title="Ver" aria-label="Ver">
+                    <i data-lucide="eye"></i>
+                  </a>
+                </div>
               </td>
             </tr>
           {% empty %}
@@ -153,8 +157,12 @@
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td class="text-end">
-                <a class="btn btn-sm btn-outline-secondary" href="{% url 'caja_detail' m.pk %}">Caja</a>
+              <td class="table-actions-cell">
+                <div class="table-actions">
+                  <a class="table-action-btn" href="{% url 'caja_detail' m.pk %}" title="Ver" aria-label="Ver">
+                    <i data-lucide="eye"></i>
+                  </a>
+                </div>
               </td>
             </tr>
           {% empty %}

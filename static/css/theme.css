@@ -673,7 +673,7 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
 .sirona-table {
   --sirona-table-line: rgba(15, 23, 42, 0.065);
   width: 100%;
-  table-layout: fixed;
+  table-layout: auto;
   margin: 0;
   border-collapse: collapse;
   color: var(--sirona-text);
@@ -762,50 +762,75 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   font-variant-numeric: tabular-nums;
 }
 
+.table-actions-cell {
+  width: 190px;
+  min-width: 190px;
+  max-width: 190px;
+  text-align: right;
+  white-space: nowrap;
+}
+
 .table-actions {
-  display: flex;
+  display: inline-flex;
+  flex-direction: row;
   justify-content: flex-end;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
 }
 
 .table-actions form {
-  display: flex;
+  display: inline-flex;
+  flex: 0 0 auto;
   margin: 0;
 }
 
-.table-action-btn {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  min-height: 32px;
+.table-action-btn,
+.table-actions button,
+.table-actions a {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
   padding: 0;
-  border: 1px solid var(--sirona-border);
+  border: 1px solid rgba(15, 151, 181, 0.22);
   border-radius: 8px;
-  background: #fff;
+  background: #ffffff;
   color: var(--sirona-text);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 1.1;
+  line-height: 1;
   box-shadow: none;
   appearance: none;
+  cursor: pointer;
   text-decoration: none;
   overflow: hidden;
 }
 
-.table-action-btn:hover {
+.table-action-btn:hover,
+.table-actions button:hover,
+.table-actions a:hover {
   background: var(--sirona-primary-soft);
-  border-color: var(--sirona-primary-light);
+  border-color: var(--sirona-primary);
   color: var(--sirona-text);
   text-decoration: none;
   box-shadow: none;
 }
 
-.table-action-btn svg {
+.table-action-btn svg,
+.table-actions svg {
   width: 16px;
   height: 16px;
+  stroke-width: 2;
   flex: 0 0 auto;
+}
+
+.table-action-btn {
+  color: var(--sirona-text);
+}
+
+.table-action-btn:hover {
+  color: var(--sirona-primary);
 }
 
 .table-empty,
@@ -870,17 +895,17 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
 
 .presu-lista th:nth-child(1),
 .presu-lista td:nth-child(1) {
-  width: 40px;
+  width: 32px;
   text-align: center;
 }
 
 .presu-lista {
-  min-width: 1120px;
+  min-width: 980px;
 }
 
 .presu-lista th:nth-child(2),
 .presu-lista td:nth-child(2) {
-  width: 60px;
+  width: 44px;
 }
 
 .presu-lista th:nth-child(3),
@@ -890,19 +915,22 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
 
 .presu-lista th:nth-child(4),
 .presu-lista td:nth-child(4) {
-  width: 180px;
+  width: 160px;
 }
 
 .presu-lista th:nth-child(6),
-.presu-lista td:nth-child(6),
+.presu-lista td:nth-child(6) {
+  width: 110px;
+}
+
 .presu-lista th:nth-child(7),
 .presu-lista td:nth-child(7) {
-  width: 140px;
+  width: 130px;
 }
 
 .presu-lista th:nth-child(8),
 .presu-lista td:nth-child(8) {
-  width: 100px;
+  width: 80px;
   text-align: center;
 }
 
@@ -913,7 +941,7 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
 
 .presu-lista th:nth-child(10),
 .presu-lista td:nth-child(10) {
-  width: 160px;
+  width: 190px;
 }
 
 .card.sirona-card-table-accent,

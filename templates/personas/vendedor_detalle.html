@@ -164,8 +164,12 @@
                   <span class="badge text-bg-success">Pagada</span>
                 {% endif %}
               </td>
-              <td class="text-end text-nowrap">
-                <a class="btn btn-sm btn-outline-secondary" href="{% url 'venta_detalle' v.pk %}">Ver</a>
+              <td class="table-actions-cell">
+                <div class="table-actions">
+                  <a class="table-action-btn" href="{% url 'venta_detalle' v.pk %}" title="Ver" aria-label="Ver">
+                    <i data-lucide="eye"></i>
+                  </a>
+                </div>
               </td>
             </tr>
           {% empty %}

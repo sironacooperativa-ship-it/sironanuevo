@@ -329,12 +329,12 @@
                   autocomplete="off"
                 />
               </td>
-              <td class="text-end align-middle">
-                <div class="d-flex flex-wrap justify-content-end gap-1 align-items-center">
-                  <div class="producto-view d-flex flex-wrap gap-1 justify-content-end">
+              <td class="text-end align-middle table-actions-cell">
+                <div class="table-actions">
+                  <div class="producto-view table-actions">
                     <button
                       type="button"
-                      class="btn btn-sm btn-outline-primary rounded-pill px-2 js-producto-editar"
+                      class="btn btn-sm btn-outline-primary rounded-pill px-2 table-action-btn js-producto-editar"
                       data-row="producto-row-{{ p.pk }}"
                       title="Editar"
                       aria-label="Editar"
@@ -346,24 +346,28 @@
                         {% csrf_token %}
                         <input type="hidden" name="retorno_query" value="{{ request.GET.urlencode }}" />
                         <button
-                          class="btn btn-sm btn-outline-secondary rounded-pill px-2"
+                          class="btn btn-sm btn-outline-secondary rounded-pill px-2 table-action-btn"
                           type="submit"
                           title="{% if p.habilitado %}Inhabilitar{% else %}Habilitar{% endif %}"
                           aria-label="{% if p.habilitado %}Inhabilitar{% else %}Habilitar{% endif %}"
                         >
-                          <i data-lucide="check" class="{% if p.habilitado %}text-success{% else %}text-secondary{% endif %}"></i>
+                          {% if p.habilitado %}
+                            <i data-lucide="x" class="text-danger"></i>
+                          {% else %}
+                            <i data-lucide="check" class="text-secondary"></i>
+                          {% endif %}
                         </button>
                       </form>
                       <form method="post" action="{% url 'producto_delete' p.id %}" class="d-inline" onsubmit="return confirm('¿Eliminar {{ p.codigo }}?');">
                         {% csrf_token %}
                         <input type="hidden" name="retorno_query" value="{{ request.GET.urlencode }}" />
-                        <button class="btn btn-sm btn-outline-danger rounded-pill px-2" type="submit" title="Eliminar" aria-label="Eliminar">
+                        <button class="btn btn-sm btn-outline-danger rounded-pill px-2 table-action-btn" type="submit" title="Eliminar" aria-label="Eliminar">
                           <i data-lucide="x" class="text-danger"></i>
                         </button>
                       </form>
                     {% endif %}
                   </div>
-                  <div class="producto-edit producto-edit-actions d-none flex-wrap gap-1 justify-content-end align-items-center">
+                  <div class="producto-edit producto-edit-actions d-none table-actions">
                     <label class="form-check form-switch sirona-switch mb-0 me-1 small">
                       <input
                         class="form-check-input"
@@ -374,13 +378,15 @@
                       />
                       <span class="form-check-label">Activo</span>
                     </label>
-                    <button type="submit" class="btn btn-sm btn-success rounded-pill px-2" form="producto-inline-{{ p.pk }}">
-                      Guardar
+                    <button type="submit" class="btn btn-sm btn-success rounded-pill px-2 table-action-btn" form="producto-inline-{{ p.pk }}" title="Aprobar" aria-label="Aprobar">
+                      <i data-lucide="check"></i>
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 js-producto-cancelar">
-                      Cancelar
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 table-action-btn js-producto-cancelar" title="Eliminar cambios" aria-label="Eliminar cambios">
+                      <i data-lucide="x"></i>
                     </button>
-                    <a class="btn btn-sm btn-link text-decoration-none py-0 px-1" href="{% url 'producto_update' p.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}">Ficha completa</a>
+                    <a class="btn btn-sm btn-link text-decoration-none py-0 px-1 table-action-btn" href="{% url 'producto_update' p.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" title="Editar ficha completa" aria-label="Editar ficha completa">
+                      <i data-lucide="pencil"></i>
+                    </a>
                   </div>
                 </div>
               </td>

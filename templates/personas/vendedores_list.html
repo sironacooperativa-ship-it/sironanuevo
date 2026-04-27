@@ -52,20 +52,20 @@
                   type="button"
                   class="table-action-btn"
                   data-sirona-modal-url="{% url 'vendedor_ficha' v.pk %}?modal=1"
-                  title="Ver datos cargados"
-                  aria-label="Ficha"
+                  title="Ver ficha"
+                  aria-label="Ver ficha"
                 >
-                  <i data-lucide="id-card"></i>
+                  <i data-lucide="eye"></i>
                 </button>
                 </div>
               </td>
               <td>
                 <div class="table-actions">
-                  <a class="table-action-btn" href="{% url 'vendedor_actividad' v.id %}" title="Clientes, pedidos y caja" aria-label="Clientes, pedidos y caja">
-                    <i data-lucide="activity"></i>
+                  <a class="table-action-btn" href="{% url 'vendedor_actividad' v.id %}" title="Ver actividad" aria-label="Ver actividad">
+                    <i data-lucide="eye"></i>
                   </a>
-                  <a class="table-action-btn" href="{% url 'vendedor_detalle' v.id %}" title="Pedidos y comisiones" aria-label="Pedidos y comisiones">
-                    <i data-lucide="file-text"></i>
+                  <a class="table-action-btn" href="{% url 'vendedor_detalle' v.id %}" title="Ver pedidos" aria-label="Ver pedidos">
+                    <i data-lucide="eye"></i>
                   </a>
                   <a class="table-action-btn" href="{% url 'vendedor_update' v.id %}" title="Editar" aria-label="Editar">
                     <i data-lucide="pencil"></i>
@@ -74,8 +74,8 @@
                     <form method="post" action="{% url 'vendedor_toggle' v.id %}">
                       {% csrf_token %}
                       {% if v.habilitado %}
-                        <button class="table-action-btn" type="submit" onclick="return confirm('¿Inhabilitar {{ v.codigo }}?');" title="Inhabilitar" aria-label="Inhabilitar">
-                          <i data-lucide="check" class="text-success"></i>
+                        <button class="table-action-btn" type="submit" onclick="return confirm('¿Inhabilitar {{ v.codigo }}?');" title="Eliminar habilitación" aria-label="Eliminar habilitación">
+                          <i data-lucide="x" class="text-danger"></i>
                         </button>
                       {% else %}
                         <button class="table-action-btn" type="submit" title="Habilitar" aria-label="Habilitar">

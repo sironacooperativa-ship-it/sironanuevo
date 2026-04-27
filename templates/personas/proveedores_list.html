@@ -52,8 +52,8 @@
                     <form method="post" action="{% url 'proveedor_toggle' p.id %}">
                       {% csrf_token %}
                       {% if p.habilitado %}
-                        <button class="table-action-btn" type="submit" onclick="return confirm('¿Inhabilitar {{ p.codigo }}?');" title="Inhabilitar" aria-label="Inhabilitar">
-                          <i data-lucide="check" class="text-success"></i>
+                        <button class="table-action-btn" type="submit" onclick="return confirm('¿Inhabilitar {{ p.codigo }}?');" title="Eliminar habilitación" aria-label="Eliminar habilitación">
+                          <i data-lucide="x" class="text-danger"></i>
                         </button>
                       {% else %}
                         <button class="table-action-btn" type="submit" title="Habilitar" aria-label="Habilitar">

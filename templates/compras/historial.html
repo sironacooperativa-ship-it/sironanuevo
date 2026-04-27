@@ -106,12 +106,12 @@
                 <div class="table-actions">
                   {% if c.movimiento_caja %}
                     <a class="table-action-btn" href="{% url 'caja_detail' c.movimiento_caja.pk %}" title="Ver egreso" aria-label="Ver egreso">
-                      <i data-lucide="landmark"></i>
+                      <i data-lucide="eye"></i>
                     </a>
                   {% endif %}
                   {% if c.movimiento_credito %}
-                    <a class="table-action-btn" href="{% url 'caja_detail' c.movimiento_credito.pk %}" title="Nota de crédito" aria-label="Nota de crédito">
-                      <i data-lucide="receipt"></i>
+                    <a class="table-action-btn" href="{% url 'caja_detail' c.movimiento_credito.pk %}" title="Ver nota de crédito" aria-label="Ver nota de crédito">
+                      <i data-lucide="eye"></i>
                     </a>
                   {% endif %}
                   {% if not c.movimiento_caja and not c.movimiento_credito %}
@@ -138,8 +138,8 @@
                     {% if not c.anulada and c.movimiento_caja %}
                       <form method="post" action="{% url 'compra_admin_anular' c.pk %}" onsubmit="return confirm('¿Anular la compra #{{ c.pk }}? Quedará marcada como anulada y se registrará una nota de crédito en caja por el mismo monto.');">
                         {% csrf_token %}
-                        <button type="submit" class="table-action-btn" title="Anular" aria-label="Anular">
-                          <i data-lucide="rotate-ccw"></i>
+                        <button type="submit" class="table-action-btn" title="Actualizar" aria-label="Actualizar">
+                          <i data-lucide="refresh-cw"></i>
                         </button>
                       </form>
                     {% endif %}

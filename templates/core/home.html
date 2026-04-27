@@ -99,15 +99,17 @@
                 <td>{% if v.comprador_id %}{{ v.comprador }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
                 <td class="text-end">{{ v.neto|ars }}</td>
                 <td>{% if v.fecha_vencimiento_pago %}{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
-                <td class="text-center text-nowrap">
-                  <a
-                    class="btn btn-sm btn-outline-primary px-2 py-0"
-                    href="{% url 'venta_registrar_pago' v.pk %}"
-                    title="Registrar cobro en caja"
-                    aria-label="Registrar cobro en caja"
-                  >
-                    <i data-lucide="wallet" class="ventas-hist-icon"></i>
-                  </a>
+                <td class="table-actions-cell">
+                  <div class="table-actions">
+                    <a
+                      class="table-action-btn"
+                      href="{% url 'venta_registrar_pago' v.pk %}"
+                      title="Aprobar cobro"
+                      aria-label="Aprobar cobro"
+                    >
+                      <i data-lucide="check" class="ventas-hist-icon"></i>
+                    </a>
+                  </div>
                 </td>
               </tr>
             {% empty %}
@@ -149,15 +151,17 @@
                 <tr>
                   <td class="small">Pago pedido</td>
                   <td>#{{ v.pk }} — {{ v.vendedor.apellido }}, {{ v.vendedor.nombre }} — {{ v.neto|ars }}</td>
-                  <td class="text-end text-nowrap">
-                    <a
-                      class="btn btn-sm btn-outline-primary px-2"
-                      href="{% url 'venta_registrar_pago' v.pk %}"
-                      title="Registrar cobro en caja"
-                      aria-label="Registrar cobro en caja"
-                    >
-                      <i data-lucide="wallet" class="ventas-hist-icon"></i>
-                    </a>
+                  <td class="table-actions-cell">
+                    <div class="table-actions">
+                      <a
+                        class="table-action-btn"
+                        href="{% url 'venta_registrar_pago' v.pk %}"
+                        title="Aprobar cobro"
+                        aria-label="Aprobar cobro"
+                      >
+                        <i data-lucide="check" class="ventas-hist-icon"></i>
+                      </a>
+                    </div>
                   </td>
                 </tr>
               {% endfor %}
@@ -165,8 +169,12 @@
                 <tr>
                   <td class="small">Cheque</td>
                   <td><code>{{ m.numero_cheque }}</code> — {{ m.operacion }} — {{ m.monto|ars }}</td>
-                  <td class="text-end">
-                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'caja_detail' m.pk %}">Ver</a>
+                  <td class="table-actions-cell">
+                    <div class="table-actions">
+                      <a class="table-action-btn" href="{% url 'caja_detail' m.pk %}" title="Ver" aria-label="Ver">
+                        <i data-lucide="eye"></i>
+                      </a>
+                    </div>
                   </td>
                 </tr>
               {% endfor %}
@@ -174,8 +182,12 @@
                 <tr>
                   <td class="small">{{ e.get_tipo_display }}</td>
                   <td>{{ e.titulo }}</td>
-                  <td class="text-end">
-                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'calendario_home' %}">Calendario</a>
+                  <td class="table-actions-cell">
+                    <div class="table-actions">
+                      <a class="table-action-btn" href="{% url 'calendario_home' %}" title="Ver" aria-label="Ver">
+                        <i data-lucide="eye"></i>
+                      </a>
+                    </div>
                   </td>
                 </tr>
               {% endfor %}
@@ -210,8 +222,12 @@
                     <tr>
                       <td class="text-muted small">{% if m.fecha_vencimiento_cheque %}{{ m.fecha_vencimiento_cheque|date:"d/m/Y" }}{% else %}—{% endif %}</td>
                       <td class="small"><code>{{ m.numero_cheque }}</code> — {{ m.operacion }} — {{ m.monto|ars }}</td>
-                      <td class="text-end">
-                        <a class="btn btn-sm btn-outline-secondary py-0" href="{% url 'caja_detail' m.pk %}">Ver</a>
+                      <td class="table-actions-cell">
+                        <div class="table-actions">
+                          <a class="table-action-btn" href="{% url 'caja_detail' m.pk %}" title="Ver" aria-label="Ver">
+                            <i data-lucide="eye"></i>
+                          </a>
+                        </div>
                       </td>
                     </tr>
                   {% empty %}

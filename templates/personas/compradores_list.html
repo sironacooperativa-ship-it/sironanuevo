@@ -73,10 +73,10 @@
                     type="button"
                     class="table-action-btn"
                     data-sirona-modal-url="{% url 'comprador_ficha' c.pk %}?modal=1"
-                    title="Ficha"
-                    aria-label="Ficha"
+                    title="Ver ficha"
+                    aria-label="Ver ficha"
                   >
-                    <i data-lucide="id-card"></i>
+                    <i data-lucide="eye"></i>
                   </button>
                   <a class="table-action-btn" href="{% url 'comprador_update' c.id %}" title="Editar" aria-label="Editar">
                     <i data-lucide="pencil"></i>
@@ -85,8 +85,8 @@
                     <form method="post" action="{% url 'comprador_toggle' c.id %}">
                       {% csrf_token %}
                       {% if c.habilitado %}
-                        <button class="table-action-btn" type="submit" onclick="return confirm('¿Inhabilitar {{ c.codigo }}?');" title="Inhabilitar" aria-label="Inhabilitar">
-                          <i data-lucide="check" class="text-success"></i>
+                        <button class="table-action-btn" type="submit" onclick="return confirm('¿Inhabilitar {{ c.codigo }}?');" title="Eliminar habilitación" aria-label="Eliminar habilitación">
+                          <i data-lucide="x" class="text-danger"></i>
                         </button>
                       {% else %}
                         <button class="table-action-btn" type="submit" title="Habilitar" aria-label="Habilitar">

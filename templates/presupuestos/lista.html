@@ -161,11 +161,11 @@
         <thead class="table-light">
           <tr>
             {% if user.is_staff or has_vendedor_perfil %}
-            <th class="text-center" style="width:1.9rem" scope="col">
+            <th class="text-center" scope="col">
               <input type="checkbox" class="form-check-input" id="js-masivo-todo" title="Marcar o desmarcar visibles" aria-label="Marcar o desmarcar visibles" />
             </th>
             {% else %}
-            <th class="text-center" style="width:0.5rem"></th>
+            <th class="text-center"></th>
             {% endif %}
             <th>#</th>
             <th>Fecha</th>
@@ -175,7 +175,7 @@
             <th class="table-monto col-presu-neto">Neto</th>
             <th class="col-presu-estado" title="Estado">Estado</th>
             <th>Pedido</th>
-            <th class="table-monto col-presu-acciones">Acciones</th>
+            <th class="table-monto col-presu-acciones table-actions-cell">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -236,7 +236,7 @@
                   —
                 {% endif %}
               </td>
-              <td class="col-presu-acciones">
+              <td class="col-presu-acciones table-actions-cell">
                 <div class="table-actions">
                   <a
                     class="table-action-btn presu-act-btn"

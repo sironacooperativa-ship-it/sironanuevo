@@ -83,8 +83,12 @@
                   <td class="text-muted small">{{ m.fecha|date:"d/m/Y" }}</td>
                   <td>{% if m.venta_id %}<a href="{% url 'venta_detalle' m.venta_id %}">#{{ m.venta_id }}</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
                   <td class="text-end">{{ m.delta|ars }}</td>
-                  <td class="text-end">
-                    <a class="btn btn-sm btn-outline-secondary py-0" href="{% url 'caja_detail' m.pk %}">Caja</a>
+                  <td class="table-actions-cell">
+                    <div class="table-actions">
+                      <a class="table-action-btn" href="{% url 'caja_detail' m.pk %}" title="Ver" aria-label="Ver">
+                        <i data-lucide="eye"></i>
+                      </a>
+                    </div>
                   </td>
                 </tr>
               {% empty %}

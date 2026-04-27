@@ -179,10 +179,10 @@
                     <a
                       class="table-action-btn"
                       href="{% url 'venta_registrar_pago' v.pk %}"
-                      title="Registrar pago del pedido"
-                      aria-label="Pagar pedido"
+                      title="Aprobar pago"
+                      aria-label="Aprobar pago"
                     >
-                      <i data-lucide="wallet" class="ventas-hist-icon"></i>
+                      <i data-lucide="check" class="ventas-hist-icon"></i>
                     </a>
                   {% elif v.pago_movimiento %}
                     <a
@@ -191,7 +191,7 @@
                       title="Ver movimiento en caja"
                       aria-label="Ver movimiento en caja"
                     >
-                      <i data-lucide="landmark" class="ventas-hist-icon"></i>
+                      <i data-lucide="eye" class="ventas-hist-icon"></i>
                     </a>
                   {% endif %}
                   {% if user.is_staff %}
