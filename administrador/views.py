@@ -104,6 +104,9 @@ def notas_list(request):
             nota.leida = False
             nota.save(update_fields=["leida"])
             messages.success(request, "Nota marcada como no leída.")
+        elif accion == "eliminar":
+            nota.delete()
+            messages.success(request, "Nota eliminada.")
         else:
             messages.error(request, "Acción no válida.")
         return redirect("admin_notas_list")

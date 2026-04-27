@@ -130,17 +130,33 @@
               >
                 <i data-lucide="calculator" class="app-lucide-toolbar"></i>
               </button>
-              <button
-                class="btn app-icon-btn"
-                type="button"
-                data-bs-toggle="modal"
-                data-bs-target="#sironaNotas"
-                aria-controls="sironaNotas"
-                aria-label="Enviar nota a administración"
-                title="Notas"
-              >
-                <i data-lucide="message-square" class="app-lucide-toolbar"></i>
-              </button>
+              {% if request.user.is_staff or request.user.is_superuser %}
+                <a
+                  class="btn app-icon-btn position-relative"
+                  href="{% url 'admin_notas_list' %}"
+                  aria-label="Leer mensajes de administración"
+                  title="Mensajes"
+                >
+                  <i data-lucide="message-square" class="app-lucide-toolbar"></i>
+                  {% if notas_admin_no_leidas %}
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger">
+                      {{ notas_admin_no_leidas }}
+                    </span>
+                  {% endif %}
+                </a>
+              {% else %}
+                <button
+                  class="btn app-icon-btn"
+                  type="button"
+                  data-bs-toggle="modal"
+                  data-bs-target="#sironaNotas"
+                  aria-controls="sironaNotas"
+                  aria-label="Enviar nota a administración"
+                  title="Notas"
+                >
+                  <i data-lucide="message-square" class="app-lucide-toolbar"></i>
+                </button>
+              {% endif %}
               <a class="btn app-icon-btn" href="{% url 'logout' %}" title="Salir" aria-label="Salir">
                 <i data-lucide="log-out" class="app-lucide-toolbar"></i>
               </a>
@@ -167,12 +183,10 @@
             </a>
             <div class="d-flex align-items-center gap-3">
               <span class="small text-muted d-none d-md-inline">{{ request.user.username }}</span>
-              {% if has_vendedor_perfil %}
-                {% if not request.user.perfil_acceso or not request.user.perfil_acceso.solo_vendedor %}
-                  <a class="btn btn-sm btn-outline-primary" href="{% url 'switch_to_vendor_mode' %}" title="Cambiar a modo vendedor">
-                    Cambiar a modo vendedor
-                  </a>
-                {% endif %}
+              {% if can_switch_to_vendor_mode %}
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'switch_to_vendor_mode' %}" title="Cambiar a modo vendedor">
+                  Cambiar a modo vendedor
+                </a>
               {% endif %}
               <button
                 class="btn app-icon-btn"
@@ -185,17 +199,33 @@
               >
                 <i data-lucide="calculator" class="app-lucide-toolbar"></i>
               </button>
-              <button
-                class="btn app-icon-btn"
-                type="button"
-                data-bs-toggle="modal"
-                data-bs-target="#sironaNotas"
-                aria-controls="sironaNotas"
-                aria-label="Enviar nota a administración"
-                title="Notas"
-              >
-                <i data-lucide="message-square" class="app-lucide-toolbar"></i>
-              </button>
+              {% if request.user.is_staff or request.user.is_superuser %}
+                <a
+                  class="btn app-icon-btn position-relative"
+                  href="{% url 'admin_notas_list' %}"
+                  aria-label="Leer mensajes de administración"
+                  title="Mensajes"
+                >
+                  <i data-lucide="message-square" class="app-lucide-toolbar"></i>
+                  {% if notas_admin_no_leidas %}
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger">
+                      {{ notas_admin_no_leidas }}
+                    </span>
+                  {% endif %}
+                </a>
+              {% else %}
+                <button
+                  class="btn app-icon-btn"
+                  type="button"
+                  data-bs-toggle="modal"
+                  data-bs-target="#sironaNotas"
+                  aria-controls="sironaNotas"
+                  aria-label="Enviar nota a administración"
+                  title="Notas"
+                >
+                  <i data-lucide="message-square" class="app-lucide-toolbar"></i>
+                </button>
+              {% endif %}
               <a class="btn app-icon-btn" href="{% url 'logout' %}" title="Salir" aria-label="Salir">
                 <i data-lucide="log-out" class="app-lucide-toolbar"></i>
               </a>

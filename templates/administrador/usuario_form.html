@@ -55,7 +55,7 @@
         <div class="col-12 col-md-6">
           <div class="form-check">
             {{ form.vendedor }}
-            <label class="form-check-label" for="{{ form.vendedor.id_for_label }}">Vendedor</label>
+            <label class="form-check-label" for="{{ form.vendedor.id_for_label }}">{{ form.vendedor.label }}</label>
           </div>
           {% if form.vendedor.errors %}<div class="text-danger small">{{ form.vendedor.errors }}</div>{% endif %}
           {% if form.vendedor.help_text %}<div class="form-text">{{ form.vendedor.help_text }}</div>{% endif %}

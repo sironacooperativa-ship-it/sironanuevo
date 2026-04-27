@@ -57,10 +57,13 @@ class UsuarioCrearForm(forms.ModelForm):
     password1 = forms.CharField(label="Contraseña", widget=forms.PasswordInput)
     password2 = forms.CharField(label="Repetir contraseña", widget=forms.PasswordInput)
     vendedor = forms.BooleanField(
-        label="Vendedor",
+        label="Solo vendedor",
         required=False,
         initial=True,
-        help_text="Si está activo, el usuario ingresa al modo reducido (Portal Vendedor).",
+        help_text=(
+            "Si está activo, el usuario ingresa siempre al modo reducido. "
+            "Si está desactivado y tiene vendedor vinculado, puede alternar entre modo completo y vendedor."
+        ),
     )
     vinculo_vendedor = forms.ModelChoiceField(
         label="Vendedor existente en el sistema",
@@ -84,9 +87,8 @@ class UsuarioCrearForm(forms.ModelForm):
         p2 = cd.get("password2")
         if p1 and p2 and p1 != p2:
             raise forms.ValidationError("Las contraseñas no coinciden.")
-        solo = bool(cd.get("vendedor"))
         vin = cd.get("vinculo_vendedor")
-        if solo and vin and vin.usuario_id:
+        if vin and vin.usuario_id:
             self.add_error(
                 "vinculo_vendedor",
                 f"Ese vendedor ya está vinculado al usuario «{vin.usuario.username}». "
@@ -104,21 +106,23 @@ class UsuarioCrearForm(forms.ModelForm):
                 usuario=user,
                 defaults={"solo_vendedor": solo_vendedor},
             )
-            if solo_vendedor:
-                vin = self.cleaned_data.get("vinculo_vendedor")
-                with transaction.atomic():
-                    if vin:
-                        _vincular_usuario_a_vendedor(user, vin)
-                    else:
-                        _asegurar_vendedor_automatico(user)
+            vin = self.cleaned_data.get("vinculo_vendedor")
+            with transaction.atomic():
+                if vin:
+                    _vincular_usuario_a_vendedor(user, vin)
+                elif solo_vendedor:
+                    _asegurar_vendedor_automatico(user)
         return user
 
 
 class UsuarioEditarForm(forms.ModelForm):
     vendedor = forms.BooleanField(
-        label="Vendedor",
+        label="Solo vendedor",
         required=False,
-        help_text="Si está activo, el usuario queda limitado al modo reducido (Portal Vendedor).",
+        help_text=(
+            "Si está activo, el usuario queda limitado al modo reducido. "
+            "Si está desactivado y tiene vendedor vinculado, puede alternar entre modo completo y vendedor."
+        ),
     )
     vinculo_vendedor = forms.ModelChoiceField(
         label="Vendedor existente en el sistema",
@@ -148,10 +152,9 @@ class UsuarioEditarForm(forms.ModelForm):
 
     def clean(self):
         cd = super().clean()
-        solo = bool(cd.get("vendedor"))
         vin = cd.get("vinculo_vendedor")
         uid = getattr(self.instance, "pk", None)
-        if solo and vin and vin.usuario_id and uid and vin.usuario_id != uid:
+        if vin and vin.usuario_id and uid and vin.usuario_id != uid:
             self.add_error(
                 "vinculo_vendedor",
                 f"Ese vendedor ya está vinculado al usuario «{vin.usuario.username}».",
@@ -166,13 +169,12 @@ class UsuarioEditarForm(forms.ModelForm):
                 usuario=user,
                 defaults={"solo_vendedor": solo_vendedor},
             )
-            if solo_vendedor:
-                vin = self.cleaned_data.get("vinculo_vendedor")
-                with transaction.atomic():
-                    if vin:
-                        _vincular_usuario_a_vendedor(user, vin)
-                    elif _vendedor_del_usuario(user) is None:
-                        _asegurar_vendedor_automatico(user)
+            vin = self.cleaned_data.get("vinculo_vendedor")
+            with transaction.atomic():
+                if vin:
+                    _vincular_usuario_a_vendedor(user, vin)
+                elif solo_vendedor and _vendedor_del_usuario(user) is None:
+                    _asegurar_vendedor_automatico(user)
         return user
 
 

@@ -24,6 +24,7 @@ def vendor_mode(request):
     path = str(getattr(request, "path", "") or "")
     in_portal = path.startswith("/vendedor/")
     has_vendedor_perfil = False
+    can_switch_to_vendor_mode = False
     vendedor_perfil_pk = None
     notas_admin_no_leidas = 0
     user = getattr(request, "user", None)
@@ -35,12 +36,14 @@ def vendor_mode(request):
                 vendedor_perfil_pk = v.pk
         except ObjectDoesNotExist:
             has_vendedor_perfil = False
+        can_switch_to_vendor_mode = bool(has_vendedor_perfil and not solo_vendedor)
         if getattr(user, "is_staff", False) or getattr(user, "is_superuser", False):
             notas_admin_no_leidas = NotaAdmin.objects.filter(leida=False).count()
 
     return {
         "vendor_mode": bool(solo_vendedor or session_flag or in_portal),
         "has_vendedor_perfil": has_vendedor_perfil,
+        "can_switch_to_vendor_mode": can_switch_to_vendor_mode,
         "vendedor_perfil_pk": vendedor_perfil_pk,
         "notas_admin_no_leidas": notas_admin_no_leidas,
     }
