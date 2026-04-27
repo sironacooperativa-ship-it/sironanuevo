@@ -34,8 +34,20 @@ def _es_admin(user) -> bool:
     return bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
 
 
+def _recibe_notas_admin(user) -> bool:
+    return bool(
+        user
+        and user.is_authenticated
+        and (user.is_superuser or (getattr(user, "username", "") or "").strip().lower() == "admin")
+    )
+
+
 def admin_required(view):
     return login_required(user_passes_test(_es_admin)(view))
+
+
+def notas_admin_required(view):
+    return login_required(user_passes_test(_recibe_notas_admin)(view))
 
 
 @admin_required
@@ -85,7 +97,7 @@ def usuarios_list(request):
     return render(request, "administrador/usuarios_list.html", {"usuarios": qs, "q": q})
 
 
-@admin_required
+@notas_admin_required
 @require_http_methods(["GET", "POST"])
 def notas_list(request):
     if request.method == "POST":

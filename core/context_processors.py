@@ -27,6 +27,7 @@ def vendor_mode(request):
     can_switch_to_vendor_mode = False
     vendedor_perfil_pk = None
     notas_admin_no_leidas = 0
+    recibe_notas_admin = False
     user = getattr(request, "user", None)
     if user is not None and getattr(user, "is_authenticated", False):
         try:
@@ -36,8 +37,12 @@ def vendor_mode(request):
                 vendedor_perfil_pk = v.pk
         except ObjectDoesNotExist:
             has_vendedor_perfil = False
-        can_switch_to_vendor_mode = bool(has_vendedor_perfil and not solo_vendedor)
-        if getattr(user, "is_staff", False) or getattr(user, "is_superuser", False):
+        can_switch_to_vendor_mode = bool(not solo_vendedor)
+        recibe_notas_admin = bool(
+            getattr(user, "is_superuser", False)
+            or (getattr(user, "username", "") or "").strip().lower() == "admin"
+        )
+        if recibe_notas_admin:
             notas_admin_no_leidas = NotaAdmin.objects.filter(leida=False).count()
 
     return {
@@ -46,5 +51,6 @@ def vendor_mode(request):
         "can_switch_to_vendor_mode": can_switch_to_vendor_mode,
         "vendedor_perfil_pk": vendedor_perfil_pk,
         "notas_admin_no_leidas": notas_admin_no_leidas,
+        "recibe_notas_admin": recibe_notas_admin,
     }
 

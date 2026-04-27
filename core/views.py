@@ -6,7 +6,7 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import connections
+from django.db import connections, transaction
 from django.db.utils import OperationalError
 from django.http import HttpResponse
 from django.db.models import Case, Count, DecimalField, ExpressionWrapper, F, Q, Sum, Value, When
@@ -38,6 +38,41 @@ def _safe_get_vendedor_perfil(user) -> Vendedor | None:
         return v if isinstance(v, Vendedor) else None
     except ObjectDoesNotExist:
         return None
+
+
+def _ensure_vendedor_perfil(user) -> Vendedor | None:
+    """Devuelve o crea/enlaza un perfil vendedor para usuarios que alternan de modo."""
+    v = _safe_get_vendedor_perfil(user)
+    if v is not None:
+        return v
+
+    if user is None or not getattr(user, "is_authenticated", False):
+        return None
+
+    nombre = (getattr(user, "first_name", "") or "").strip() or (getattr(user, "username", "") or "").strip()
+    apellido = (getattr(user, "last_name", "") or "").strip()
+    candidatos = Vendedor.objects.filter(usuario__isnull=True, habilitado=True)
+
+    existente = None
+    if nombre and apellido:
+        existente = candidatos.filter(nombre__iexact=nombre, apellido__iexact=apellido).first()
+    if existente is None and nombre:
+        matches = list(candidatos.filter(nombre__iexact=nombre)[:2])
+        if len(matches) == 1:
+            existente = matches[0]
+
+    with transaction.atomic():
+        if existente is not None:
+            existente.usuario = user
+            existente.save(update_fields=["usuario"])
+            return existente
+
+        return Vendedor.objects.create(
+            nombre=nombre or getattr(user, "username", ""),
+            apellido=apellido or "—",
+            usuario=user,
+            habilitado=True,
+        )
 
 
 @login_required
@@ -269,8 +304,7 @@ def login_view(request):
                         getattr(getattr(user, "perfil_acceso", None), "solo_vendedor", False)
                     )
                     entrar = (request.POST.get("entrar_como_vendedor") or "0") == "1"
-                    # Importante: NO autocrear ni autovincular vendedor (evita duplicados).
-                    v = _safe_get_vendedor_perfil(user)
+                    v = _ensure_vendedor_perfil(user) if entrar else _safe_get_vendedor_perfil(user)
 
                     # Guardar modo en sesión (para menú/layout). Staff puede entrar como vendedor con el checkbox.
                     modo = bool(solo_vendedor or (entrar and v is not None))
@@ -288,7 +322,7 @@ def login_view(request):
                     if entrar and v is not None:
                         return redirect("vendedor_home")
                     if entrar and v is None:
-                        messages.error(request, "Este usuario no tiene perfil de vendedor asignado.")
+                        messages.error(request, "No se pudo preparar el perfil de vendedor para este usuario.")
                 except Exception:
                     pass
                 return redirect("home")
@@ -332,12 +366,12 @@ def logout_view(request):
 def switch_to_vendor_mode(request):
     # Si ya es solo_vendedor, el modo viene dado por perfil; pero igual marcamos sesión para el layout.
     solo_vendedor = bool(getattr(getattr(request.user, "perfil_acceso", None), "solo_vendedor", False))
-    v = _safe_get_vendedor_perfil(request.user)
+    v = _ensure_vendedor_perfil(request.user)
     if (solo_vendedor or v is not None) and v is not None:
         request.session["modo_vendedor"] = True
         return redirect("vendedor_home")
 
-    messages.error(request, "Este usuario no tiene perfil de vendedor.")
+    messages.error(request, "No se pudo preparar el perfil de vendedor para este usuario.")
     return redirect("home")
 
 

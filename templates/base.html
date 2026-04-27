@@ -15,7 +15,7 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
-    <link href="{% static 'css/theme.css' %}?v=ios-2026l" rel="stylesheet" />
+    <link href="{% static 'css/theme.css' %}?v=ios-2026m" rel="stylesheet" />
     <link href="{% static 'css/sirona-calc.css' %}" rel="stylesheet" />
     <style>
       /* Respaldo en el HTML: grilla + flex sin min-width que rompa el teclado */
@@ -130,7 +130,7 @@
               >
                 <i data-lucide="calculator" class="app-lucide-toolbar"></i>
               </button>
-              {% if request.user.is_staff or request.user.is_superuser %}
+              {% if recibe_notas_admin %}
                 <a
                   class="btn app-icon-btn position-relative"
                   href="{% url 'admin_notas_list' %}"
@@ -199,7 +199,7 @@
               >
                 <i data-lucide="calculator" class="app-lucide-toolbar"></i>
               </button>
-              {% if request.user.is_staff or request.user.is_superuser %}
+              {% if recibe_notas_admin %}
                 <a
                   class="btn app-icon-btn position-relative"
                   href="{% url 'admin_notas_list' %}"
@@ -395,15 +395,17 @@
                   <span class="app-sidebar-icon-wrap"><i data-lucide="history"></i></span>
                   <span class="app-sidebar-label">Historial</span>
                 </a>
-                <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'admin_notas_list' %}">
-                  <span class="app-sidebar-icon-wrap"><i data-lucide="inbox"></i></span>
-                  <span class="app-sidebar-label">
-                    Notas
-                    {% if notas_admin_no_leidas %}
-                      <span class="badge text-bg-warning text-dark ms-1">{{ notas_admin_no_leidas }}</span>
-                    {% endif %}
-                  </span>
-                </a>
+                {% if recibe_notas_admin %}
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'admin_notas_list' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="inbox"></i></span>
+                    <span class="app-sidebar-label">
+                      Notas
+                      {% if notas_admin_no_leidas %}
+                        <span class="badge text-bg-warning text-dark ms-1">{{ notas_admin_no_leidas }}</span>
+                      {% endif %}
+                    </span>
+                  </a>
+                {% endif %}
                 <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'admin_usuarios_list' %}">
                   <span class="app-sidebar-icon-wrap"><i data-lucide="shield"></i></span>
                   <span class="app-sidebar-label">Administrador</span>

@@ -8,12 +8,14 @@
     </div>
     <a class="btn btn-primary btn-sm" href="{% url 'admin_usuario_create' %}">Nuevo usuario</a>
     <a class="btn btn-outline-primary btn-sm" href="{% url 'admin_actividad_list' %}">Historial de actividad</a>
-    <a class="btn btn-outline-primary btn-sm" href="{% url 'admin_notas_list' %}">
-      Notas
-      {% if notas_admin_no_leidas %}
-        <span class="badge text-bg-warning text-dark ms-1">{{ notas_admin_no_leidas }}</span>
-      {% endif %}
-    </a>
+    {% if recibe_notas_admin %}
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'admin_notas_list' %}">
+        Notas
+        {% if notas_admin_no_leidas %}
+          <span class="badge text-bg-warning text-dark ms-1">{{ notas_admin_no_leidas }}</span>
+        {% endif %}
+      </a>
+    {% endif %}
   </div>
 
   <div class="card shadow-sm mb-3">
