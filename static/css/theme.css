@@ -1165,6 +1165,379 @@ h2.h6 {
   vertical-align: middle;
 }
 
+/* —— Listado Productos: tabla estilo SaaS (Stripe/Linear) —— */
+.table-card.table-card--productos {
+  margin-top: 14px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
+
+.table-card--productos .table-card-header--productos-toolbar {
+  display: block;
+  width: 100%;
+  padding: 14px 18px;
+  background: #fafbfc;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  align-items: center;
+}
+
+.table-card--productos .table-card-header--productos-toolbar .text-muted {
+  color: #64748b;
+  font-weight: 500;
+  font-size: 0.8125rem;
+}
+
+.table-card--productos .productos-bulk-btn {
+  border-radius: 10px;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  padding: 0.4rem 0.75rem;
+  line-height: 1.2;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #fff;
+  color: #475569;
+  box-shadow: none;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.table-card--productos .productos-bulk-btn:hover {
+  background: #f8fafc;
+  border-color: rgba(15, 23, 42, 0.12);
+  color: #0f172a;
+}
+
+.table-card--productos .productos-bulk-btn--delete {
+  border-color: rgba(244, 63, 94, 0.25);
+  color: #be123c;
+  background: #fff5f5;
+}
+
+.table-card--productos .productos-bulk-btn--delete:hover {
+  background: #fff1f2;
+  border-color: rgba(244, 63, 94, 0.4);
+  color: #9f1239;
+}
+
+.table-card--productos .table-productos {
+  --productos-saas-line: rgba(15, 23, 42, 0.055);
+  color: #0f172a;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.table-card--productos .table-productos .producto-th-sort-caret {
+  color: #94a3b8;
+  font-size: 0.75em;
+  font-weight: 400;
+}
+
+.table-card--productos .table-productos thead.productos-thead-saas th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 14px 16px;
+  border: 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+  box-shadow: none;
+  vertical-align: middle;
+}
+
+.table-card--productos .table-productos thead .productos-th-cb,
+.table-card--productos .table-productos td.productos-td-cb {
+  width: 2.5rem;
+  min-width: 2.5rem;
+  padding: 12px 12px 12px 16px;
+}
+
+.table-card--productos .table-productos .productos-th-saas {
+  padding: 12px 16px;
+  min-height: 48px;
+  letter-spacing: 0.04em;
+}
+
+.table-card--productos .table-productos tbody td {
+  padding: 14px 16px;
+  min-height: 48px;
+  color: #0f172a;
+  font-weight: 400;
+  border: 0;
+  border-bottom: 1px solid var(--productos-saas-line);
+  background: #fff;
+  box-shadow: none;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.table-card--productos .table-productos .productos-td-precio,
+.table-card--productos .table-productos .table-monto .producto-view,
+.table-card--productos .table-productos .col-monto {
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.table-card--productos .table-productos .productos-td-nowrap {
+  white-space: nowrap;
+}
+
+.table-card--productos .table-productos .productos-td-tipo,
+.table-card--productos .table-productos .productos-td-muted,
+.table-card--productos .table-productos .productos-td-dim {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.table-card--productos .table-productos .productos-badge-sin-stock {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: #64748b;
+  background: #f1f5f9;
+  border: 0;
+  border-radius: 99px;
+  padding: 0.15em 0.5em;
+}
+
+.table-card--productos .table-productos tbody tr.productos-tbody-row:hover > td {
+  background: #f1f5f9;
+}
+
+.table-card--productos .table-productos tbody tr.productos-tbody-row:hover > * {
+  --bs-table-bg-state: #f1f5f9;
+  background-color: #f1f5f9;
+}
+
+.table-card--productos
+  tr.producto-row-inline.is-editing:hover
+  > td,
+.table-card--productos
+  tr.producto-row-inline.is-editing:hover
+  > th {
+  background: #fcfcff !important;
+  --bs-table-bg-state: #fcfcff;
+}
+
+.table-card--productos .table-productos tbody tr.productos-row--zero-stock {
+  background: #fafbfc;
+}
+
+.table-card--productos .table-productos tbody tr.productos-row--zero-stock > td {
+  background: #fafbfc;
+  border-color: var(--productos-saas-line);
+}
+
+.table-card--productos .table-productos tbody tr.productos-tbody-row:last-child td {
+  border-bottom: 0;
+}
+
+.table-card--productos .table-productos .productos-bulk-cb {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  vertical-align: middle;
+  cursor: pointer;
+  border-color: rgba(15, 23, 42, 0.2);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.table-card--productos .table-productos #chkProductosTodos {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* Columna acciones: espacio e icon buttons SaaS */
+.table-card--productos .table-actions-cell {
+  width: 220px;
+  min-width: 220px;
+  max-width: 240px;
+}
+
+.table-card--productos .table-actions,
+.table-card--productos .productos-table-actions-row {
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.table-card--productos .table-action-btn,
+.table-card--productos .table-actions button,
+.table-card--productos .table-actions a,
+.table-card--productos a.table-action-btn--link {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  box-shadow: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.table-card--productos .table-action-btn:hover,
+.table-card--productos a.table-action-btn--link:hover,
+.table-card--productos .table-actions button:hover,
+.table-card--productos .table-actions a:hover {
+  text-decoration: none;
+  box-shadow: none;
+  transform: translateY(-0.5px);
+}
+
+.table-card--productos .table-action-btn--primary,
+.table-card--productos .table-action-btn.productos-ico-btn--edit,
+.table-card--productos a.table-action-btn--link,
+.table-card--productos a.productos-ico-btn--link {
+  background: #f1f5f9;
+  border-color: rgba(148, 163, 184, 0.4);
+  color: #64748b;
+}
+.table-card--productos a.table-action-btn--link,
+.table-card--productos a.productos-ico-btn--link {
+  min-width: 1.5rem;
+  width: auto;
+  padding: 0 0.2rem;
+}
+.table-card--productos .table-action-btn--primary:hover,
+.table-card--productos a.table-action-btn--link:hover,
+.table-card--productos a.productos-ico-btn--link:hover,
+.table-card--productos
+  button.table-action-btn--primary:hover,
+.table-card--productos
+  a.table-action-btn--primary:hover {
+  background: #e2e8f0;
+  border-color: rgba(100, 116, 139, 0.4);
+  color: #0f172a;
+}
+
+.table-card--productos .table-action-btn--muted,
+.table-card--productos .table-action-btn.productos-ico-btn--toggle,
+.table-card--productos a.table-action-btn--muted {
+  background: #f8fafc;
+  border-color: rgba(203, 213, 225, 0.85);
+  color: #94a3b8;
+}
+.table-card--productos .table-action-btn--muted:hover,
+.table-card--productos
+  a.table-action-btn--muted:hover,
+.table-card--productos
+  button.table-action-btn--muted:hover,
+.table-card--productos
+  a.table-action-btn--muted:hover {
+  background: #f1f5f9;
+  color: #64748b;
+  border-color: rgba(148, 163, 184, 0.5);
+}
+.table-card--productos .productos-ico-ban {
+  color: #94a3b8;
+}
+
+.table-card--productos .productos-ico-habilitar {
+  color: #0f766e;
+  opacity: 0.9;
+}
+.table-card--productos .table-action-btn--danger,
+.table-card--productos .table-action-btn.productos-ico-btn--trash,
+.table-card--productos
+  a.table-action-btn--danger,
+.table-card--productos
+  button.table-action-btn--danger {
+  background: #fff5f5;
+  border-color: rgba(244, 63, 94, 0.28);
+  color: #be123c;
+}
+.table-card--productos
+  a.table-action-btn--danger:hover,
+.table-card--productos
+  button.table-action-btn--danger:hover,
+.table-card--productos
+  a.table-action-btn--danger:hover {
+  background: #ffe4e6;
+  border-color: rgba(244, 63, 94, 0.45);
+  color: #9f1239;
+}
+
+.table-card--productos .table-action-btn--danger svg {
+  color: inherit;
+  stroke: currentColor;
+}
+
+.table-card--productos .table-action-btn--success,
+.table-card--productos .table-action-btn.productos-ico-btn--save,
+.table-card--productos
+  a.table-action-btn--success,
+.table-card--productos
+  button.table-action-btn--success {
+  background: #f0fdf4;
+  border-color: rgba(22, 163, 74, 0.28);
+  color: #15803d;
+}
+.table-card--productos
+  a.table-action-btn--success:hover,
+.table-card--productos
+  button.table-action-btn--success:hover,
+.table-card--productos
+  a.table-action-btn--success:hover {
+  background: #dcfce7;
+  color: #14532d;
+}
+
+.table-card--productos .table-action-btn.productos-ico-btn--cancel:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.table-card--productos .table-action-btn svg,
+.table-card--productos .table-actions svg,
+.table-card--productos a.table-action-btn--link svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+  opacity: 0.9;
+}
+
+.table-card--productos .productos-saas-card-footer {
+  background: #fff;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 0 0 12px 12px;
+  padding: 0.9rem 1.15rem;
+}
+
+.table-card--productos .table-responsive {
+  background: #fff;
+}
+
+/* Edición en fila: reforzar aire y controles */
+.table-card--productos tr.producto-row-inline.is-editing {
+  background: #fcfcff;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+}
+
+.table-card--productos tr.producto-row-inline.is-editing > td {
+  background: #fcfcff;
+}
+
+.table-card--productos .form-check.form-switch.sirona-switch {
+  min-height: 1.5rem;
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: nowrap;
+}
+
+/* Evitar títulos duplicando peso: tabla body sin bold genérico */
+.table-card--productos .table-productos tbody .small:not(.form-check-label) {
+  font-weight: 400;
+  font-size: 13px;
+  color: #0f172a;
+}
+
 .form-check.form-switch.sirona-switch .form-check-input {
   width: 2.75em;
   height: 1.45em;

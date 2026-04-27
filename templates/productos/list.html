@@ -27,13 +27,13 @@
     tr.producto-row-inline.is-editing td.col-monto {
       min-width: 5.25rem;
     }
-    .app-th-sort {
-      color: var(--bs-secondary-color, #6c757d) !important;
+    .table-card--productos .app-th-sort {
+      color: #64748b;
       font-weight: 500;
     }
-    .app-th-sort:hover,
-    .app-th-sort:focus {
-      color: var(--bs-primary) !important;
+    .table-card--productos .app-th-sort:hover,
+    .table-card--productos .app-th-sort:focus {
+      color: #0f172a;
     }
   </style>
 {% endblock %}
@@ -138,8 +138,8 @@
     </div>
   </div>
 
-  <div class="table-card">
-    <div class="table-card-header">
+  <div class="table-card table-card--productos">
+    <div class="table-card-header table-card-header--productos-toolbar">
       <form
         id="productosBulkForm"
         method="post"
@@ -153,16 +153,16 @@
         <input type="hidden" name="retorno_query" value="{{ request.GET.urlencode }}" />
         <span class="small text-muted me-1">Selección múltiple:</span>
         {% if user.is_staff %}
-          <button type="button" class="btn btn-sm btn-outline-success rounded-pill" data-productos-bulk="habilitar">
+          <button type="button" class="btn btn-sm productos-bulk-btn" data-productos-bulk="habilitar">
             Habilitar
           </button>
-          <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" data-productos-bulk="deshabilitar">
+          <button type="button" class="btn btn-sm productos-bulk-btn" data-productos-bulk="deshabilitar">
             Deshabilitar
           </button>
-          <button type="button" class="btn btn-sm btn-outline-primary rounded-pill" data-productos-bulk="lista_precio">
+          <button type="button" class="btn btn-sm productos-bulk-btn" data-productos-bulk="lista_precio">
             Sumar a lista de precio
           </button>
-          <button type="button" class="btn btn-sm btn-outline-danger rounded-pill" data-productos-bulk="eliminar">
+          <button type="button" class="btn btn-sm productos-bulk-btn productos-bulk-btn--delete" data-productos-bulk="eliminar">
             Eliminar
           </button>
         {% else %}
@@ -172,59 +172,59 @@
     </div>
     <div class="table-responsive">
       <table class="sirona-table app-table table-productos">
-        <thead class="table-light">
+        <thead class="productos-thead-saas">
           <tr>
-            <th scope="col" class="text-center" style="width: 2.25rem" title="Seleccionar">
+            <th scope="col" class="text-center productos-th-cb" title="Seleccionar">
               <label class="visually-hidden" for="chkProductosTodos">Todos</label>
               <input
                 type="checkbox"
-                class="form-check-input"
+                class="form-check-input productos-bulk-cb"
                 id="chkProductosTodos"
                 title="Seleccionar / quitar todos"
               />
             </th>
-            <th scope="col" class="text-center col-producto-codigo small text-uppercase" style="letter-spacing: 0.04em;">
-              <a class="app-th-sort" href="?{{ sort_links.codigo }}" title="Ordenar por código">Código{% if sort_ord == "codigo" %}<span class="ms-1 text-primary" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            <th scope="col" class="text-center col-producto-codigo productos-th-saas">
+              <a class="app-th-sort" href="?{{ sort_links.codigo }}" title="Ordenar por código">Código{% if sort_ord == "codigo" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
             </th>
-            <th scope="col" class="small text-uppercase" style="letter-spacing: 0.04em;">
-              <a class="app-th-sort" href="?{{ sort_links.descripcion }}" title="Ordenar por descripción">Descripción{% if sort_ord == "descripcion" %}<span class="ms-1 text-primary" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            <th scope="col" class="productos-th-saas">
+              <a class="app-th-sort" href="?{{ sort_links.descripcion }}" title="Ordenar por descripción">Descripción{% if sort_ord == "descripcion" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
             </th>
-            <th scope="col" class="text-center small text-uppercase" style="letter-spacing: 0.04em;">
-              <a class="app-th-sort" href="?{{ sort_links.tipo }}" title="Ordenar por tipo">Tipo{% if sort_ord == "tipo" %}<span class="ms-1 text-primary" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            <th scope="col" class="text-center productos-th-saas">
+              <a class="app-th-sort" href="?{{ sort_links.tipo }}" title="Ordenar por tipo">Tipo{% if sort_ord == "tipo" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
             </th>
-            <th scope="col" class="text-center col-monto small text-uppercase" style="letter-spacing: 0.04em;">
-              <a class="app-th-sort" href="?{{ sort_links.costo }}" title="Ordenar por costo">Costo{% if sort_ord == "costo" %}<span class="ms-1 text-primary" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            <th scope="col" class="text-center col-monto productos-th-saas">
+              <a class="app-th-sort" href="?{{ sort_links.costo }}" title="Ordenar por costo">Costo{% if sort_ord == "costo" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
             </th>
-            <th scope="col" class="text-center small text-uppercase" style="letter-spacing: 0.04em;">
-              <a class="app-th-sort" href="?{{ sort_links.stock }}" title="Ordenar por stock">Stk{% if sort_ord == "stock" %}<span class="ms-1 text-primary" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            <th scope="col" class="text-center productos-th-saas">
+              <a class="app-th-sort" href="?{{ sort_links.stock }}" title="Ordenar por stock">Stk{% if sort_ord == "stock" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
             </th>
-            <th scope="col" class="text-center small text-uppercase" style="letter-spacing: 0.04em;">
-              <a class="app-th-sort" href="?{{ sort_links.pct }}" title="Ordenar por % de ganancia">%{% if sort_ord == "pct" %}<span class="ms-1 text-primary" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            <th scope="col" class="text-center productos-th-saas">
+              <a class="app-th-sort" href="?{{ sort_links.pct }}" title="Ordenar por % de ganancia">%{% if sort_ord == "pct" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
             </th>
-            <th scope="col" class="text-center col-monto small text-uppercase" style="letter-spacing: 0.04em;">
-              <a class="app-th-sort" href="?{{ sort_links.precio }}" title="Ordenar por precio de venta">Precio{% if sort_ord == "precio" %}<span class="ms-1 text-primary" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            <th scope="col" class="text-center col-monto productos-th-saas">
+              <a class="app-th-sort" href="?{{ sort_links.precio }}" title="Ordenar por precio de venta">Precio{% if sort_ord == "precio" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
             </th>
-            <th scope="col" class="text-end small text-muted text-uppercase" style="letter-spacing: 0.04em;"></th>
+            <th scope="col" class="text-end productos-th-saas productos-th-actions" aria-label="Acciones"></th>
           </tr>
         </thead>
         <tbody>
           {% for p in productos %}
             <tr
               id="producto-row-{{ p.pk }}"
-              class="app-table-row producto-row-inline {% if not p.habilitado %}opacity-50{% endif %}{% if p.stock == 0 %} table-light{% endif %}"
+              class="app-table-row producto-row-inline productos-tbody-row {% if not p.habilitado %}opacity-50{% endif %}{% if p.stock == 0 %} productos-row--zero-stock{% endif %}"
             >
-              <td class="text-center align-middle">
+              <td class="text-center align-middle productos-td-cb">
                 <input
                   type="checkbox"
-                  class="form-check-input chk-bulk-producto"
+                  class="form-check-input productos-bulk-cb chk-bulk-producto"
                   name="producto_id"
                   value="{{ p.pk }}"
                   form="productosBulkForm"
                   title="Seleccionar {{ p.codigo }}"
                 />
               </td>
-              <td class="col-producto-codigo text-center font-monospace small align-middle">{{ p.codigo }}</td>
-              <td class="small align-middle" style="min-width: 11rem">
+              <td class="col-producto-codigo text-center font-monospace productos-td-saas align-middle">{{ p.codigo }}</td>
+              <td class="productos-td-saas productos-td-desc align-middle" style="min-width: 11rem">
                 <span class="producto-view">{{ p.descripcion }}</span>
                 <input
                   type="text"
@@ -236,8 +236,8 @@
                   autocomplete="off"
                 />
               </td>
-              <td class="small text-center align-middle">
-                <span class="producto-view text-muted">{{ p.get_tipo_display }}</span>
+              <td class="text-center productos-td-saas productos-td-muted align-middle">
+                <span class="producto-view productos-td-tipo">{{ p.get_tipo_display }}</span>
                 <select
                   name="tipo"
                   class="form-select form-select-sm rounded-3 producto-edit d-none"
@@ -248,7 +248,7 @@
                   {% endfor %}
                 </select>
               </td>
-              <td class="text-center col-monto small align-middle">
+              <td class="text-center col-monto productos-td-saas align-middle">
                 <span class="producto-view">{{ p.costo|ars }}</span>
                 <input
                   type="number"
@@ -262,11 +262,11 @@
                   autocomplete="off"
                 />
               </td>
-              <td class="text-center small text-nowrap align-middle">
+              <td class="text-center productos-td-saas productos-td-nowrap align-middle">
                 <span class="producto-view">
                   {{ p.stock }}
                   {% if p.stock == 0 %}
-                    <span class="badge rounded-pill text-bg-secondary ms-1 small">Sin stock</span>
+                    <span class="badge productos-badge-sin-stock ms-1">Sin stock</span>
                   {% endif %}
                 </span>
                 <input
@@ -282,12 +282,12 @@
                   autocomplete="off"
                 />
               </td>
-              <td class="text-end small align-middle">
+              <td class="text-end productos-td-saas align-middle">
                 <span class="producto-view">
                   {% if p.porcentaje_ganancia_calculado is not None %}
                     {{ p.porcentaje_ganancia_calculado }}%
                   {% else %}
-                    <span class="text-muted">—</span>
+                    <span class="productos-td-dim">—</span>
                   {% endif %}
                 </span>
                 <div class="producto-edit d-none">
@@ -314,7 +314,7 @@
                   </div>
                 </div>
               </td>
-              <td class="text-end col-monto small fw-medium align-middle">
+              <td class="text-end col-monto productos-td-saas productos-td-precio align-middle">
                 <span class="producto-view">{{ p.precio_venta|ars }}</span>
                 <input
                   type="number"
@@ -329,45 +329,45 @@
                   autocomplete="off"
                 />
               </td>
-              <td class="text-end align-middle table-actions-cell">
-                <div class="table-actions">
-                  <div class="producto-view table-actions">
+              <td class="text-end align-middle table-actions-cell productos-table-actions">
+                <div class="table-actions productos-table-actions-row">
+                  <div class="producto-view table-actions productos-table-actions-row">
                     <button
                       type="button"
-                      class="table-action-btn table-action-btn--primary js-producto-editar"
+                      class="table-action-btn table-action-btn--primary productos-ico-btn productos-ico-btn--edit js-producto-editar"
                       data-row="producto-row-{{ p.pk }}"
                       title="Editar"
                       aria-label="Editar"
                     >
-                      <i data-lucide="pencil"></i>
+                      <i data-lucide="pencil" aria-hidden="true"></i>
                     </button>
                     {% if user.is_staff %}
                       <form method="post" action="{% url 'producto_toggle_habilitado' p.id %}" class="d-inline">
                         {% csrf_token %}
                         <input type="hidden" name="retorno_query" value="{{ request.GET.urlencode }}" />
                         <button
-                          class="table-action-btn table-action-btn--muted"
+                          class="table-action-btn table-action-btn--muted productos-ico-btn productos-ico-btn--toggle"
                           type="submit"
                           title="{% if p.habilitado %}Inhabilitar{% else %}Habilitar{% endif %}"
                           aria-label="{% if p.habilitado %}Inhabilitar{% else %}Habilitar{% endif %}"
                         >
                           {% if p.habilitado %}
-                            <i data-lucide="ban" class="text-body-secondary" aria-hidden="true"></i>
+                            <i data-lucide="ban" class="productos-ico-ban" aria-hidden="true"></i>
                           {% else %}
-                            <i data-lucide="check" class="text-secondary" aria-hidden="true"></i>
+                            <i data-lucide="check" class="productos-ico-habilitar" aria-hidden="true"></i>
                           {% endif %}
                         </button>
                       </form>
                       <form method="post" action="{% url 'producto_delete' p.id %}" class="d-inline" onsubmit="return confirm('¿Eliminar {{ p.codigo }}?');">
                         {% csrf_token %}
                         <input type="hidden" name="retorno_query" value="{{ request.GET.urlencode }}" />
-                        <button class="table-action-btn table-action-btn--danger" type="submit" title="Eliminar" aria-label="Eliminar">
-                          <i data-lucide="x" class="text-danger"></i>
+                        <button class="table-action-btn table-action-btn--danger productos-ico-btn productos-ico-btn--trash" type="submit" title="Eliminar" aria-label="Eliminar">
+                          <i data-lucide="trash-2" aria-hidden="true"></i>
                         </button>
                       </form>
                     {% endif %}
                   </div>
-                  <div class="producto-edit producto-edit-actions d-none table-actions">
+                  <div class="producto-edit producto-edit-actions d-none table-actions productos-table-actions-row">
                     <label class="form-check form-switch sirona-switch mb-0 me-1 small">
                       <input
                         class="form-check-input"
@@ -378,14 +378,14 @@
                       />
                       <span class="form-check-label">Activo</span>
                     </label>
-                    <button type="submit" class="table-action-btn table-action-btn--success" form="producto-inline-{{ p.pk }}" title="Aprobar" aria-label="Aprobar">
-                      <i data-lucide="check"></i>
+                    <button type="submit" class="table-action-btn table-action-btn--success productos-ico-btn productos-ico-btn--save" form="producto-inline-{{ p.pk }}" title="Aprobar" aria-label="Aprobar">
+                      <i data-lucide="check" aria-hidden="true"></i>
                     </button>
-                    <button type="button" class="table-action-btn table-action-btn--muted js-producto-cancelar" title="Eliminar cambios" aria-label="Eliminar cambios">
-                      <i data-lucide="x"></i>
+                    <button type="button" class="table-action-btn table-action-btn--muted productos-ico-btn productos-ico-btn--cancel js-producto-cancelar" title="Eliminar cambios" aria-label="Eliminar cambios">
+                      <i data-lucide="x" aria-hidden="true"></i>
                     </button>
-                    <a class="table-action-btn table-action-btn--link" href="{% url 'producto_update' p.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" title="Editar ficha completa" aria-label="Editar ficha completa">
-                      <i data-lucide="pencil"></i>
+                    <a class="table-action-btn table-action-btn--link productos-ico-btn productos-ico-btn--link" href="{% url 'producto_update' p.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" title="Editar ficha completa" aria-label="Editar ficha completa">
+                      <i data-lucide="pencil" aria-hidden="true"></i>
                     </a>
                   </div>
                 </div>
@@ -399,7 +399,7 @@
         </tbody>
       </table>
     </div>
-    <div class="card-footer bg-white border-top py-3 px-3">
+    <div class="card-footer productos-saas-card-footer">
       <div class="d-flex flex-wrap gap-2 align-items-center">
         <span class="text-muted small me-1">Exportar listado:</span>
         {% include "includes/export_buttons.html" %}
