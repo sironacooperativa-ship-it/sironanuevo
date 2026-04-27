@@ -334,7 +334,7 @@
                   <div class="producto-view table-actions">
                     <button
                       type="button"
-                      class="btn btn-sm btn-outline-primary rounded-pill px-2 table-action-btn js-producto-editar"
+                      class="table-action-btn table-action-btn--primary js-producto-editar"
                       data-row="producto-row-{{ p.pk }}"
                       title="Editar"
                       aria-label="Editar"
@@ -346,22 +346,22 @@
                         {% csrf_token %}
                         <input type="hidden" name="retorno_query" value="{{ request.GET.urlencode }}" />
                         <button
-                          class="btn btn-sm btn-outline-secondary rounded-pill px-2 table-action-btn"
+                          class="table-action-btn table-action-btn--muted"
                           type="submit"
                           title="{% if p.habilitado %}Inhabilitar{% else %}Habilitar{% endif %}"
                           aria-label="{% if p.habilitado %}Inhabilitar{% else %}Habilitar{% endif %}"
                         >
                           {% if p.habilitado %}
-                            <i data-lucide="x" class="text-danger"></i>
+                            <i data-lucide="ban" class="text-body-secondary" aria-hidden="true"></i>
                           {% else %}
-                            <i data-lucide="check" class="text-secondary"></i>
+                            <i data-lucide="check" class="text-secondary" aria-hidden="true"></i>
                           {% endif %}
                         </button>
                       </form>
                       <form method="post" action="{% url 'producto_delete' p.id %}" class="d-inline" onsubmit="return confirm('¿Eliminar {{ p.codigo }}?');">
                         {% csrf_token %}
                         <input type="hidden" name="retorno_query" value="{{ request.GET.urlencode }}" />
-                        <button class="btn btn-sm btn-outline-danger rounded-pill px-2 table-action-btn" type="submit" title="Eliminar" aria-label="Eliminar">
+                        <button class="table-action-btn table-action-btn--danger" type="submit" title="Eliminar" aria-label="Eliminar">
                           <i data-lucide="x" class="text-danger"></i>
                         </button>
                       </form>
@@ -378,13 +378,13 @@
                       />
                       <span class="form-check-label">Activo</span>
                     </label>
-                    <button type="submit" class="btn btn-sm btn-success rounded-pill px-2 table-action-btn" form="producto-inline-{{ p.pk }}" title="Aprobar" aria-label="Aprobar">
+                    <button type="submit" class="table-action-btn table-action-btn--success" form="producto-inline-{{ p.pk }}" title="Aprobar" aria-label="Aprobar">
                       <i data-lucide="check"></i>
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 table-action-btn js-producto-cancelar" title="Eliminar cambios" aria-label="Eliminar cambios">
+                    <button type="button" class="table-action-btn table-action-btn--muted js-producto-cancelar" title="Eliminar cambios" aria-label="Eliminar cambios">
                       <i data-lucide="x"></i>
                     </button>
-                    <a class="btn btn-sm btn-link text-decoration-none py-0 px-1 table-action-btn" href="{% url 'producto_update' p.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" title="Editar ficha completa" aria-label="Editar ficha completa">
+                    <a class="table-action-btn table-action-btn--link" href="{% url 'producto_update' p.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" title="Editar ficha completa" aria-label="Editar ficha completa">
                       <i data-lucide="pencil"></i>
                     </a>
                   </div>

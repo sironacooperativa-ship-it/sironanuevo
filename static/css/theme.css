@@ -648,6 +648,18 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   color: var(--sirona-text);
 }
 
+/* Formularios o franjas de herramientas a ancho completo (p. ej. aprobación en lote) */
+.table-card-header--block {
+  display: block;
+  width: 100%;
+}
+
+.table-card-header--block .row,
+.table-card-header--block > .w-100 {
+  width: 100%;
+  max-width: 100%;
+}
+
 .table-card-title {
   margin: 0;
   font-size: 16px;
@@ -805,6 +817,7 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   cursor: pointer;
   text-decoration: none;
   overflow: hidden;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
 }
 
 .table-action-btn:hover,
@@ -812,9 +825,76 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
 .table-actions a:hover {
   background: var(--sirona-primary-soft);
   border-color: var(--sirona-primary);
-  color: var(--sirona-text);
+  color: var(--sirona-primary);
   text-decoration: none;
   box-shadow: none;
+}
+
+.table-action-btn--primary,
+.table-actions .table-action-btn--primary {
+  border-color: rgba(15, 151, 181, 0.38);
+  color: var(--sirona-primary);
+}
+.table-action-btn--primary:hover,
+.table-actions a.table-action-btn--primary:hover,
+.table-actions button.table-action-btn--primary:hover {
+  background: var(--sirona-primary-soft);
+  color: var(--sirona-primary);
+  border-color: var(--sirona-primary);
+}
+.table-action-btn--muted,
+.table-actions .table-action-btn--muted {
+  border-color: rgba(15, 23, 42, 0.12);
+  color: var(--sirona-text-soft);
+}
+.table-action-btn--muted:hover,
+.table-actions a.table-action-btn--muted:hover,
+.table-actions button.table-action-btn--muted:hover {
+  background: rgba(241, 245, 249, 0.9);
+  border-color: rgba(15, 23, 42, 0.2);
+  color: var(--sirona-text);
+}
+.table-action-btn--danger,
+.table-actions .table-action-btn--danger {
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #b91c1c;
+}
+.table-action-btn--danger:hover,
+.table-actions a.table-action-btn--danger:hover,
+.table-actions button.table-action-btn--danger:hover {
+  background: rgba(254, 242, 242, 0.9);
+  border-color: #dc2626;
+  color: #991b1b;
+}
+.table-action-btn--success,
+.table-actions .table-action-btn--success {
+  border-color: rgba(22, 163, 74, 0.4);
+  color: #15803d;
+}
+.table-action-btn--success:hover,
+.table-actions a.table-action-btn--success:hover,
+.table-actions button.table-action-btn--success:hover {
+  background: rgba(240, 253, 244, 0.9);
+  border-color: #16a34a;
+  color: #14532d;
+}
+.table-action-btn--link,
+.table-actions a.table-action-btn--link,
+.table-actions button.table-action-btn--link {
+  border-color: transparent;
+  background: transparent;
+  color: var(--sirona-primary);
+  width: auto;
+  min-width: 1.5rem;
+  height: 30px;
+  padding: 0 0.2rem;
+}
+.table-action-btn--link:hover,
+.table-actions a.table-action-btn--link:hover,
+.table-actions button.table-action-btn--link:hover {
+  background: var(--sirona-primary-soft);
+  color: var(--sirona-primary);
+  border-color: rgba(15, 151, 181, 0.22);
 }
 
 .table-action-btn svg,
@@ -823,14 +903,6 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   height: 16px;
   stroke-width: 2;
   flex: 0 0 auto;
-}
-
-.table-action-btn {
-  color: var(--sirona-text);
-}
-
-.table-action-btn:hover {
-  color: var(--sirona-primary);
 }
 
 .table-empty,

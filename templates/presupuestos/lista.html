@@ -1,34 +1,6 @@
 {% extends "base.html" %}
 {% load money %}
 {% block title %}Presupuestos{% endblock %}
-{% block extra_head %}
-  <style>
-    .presu-lista .col-presu-neto {
-      min-width: 8.75rem;
-      width: 10%;
-    }
-    .presu-lista .col-presu-estado {
-      width: 2.5rem;
-      text-align: center;
-    }
-    .presu-lista .col-presu-acciones {
-      width: 1%;
-      white-space: nowrap;
-    }
-    .presu-lista .presu-act-btn {
-      --bs-btn-padding-y: 0.2rem;
-      --bs-btn-padding-x: 0.32rem;
-      min-width: 1.7rem;
-      line-height: 1;
-    }
-    .presu-lista .presu-act-btn svg,
-    .presu-lista .presu-est-ico {
-      width: 16px;
-      height: 16px;
-      display: block;
-    }
-  </style>
-{% endblock %}
 {% block content %}
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Presupuestos</h1>
@@ -125,9 +97,9 @@
     {% csrf_token %}
     <input type="hidden" name="retorno_query" value="{{ request.GET.urlencode }}" />
   </form>
-  <div class="card shadow-sm">
+  <div class="table-card mb-3">
     {% if user.is_staff or has_vendedor_perfil %}
-    <div class="card-body border-bottom py-2">
+    <div class="table-card-header table-card-header--block border-0 border-bottom">
       <div class="row g-2 align-items-end small">
         <div class="col-12 col-md-auto">
           <label for="id_resolver_masivo_catalogo" class="form-label text-muted mb-0">Aprobación en lote (con alerta de catálogo)</label>
@@ -239,7 +211,7 @@
               <td class="col-presu-acciones table-actions-cell">
                 <div class="table-actions">
                   <a
-                    class="table-action-btn presu-act-btn"
+                    class="table-action-btn table-action-btn--muted"
                     href="{% url 'presupuesto_detalle' p.pk %}"
                     title="Ver"
                     aria-label="Ver"
@@ -249,14 +221,14 @@
                   {% if user.is_staff or vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
                     <form method="post" action="{% url 'presupuesto_duplicar' p.pk %}">
                       {% csrf_token %}
-                      <button type="submit" class="table-action-btn presu-act-btn" title="Repetir (copia en pendiente, mismas líneas y montos)" aria-label="Repetir">
+                      <button type="submit" class="table-action-btn table-action-btn--muted" title="Repetir (copia en pendiente, mismas líneas y montos)" aria-label="Repetir">
                         <i data-lucide="refresh-cw" aria-hidden="true"></i>
                       </button>
                     </form>
                   {% endif %}
                   {% if p.estado == "ACT" and user.is_staff or p.estado == "ACT" and vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
                     <a
-                      class="table-action-btn presu-act-btn"
+                      class="table-action-btn table-action-btn--primary"
                       href="{% url 'presupuesto_editar' p.pk %}"
                       title="Editar"
                       aria-label="Editar"
@@ -265,7 +237,7 @@
                     </a>
                     {% if p.alerta_catalogo %}
                       <a
-                        class="table-action-btn presu-act-btn"
+                        class="table-action-btn table-action-btn--success"
                         href="{% url 'presupuesto_detalle' p.pk %}#aprobar-catalogo"
                         title="Aprobar (elegir catálogo en el detalle)"
                         aria-label="Aprobar con resolución de catálogo en el detalle"
@@ -275,7 +247,7 @@
                     {% else %}
                       <form method="post" action="{% url 'presupuesto_aprobar' p.pk %}" onsubmit="return confirm('¿Aprobar y generar el pedido? Se descontará stock y quedará en Pedidos como pendiente de pago.');">
                         {% csrf_token %}
-                        <button type="submit" class="table-action-btn presu-act-btn" title="Aprobar" aria-label="Aprobar">
+                        <button type="submit" class="table-action-btn table-action-btn--success" title="Aprobar" aria-label="Aprobar">
                           <i data-lucide="check" aria-hidden="true"></i>
                         </button>
                       </form>
@@ -284,7 +256,7 @@
                   {% if user.is_staff or p.estado == "ACT" and vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
                     <form method="post" action="{% url 'presupuesto_eliminar' p.pk %}" onsubmit="return confirm('¿Eliminar el presupuesto #{{ p.pk }}? Si estaba aprobado, también se elimina el pedido y se revierte stock y caja.');">
                       {% csrf_token %}
-                      <button type="submit" class="table-action-btn presu-act-btn" title="Eliminar" aria-label="Eliminar">
+                      <button type="submit" class="table-action-btn table-action-btn--danger" title="Eliminar" aria-label="Eliminar">
                         <i data-lucide="x" class="text-danger" aria-hidden="true"></i>
                       </button>
                     </form>
