@@ -77,6 +77,24 @@ class Vendedor(PersonaBase):
     comision_porcentaje = models.DecimalField(
         max_digits=6, decimal_places=2, default=Decimal("0.00")
     )
+    es_jefe_grupo = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name="Vendedor a cargo de grupo",
+    )
+    comision_grupo_porcentaje = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        verbose_name="Comisión por ventas del grupo (%)",
+    )
+    vendedores_a_cargo = models.ManyToManyField(
+        "self",
+        blank=True,
+        symmetrical=False,
+        related_name="jefes_de_grupo",
+        verbose_name="Vendedores a cargo",
+    )
     listas_precios_bloqueadas = models.ManyToManyField(
         "productos.ListaPrecios",
         blank=True,
@@ -97,6 +115,10 @@ class Vendedor(PersonaBase):
         if self.comision_porcentaje is not None and self.comision_porcentaje < 0:
             raise ValidationError(
                 {"comision_porcentaje": "La comisión no puede ser negativa."}
+            )
+        if self.comision_grupo_porcentaje is not None and self.comision_grupo_porcentaje < 0:
+            raise ValidationError(
+                {"comision_grupo_porcentaje": "La comisión de grupo no puede ser negativa."}
             )
 
 

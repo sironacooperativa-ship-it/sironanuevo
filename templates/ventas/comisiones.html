@@ -42,22 +42,24 @@
   </div>
 
   {% if comisiones_por_mes %}
-    <div class="card shadow-sm mb-3">
-      <div class="card-header fw-semibold py-2">Comisiones mensuales acumuladas</div>
+    <div class="table-card mb-3">
+      <div class="table-card-header">
+        <h2 class="table-card-title">Comisiones mensuales acumuladas</h2>
+      </div>
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-sm mb-0">
+          <table class="sirona-table">
             <thead class="table-light">
               <tr>
                 <th>Mes</th>
-                <th class="text-end">Total comisiones</th>
+                <th class="table-monto">Total comisiones</th>
               </tr>
             </thead>
             <tbody>
               {% for r in comisiones_por_mes %}
                 <tr>
                   <td class="text-capitalize">{{ r.mes_nombre }} {{ r.anio }}</td>
-                  <td class="text-end">{{ r.total|ars }}</td>
+                <td class="table-monto">{{ r.total|ars }}</td>
                 </tr>
               {% endfor %}
             </tbody>
@@ -70,22 +72,25 @@
   {% endif %}
 
   {% if comisiones_por_vendedor %}
-    <div class="card shadow-sm">
-      <div class="card-header fw-semibold py-2">Comisión por vendedor (solo comisiones &gt; 0)</div>
+    <div class="table-card">
+      <div class="table-card-header">
+        <h2 class="table-card-title">Comisión por vendedor</h2>
+        <span class="table-card-count">Solo comisiones &gt; 0</span>
+      </div>
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-sm mb-0">
+          <table class="sirona-table">
             <thead class="table-light">
               <tr>
                 <th>Vendedor</th>
-                <th class="text-end">Total</th>
+                <th class="table-monto">Total</th>
               </tr>
             </thead>
             <tbody>
               {% for r in comisiones_por_vendedor %}
                 <tr>
                   <td>{{ r.vendedor__apellido }}, {{ r.vendedor__nombre }}</td>
-                  <td class="text-end">{{ r.total|ars }}</td>
+                  <td class="table-monto">{{ r.total|ars }}</td>
                 </tr>
               {% endfor %}
             </tbody>

@@ -52,6 +52,28 @@
             {% if form.comision_porcentaje.errors %}<div class="text-danger small">{{ form.comision_porcentaje.errors }}</div>{% endif %}
           </div>
           <div class="col-12">
+            <hr class="my-2" />
+            <div class="form-check">
+              {{ form.es_jefe_grupo }}
+              <label class="form-check-label" for="{{ form.es_jefe_grupo.id_for_label }}">Vendedor a cargo de grupo</label>
+            </div>
+            {% if form.es_jefe_grupo.errors %}<div class="text-danger small">{{ form.es_jefe_grupo.errors }}</div>{% endif %}
+            <div class="form-text">
+              Si está activo, este vendedor recibe una comisión adicional sobre las ventas de los vendedores asignados abajo.
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label">Comisión grupo (%)</label>
+            {{ form.comision_grupo_porcentaje }}
+            {% if form.comision_grupo_porcentaje.errors %}<div class="text-danger small">{{ form.comision_grupo_porcentaje.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-8">
+            <label class="form-label">Vendedores a cargo</label>
+            {{ form.vendedores_a_cargo }}
+            {% if form.vendedores_a_cargo.errors %}<div class="text-danger small">{{ form.vendedores_a_cargo.errors }}</div>{% endif %}
+            {% if form.vendedores_a_cargo.help_text %}<div class="form-text">{{ form.vendedores_a_cargo.help_text }}</div>{% endif %}
+          </div>
+          <div class="col-12">
             <div class="form-check">
               {{ form.habilitado }}
               <label class="form-check-label" for="{{ form.habilitado.id_for_label }}">Habilitado</label>

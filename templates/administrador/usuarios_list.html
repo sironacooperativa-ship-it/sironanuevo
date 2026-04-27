@@ -107,9 +107,13 @@
     </div>
   </div>
 
-  <div class="card shadow-sm">
+  <div class="table-card">
+    <div class="table-card-header">
+      <h2 class="table-card-title">Usuarios</h2>
+      <span class="table-card-count">{{ usuarios|length }} usuario(s)</span>
+    </div>
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table class="sirona-table">
         <thead class="table-light">
           <tr>
             <th>Usuario</th>
@@ -141,15 +145,15 @@
                 {% endif %}
               </td>
               <td class="text-center">
-                <a class="btn btn-sm btn-outline-primary px-2" href="{% url 'admin_usuario_update' u.pk %}" title="Editar" aria-label="Editar">
+                <a class="table-action-btn" href="{% url 'admin_usuario_update' u.pk %}" title="Editar" aria-label="Editar">
                   <i data-lucide="pencil"></i>
                 </a>
-                <a class="btn btn-sm btn-outline-secondary" href="{% url 'admin_usuario_password' u.pk %}">Contraseña</a>
+                <a class="table-action-btn" href="{% url 'admin_usuario_password' u.pk %}">Contraseña</a>
               </td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="6" class="text-center text-muted py-5">No hay usuarios.</td>
+              <td colspan="6" class="table-empty">No hay usuarios.</td>
             </tr>
           {% endfor %}
         </tbody>

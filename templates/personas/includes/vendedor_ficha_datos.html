@@ -22,6 +22,14 @@
   </dd>
   <dt class="col-sm-4 text-muted">Comisión %</dt>
   <dd class="col-sm-8">{{ vendedor.comision_porcentaje }}%</dd>
+  <dt class="col-sm-4 text-muted">Cargo de grupo</dt>
+  <dd class="col-sm-8">
+    {% if vendedor.es_jefe_grupo %}
+      Sí · {{ vendedor.comision_grupo_porcentaje }}%
+    {% else %}
+      No
+    {% endif %}
+  </dd>
   <dt class="col-sm-4 text-muted">Acceso portal</dt>
   <dd class="col-sm-8">{{ vendedor.get_acceso_display }}</dd>
   <dt class="col-sm-4 text-muted">Usuario vinculado</dt>

@@ -38,23 +38,27 @@
     </div>
   </div>
 
-  <div class="card shadow-sm">
+  <div class="table-card">
+    <div class="table-card-header">
+      <h2 class="table-card-title">Cheques</h2>
+      <span class="table-card-count">{{ page_obj.paginator.count }} resultado(s)</span>
+    </div>
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table class="sirona-table">
         <thead class="table-light">
           <tr>
             <th>Vencimiento</th>
             <th>Tipo</th>
             <th>Cheque</th>
             <th>Operación</th>
-            <th class="text-end">Monto</th>
+            <th class="table-monto">Monto</th>
             <th class="text-end"></th>
           </tr>
         </thead>
         <tbody>
           {% for m in cheques %}
             <tr>
-              <td class="text-muted small">{{ m.fecha_vencimiento_cheque|date:"d/m/Y" }}</td>
+              <td class="table-fecha">{{ m.fecha_vencimiento_cheque|date:"d/m/Y" }}</td>
               <td class="small">
                 {% if m.tipo == "IN" %}
                   <span class="badge text-bg-success">A cobrar</span>
@@ -64,13 +68,13 @@
               </td>
               <td><code>{{ m.numero_cheque }}</code></td>
               <td class="small">{{ m.operacion }}</td>
-              <td class="text-end">{{ m.monto|ars }}</td>
+              <td class="table-monto">{{ m.monto|ars }}</td>
               <td class="text-end">
-                <a class="btn btn-sm btn-outline-secondary py-0" href="{% url 'caja_detail' m.pk %}">Ver</a>
+                <a class="table-action-btn" href="{% url 'caja_detail' m.pk %}">Ver</a>
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="6" class="text-center text-muted py-5">No hay cheques con los filtros actuales.</td></tr>
+            <tr><td colspan="6" class="table-empty">No hay cheques con los filtros actuales.</td></tr>
           {% endfor %}
         </tbody>
       </table>

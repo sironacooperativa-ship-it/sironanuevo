@@ -76,7 +76,7 @@
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-sm align-middle mb-0">
+        <table class="sirona-table">
           <thead class="table-light">
             <tr>
               <th>Pedido</th>
@@ -112,7 +112,7 @@
               </tr>
             {% empty %}
               <tr>
-                <td colspan="7" class="text-center text-muted py-4">No hay pedidos con pago pendiente.</td>
+                <td colspan="7" class="table-empty">No hay pedidos con pago pendiente.</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -136,7 +136,7 @@
       <div class="card-header fw-semibold">Hoy vence</div>
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-sm align-middle mb-0">
+          <table class="sirona-table">
             <thead class="table-light">
               <tr>
                 <th>Tipo</th>
@@ -197,7 +197,7 @@
               <a class="btn btn-sm btn-outline-secondary py-0" href="{% url 'caja_cheques' %}">Ver todos</a>
             </div>
             <div class="table-responsive">
-              <table class="table table-sm align-middle mb-0">
+              <table class="sirona-table">
                 <thead class="table-light">
                   <tr>
                     <th>Vencimiento</th>
@@ -215,7 +215,7 @@
                       </td>
                     </tr>
                   {% empty %}
-                    <tr><td colspan="3" class="text-muted text-center py-3">Sin cheques a pagar próximos.</td></tr>
+                    <tr><td colspan="3" class="table-empty">Sin cheques a pagar próximos.</td></tr>
                   {% endfor %}
                 </tbody>
               </table>
@@ -225,7 +225,7 @@
           <div class="col-12 col-lg-6">
             <div class="fw-semibold mb-2">Medicamentos por vencer</div>
             <div class="table-responsive">
-              <table class="table table-sm align-middle mb-0">
+              <table class="sirona-table">
                 <thead class="table-light">
                   <tr>
                     <th>Vencimiento</th>
@@ -249,7 +249,7 @@
                     </tr>
                   {% empty %}
                     {% if not meds_venc_90 %}
-                      <tr><td colspan="3" class="text-muted text-center py-3">Sin vencimientos de medicamentos en los próximos 6 meses.</td></tr>
+                      <tr><td colspan="3" class="table-empty">Sin vencimientos de medicamentos en los próximos 6 meses.</td></tr>
                     {% endif %}
                   {% endfor %}
                 </tbody>
@@ -319,7 +319,7 @@
         <div class="card-header fw-semibold">Recordatorios (próximos 7 días)</div>
         <div class="card-body p-0">
           <div class="table-responsive">
-            <table class="table table-sm align-middle mb-0">
+            <table class="sirona-table">
               <thead class="table-light">
                 <tr>
                   <th>Fecha</th>
@@ -335,7 +335,7 @@
                     <td>{{ e.titulo }}</td>
                   </tr>
                 {% empty %}
-                  <tr><td colspan="3" class="text-center text-muted py-4">No hay recordatorios próximos.</td></tr>
+                  <tr><td colspan="3" class="table-empty">No hay recordatorios próximos.</td></tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -351,7 +351,7 @@
         <div class="card-header fw-semibold">Cheques (próximos 7 días)</div>
         <div class="card-body p-0">
           <div class="table-responsive">
-            <table class="table table-sm align-middle mb-0">
+            <table class="sirona-table">
               <thead class="table-light">
                 <tr>
                   <th>Vencimiento</th>
@@ -369,7 +369,7 @@
                     <td class="text-end">{{ m.monto|ars }}</td>
                   </tr>
                 {% empty %}
-                  <tr><td colspan="4" class="text-center text-muted py-4">No hay cheques próximos.</td></tr>
+                  <tr><td colspan="4" class="table-empty">No hay cheques próximos.</td></tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -387,7 +387,7 @@
       <div class="card-header fw-semibold bg-danger bg-opacity-10">Stock crítico</div>
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-sm align-middle mb-0">
+          <table class="sirona-table">
             <thead class="table-light">
               <tr>
                 <th>Código</th>
@@ -418,7 +418,7 @@
       <div class="card-header fw-semibold">Vencimientos de productos (próximos 30 días)</div>
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-sm align-middle mb-0">
+          <table class="sirona-table">
             <thead class="table-light">
               <tr>
                 <th>Fecha</th>

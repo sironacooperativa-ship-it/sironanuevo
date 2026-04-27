@@ -58,7 +58,7 @@
       <div class="card shadow-sm mb-3">
         <div class="card-header fw-semibold">Vencimientos de cheques (90 días)</div>
         <div class="table-responsive">
-          <table class="table table-sm align-middle mb-0">
+          <table class="sirona-table">
             <thead class="table-light">
               <tr>
                 <th>Vencimiento</th>
@@ -76,7 +76,7 @@
                   <td class="text-end">{{ m.monto|ars }}</td>
                 </tr>
               {% empty %}
-                <tr><td colspan="4" class="text-muted text-center py-3">Sin cheques por vencer.</td></tr>
+                <tr><td colspan="4" class="table-empty">Sin cheques por vencer.</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -86,7 +86,7 @@
       <div class="card shadow-sm mb-3">
         <div class="card-header fw-semibold">Vencimientos de medicamentos (90 días)</div>
         <div class="table-responsive">
-          <table class="table table-sm align-middle mb-0">
+          <table class="sirona-table">
             <thead class="table-light">
               <tr>
                 <th>Vencimiento</th>
@@ -104,7 +104,7 @@
                   <td class="text-end">{{ p.stock }}</td>
                 </tr>
               {% empty %}
-                <tr><td colspan="4" class="text-muted text-center py-3">Sin productos por vencer.</td></tr>
+                <tr><td colspan="4" class="table-empty">Sin productos por vencer.</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -114,7 +114,7 @@
       <div class="card shadow-sm">
         <div class="card-header fw-semibold">Eventos / pedidos (90 días)</div>
         <div class="table-responsive">
-          <table class="table table-sm align-middle mb-0">
+          <table class="sirona-table">
             <thead class="table-light">
               <tr>
                 <th>Fecha</th>
@@ -130,7 +130,7 @@
                   <td>{{ e.get_tipo_display }}</td>
                 </tr>
               {% empty %}
-                <tr><td colspan="3" class="text-muted text-center py-3">Sin eventos.</td></tr>
+                <tr><td colspan="3" class="table-empty">Sin eventos.</td></tr>
               {% endfor %}
             </tbody>
           </table>

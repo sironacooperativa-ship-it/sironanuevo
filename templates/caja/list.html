@@ -116,13 +116,13 @@
   </div>
 
   {% for g in periodos %}
-    <div class="card shadow-sm mb-3">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <div class="fw-semibold">Periodo: {{ g.periodo }}</div>
-        <div class="text-muted small">Resultado del periodo: {{ g.total|ars }}</div>
+    <div class="table-card mb-3">
+      <div class="table-card-header">
+        <h2 class="table-card-title">Periodo: {{ g.periodo }}</h2>
+        <span class="table-card-count">Resultado del periodo: {{ g.total|ars }}</span>
       </div>
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table class="sirona-table">
           <thead class="table-light">
             <tr>
               <th>Fecha</th>
@@ -130,28 +130,28 @@
               <th>Tipo</th>
               <th>Medio</th>
               <th>Vendedor</th>
-              <th class="text-end">Monto</th>
-              <th class="text-end">Saldo</th>
-              <th class="text-end">Acciones</th>
+              <th class="table-monto">Monto</th>
+              <th class="table-monto">Saldo</th>
+              <th class="table-monto">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {% for r in g.items %}
               <tr>
-                <td>{{ r.m.fecha|date:"d/m/y" }}</td>
+                <td class="table-fecha">{{ r.m.fecha|date:"d/m/y" }}</td>
                 <td>{{ r.m.operacion }}</td>
                 <td>{{ r.m.get_tipo_display }}</td>
                 <td>{{ r.m.get_medio_pago_display }}</td>
                 <td>{% if r.m.vendedor %}{{ r.m.vendedor.apellido }}, {{ r.m.vendedor.nombre }}{% else %}-{% endif %}</td>
-                <td class="text-end">{{ r.m.delta|ars }}</td>
-                <td class="text-end">{{ r.saldo|ars }}</td>
+                <td class="table-monto">{{ r.m.delta|ars }}</td>
+                <td class="table-monto">{{ r.saldo|ars }}</td>
                 <td class="text-end">
                   <div class="d-flex justify-content-end gap-2">
-                    <a class="btn btn-sm btn-outline-primary" href="{% url 'caja_detail' r.m.id %}">Detalles</a>
+                    <a class="table-action-btn" href="{% url 'caja_detail' r.m.id %}">Detalles</a>
                     {% if user.is_staff %}
                       <form method="post" action="{% url 'caja_delete' r.m.id %}" onsubmit="return confirm('¿Eliminar movimiento?');">
                         {% csrf_token %}
-                        <button class="btn btn-sm btn-outline-danger px-2" type="submit" title="Eliminar" aria-label="Eliminar">
+                        <button class="table-action-btn" type="submit" title="Eliminar" aria-label="Eliminar">
                           <i data-lucide="x" class="text-danger"></i>
                         </button>
                       </form>
@@ -165,7 +165,7 @@
       </div>
     </div>
   {% empty %}
-    <div class="text-muted text-center py-5">No hay movimientos.</div>
+    <div class="table-empty">No hay movimientos.</div>
   {% endfor %}
 
   {% if page_obj and page_obj.paginator.num_pages > 1 %}

@@ -8,15 +8,19 @@
     <a class="btn btn-primary btn-sm" href="{% url 'banco_gasto_nuevo' %}">Nuevo gasto</a>
   </div>
 
-  <div class="card shadow-sm">
+  <div class="table-card">
+    <div class="table-card-header">
+      <h2 class="table-card-title">Gastos registrados</h2>
+      <span class="table-card-count">Transferencias</span>
+    </div>
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table class="sirona-table">
         <thead class="table-light">
           <tr>
             <th>Fecha</th>
             <th>Descripción</th>
             <th>Cuenta</th>
-            <th class="text-end">Monto</th>
+            <th class="table-monto">Monto</th>
             <th class="text-center">Caja</th>
             <th></th>
           </tr>
@@ -24,24 +28,24 @@
         <tbody>
           {% for g in gastos %}
             <tr>
-              <td>{{ g.fecha|date:"d/m/Y" }}</td>
+              <td class="table-fecha">{{ g.fecha|date:"d/m/Y" }}</td>
               <td>{{ g.descripcion }}</td>
               <td class="small">{{ g.cuenta_bancaria.banco }}</td>
-              <td class="text-end">{{ g.monto|ars }}</td>
+              <td class="table-monto">{{ g.monto|ars }}</td>
               <td class="text-center">
-                <a class="btn btn-sm btn-outline-secondary py-0" href="{% url 'caja_detail' g.movimiento_caja_id %}">Ver</a>
+                <a class="table-action-btn" href="{% url 'caja_detail' g.movimiento_caja_id %}">Ver</a>
               </td>
               <td class="text-end">
                 <form method="post" action="{% url 'banco_gasto_eliminar' g.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar este gasto y el movimiento de caja?');">
                   {% csrf_token %}
-                  <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Eliminar" aria-label="Eliminar">
+                  <button type="submit" class="table-action-btn" title="Eliminar" aria-label="Eliminar">
                     <i data-lucide="x" class="text-danger"></i>
                   </button>
                 </form>
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="6" class="text-muted text-center py-4">No hay gastos registrados.</td></tr>
+            <tr><td colspan="6" class="table-empty">No hay gastos registrados.</td></tr>
           {% endfor %}
         </tbody>
       </table>

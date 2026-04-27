@@ -30,15 +30,15 @@
     {% csrf_token %}
     <input type="hidden" name="q" value="{{ q }}" />
     {% if page_obj %}<input type="hidden" name="page" value="{{ page_obj.number }}" />{% endif %}
-    <div class="card app-card border-0 shadow-sm">
+    <div class="table-card">
       <div class="table-responsive">
-        <table class="table table-sm align-middle mb-0">
+        <table class="sirona-table">
           <thead class="table-light">
             <tr>
               <th>Código</th>
               <th>Tipo</th>
               <th>Descripción</th>
-              <th class="text-end" style="width: 10rem">Precio venta</th>
+              <th class="table-monto" style="width: 10rem">Precio venta</th>
             </tr>
           </thead>
           <tbody>
@@ -47,7 +47,7 @@
                 <td class="text-muted"><code>{{ p.codigo }}</code></td>
                 <td class="text-muted small">{{ p.get_tipo_display }}</td>
                 <td>{{ p.descripcion }}</td>
-                <td class="text-end">
+                <td class="table-monto">
                   <input
                     type="text"
                     name="pv_{{ p.pk }}"
@@ -59,7 +59,7 @@
               </tr>
             {% empty %}
               <tr>
-                <td colspan="4" class="text-muted text-center py-4">
+                <td colspan="4" class="table-empty">
                   Ningún producto está en esta lista todavía. Marcá <strong>En lista Farmacia (PDF)</strong> en la ficha de cada producto
                   o usá acciones en masa en el listado de productos.
                 </td>

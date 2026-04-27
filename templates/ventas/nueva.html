@@ -76,7 +76,7 @@
           <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddLinea" title="Agregar línea">+ Agregar producto</button>
         </div>
         <div class="table-responsive">
-          <table class="table table-sm align-middle" id="tablaLineas">
+          <table class="sirona-table" id="tablaLineas">
             <thead class="table-light">
               <tr>
                 <th>Producto</th>
@@ -334,7 +334,7 @@
       if (productos.length === 0) {
         btnAdd.disabled = true;
         tbody.innerHTML =
-          '<tr><td colspan="5" class="text-muted text-center py-3">No hay productos habilitados para vender.</td></tr>';
+          '<tr><td colspan="5" class="table-empty">No hay productos habilitados para vender.</td></tr>';
       } else if (iniciales.length > 0) {
         iniciales.forEach((L) => {
           addRow();

@@ -41,9 +41,13 @@
     </div>
   </div>
 
-  <div class="card shadow-sm">
+  <div class="table-card">
+    <div class="table-card-header">
+      <h2 class="table-card-title">Mensajes</h2>
+      <span class="table-card-count">{{ page_obj.paginator.count }} nota(s)</span>
+    </div>
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table class="sirona-table">
         <thead class="table-light">
           <tr>
             <th>Fecha</th>
@@ -57,7 +61,7 @@
         <tbody>
           {% for nota in page_obj %}
             <tr class="{% if not nota.leida %}table-warning{% endif %}">
-              <td class="text-nowrap small">{{ nota.creado_en|date:"d/m/Y H:i" }}</td>
+              <td class="table-fecha">{{ nota.creado_en|date:"d/m/Y H:i" }}</td>
               <td class="small">
                 <div class="fw-semibold">{{ nota.usuario.username }}</div>
                 {% if nota.vendedor %}
@@ -87,11 +91,11 @@
                     {% csrf_token %}
                     <input type="hidden" name="nota_id" value="{{ nota.pk }}" />
                     {% if nota.leida %}
-                      <button class="btn btn-sm btn-outline-secondary" type="submit" name="accion" value="marcar_no_leida">
+                      <button class="table-action-btn" type="submit" name="accion" value="marcar_no_leida">
                         Marcar no leída
                       </button>
                     {% else %}
-                      <button class="btn btn-sm btn-primary" type="submit" name="accion" value="marcar_leida">
+                      <button class="table-action-btn" type="submit" name="accion" value="marcar_leida">
                         Marcar leída
                       </button>
                     {% endif %}
@@ -99,7 +103,7 @@
                   <form method="post" class="d-inline" onsubmit="return confirm('¿Eliminar esta nota?');">
                     {% csrf_token %}
                     <input type="hidden" name="nota_id" value="{{ nota.pk }}" />
-                    <button class="btn btn-sm btn-outline-danger" type="submit" name="accion" value="eliminar">
+                    <button class="table-action-btn" type="submit" name="accion" value="eliminar">
                       Eliminar
                     </button>
                   </form>
@@ -108,7 +112,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="6" class="text-center text-muted py-5">No hay notas con los filtros actuales.</td>
+              <td colspan="6" class="table-empty">No hay notas con los filtros actuales.</td>
             </tr>
           {% endfor %}
         </tbody>

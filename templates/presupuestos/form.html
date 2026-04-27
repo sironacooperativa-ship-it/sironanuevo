@@ -107,7 +107,7 @@
           Podés cambiar el <strong>precio unitario</strong> por línea (solo para este presupuesto); en el catálogo el producto sigue con su precio de lista.
         </p>
         <div class="table-responsive">
-          <table class="table table-sm align-middle" id="tablaLineas">
+          <table class="sirona-table" id="tablaLineas">
             <thead class="table-light">
               <tr>
                 <th>Producto</th>
@@ -401,7 +401,7 @@
       if (productos.length === 0) {
         setEnabled(false);
         tbody.innerHTML =
-          '<tr><td colspan="5" class="text-muted text-center py-3">No hay productos habilitados.</td></tr>';
+          '<tr><td colspan="5" class="table-empty">No hay productos habilitados.</td></tr>';
       } else if (iniciales.length > 0) {
         iniciales.forEach((L) => {
           addRow();

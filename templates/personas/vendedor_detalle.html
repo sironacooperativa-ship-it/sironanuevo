@@ -44,6 +44,9 @@
   <h2 class="h5 mb-3">Comisiones</h2>
   <p class="text-muted small mb-3">
     Cada pedido muestra neto, comisión e ingreso en caja; al cobrar, caja y deudas usan el ingreso neto para el vendedor.
+    {% if vendedor.es_jefe_grupo %}
+      Además se suma la comisión por los vendedores a cargo.
+    {% endif %}
   </p>
 
   <div class="row g-3 mb-3">
@@ -58,24 +61,52 @@
         </div>
       </div>
     </div>
+    {% if vendedor.es_jefe_grupo %}
+      <div class="col-12 col-md-4">
+        <div class="card shadow-sm h-100">
+          <div class="card-body small">
+            <div class="text-muted">Comisión por grupo</div>
+            <div class="fs-5 fw-semibold">{{ vendedor.comision_grupo_porcentaje }}%</div>
+            <p class="text-muted mb-0 mt-2 small">
+              Sobre ventas de:
+              {% if vendedores_a_cargo %}
+                {% for vg in vendedores_a_cargo %}
+                  {{ vg.apellido }}, {{ vg.nombre }}{% if not forloop.last %}; {% endif %}
+                {% endfor %}
+              {% else %}
+                sin vendedores asignados.
+              {% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+    {% endif %}
     <div class="col-12 col-md-8">
       <div class="card shadow-sm h-100">
         <div class="card-header fw-semibold py-2">Totales por mes</div>
         <div class="card-body p-0">
-          {% if comisiones_por_mes %}
+          {% if comisiones_con_grupo_por_mes %}
             <div class="table-responsive">
-              <table class="table table-sm mb-0">
+              <table class="sirona-table">
                 <thead class="table-light">
                   <tr>
                     <th>Mes</th>
-                    <th class="text-end">Total comisiones</th>
+                    <th class="table-monto">Propias</th>
+                    {% if vendedor.es_jefe_grupo %}
+                      <th class="table-monto">Grupo</th>
+                    {% endif %}
+                    <th class="table-monto">Total</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {% for r in comisiones_por_mes %}
+                  {% for r in comisiones_con_grupo_por_mes %}
                     <tr>
                       <td class="text-capitalize">{{ r.mes_nombre }} {{ r.anio }}</td>
-                      <td class="text-end">{{ r.total|ars }}</td>
+                      <td class="table-monto">{{ r.propias|ars }}</td>
+                      {% if vendedor.es_jefe_grupo %}
+                        <td class="table-monto">{{ r.grupo|ars }}</td>
+                      {% endif %}
+                      <td class="table-monto">{{ r.total|ars }}</td>
                     </tr>
                   {% endfor %}
                 </tbody>
@@ -92,15 +123,15 @@
   <div class="card shadow-sm">
     <div class="card-header fw-semibold">Detalle por pedido</div>
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table class="sirona-table">
         <thead class="table-light">
           <tr>
             <th>Pedido</th>
             <th>Fecha registro</th>
             <th>Comprador</th>
-            <th class="text-end">Neto</th>
-            <th class="text-end">Comisión</th>
-            <th class="text-end">Ingreso caja</th>
+            <th class="table-monto">Neto</th>
+            <th class="table-monto">Comisión</th>
+            <th class="table-monto">Ingreso caja</th>
             <th>Estado</th>
             <th class="text-end">Acciones</th>
           </tr>
@@ -109,7 +140,7 @@
           {% for v in ventas %}
             <tr>
               <td class="fw-semibold">#{{ v.pk }}</td>
-              <td class="text-muted small">{{ v.creado_en|date:"d/m/Y H:i" }}</td>
+              <td class="table-fecha">{{ v.creado_en|date:"d/m/Y H:i" }}</td>
               <td class="small">
                 {% if v.comprador %}
                   {{ v.comprador.apellido }}, {{ v.comprador.nombre }}
@@ -117,15 +148,15 @@
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td class="text-end">{{ v.neto|ars }}</td>
-              <td class="text-end small">
+              <td class="table-monto">{{ v.neto|ars }}</td>
+              <td class="table-monto small">
                 {% if v.aplica_comision %}
                   {{ v.comision_porcentaje }}% <span class="text-muted">({{ v.monto_comision|ars }})</span>
                 {% else %}
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td class="text-end fw-medium">{{ v.monto_ingreso_caja|ars }}</td>
+              <td class="table-monto">{{ v.monto_ingreso_caja|ars }}</td>
               <td>
                 {% if v.estado == "PEN" %}
                   <span class="badge text-bg-warning text-dark">Pendiente</span>
@@ -139,7 +170,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="8" class="text-center text-muted py-4">No hay ventas para este vendedor.</td>
+              <td colspan="8" class="table-empty">No hay ventas para este vendedor.</td>
             </tr>
           {% endfor %}
         </tbody>

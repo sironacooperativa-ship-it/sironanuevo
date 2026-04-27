@@ -20,7 +20,7 @@
   <div class="card shadow-sm mb-4">
     <div class="card-header fw-semibold">Clientes</div>
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table class="sirona-table">
         <thead class="table-light">
           <tr>
             <th>Código</th>
@@ -50,7 +50,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="4" class="text-center text-muted py-4">Sin clientes vinculados ni compradores en pedidos.</td>
+              <td colspan="4" class="table-empty">Sin clientes vinculados ni compradores en pedidos.</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -61,7 +61,7 @@
   <div class="card shadow-sm mb-4">
     <div class="card-header fw-semibold">Pedidos</div>
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table class="sirona-table">
         <thead class="table-light">
           <tr>
             <th>#</th>
@@ -98,7 +98,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="6" class="text-center text-muted py-4">Sin pedidos.</td>
+              <td colspan="6" class="table-empty">Sin pedidos.</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -122,7 +122,7 @@
   <div class="card shadow-sm mb-4">
     <div class="card-header fw-semibold">Movimientos de caja</div>
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table class="sirona-table">
         <thead class="table-light">
           <tr>
             <th>#</th>
@@ -159,7 +159,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="8" class="text-center text-muted py-4">Sin movimientos de caja con este vendedor.</td>
+              <td colspan="8" class="table-empty">Sin movimientos de caja con este vendedor.</td>
             </tr>
           {% endfor %}
         </tbody>

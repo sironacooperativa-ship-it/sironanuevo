@@ -5,7 +5,7 @@ from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
-from core.comision_agg import comisiones_acumuladas_por_mes
+from core.comision_agg import comisiones_acumuladas_por_mes, comisiones_vendedor_con_grupo_por_mes
 from core.export_utils import parse_export, pdf_response, xlsx_response
 from core.authz import staff_required
 from core.authz import is_staff_user
@@ -36,7 +36,18 @@ def vendedores_list(request):
     )
     exp = parse_export(request)
     if exp in ("xlsx", "pdf"):
-        headers = ["Código", "Apellido", "Nombre", "DNI", "Teléfono", "Mail", "Dirección", "Comisión %"]
+        headers = [
+            "Código",
+            "Apellido",
+            "Nombre",
+            "DNI",
+            "Teléfono",
+            "Mail",
+            "Dirección",
+            "Comisión %",
+            "A cargo de grupo",
+            "Comisión grupo %",
+        ]
         rows = [
             [
                 v.codigo,
@@ -47,6 +58,8 @@ def vendedores_list(request):
                 v.mail,
                 v.direccion,
                 str(v.comision_porcentaje),
+                "Sí" if v.es_jefe_grupo else "No",
+                str(v.comision_grupo_porcentaje),
             ]
             for v in vendedores
         ]
@@ -78,7 +91,16 @@ def vendedor_detalle(request, pk: int):
     paginator = Paginator(ventas_qs, 80)
     page_obj = paginator.get_page(page or 1)
     ventas = list(page_obj)
+    vendedores_a_cargo = list(v.vendedores_a_cargo.filter(habilitado=True).order_by("apellido", "nombre", "codigo"))
+    ventas_grupo_qs = Venta.objects.none()
+    if v.es_jefe_grupo and vendedores_a_cargo:
+        ventas_grupo_qs = Venta.objects.filter(vendedor__in=vendedores_a_cargo)
     comisiones_por_mes = comisiones_acumuladas_por_mes(ventas_qs)
+    comisiones_con_grupo_por_mes = comisiones_vendedor_con_grupo_por_mes(
+        ventas_qs,
+        ventas_grupo_qs,
+        v.comision_grupo_porcentaje,
+    )
     hist = resumen_historial_vendedor(v)
     tiene_historial = any(
         hist[k] > 0 for k in ("n_ventas", "n_presupuestos", "n_movimientos_caja")
@@ -90,6 +112,9 @@ def vendedor_detalle(request, pk: int):
             "vendedor": v,
             "ventas": ventas,
             "comisiones_por_mes": comisiones_por_mes,
+            "comisiones_con_grupo_por_mes": comisiones_con_grupo_por_mes,
+            "vendedores_a_cargo": vendedores_a_cargo,
+            "ventas_grupo_qs": ventas_grupo_qs,
             "resumen_historial": hist,
             "tiene_historial": tiene_historial,
             "page_obj": page_obj,

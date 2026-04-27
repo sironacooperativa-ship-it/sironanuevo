@@ -157,7 +157,7 @@
     </div>
     {% endif %}
     <div class="table-responsive">
-      <table class="table table-hover table-sm align-middle mb-0 presu-lista">
+      <table class="sirona-table presu-lista">
         <thead class="table-light">
           <tr>
             {% if user.is_staff or has_vendedor_perfil %}
@@ -172,10 +172,10 @@
             <th>Vendedor</th>
             <th>Comprador</th>
             <th>Venc. pago</th>
-            <th class="text-end col-presu-neto text-nowrap">Neto</th>
+            <th class="table-monto col-presu-neto">Neto</th>
             <th class="col-presu-estado" title="Estado">Estado</th>
             <th>Pedido</th>
-            <th class="text-end col-presu-acciones">Acciones</th>
+            <th class="table-monto col-presu-acciones">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -211,7 +211,7 @@
                   >!</span>
                 {% endif %}
               </td>
-              <td class="text-muted small">{{ p.creado_en|date:"d/m/Y H:i" }}</td>
+              <td class="table-fecha">{{ p.creado_en|date:"d/m/Y H:i" }}</td>
               <td>{{ p.vendedor.apellido }}, {{ p.vendedor.nombre }}</td>
               <td class="small">
                 {% if p.comprador_id %}
@@ -220,8 +220,8 @@
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td>{% if p.fecha_vencimiento_pago %}{{ p.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
-              <td class="text-end col-presu-neto text-nowrap">{{ p.neto|ars }}</td>
+              <td class="table-fecha">{% if p.fecha_vencimiento_pago %}{{ p.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+              <td class="table-monto col-presu-neto">{{ p.neto|ars }}</td>
               <td class="col-presu-estado text-center">
                 {% if p.estado == "ACT" %}
                   <span class="d-inline-flex text-warning" title="Pendiente" role="img" aria-label="Pendiente"><i data-lucide="clock" class="presu-est-ico" aria-hidden="true"></i></span>
@@ -239,7 +239,7 @@
               <td class="text-end col-presu-acciones">
                 <div class="d-inline-flex flex-nowrap align-items-center justify-content-end gap-1">
                   <a
-                    class="btn btn-sm btn-outline-secondary presu-act-btn"
+                    class="table-action-btn presu-act-btn"
                     href="{% url 'presupuesto_detalle' p.pk %}"
                     title="Ver"
                     aria-label="Ver"
@@ -249,14 +249,14 @@
                   {% if user.is_staff or vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
                     <form method="post" action="{% url 'presupuesto_duplicar' p.pk %}" class="d-inline m-0">
                       {% csrf_token %}
-                      <button type="submit" class="btn btn-sm btn-outline-primary presu-act-btn" title="Repetir (copia en pendiente, mismas líneas y montos)" aria-label="Repetir">
+                      <button type="submit" class="table-action-btn presu-act-btn" title="Repetir (copia en pendiente, mismas líneas y montos)" aria-label="Repetir">
                         <i data-lucide="refresh-cw" aria-hidden="true"></i>
                       </button>
                     </form>
                   {% endif %}
                   {% if p.estado == "ACT" and user.is_staff or p.estado == "ACT" and vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
                     <a
-                      class="btn btn-sm btn-outline-primary presu-act-btn"
+                      class="table-action-btn presu-act-btn"
                       href="{% url 'presupuesto_editar' p.pk %}"
                       title="Editar"
                       aria-label="Editar"
@@ -265,7 +265,7 @@
                     </a>
                     {% if p.alerta_catalogo %}
                       <a
-                        class="btn btn-sm btn-success presu-act-btn"
+                        class="table-action-btn presu-act-btn"
                         href="{% url 'presupuesto_detalle' p.pk %}#aprobar-catalogo"
                         title="Aprobar (elegir catálogo en el detalle)"
                         aria-label="Aprobar con resolución de catálogo en el detalle"
@@ -275,7 +275,7 @@
                     {% else %}
                       <form method="post" action="{% url 'presupuesto_aprobar' p.pk %}" class="d-inline m-0" onsubmit="return confirm('¿Aprobar y generar el pedido? Se descontará stock y quedará en Pedidos como pendiente de pago.');">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-success presu-act-btn" title="Aprobar" aria-label="Aprobar">
+                        <button type="submit" class="table-action-btn presu-act-btn" title="Aprobar" aria-label="Aprobar">
                           <i data-lucide="check" aria-hidden="true"></i>
                         </button>
                       </form>
@@ -284,7 +284,7 @@
                   {% if user.is_staff or p.estado == "ACT" and vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
                     <form method="post" action="{% url 'presupuesto_eliminar' p.pk %}" class="d-inline m-0" onsubmit="return confirm('¿Eliminar el presupuesto #{{ p.pk }}? Si estaba aprobado, también se elimina el pedido y se revierte stock y caja.');">
                       {% csrf_token %}
-                      <button type="submit" class="btn btn-sm btn-outline-danger presu-act-btn" title="Eliminar" aria-label="Eliminar">
+                      <button type="submit" class="table-action-btn presu-act-btn" title="Eliminar" aria-label="Eliminar">
                         <i data-lucide="x" class="text-danger" aria-hidden="true"></i>
                       </button>
                     </form>
@@ -293,7 +293,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="10" class="text-center text-muted py-5">No hay presupuestos con los filtros actuales.</td></tr>
+            <tr><td colspan="10" class="table-empty">No hay presupuestos con los filtros actuales.</td></tr>
           {% endfor %}
         </tbody>
       </table>

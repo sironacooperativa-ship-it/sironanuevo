@@ -104,14 +104,14 @@
       </p>
     </div>
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table class="sirona-table">
         <thead class="table-light">
           <tr>
             <th>Código</th>
             <th>Descripción</th>
             <th>Tipo</th>
-            <th class="text-end" style="min-width: 9rem">Stock disponible</th>
-            <th class="text-end">Precio venta</th>
+            <th class="table-monto" style="min-width: 9rem">Stock disponible</th>
+            <th class="table-monto">Precio venta</th>
           </tr>
         </thead>
         <tbody>
@@ -120,7 +120,7 @@
               <td><code>{{ p.codigo }}</code></td>
               <td>{{ p.descripcion }}</td>
               <td class="text-muted">{{ p.get_tipo_display }}</td>
-              <td class="text-end">
+              <td class="table-monto">
                 {% if user.is_staff %}
                   <form
                     method="post"
@@ -142,17 +142,17 @@
                       title="Editar stock y aplicar"
                       aria-label="Stock {{ p.codigo }}"
                     />
-                    <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-2">Aplicar</button>
+                    <button type="submit" class="table-action-btn">Aplicar</button>
                   </form>
                 {% else %}
                   <span class="small text-muted">{{ p.stock }}</span>
                 {% endif %}
               </td>
-              <td class="text-end">{{ p.precio_venta|ars }}</td>
+              <td class="table-monto">{{ p.precio_venta|ars }}</td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="5" class="text-center text-muted py-5">
+              <td colspan="5" class="table-empty">
                 {% if q %}No hay productos que coincidan con la búsqueda.{% else %}No hay productos cargados.{% endif %}
               </td>
             </tr>
@@ -167,25 +167,25 @@
     <div class="card-body">
       <h2 class="h6 mb-3">Últimos movimientos</h2>
       <div class="table-responsive">
-        <table class="table table-sm align-middle mb-0">
+        <table class="sirona-table">
           <thead class="table-light">
             <tr>
               <th>Fecha</th>
               <th>Tipo</th>
               <th>Producto</th>
-              <th class="text-end">Cant.</th>
+              <th class="table-monto">Cant.</th>
             </tr>
           </thead>
           <tbody>
             {% for m in movimientos %}
               <tr>
-                <td class="text-muted small">{{ m.creado_en|date:"d/m H:i" }}</td>
+                <td class="table-fecha">{{ m.creado_en|date:"d/m H:i" }}</td>
                 <td>{{ m.get_tipo_display }}</td>
                 <td class="small">{{ m.producto.descripcion }}</td>
-                <td class="text-end">{{ m.cantidad }}</td>
+                <td class="table-monto">{{ m.cantidad }}</td>
               </tr>
             {% empty %}
-              <tr><td colspan="4" class="text-muted text-center py-3">Sin movimientos aún.</td></tr>
+              <tr><td colspan="4" class="table-empty">Sin movimientos aún.</td></tr>
             {% endfor %}
           </tbody>
         </table>

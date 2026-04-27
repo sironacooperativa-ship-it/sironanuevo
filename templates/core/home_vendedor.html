@@ -47,7 +47,7 @@
     <div class="card-header sirona-card-header-table-accent fw-semibold">Mis pedidos con pago pendiente</div>
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-sm align-middle mb-0">
+        <table class="sirona-table">
           <thead class="table-light">
             <tr>
               <th>Pedido</th>
@@ -67,7 +67,7 @@
                 <td>{% if v.fecha_vencimiento_pago %}{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
               </tr>
             {% empty %}
-              <tr><td colspan="5" class="text-center text-muted py-4">No tenés pedidos con pago pendiente.</td></tr>
+              <tr><td colspan="5" class="table-empty">No tenés pedidos con pago pendiente.</td></tr>
             {% endfor %}
           </tbody>
         </table>

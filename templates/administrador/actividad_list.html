@@ -41,9 +41,13 @@
     </div>
   </div>
 
-  <div class="card shadow-sm">
+  <div class="table-card">
+    <div class="table-card-header">
+      <h2 class="table-card-title">Registros</h2>
+      <span class="table-card-count">{{ page_obj.paginator.count }} resultado(s)</span>
+    </div>
     <div class="table-responsive">
-      <table class="table table-sm table-hover align-middle mb-0">
+      <table class="sirona-table">
         <thead class="table-light">
           <tr>
             <th>Fecha y hora</th>
@@ -58,7 +62,7 @@
         <tbody>
           {% for r in page_obj %}
             <tr>
-              <td class="text-nowrap small">{{ r.fecha_hora|date:"d/m/Y H:i:s" }}</td>
+              <td class="table-fecha">{{ r.fecha_hora|date:"d/m/Y H:i:s" }}</td>
               <td class="small">{{ r.nombre_usuario }}</td>
               <td class="small text-muted font-monospace">{{ r.ip|default:"—" }}</td>
               <td class="text-nowrap"><span class="badge text-bg-light text-dark">{{ r.metodo }}</span></td>
@@ -68,11 +72,11 @@
                   <div class="text-muted font-monospace" style="font-size: 0.75rem;">?{{ r.consulta|truncatechars:80 }}</div>
                 {% endif %}
               </td>
-              <td class="text-end small">{{ r.codigo_estado }}</td>
+              <td class="table-monto">{{ r.codigo_estado }}</td>
               <td class="small">{% if r.descripcion %}<span class="text-primary">{{ r.descripcion }}</span>{% else %}—{% endif %}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="7" class="text-muted text-center py-4">Sin registros con los filtros actuales.</td></tr>
+            <tr><td colspan="7" class="table-empty">Sin registros con los filtros actuales.</td></tr>
           {% endfor %}
         </tbody>
       </table>

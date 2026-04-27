@@ -6,9 +6,13 @@
     <a class="btn btn-primary" href="{% url 'vendedor_create' %}">Nuevo</a>
   </div>
 
-  <div class="card shadow-sm">
+  <div class="table-card">
+    <div class="table-card-header">
+      <h2 class="table-card-title">Vendedores</h2>
+      <span class="table-card-count">Listado de vendedores</span>
+    </div>
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0 text-center">
+      <table class="sirona-table">
         <thead class="table-light">
           <tr>
             <th>Código</th>
@@ -16,6 +20,7 @@
             <th>Nombre</th>
             <th>Estado</th>
             <th>Comisión</th>
+            <th>Grupo</th>
             <th>Ficha</th>
             <th>Acciones</th>
           </tr>
@@ -35,9 +40,16 @@
               </td>
               <td>{{ v.comision_porcentaje }}%</td>
               <td>
+                {% if v.es_jefe_grupo %}
+                  <span class="badge text-bg-primary">A cargo · {{ v.comision_grupo_porcentaje }}%</span>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>
                 <button
                   type="button"
-                  class="btn btn-sm btn-outline-secondary rounded-pill"
+                  class="table-action-btn"
                   data-sirona-modal-url="{% url 'vendedor_ficha' v.pk %}?modal=1"
                   title="Ver datos cargados"
                 >
@@ -46,27 +58,27 @@
               </td>
               <td>
                 <div class="d-flex justify-content-center gap-2 flex-wrap">
-                  <a class="btn btn-sm btn-outline-dark" href="{% url 'vendedor_actividad' v.id %}" title="Clientes, pedidos y caja">Ver actividad</a>
-                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'vendedor_detalle' v.id %}" title="Pedidos y comisiones">Pedidos</a>
-                  <a class="btn btn-sm btn-outline-primary px-2" href="{% url 'vendedor_update' v.id %}" title="Editar" aria-label="Editar">
+                  <a class="table-action-btn" href="{% url 'vendedor_actividad' v.id %}" title="Clientes, pedidos y caja">Ver actividad</a>
+                  <a class="table-action-btn" href="{% url 'vendedor_detalle' v.id %}" title="Pedidos y comisiones">Pedidos</a>
+                  <a class="table-action-btn" href="{% url 'vendedor_update' v.id %}" title="Editar" aria-label="Editar">
                     <i data-lucide="pencil"></i>
                   </a>
                   {% if user.is_staff %}
                     <form method="post" action="{% url 'vendedor_toggle' v.id %}">
                       {% csrf_token %}
                       {% if v.habilitado %}
-                        <button class="btn btn-sm btn-outline-secondary px-2" type="submit" onclick="return confirm('¿Inhabilitar {{ v.codigo }}?');" title="Inhabilitar" aria-label="Inhabilitar">
+                        <button class="table-action-btn" type="submit" onclick="return confirm('¿Inhabilitar {{ v.codigo }}?');" title="Inhabilitar" aria-label="Inhabilitar">
                           <i data-lucide="check" class="text-success"></i>
                         </button>
                       {% else %}
-                        <button class="btn btn-sm btn-outline-secondary px-2" type="submit" title="Habilitar" aria-label="Habilitar">
+                        <button class="table-action-btn" type="submit" title="Habilitar" aria-label="Habilitar">
                           <i data-lucide="check" class="text-secondary"></i>
                         </button>
                       {% endif %}
                     </form>
                     {% if v.nv or v.np or v.nc %}
                       <a
-                        class="btn btn-sm btn-outline-danger px-2"
+                        class="table-action-btn"
                         href="{% url 'vendedor_eliminar_admin' v.pk %}"
                         title="Eliminar"
                         aria-label="Eliminar"
@@ -76,7 +88,7 @@
                     {% else %}
                       <form method="post" action="{% url 'vendedor_delete' v.id %}" onsubmit="return confirm('¿Eliminar {{ v.codigo }}?');">
                         {% csrf_token %}
-                        <button class="btn btn-sm btn-outline-danger px-2" type="submit" title="Eliminar" aria-label="Eliminar">
+                        <button class="table-action-btn" type="submit" title="Eliminar" aria-label="Eliminar">
                           <i data-lucide="x" class="text-danger"></i>
                         </button>
                       </form>
@@ -86,7 +98,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="7" class="text-center text-muted py-5">No hay vendedores.</td></tr>
+            <tr><td colspan="8" class="table-empty">No hay vendedores.</td></tr>
           {% endfor %}
         </tbody>
       </table>

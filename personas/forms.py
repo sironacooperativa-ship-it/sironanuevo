@@ -19,16 +19,53 @@ class _BasePersonaForm(forms.ModelForm):
 class VendedorForm(_BasePersonaForm):
     class Meta(_BasePersonaForm.Meta):
         model = Vendedor
-        fields = _BasePersonaForm.Meta.fields + ["comision_porcentaje"]
+        fields = _BasePersonaForm.Meta.fields + [
+            "comision_porcentaje",
+            "es_jefe_grupo",
+            "comision_grupo_porcentaje",
+            "vendedores_a_cargo",
+        ]
         widgets = {
             **_BasePersonaForm.Meta.widgets,
             "comision_porcentaje": forms.NumberInput(
                 attrs={"class": "form-control", "step": "0.01", "min": "0"}
             ),
+            "es_jefe_grupo": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "comision_grupo_porcentaje": forms.NumberInput(
+                attrs={"class": "form-control", "step": "0.01", "min": "0"}
+            ),
+            "vendedores_a_cargo": forms.SelectMultiple(attrs={"class": "form-select", "size": "8"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        qs = Vendedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        self.fields["vendedores_a_cargo"].queryset = qs
+        self.fields["vendedores_a_cargo"].required = False
+        self.fields["vendedores_a_cargo"].help_text = (
+            "Elegí los vendedores cuyas ventas generan comisión adicional para este vendedor."
+        )
 
     def clean(self):
         cd = super().clean()
+        es_jefe = bool(cd.get("es_jefe_grupo"))
+        pct_grupo = cd.get("comision_grupo_porcentaje")
+        vendedores_a_cargo = cd.get("vendedores_a_cargo")
+        if not es_jefe:
+            cd["comision_grupo_porcentaje"] = pct_grupo or 0
+        elif pct_grupo is None or pct_grupo <= 0:
+            self.add_error(
+                "comision_grupo_porcentaje",
+                "Indicá un porcentaje mayor a 0 para el vendedor a cargo de grupo.",
+            )
+        if es_jefe and vendedores_a_cargo is not None and not vendedores_a_cargo.exists():
+            self.add_error(
+                "vendedores_a_cargo",
+                "Elegí al menos un vendedor a cargo para activar esta categoría.",
+            )
+
         # Evitar duplicados al crear
         if self.instance and self.instance.pk:
             return cd
@@ -49,6 +86,12 @@ class VendedorForm(_BasePersonaForm):
                     "Ya existe un vendedor cargado con ese nombre y apellido. Si es la misma persona, editá el existente."
                 )
         return cd
+
+    def save(self, commit=True):
+        vendedor = super().save(commit=commit)
+        if commit and not self.cleaned_data.get("es_jefe_grupo"):
+            vendedor.vendedores_a_cargo.clear()
+        return vendedor
 
 
 class ProveedorForm(_BasePersonaForm):

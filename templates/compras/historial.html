@@ -71,17 +71,21 @@
     </div>
   </div>
 
-  <div class="card shadow-sm">
+  <div class="table-card">
+    <div class="table-card-header">
+      <h2 class="table-card-title">Compras</h2>
+      <span class="table-card-count">{{ page_obj.paginator.count }} resultado(s)</span>
+    </div>
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table class="sirona-table">
         <thead class="table-light">
           <tr>
             <th>#</th>
             <th>Fecha compra</th>
             <th>Proveedor</th>
             <th>Producto</th>
-            <th class="text-end">Cant.</th>
-            <th class="text-end">Monto</th>
+            <th class="table-monto">Cant.</th>
+            <th class="table-monto">Monto</th>
             <th>Medio</th>
             <th class="text-center">Caja</th>
             <th>Estado</th>
@@ -92,20 +96,20 @@
           {% for c in compras %}
             <tr class="{% if c.anulada %}table-secondary{% endif %}">
               <td><span class="fw-semibold">#{{ c.pk }}</span></td>
-              <td class="text-muted small">{{ c.fecha_compra|date:"d/m/Y" }}</td>
+              <td class="table-fecha">{{ c.fecha_compra|date:"d/m/Y" }}</td>
               <td>{{ c.proveedor.apellido }}, {{ c.proveedor.nombre }}</td>
               <td><span class="text-muted">{{ c.producto.codigo }}</span> {{ c.producto.descripcion|truncatechars:40 }}</td>
-              <td class="text-end">{{ c.cantidad }}</td>
-              <td class="text-end">{{ c.monto|ars }}</td>
+              <td class="table-monto">{{ c.cantidad }}</td>
+              <td class="table-monto">{{ c.monto|ars }}</td>
               <td class="small">{{ c.get_medio_pago_display }}</td>
               <td class="text-center small">
                 {% if c.movimiento_caja %}
-                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'caja_detail' c.movimiento_caja.pk %}">Egreso</a>
+                  <a class="table-action-btn" href="{% url 'caja_detail' c.movimiento_caja.pk %}">Egreso</a>
                 {% else %}
                   <span class="text-muted">—</span>
                 {% endif %}
                 {% if c.movimiento_credito %}
-                  <a class="btn btn-sm btn-outline-primary ms-1" href="{% url 'caja_detail' c.movimiento_credito.pk %}" title="Nota de crédito">N.C.</a>
+                  <a class="table-action-btn ms-1" href="{% url 'caja_detail' c.movimiento_credito.pk %}" title="Nota de crédito">N.C.</a>
                 {% endif %}
               </td>
               <td class="small">
@@ -119,14 +123,14 @@
                 <td class="text-end text-nowrap">
                   <form method="post" action="{% url 'compra_admin_eliminar' c.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar definitivamente la compra #{{ c.pk }}? Se borrarán los movimientos de caja vinculados y se descontará la cantidad del stock.');">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline-danger px-2" title="Eliminar" aria-label="Eliminar">
+                    <button type="submit" class="table-action-btn" title="Eliminar" aria-label="Eliminar">
                       <i data-lucide="x" class="text-danger"></i>
                     </button>
                   </form>
                   {% if not c.anulada and c.movimiento_caja %}
                     <form method="post" action="{% url 'compra_admin_anular' c.pk %}" class="d-inline ms-1" onsubmit="return confirm('¿Anular la compra #{{ c.pk }}? Quedará marcada como anulada y se registrará una nota de crédito en caja por el mismo monto.');">
                       {% csrf_token %}
-                      <button type="submit" class="btn btn-sm btn-outline-warning">Anular</button>
+                      <button type="submit" class="table-action-btn">Anular</button>
                     </form>
                   {% endif %}
                 </td>
@@ -134,7 +138,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="{% if es_admin_compras %}10{% else %}9{% endif %}" class="text-center text-muted py-5">No hay compras con los filtros actuales.</td>
+              <td colspan="{% if es_admin_compras %}10{% else %}9{% endif %}" class="table-empty">No hay compras con los filtros actuales.</td>
             </tr>
           {% endfor %}
         </tbody>

@@ -21,6 +21,12 @@
   --sirona-text: var(--cg-text);
   --sirona-muted: var(--cg-muted);
   --sirona-page: var(--cg-bg);
+  --sirona-primary: var(--cg-accent);
+  --sirona-primary-soft: rgba(0, 122, 255, 0.1);
+  --sirona-primary-light: rgba(0, 122, 255, 0.24);
+  --sirona-text-soft: var(--cg-muted);
+  --sirona-border: var(--cg-border);
+  --sirona-bg: var(--cg-bg);
 
   --app-radius-sm: 0.5rem;
   --app-radius: 0.65rem;
@@ -615,143 +621,226 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   padding: 0.85rem 1.15rem;
 }
 
-/* Tarjetas con tabla: sobrias, neutras y sin acento de color dominante. */
-.card.sirona-card-table-accent {
-  border-color: rgba(60, 60, 67, 0.12) !important;
-  border-width: 1px;
-}
-
-.card.sirona-card-table-accent > .card-header.sirona-card-header-table-accent {
-  background: rgba(247, 247, 249, 0.95) !important;
-  color: var(--cg-text) !important;
-  border-bottom: 1px solid rgba(60, 60, 67, 0.1) !important;
-}
-
-.card.sirona-card-table-accent > .card-footer {
-  border-top-color: rgba(60, 60, 67, 0.1);
-  background: #fff;
-}
-
-.badge.sirona-badge-table-accent {
-  background: var(--sirona-sky) !important;
-  color: var(--sirona-teal-deep) !important;
-  font-weight: 600;
-  border: 1px solid rgba(0, 151, 178, 0.35);
-}
-
-/* Misma apariencia si alguna plantilla sigue usando Bootstrap warning en la tarjeta */
-.card.border-warning {
-  border-color: rgba(60, 60, 67, 0.12) !important;
-}
-
-.card.border-warning > .card-header.bg-warning.bg-opacity-25 {
-  background: rgba(247, 247, 249, 0.95) !important;
-  color: var(--cg-text) !important;
-  border-bottom-color: rgba(60, 60, 67, 0.1) !important;
-}
-
 .card-body {
   padding: 1.15rem 1.25rem;
 }
 
-.table-responsive {
-  border-radius: 0 0 var(--app-radius-lg) var(--app-radius-lg);
+/* Sistema global de tablas Sirona. Las clases nuevas conviven con las tablas Bootstrap existentes. */
+.table-card,
+.card:has(.sirona-table),
+.card:has(.table) {
+  margin-top: 14px;
+  background: #fff;
+  border: 1px solid var(--sirona-border);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
 }
 
+.table-card-header,
+.card:has(.sirona-table) > .card-header,
+.card:has(.table) > .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 16px 18px;
+  background: #fff;
+  border-bottom: 1px solid var(--sirona-border);
+  color: var(--sirona-text);
+}
+
+.table-card-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--sirona-text);
+}
+
+.table-card-count {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sirona-text-soft);
+  white-space: nowrap;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 0;
+}
+
+.sirona-table,
 .table {
-  --sirona-table-line: rgba(60, 60, 67, 0.09);
+  --sirona-table-line: rgba(15, 23, 42, 0.065);
   --bs-table-border-color: transparent;
-  --bs-table-hover-bg: rgba(60, 60, 67, 0.045);
-  color: #242428;
-  font-size: 0.8125rem;
-  line-height: 1.32;
-  letter-spacing: -0.005em;
+  --bs-table-hover-bg: #f9fbfc;
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
   border-color: transparent !important;
+  color: var(--sirona-text);
+  font-size: 14px;
+  line-height: 1.38;
+  letter-spacing: -0.005em;
   vertical-align: middle;
 }
 
-.table > :not(caption) > * > * {
-  padding: 0.48rem 0.62rem;
-  border-right: 0 !important;
-  border-left: 0 !important;
-  border-color: transparent;
-  box-shadow: none;
+.sirona-table th,
+.table th {
+  text-align: left;
+  padding: 12px 14px;
+  background: #f8fafc !important;
+  color: var(--sirona-text-soft) !important;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  border: 0 !important;
+  border-bottom: 1px solid var(--sirona-border) !important;
+  box-shadow: none !important;
 }
 
-.table tbody tr + tr > * {
-  border-top: 1px solid var(--sirona-table-line) !important;
-}
-
-.table tbody td,
-.table tbody th {
-  color: #2f3034;
-  font-weight: 450;
+.sirona-table td,
+.table td {
+  padding: 12px 14px;
+  color: var(--sirona-text);
+  font-weight: 400;
+  vertical-align: middle;
+  border: 0 !important;
+  border-bottom: 1px solid var(--sirona-table-line) !important;
+  box-shadow: none !important;
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: normal;
 }
 
-.table tbody code {
-  font-size: 0.76rem;
-  color: #4b5563;
+.sirona-table tbody tr:last-child td,
+.table tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+
+.sirona-table tbody tr:hover,
+.table tbody tr:hover {
+  background: #f9fbfc;
+}
+
+.sirona-table tbody tr:hover > *,
+.table tbody tr:hover > * {
+  --bs-table-bg-state: #f9fbfc;
+  background-color: #f9fbfc !important;
+}
+
+.sirona-table a,
+.table a {
+  color: var(--sirona-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sirona-table a:hover,
+.table a:hover {
+  color: var(--sirona-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.sirona-table.table-sm th,
+.table.table-sm th,
+.sirona-table.table-sm td,
+.table.table-sm td {
+  padding: 10px 12px;
+}
+
+.sirona-table code,
+.table code {
+  color: #475569;
   background: transparent;
   padding: 0;
+  font-size: 0.86em;
 }
 
-.table.table-sm > :not(caption) > * > * {
-  padding: 0.36rem 0.52rem;
+.table-fecha,
+.sirona-table .table-fecha,
+.table .table-fecha {
+  color: var(--sirona-text-soft);
+  font-size: 13px;
+  white-space: nowrap;
 }
 
-.table thead th {
-  font-weight: 650;
-  font-size: 0.68rem;
-  line-height: 1.2;
-  color: rgba(60, 60, 67, 0.66);
-  letter-spacing: 0.045em;
-  text-transform: uppercase;
+.table-monto,
+.sirona-table .table-monto,
+.table .table-monto,
+.sirona-table .text-end,
+.table .text-end {
+  text-align: right !important;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-action-btn,
+.sirona-table .btn,
+.table .btn {
+  min-height: 0;
+  border: 1px solid var(--sirona-border);
+  background: #fff;
+  color: var(--sirona-text);
+  border-radius: 10px;
+  padding: 6px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.1;
+  box-shadow: none;
+}
+
+.table-action-btn:hover,
+.sirona-table .btn:hover,
+.table .btn:hover {
+  background: var(--sirona-primary-soft);
+  border-color: var(--sirona-primary-light);
+  color: var(--sirona-text);
+  text-decoration: none;
+  box-shadow: none;
+}
+
+.table-empty,
+.sirona-table td[colspan],
+.table td[colspan] {
+  padding: 24px !important;
   text-align: center;
-  vertical-align: middle;
-  border-bottom-width: 1px;
+  color: var(--sirona-text-soft);
+  font-size: 13px;
+  font-weight: 500;
 }
 
-/* Encabezado neutro, sin cuadrícula azul. */
-.table thead.table-light {
-  --bs-table-color: rgba(60, 60, 67, 0.7);
-  --bs-table-bg: #f7f7f9;
-  --bs-table-border-color: var(--sirona-table-line);
-  background-color: #f7f7f9 !important;
-  color: rgba(60, 60, 67, 0.7);
+.table-light {
+  --bs-table-color: var(--sirona-text-soft);
+  --bs-table-bg: #f8fafc;
+  --bs-table-border-color: var(--sirona-border);
 }
 
-.table thead.table-light > tr {
-  --bs-table-color: rgba(60, 60, 67, 0.7);
-  --bs-table-bg: #f7f7f9;
+.card.sirona-card-table-accent,
+.card.border-warning {
+  border-color: var(--sirona-border) !important;
 }
 
-.table thead.table-light th,
-.table thead.table-light td {
-  font-weight: 650;
-  font-size: 0.68rem;
-  color: rgba(60, 60, 67, 0.7) !important;
-  background-color: #f7f7f9 !important;
-  background-image: none !important;
-  border-bottom: 1px solid rgba(60, 60, 67, 0.11) !important;
-  border-top: none !important;
-  border-left: none !important;
-  border-right: none !important;
-  --bs-table-bg-state: #f7f7f9;
-  --bs-table-color-state: rgba(60, 60, 67, 0.7);
+.card.sirona-card-table-accent > .card-header.sirona-card-header-table-accent,
+.card.border-warning > .card-header.bg-warning.bg-opacity-25 {
+  background: #fff !important;
+  color: var(--sirona-text) !important;
+  border-bottom-color: var(--sirona-border) !important;
 }
 
-.table thead > tr.table-light th,
-.table thead > tr.table-light td {
-  color: rgba(60, 60, 67, 0.7) !important;
-  background-color: #f7f7f9 !important;
-  background-image: none !important;
-  border-bottom: 1px solid rgba(60, 60, 67, 0.11) !important;
-  border-top: none !important;
-  border-left: none !important;
-  border-right: none !important;
+.badge.sirona-badge-table-accent {
+  background: var(--sirona-primary-soft) !important;
+  color: var(--sirona-primary) !important;
+  font-weight: 600;
+  border: 1px solid rgba(0, 122, 255, 0.18);
 }
 
 /* Formularios */
@@ -918,28 +1007,28 @@ h2.h6 {
 }
 
 .app-table {
-  font-size: 0.8125rem;
+  font-size: 14px;
 }
 
 .app-table thead.table-light th,
 .app-table thead th {
-  font-weight: 650;
-  border-bottom-color: rgba(60, 60, 67, 0.11) !important;
+  font-weight: 600;
+  border-bottom-color: var(--sirona-border) !important;
 }
 
 .app-table thead.table-light th {
-  color: rgba(60, 60, 67, 0.7) !important;
-  background-color: #f7f7f9 !important;
+  color: var(--sirona-text-soft) !important;
+  background-color: #f8fafc !important;
   background-image: none !important;
 }
 
 .app-table tbody td {
-  padding-top: 0.36rem;
-  padding-bottom: 0.36rem;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 .app-table-row:hover td {
-  background-color: rgba(60, 60, 67, 0.045);
+  background-color: #f9fbfc;
 }
 
 .app-pill {
