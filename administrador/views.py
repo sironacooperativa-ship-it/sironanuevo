@@ -14,12 +14,14 @@ from django.conf import settings
 from django.core.management import call_command
 from django.core.paginator import Paginator
 from django.db import connections, transaction
+from django.db.models import Q
 from django.http import FileResponse, HttpResponseBadRequest
 from django.utils import timezone
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_param
+from core.models import NotaAdmin
 
 from .forms import UsuarioCrearForm, UsuarioEditarForm, UsuarioPasswordForm
 from .models import RegistroActividad
@@ -81,6 +83,64 @@ def usuarios_list(request):
         qs = qs.filter(username__icontains=q) | qs.filter(email__icontains=q)
         qs = qs.distinct().order_by("username")
     return render(request, "administrador/usuarios_list.html", {"usuarios": qs, "q": q})
+
+
+@admin_required
+@require_http_methods(["GET", "POST"])
+def notas_list(request):
+    if request.method == "POST":
+        nota_id = (request.POST.get("nota_id") or "").strip()
+        if not nota_id.isdigit():
+            messages.error(request, "Nota no válida.")
+            return redirect("admin_notas_list")
+
+        nota = get_object_or_404(NotaAdmin, pk=int(nota_id))
+        accion = (request.POST.get("accion") or "").strip()
+        if accion == "marcar_leida":
+            nota.leida = True
+            nota.save(update_fields=["leida"])
+            messages.success(request, "Nota marcada como leída.")
+        elif accion == "marcar_no_leida":
+            nota.leida = False
+            nota.save(update_fields=["leida"])
+            messages.success(request, "Nota marcada como no leída.")
+        else:
+            messages.error(request, "Acción no válida.")
+        return redirect("admin_notas_list")
+
+    estado = (request.GET.get("estado") or "no_leidas").strip()
+    q = (request.GET.get("q") or "").strip()
+    qs = NotaAdmin.objects.select_related("usuario", "vendedor").all()
+    if estado == "no_leidas":
+        qs = qs.filter(leida=False)
+    elif estado == "leidas":
+        qs = qs.filter(leida=True)
+    else:
+        estado = "todas"
+
+    if q:
+        qs = qs.filter(
+            Q(texto__icontains=q)
+            | Q(usuario__username__icontains=q)
+            | Q(usuario__email__icontains=q)
+            | Q(vendedor__codigo__icontains=q)
+            | Q(vendedor__apellido__icontains=q)
+        )
+
+    paginator = Paginator(qs, 25)
+    page = paginator.get_page(request.GET.get("page") or 1)
+    qcopy = request.GET.copy()
+    qcopy.pop("page", None)
+    return render(
+        request,
+        "administrador/notas_list.html",
+        {
+            "page_obj": page,
+            "filtros": {"estado": estado, "q": q},
+            "querystring": qcopy.urlencode(),
+            "total_no_leidas": NotaAdmin.objects.filter(leida=False).count(),
+        },
+    )
 
 
 @admin_required

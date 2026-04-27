@@ -65,6 +65,7 @@
         <thead class="table-light">
           <tr>
             <th>Código</th>
+            <th>Tipo</th>
             <th>Descripción</th>
             <th class="text-end" style="width: 10rem">Precio</th>
           </tr>
@@ -74,12 +75,13 @@
             {% for p in productos %}
               <tr>
                 <td class="text-muted"><code>{{ p.codigo }}</code></td>
+                <td class="text-muted small">{{ p.get_tipo_display }}</td>
                 <td>{{ p.descripcion }}</td>
                 <td class="text-end fw-medium">{{ p.precio_venta|ars }}</td>
               </tr>
             {% empty %}
               <tr>
-                <td colspan="3" class="text-muted text-center py-4">
+                <td colspan="4" class="text-muted text-center py-4">
                   Ningún producto está marcado para esta lista. Activá <strong>En lista Farmacia (PDF)</strong> en cada producto o desde acciones en masa.
                 </td>
               </tr>
@@ -88,11 +90,12 @@
             {% for it in items %}
               <tr>
                 <td class="text-muted"><code>{{ it.producto.codigo }}</code></td>
+                <td class="text-muted small">{{ it.producto.get_tipo_display }}</td>
                 <td>{{ it.producto.descripcion }}</td>
                 <td class="text-end fw-medium">{{ it.precio_venta|ars }}</td>
               </tr>
             {% empty %}
-              <tr><td colspan="3" class="text-muted text-center py-4">Sin ítems en esta lista.</td></tr>
+              <tr><td colspan="4" class="text-muted text-center py-4">Sin ítems en esta lista.</td></tr>
             {% endfor %}
           {% endif %}
         </tbody>

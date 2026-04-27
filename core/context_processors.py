@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from django.core.exceptions import ObjectDoesNotExist
+
+from core.models import NotaAdmin
 from personas.models import Vendedor
+
 
 def vendor_mode(request):
     """
@@ -22,6 +25,7 @@ def vendor_mode(request):
     in_portal = path.startswith("/vendedor/")
     has_vendedor_perfil = False
     vendedor_perfil_pk = None
+    notas_admin_no_leidas = 0
     user = getattr(request, "user", None)
     if user is not None and getattr(user, "is_authenticated", False):
         try:
@@ -31,10 +35,13 @@ def vendor_mode(request):
                 vendedor_perfil_pk = v.pk
         except ObjectDoesNotExist:
             has_vendedor_perfil = False
+        if getattr(user, "is_staff", False) or getattr(user, "is_superuser", False):
+            notas_admin_no_leidas = NotaAdmin.objects.filter(leida=False).count()
 
     return {
         "vendor_mode": bool(solo_vendedor or session_flag or in_portal),
         "has_vendedor_perfil": has_vendedor_perfil,
         "vendedor_perfil_pk": vendedor_perfil_pk,
+        "notas_admin_no_leidas": notas_admin_no_leidas,
     }
 

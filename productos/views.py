@@ -31,7 +31,12 @@ from reportlab.lib.units import mm
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 
 from .forms import ProductoForm
-from .listas_precios_views import producto_listas_extra_context, sync_producto_listas_extras_from_post
+from .listas_precios_views import (
+    producto_listas_extra_context,
+    producto_listas_ids_post,
+    producto_tiene_lista_precio_en_post,
+    sync_producto_listas_extras_from_post,
+)
 from .models import ListaPrecioItem, ListaPrecios, Producto
 
 # Claves GET permitidas al volver a /productos/ (retorno_query o retorno_*).
@@ -734,6 +739,81 @@ def lista_precios_aplicar(request):
     return redirect("productos_listas_precios")
 
 
+def _producto_listas_seleccionadas_post(request) -> set[int] | None:
+    if request.method != "POST" or request.POST.get("listas_extra_present") != "1":
+        return None
+    return {int(x) for x in request.POST.getlist("listas_extra") if str(x).isdigit()}
+
+
+def _producto_requiere_lista_precio(request, form) -> bool:
+    if request.POST.get("listas_extra_present") != "1":
+        return False
+    if producto_tiene_lista_precio_en_post(request):
+        return False
+    msg = (
+        "Asigná el producto a al menos una lista de precio. "
+        "Si no lo hacés, no aparece en Farmacia ni en ningún rubro para vender o exportar."
+    )
+    form.add_error(None, msg)
+    messages.error(request, msg)
+    return True
+
+
+def _normalizar_descripcion_producto(valor: str) -> str:
+    return " ".join(_sin_acentos(valor or "").casefold().split())
+
+
+def _producto_listas_ids_actuales(producto: Producto, farmacia_id: int | None) -> set[int]:
+    ids = set(
+        ListaPrecioItem.objects.filter(producto_id=producto.pk).values_list("lista_id", flat=True)
+    )
+    if farmacia_id and producto.en_lista_precios:
+        ids.add(farmacia_id)
+    return ids
+
+
+def _producto_repite_en_misma_lista(request, form, producto: Producto | None = None) -> bool:
+    if request.POST.get("listas_extra_present") != "1":
+        return False
+
+    descripcion = form.cleaned_data.get("descripcion") if hasattr(form, "cleaned_data") else ""
+    descripcion_norm = _normalizar_descripcion_producto(str(descripcion or ""))
+    if not descripcion_norm:
+        return False
+
+    listas_seleccionadas = producto_listas_ids_post(request)
+    if not listas_seleccionadas:
+        return False
+
+    farmacia_id = (
+        ListaPrecios.objects.filter(es_farmacia=True)
+        .order_by("id")
+        .values_list("pk", flat=True)
+        .first()
+    )
+    listas_nombres = dict(ListaPrecios.objects.values_list("pk", "nombre"))
+    candidatos = Producto.objects.all()
+    if producto and producto.pk:
+        candidatos = candidatos.exclude(pk=producto.pk)
+
+    for candidato in candidatos:
+        if _normalizar_descripcion_producto(candidato.descripcion) != descripcion_norm:
+            continue
+        repetidas = listas_seleccionadas & _producto_listas_ids_actuales(candidato, farmacia_id)
+        if not repetidas:
+            continue
+        nombres = ", ".join(sorted(listas_nombres.get(pk, str(pk)) for pk in repetidas))
+        msg = (
+            f"Ya existe un producto con esa descripción ({candidato.codigo}) en: {nombres}. "
+            "Solo se permite repetirlo si pertenece a listas de precio distintas."
+        )
+        form.add_error("descripcion", msg)
+        messages.error(request, msg)
+        return True
+
+    return False
+
+
 def _render_producto_form(request, *, template_full: str, modo: str, form, producto=None):
     ctx = {
         "form": form,
@@ -748,7 +828,10 @@ def _render_producto_form(request, *, template_full: str, modo: str, form, produ
             f"Editar · {producto.codigo}" if producto else "Nuevo producto"
         ),
         "retorno_query": request.GET.urlencode(),
-        **producto_listas_extra_context(producto),
+        **producto_listas_extra_context(
+            producto,
+            selected_ids=_producto_listas_seleccionadas_post(request),
+        ),
     }
     if request.GET.get("modal") == "1":
         return render(request, "productos/form_fragment.html", ctx)
@@ -760,7 +843,10 @@ def _render_producto_form(request, *, template_full: str, modo: str, form, produ
 def producto_create(request):
     if request.method == "POST":
         form = ProductoForm(request.POST)
-        if form.is_valid():
+        form_ok = form.is_valid()
+        falta_lista = _producto_requiere_lista_precio(request, form)
+        repetido = _producto_repite_en_misma_lista(request, form) if form_ok else False
+        if form_ok and not falta_lista and not repetido:
             producto = form.save(commit=False)
             producto.precio_venta_editado = bool(form.cleaned_data.get("precio_venta_editado"))
             producto.save()
@@ -778,7 +864,10 @@ def producto_update(request, pk: int):
     producto = get_object_or_404(Producto, pk=pk)
     if request.method == "POST":
         form = ProductoForm(request.POST, instance=producto)
-        if form.is_valid():
+        form_ok = form.is_valid()
+        falta_lista = _producto_requiere_lista_precio(request, form)
+        repetido = _producto_repite_en_misma_lista(request, form, producto) if form_ok else False
+        if form_ok and not falta_lista and not repetido:
             producto = form.save(commit=False)
             producto.precio_venta_editado = bool(form.cleaned_data.get("precio_venta_editado"))
             producto.save()

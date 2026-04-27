@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Notas de administración{% endblock %}
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-0">Notas</h1>
+      <div class="text-muted small">
+        Mensajes enviados por los usuarios. No leídas: {{ total_no_leidas }}.
+      </div>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'admin_usuarios_list' %}">Volver a usuarios</a>
+    <a class="btn btn-outline-primary btn-sm" href="{% url 'admin_actividad_list' %}">Historial de actividad</a>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-12 col-md-4 col-lg-3">
+          <label class="form-label small text-muted mb-0">Estado</label>
+          <select name="estado" class="form-select form-select-sm">
+            <option value="no_leidas" {% if filtros.estado == "no_leidas" %}selected{% endif %}>No leídas</option>
+            <option value="todas" {% if filtros.estado == "todas" %}selected{% endif %}>Todas</option>
+            <option value="leidas" {% if filtros.estado == "leidas" %}selected{% endif %}>Leídas</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-6 col-lg-5">
+          <label class="form-label small text-muted mb-0">Buscar</label>
+          <input
+            type="text"
+            name="q"
+            class="form-control form-control-sm"
+            placeholder="texto, usuario, email o vendedor"
+            value="{{ filtros.q }}"
+          />
+        </div>
+        <div class="col-12 d-flex gap-1 flex-wrap">
+          <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'admin_notas_list' %}">Limpiar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Fecha</th>
+            <th>Usuario</th>
+            <th>Mensaje</th>
+            <th>Página</th>
+            <th class="text-center">Estado</th>
+            <th class="text-center">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for nota in page_obj %}
+            <tr class="{% if not nota.leida %}table-warning{% endif %}">
+              <td class="text-nowrap small">{{ nota.creado_en|date:"d/m/Y H:i" }}</td>
+              <td class="small">
+                <div class="fw-semibold">{{ nota.usuario.username }}</div>
+                {% if nota.vendedor %}
+                  <div class="text-muted">{{ nota.vendedor }}</div>
+                {% elif nota.usuario.email %}
+                  <div class="text-muted">{{ nota.usuario.email }}</div>
+                {% endif %}
+              </td>
+              <td class="text-break">{{ nota.texto|linebreaksbr }}</td>
+              <td class="small">
+                {% if nota.pagina %}
+                  <code class="text-break">{{ nota.pagina }}</code>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if nota.leida %}
+                  <span class="badge text-bg-secondary">Leída</span>
+                {% else %}
+                  <span class="badge text-bg-warning text-dark">No leída</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <form method="post" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="nota_id" value="{{ nota.pk }}" />
+                  {% if nota.leida %}
+                    <button class="btn btn-sm btn-outline-secondary" type="submit" name="accion" value="marcar_no_leida">
+                      Marcar no leída
+                    </button>
+                  {% else %}
+                    <button class="btn btn-sm btn-primary" type="submit" name="accion" value="marcar_leida">
+                      Marcar leída
+                    </button>
+                  {% endif %}
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-5">No hay notas con los filtros actuales.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "includes/pagination_footer.html" %}
+  </div>
+{% endblock %}

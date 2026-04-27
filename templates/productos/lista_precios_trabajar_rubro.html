@@ -52,7 +52,7 @@
             <select name="producto_id" class="form-select form-select-sm rounded-3">
               <option value="">— Elegir —</option>
               {% for p in disponibles %}
-                <option value="{{ p.pk }}">{{ p.codigo }} — {{ p.descripcion }} (ref. Farmacia {{ p.precio_venta|ars }})</option>
+                <option value="{{ p.pk }}">{{ p.get_tipo_display }} — {{ p.codigo }} — {{ p.descripcion }} (ref. Farmacia {{ p.precio_venta|ars }})</option>
               {% endfor %}
             </select>
             {% if page_disp_obj and page_disp_obj.paginator.num_pages > 1 %}
@@ -87,6 +87,7 @@
           <thead class="table-light">
             <tr>
               <th>Código</th>
+              <th>Tipo</th>
               <th>Descripción</th>
               <th class="text-end" style="width: 10rem">Precio en {{ lista.nombre }}</th>
               <th style="width: 5rem"></th>
@@ -96,6 +97,7 @@
             {% for it in items %}
               <tr>
                 <td class="text-muted"><code>{{ it.producto.codigo }}</code></td>
+                <td class="text-muted small">{{ it.producto.get_tipo_display }}</td>
                 <td>{{ it.producto.descripcion }}</td>
                 <td class="text-end">
                   <input
@@ -118,7 +120,7 @@
                 </td>
               </tr>
             {% empty %}
-              <tr><td colspan="4" class="text-muted text-center py-4">Todavía no hay productos en esta lista.</td></tr>
+              <tr><td colspan="5" class="text-muted text-center py-4">Todavía no hay productos en esta lista.</td></tr>
             {% endfor %}
           </tbody>
         </table>

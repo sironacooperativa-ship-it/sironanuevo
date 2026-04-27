@@ -20,7 +20,7 @@ class ProductoForm(forms.ModelForm):
         help_texts = {
             "stock": (
                 "Si el stock pasa a 0, el producto se deshabilita solo. "
-                "Si pasa de 0 a un valor mayor, se habilita para la venta; la lista Farmacia (PDF) la marcás vos en el producto."
+                "Si pasa de 0 a un valor mayor, se habilita para la venta."
             ),
         }
         fields = [
@@ -32,7 +32,6 @@ class ProductoForm(forms.ModelForm):
             "porcentaje_ganancia",
             "precio_venta",
             "habilitado",
-            "en_lista_precios",
         ]
         widgets = {
             "tipo": forms.Select(attrs={"class": "form-select form-select-sm rounded-3"}),
@@ -50,9 +49,6 @@ class ProductoForm(forms.ModelForm):
                 attrs={"class": "form-control form-control-sm rounded-3", "step": "0.01"}
             ),
             "habilitado": forms.CheckboxInput(
-                attrs={"class": "form-check-input", "role": "switch"}
-            ),
-            "en_lista_precios": forms.CheckboxInput(
                 attrs={"class": "form-check-input", "role": "switch"}
             ),
         }
@@ -79,7 +75,6 @@ class ProductoForm(forms.ModelForm):
             s = int(stock)
             if s == 0:
                 cleaned["habilitado"] = False
-                cleaned["en_lista_precios"] = False
             elif s > 0:
                 prev = int(self.instance.stock) if self.instance.pk else 0
                 if not self.instance.pk or prev <= 0:

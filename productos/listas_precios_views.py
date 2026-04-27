@@ -24,13 +24,40 @@ from .models import ListaPrecioItem, ListaPrecios, Producto
 SESSION_LISTA_PRECIO_NUEVA_NOMBRE = "lista_precio_nueva_nombre"
 
 
-def producto_listas_extra_context(producto: Producto | None) -> dict:
-    opciones = ListaPrecios.objects.filter(es_farmacia=False).order_by("nombre")
+def _lista_precios_ids_post(request) -> set[int]:
+    return {int(x) for x in request.POST.getlist("listas_extra") if str(x).isdigit()}
+
+
+def producto_listas_ids_post(request) -> set[int]:
+    ids = _lista_precios_ids_post(request)
+    return set(ListaPrecios.objects.filter(pk__in=ids).values_list("pk", flat=True))
+
+
+def producto_tiene_lista_precio_en_post(request) -> bool:
+    return bool(producto_listas_ids_post(request))
+
+
+def producto_listas_extra_context(
+    producto: Producto | None,
+    *,
+    selected_ids: set[int] | None = None,
+) -> dict:
+    opciones = ListaPrecios.objects.all().order_by("-es_farmacia", "nombre")
     marcados: set[int] = set()
-    if producto and producto.pk:
+    if selected_ids is not None:
+        marcados = selected_ids
+    elif producto and producto.pk:
         marcados = set(
             ListaPrecioItem.objects.filter(producto=producto).values_list("lista_id", flat=True)
         )
+        farmacia_id = (
+            ListaPrecios.objects.filter(es_farmacia=True)
+            .order_by("id")
+            .values_list("pk", flat=True)
+            .first()
+        )
+        if farmacia_id and producto.en_lista_precios:
+            marcados.add(farmacia_id)
     return {
         "listas_extra_opciones": opciones,
         "listas_extra_marcados": marcados,
@@ -38,15 +65,19 @@ def producto_listas_extra_context(producto: Producto | None) -> dict:
 
 
 def sync_producto_listas_extras_from_post(request, producto: Producto) -> None:
-    """Asocia el producto a listas de rubro (no Farmacia) según checkboxes POST `listas_extra`."""
+    """Asocia el producto a las listas marcadas en el formulario."""
     if request.POST.get("listas_extra_present") != "1":
         return
-    ids = {int(x) for x in request.POST.getlist("listas_extra") if str(x).isdigit()}
-    listas_ids = set(
-        ListaPrecios.objects.filter(es_farmacia=False, pk__in=ids).values_list("pk", flat=True)
-    )
+    ids = _lista_precios_ids_post(request)
+    listas = list(ListaPrecios.objects.filter(pk__in=ids))
+    farmacia_marcada = any(lista.es_farmacia for lista in listas)
+    if producto.en_lista_precios != farmacia_marcada:
+        producto.en_lista_precios = farmacia_marcada
+        producto.save(update_fields=["en_lista_precios"])
+
+    listas_ids = {lista.pk for lista in listas if not lista.es_farmacia}
     ListaPrecioItem.objects.filter(producto=producto).exclude(lista_id__in=listas_ids).delete()
-    for lista in ListaPrecios.objects.filter(es_farmacia=False, pk__in=listas_ids):
+    for lista in (lista for lista in listas if not lista.es_farmacia):
         ListaPrecioItem.objects.get_or_create(
             lista=lista,
             producto=producto,
@@ -172,7 +203,7 @@ def lista_precios_trabajar(request, pk: int):
 
     if lista.es_farmacia:
         qs = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
-            "descripcion", "codigo"
+            "tipo", "descripcion", "codigo"
         )
         if q:
             qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
@@ -271,7 +302,7 @@ def lista_precios_trabajar(request, pk: int):
     items = (
         ListaPrecioItem.objects.filter(lista=lista)
         .select_related("producto")
-        .order_by("producto__descripcion", "producto__codigo")
+        .order_by("producto__tipo", "producto__descripcion", "producto__codigo")
     )
     if q:
         items = items.filter(
@@ -285,7 +316,7 @@ def lista_precios_trabajar(request, pk: int):
     disp_qs = (
         Producto.objects.filter(habilitado=True)
         .exclude(pk__in=en_lista_ids)
-        .order_by("descripcion", "codigo")
+        .order_by("tipo", "descripcion", "codigo")
     )
     disp_paginator = Paginator(disp_qs, 120)
     page_disp_obj = disp_paginator.get_page(page_disp or 1)
@@ -316,7 +347,7 @@ def lista_precios_ver(request, pk: int):
 
     if lista.es_farmacia:
         qs = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
-            "descripcion", "codigo"
+            "tipo", "descripcion", "codigo"
         )
         if q:
             qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
@@ -338,7 +369,7 @@ def lista_precios_ver(request, pk: int):
     items = (
         ListaPrecioItem.objects.filter(lista=lista)
         .select_related("producto")
-        .order_by("producto__descripcion", "producto__codigo")
+        .order_by("producto__tipo", "producto__descripcion", "producto__codigo")
     )
     if q:
         items = items.filter(

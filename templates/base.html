@@ -365,6 +365,15 @@
                   <span class="app-sidebar-icon-wrap"><i data-lucide="history"></i></span>
                   <span class="app-sidebar-label">Historial</span>
                 </a>
+                <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'admin_notas_list' %}">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="inbox"></i></span>
+                  <span class="app-sidebar-label">
+                    Notas
+                    {% if notas_admin_no_leidas %}
+                      <span class="badge text-bg-warning text-dark ms-1">{{ notas_admin_no_leidas }}</span>
+                    {% endif %}
+                  </span>
+                </a>
                 <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'admin_usuarios_list' %}">
                   <span class="app-sidebar-icon-wrap"><i data-lucide="shield"></i></span>
                   <span class="app-sidebar-label">Administrador</span>
