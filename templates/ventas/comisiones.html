@@ -2,15 +2,13 @@
 {% load money %}
 {% block title %}Comisiones{% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-    <div>
-      <h1 class="h3 mb-0">Comisiones</h1>
-      <div class="text-muted small">Según fecha de registro del pedido</div>
-    </div>
-    <a class="btn btn-outline-secondary btn-sm ms-auto" href="{% url 'ventas_historial' %}">Volver al historial</a>
+  <div class="app-page-header mb-3">
+    <h1 class="app-page-title mb-1">Comisiones</h1>
+    <p class="text-muted small mb-2">Según fecha de registro del pedido</p>
+    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'ventas_historial' %}">Volver al historial</a>
   </div>
 
-  <div class="card shadow-sm mb-3">
+  <div class="card app-card border-0 shadow-sm app-list-filters mb-3">
     <div class="card-body">
       <form method="get" class="row g-2 align-items-end">
         <div class="col-12 col-md-4">
@@ -30,9 +28,9 @@
           <label class="form-label small text-muted mb-0">Hasta</label>
           <input type="date" name="fecha_hasta" class="form-control form-control-sm" value="{{ f.fecha_hasta }}" />
         </div>
-        <div class="col-12 col-md-2 d-flex gap-2">
-          <button type="submit" class="btn btn-sm btn-primary w-100">Filtrar</button>
-          <a class="btn btn-sm btn-outline-secondary w-100" href="{% url 'ventas_comisiones' %}">Limpiar</a>
+        <div class="col-12 col-md-3 d-flex gap-2 flex-wrap">
+          <button type="submit" class="btn btn-sm btn-outline-dark rounded-pill">Filtrar</button>
+          <a class="btn btn-sm btn-outline-secondary rounded-pill" href="{% url 'ventas_comisiones' %}">Limpiar</a>
         </div>
       </form>
       <p class="small text-muted mb-0 mt-2">

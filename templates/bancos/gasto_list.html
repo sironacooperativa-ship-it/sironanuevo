@@ -2,10 +2,10 @@
 {% load money %}
 {% block title %}Gastos por transferencia{% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-    <h1 class="h3 mb-0">Gastos (transferencia)</h1>
-    <a class="btn btn-outline-secondary btn-sm" href="{% url 'bancos_cuentas' %}">Cuentas</a>
-    <a class="btn btn-primary btn-sm" href="{% url 'banco_gasto_nuevo' %}">Nuevo gasto</a>
+  <div class="app-page-header mb-3 d-flex flex-wrap align-items-center gap-2">
+    <h1 class="app-page-title mb-0">Gastos (transferencia)</h1>
+    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'bancos_cuentas' %}">Cuentas</a>
+    <a class="btn btn-primary btn-sm rounded-pill" href="{% url 'banco_gasto_nuevo' %}">Nuevo gasto</a>
   </div>
 
   <div class="table-card presu-lista-modern bancos-gastos-lista mb-3">

@@ -2,16 +2,16 @@
 {% load money %}
 {% block title %}Cheques{% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-    <div>
-      <h1 class="h3 mb-0">Cheques</h1>
+  <div class="app-page-header mb-3 d-flex flex-wrap align-items-center gap-2">
+    <div class="me-auto">
+      <h1 class="app-page-title mb-0">Cheques</h1>
       <div class="text-muted small">A pagar y a cobrar (por vencimiento)</div>
     </div>
-    <a class="btn btn-outline-secondary btn-sm ms-auto" href="{% url 'home' %}">Volver</a>
-    <a class="btn btn-outline-secondary btn-sm" href="{% url 'caja_list' %}">Caja</a>
+    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'home' %}">Volver</a>
+    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'caja_list' %}">Caja</a>
   </div>
 
-  <div class="card shadow-sm mb-3">
+  <div class="card app-card border-0 shadow-sm app-list-filters mb-3">
     <div class="card-body">
       <form method="get" class="row g-2 align-items-end">
         <div class="col-12 col-md-4">
@@ -31,8 +31,8 @@
           <input type="date" name="hasta" class="form-control form-control-sm" value="{{ f.hasta }}" />
         </div>
         <div class="col-12 col-md-2 d-flex gap-2">
-          <button type="submit" class="btn btn-sm btn-primary w-100">Filtrar</button>
-          <a class="btn btn-sm btn-outline-secondary w-100" href="{% url 'caja_cheques' %}">Limpiar</a>
+          <button type="submit" class="btn btn-sm btn-outline-dark rounded-pill flex-grow-1">Filtrar</button>
+          <a class="btn btn-sm btn-outline-secondary rounded-pill flex-grow-1" href="{% url 'caja_cheques' %}">Limpiar</a>
         </div>
       </form>
     </div>

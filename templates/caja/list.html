@@ -2,9 +2,9 @@
 {% load money %}
 {% block title %}Caja{% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-    <h1 class="h3 mb-0">Caja (Libro diario)</h1>
-    <a class="btn btn-primary" href="{% url 'caja_create' %}">Nuevo movimiento</a>
+  <div class="app-page-header mb-3 d-flex flex-wrap align-items-center gap-2">
+    <h1 class="app-page-title mb-0">Caja (Libro diario)</h1>
+    <a class="btn btn-primary rounded-pill" href="{% url 'caja_create' %}">Nuevo movimiento</a>
   </div>
 
   <div class="row g-3 mb-3">
@@ -59,7 +59,7 @@
   {% endif %}
 
   <div class="collapse {% if filtros_activos %}show{% endif %}" id="cajaFiltros">
-    <div class="card shadow-sm mb-3">
+    <div class="card app-card border-0 shadow-sm app-list-filters mb-3">
       <div class="card-body">
         <form class="row g-2 align-items-end" method="get">
           <div class="col-12 col-md-4">
@@ -104,8 +104,8 @@
             <input type="date" class="form-control" name="hasta" value="{{ f.hasta }}" />
           </div>
           <div class="col-12 col-md-2 d-flex gap-2">
-            <button class="btn btn-outline-dark w-100" type="submit">Buscar</button>
-            <a class="btn btn-outline-secondary w-100" href="{% url 'caja_list' %}">Limpiar</a>
+            <button class="btn btn-sm btn-outline-dark rounded-pill flex-grow-1" type="submit">Buscar</button>
+            <a class="btn btn-sm btn-outline-secondary rounded-pill flex-grow-1" href="{% url 'caja_list' %}">Limpiar</a>
           </div>
         </form>
         <div class="text-muted small mt-2 mb-0">

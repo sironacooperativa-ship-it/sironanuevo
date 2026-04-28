@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Vendedores{% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-    <h1 class="h3 mb-0">Vendedores</h1>
-    <a class="btn btn-primary btn-sm" href="{% url 'vendedor_create' %}">Nuevo</a>
+  <div class="app-page-header mb-3 d-flex flex-wrap align-items-center gap-2">
+    <h1 class="app-page-title mb-0">Vendedores</h1>
+    <a class="btn btn-primary btn-sm rounded-pill" href="{% url 'vendedor_create' %}">Nuevo</a>
   </div>
 
   <div class="table-card presu-lista-modern personas-lista-modern mb-3">

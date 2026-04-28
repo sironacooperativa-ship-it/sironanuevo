@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Administrador{% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+  <div class="app-page-header mb-3 d-flex flex-wrap align-items-center gap-2">
     <div>
-      <h1 class="h3 mb-0">Administrador</h1>
+      <h1 class="app-page-title mb-0">Administrador</h1>
       <div class="text-muted small">Usuarios</div>
     </div>
-    <a class="btn btn-primary btn-sm" href="{% url 'admin_usuario_create' %}">Nuevo usuario</a>
-    <a class="btn btn-outline-primary btn-sm" href="{% url 'admin_actividad_list' %}">Historial de actividad</a>
+    <a class="btn btn-primary btn-sm rounded-pill" href="{% url 'admin_usuario_create' %}">Nuevo usuario</a>
+    <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'admin_actividad_list' %}">Historial de actividad</a>
     {% if recibe_notas_admin %}
       <a class="btn btn-outline-primary btn-sm" href="{% url 'admin_notas_list' %}">
         Notas
@@ -18,7 +18,7 @@
     {% endif %}
   </div>
 
-  <div class="card shadow-sm mb-3">
+  <div class="card app-card border-0 shadow-sm app-list-filters mb-3">
     <div class="card-body">
       <form method="get" class="row g-2 align-items-end">
         <div class="col-12 col-md-6">
@@ -26,8 +26,8 @@
           <input type="text" name="q" class="form-control form-control-sm" placeholder="usuario o email" value="{{ q }}" />
         </div>
         <div class="col-12 col-md-6 d-flex gap-2">
-          <button class="btn btn-sm btn-primary" type="submit">Buscar</button>
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'admin_usuarios_list' %}">Limpiar</a>
+          <button class="btn btn-sm btn-outline-dark rounded-pill" type="submit">Buscar</button>
+          <a class="btn btn-sm btn-outline-secondary rounded-pill" href="{% url 'admin_usuarios_list' %}">Limpiar</a>
         </div>
       </form>
     </div>
