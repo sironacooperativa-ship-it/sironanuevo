@@ -1351,156 +1351,127 @@ h2.h6 {
   height: 1.125rem;
 }
 
-/* Columna acciones: espacio e icon buttons SaaS */
+/* Columna acciones — productos: icon buttons (pisa .table-actions button global) */
 .table-card--productos .table-actions-cell {
-  width: 220px;
-  min-width: 220px;
-  max-width: 240px;
+  width: 230px;
+  min-width: 230px;
+  max-width: 260px;
 }
 
-.table-card--productos .table-actions,
-.table-card--productos .productos-table-actions-row {
-  display: inline-flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
+.table-card--productos .table-actions {
+  display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+  flex-wrap: nowrap;
 }
 
-.table-card--productos .table-action-btn,
-.table-card--productos .table-actions button,
-.table-card--productos .table-actions a,
-.table-card--productos a.table-action-btn--link {
-  width: 32px;
-  min-width: 32px;
-  height: 32px;
+.table-card--productos .table-actions .producto-accion-form,
+.table-card--productos .table-actions form {
+  display: inline-flex;
+  margin: 0;
   padding: 0;
+  border: 0;
+  background: none;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.table-card--productos .table-actions button {
+  font-family: inherit;
+}
+
+.table-card--productos .table-actions .btn-icon,
+.table-card--productos .table-actions a.btn-icon {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0;
+  line-height: 0;
   border-radius: 10px;
-  border: 1px solid transparent;
-  box-shadow: none;
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
-}
-
-.table-card--productos .table-action-btn:hover,
-.table-card--productos a.table-action-btn--link:hover,
-.table-card--productos .table-actions button:hover,
-.table-card--productos .table-actions a:hover {
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
   text-decoration: none;
-  box-shadow: none;
-  transform: translateY(-0.5px);
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
-.table-card--productos .table-action-btn--primary,
-.table-card--productos .table-action-btn.productos-ico-btn--edit,
-.table-card--productos a.table-action-btn--link,
-.table-card--productos a.productos-ico-btn--link {
-  background: #f1f5f9;
-  border-color: rgba(148, 163, 184, 0.4);
-  color: #64748b;
-}
-.table-card--productos a.table-action-btn--link,
-.table-card--productos a.productos-ico-btn--link {
-  min-width: 1.5rem;
-  width: auto;
-  padding: 0 0.2rem;
-}
-.table-card--productos .table-action-btn--primary:hover,
-.table-card--productos a.table-action-btn--link:hover,
-.table-card--productos a.productos-ico-btn--link:hover,
-.table-card--productos
-  button.table-action-btn--primary:hover,
-.table-card--productos
-  a.table-action-btn--primary:hover {
-  background: #e2e8f0;
-  border-color: rgba(100, 116, 139, 0.4);
-  color: #0f172a;
-}
-
-.table-card--productos .table-action-btn--muted,
-.table-card--productos .table-action-btn.productos-ico-btn--toggle,
-.table-card--productos a.table-action-btn--muted {
-  background: #f8fafc;
-  border-color: rgba(203, 213, 225, 0.85);
-  color: #94a3b8;
-}
-.table-card--productos .table-action-btn--muted:hover,
-.table-card--productos
-  a.table-action-btn--muted:hover,
-.table-card--productos
-  button.table-action-btn--muted:hover,
-.table-card--productos
-  a.table-action-btn--muted:hover {
-  background: #f1f5f9;
-  color: #64748b;
-  border-color: rgba(148, 163, 184, 0.5);
-}
-.table-card--productos .productos-ico-ban {
-  color: #94a3b8;
-}
-
-.table-card--productos .productos-ico-habilitar {
-  color: #0f766e;
-  opacity: 0.9;
-}
-.table-card--productos .table-action-btn--danger,
-.table-card--productos .table-action-btn.productos-ico-btn--trash,
-.table-card--productos
-  a.table-action-btn--danger,
-.table-card--productos
-  button.table-action-btn--danger {
-  background: #fff5f5;
-  border-color: rgba(244, 63, 94, 0.28);
-  color: #be123c;
-}
-.table-card--productos
-  a.table-action-btn--danger:hover,
-.table-card--productos
-  button.table-action-btn--danger:hover,
-.table-card--productos
-  a.table-action-btn--danger:hover {
-  background: #ffe4e6;
-  border-color: rgba(244, 63, 94, 0.45);
-  color: #9f1239;
-}
-
-.table-card--productos .table-action-btn--danger svg {
-  color: inherit;
-  stroke: currentColor;
-}
-
-.table-card--productos .table-action-btn--success,
-.table-card--productos .table-action-btn.productos-ico-btn--save,
-.table-card--productos
-  a.table-action-btn--success,
-.table-card--productos
-  button.table-action-btn--success {
-  background: #f0fdf4;
-  border-color: rgba(22, 163, 74, 0.28);
-  color: #15803d;
-}
-.table-card--productos
-  a.table-action-btn--success:hover,
-.table-card--productos
-  button.table-action-btn--success:hover,
-.table-card--productos
-  a.table-action-btn--success:hover {
-  background: #dcfce7;
-  color: #14532d;
-}
-
-.table-card--productos .table-action-btn.productos-ico-btn--cancel:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-}
-
-.table-card--productos .table-action-btn svg,
-.table-card--productos .table-actions svg,
-.table-card--productos a.table-action-btn--link svg {
+.table-card--productos .table-actions .btn-icon svg,
+.table-card--productos .table-actions a.btn-icon svg {
   width: 16px;
   height: 16px;
   stroke-width: 2;
-  opacity: 0.9;
+}
+
+.table-card--productos .table-actions .btn-icon:hover,
+.table-card--productos .table-actions a.btn-icon:hover {
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+/* Base hover (anula reglas globales de .table-actions button:hover) */
+.table-card--productos .table-actions .btn-icon:hover,
+.table-card--productos .table-actions a.btn-icon:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+}
+
+.table-card--productos .table-actions .btn-edit,
+.table-card--productos .table-actions a.btn-edit {
+  color: #2563eb;
+}
+
+.table-card--productos .table-actions .btn-edit:hover,
+.table-card--productos .table-actions a.btn-edit:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+}
+
+.table-card--productos .table-actions .btn-disable {
+  color: #64748b;
+}
+
+.table-card--productos .table-actions .btn-disable:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+}
+
+.table-card--productos .table-actions .btn-delete {
+  color: #ef4444;
+}
+
+.table-card--productos .table-actions .btn-delete:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+}
+
+/* Edición en fila: confirmar (check) y guardar en verde suave */
+.table-card--productos .table-actions .btn-save {
+  color: #15803d;
+}
+
+.table-card--productos .table-actions .btn-save:hover {
+  background: #f0fdf4;
+  border-color: #a7f3d0;
+  color: #14532d;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
 }
 
 .table-card--productos .productos-saas-card-footer {
