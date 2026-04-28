@@ -125,6 +125,44 @@ nav.navbar.sirona-topbar.bg-white {
   box-shadow: none !important;
 }
 
+.sirona-topbar {
+  min-height: 64px;
+}
+
+.sirona-topbar.is-scrolled {
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06) !important;
+}
+
+.sirona-topbar-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 1.2fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.9rem;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+
+.sirona-topbar-left,
+.sirona-topbar-center,
+.sirona-topbar-right {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.sirona-topbar-left {
+  justify-content: flex-start;
+  gap: 0.5rem;
+}
+
+.sirona-topbar-center {
+  justify-content: center;
+}
+
+.sirona-topbar-right {
+  justify-content: flex-end;
+}
+
 .sirona-topbar .navbar-brand {
   padding: 0;
   max-width: min(100%, 26rem);
@@ -183,6 +221,177 @@ nav.navbar.sirona-topbar.bg-white {
   max-height: 28px;
 }
 
+/* Búsqueda (premium, limpia) */
+.sirona-topbar-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: min(680px, 100%);
+  max-width: 100%;
+  height: 42px;
+  padding: 0 0.7rem 0 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  background: rgba(248, 250, 252, 0.8);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition:
+    background var(--app-transition),
+    border-color var(--app-transition),
+    box-shadow var(--app-transition);
+}
+
+.sirona-topbar-search:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.sirona-topbar-search:focus-within {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(0, 122, 255, 0.35);
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12), 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.sirona-search-ico,
+.sirona-topbar-search i[data-lucide] {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: rgba(60, 60, 67, 0.62);
+}
+
+.sirona-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--cg-text);
+}
+
+.sirona-search-input::placeholder {
+  color: rgba(60, 60, 67, 0.6);
+  font-weight: 500;
+}
+
+.sirona-kbd {
+  flex: 0 0 auto;
+  height: 24px;
+  padding: 0 0.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  background: rgba(255, 255, 255, 0.8);
+  color: rgba(60, 60, 67, 0.62);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Acciones derecha */
+.sirona-topbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.15rem;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+/* Perfil (avatar + nombre + rol) */
+.sirona-profile-dropdown .dropdown-menu {
+  border-radius: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.sirona-profile-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.65);
+  padding: 0.28rem 0.55rem;
+  color: var(--cg-text);
+  transition:
+    background var(--app-transition),
+    border-color var(--app-transition),
+    box-shadow var(--app-transition),
+    transform var(--app-transition);
+}
+
+.sirona-profile-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(15, 23, 42, 0.14);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  transform: translateY(-1px);
+}
+
+.sirona-profile-btn:focus-visible {
+  outline: 2px solid var(--cg-accent);
+  outline-offset: 2px;
+}
+
+/* Anular caret default muy grande sin romper .dropdown-toggle */
+.sirona-profile-btn.dropdown-toggle::after {
+  margin-left: 0.1rem;
+  opacity: 0.65;
+}
+
+.sirona-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  background: linear-gradient(180deg, rgba(0, 122, 255, 0.14) 0%, rgba(0, 122, 255, 0.09) 100%);
+  border: 1px solid rgba(0, 122, 255, 0.18);
+  color: rgba(0, 122, 255, 0.95);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-size: 0.82rem;
+  flex: 0 0 auto;
+}
+
+.sirona-avatar-initial {
+  line-height: 1;
+}
+
+.sirona-profile-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.05;
+  min-width: 0;
+  max-width: 12.5rem;
+}
+
+.sirona-profile-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: -0.015em;
+  color: var(--cg-text);
+  max-width: 100%;
+}
+
+.sirona-profile-role {
+  font-weight: 600;
+  font-size: 0.72rem;
+  color: rgba(60, 60, 67, 0.62);
+  max-width: 100%;
+}
+
 /* Botón icono (menú / cerrar lateral) */
 .app-icon-btn {
   color: var(--cg-text);
@@ -197,6 +406,19 @@ nav.navbar.sirona-topbar.bg-white {
 .app-icon-btn:hover {
   background: var(--cg-hover);
   color: var(--cg-text);
+}
+
+.sirona-topbar-actions .app-icon-btn {
+  border-radius: 999px;
+  padding: 0.38rem 0.52rem;
+}
+
+.sirona-topbar-actions .app-icon-btn:hover {
+  background: rgba(60, 60, 67, 0.08);
+}
+
+.sirona-topbar-actions .app-icon-btn:active {
+  transform: translateY(0);
 }
 
 .app-icon-btn:focus-visible {
@@ -243,6 +465,47 @@ nav.navbar.sirona-topbar.bg-white {
 .app-btn-ghost:hover {
   background: var(--cg-hover);
   color: var(--cg-text);
+}
+
+/* Responsive: compactar topbar sin perder acceso */
+@media (max-width: 991.98px) {
+  .sirona-topbar-inner {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: "left right" "center center";
+    row-gap: 0.55rem;
+  }
+  .sirona-topbar-left {
+    grid-area: left;
+  }
+  .sirona-topbar-right {
+    grid-area: right;
+  }
+  .sirona-topbar-center {
+    grid-area: center;
+    justify-content: stretch;
+  }
+  .sirona-topbar-search {
+    width: 100%;
+    height: 40px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .sirona-topbar {
+    min-height: 60px;
+  }
+  .sirona-topbar-search {
+    height: 38px;
+    border-radius: 14px;
+    padding: 0 0.6rem;
+  }
+  .sirona-topbar-actions {
+    padding: 0.1rem;
+  }
+  .sirona-avatar {
+    width: 32px;
+    height: 32px;
+  }
 }
 
 /* Fondo al tocar fuera del menú (solo móvil / tablet) */

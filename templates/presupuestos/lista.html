@@ -195,12 +195,16 @@
               <td class="text-end col-money col-presu-neto">{{ p.neto|ars }}</td>
               <td class="col-center col-presu-estado">
                 {% if p.estado == "ACT" %}
-                  <span class="status-pill status-pending" title="Pendiente" role="img" aria-label="Pendiente">
-                    <i data-lucide="clock" class="status-pill-ico" aria-hidden="true"></i> Pendiente
+                  <span class="estado-ico estado-ico--pending" title="Pendiente" aria-label="Pendiente">
+                    <i data-lucide="clock" aria-hidden="true"></i>
+                  </span>
+                {% elif p.estado == "APR" %}
+                  <span class="estado-ico estado-ico--approved" title="Aprobado" aria-label="Aprobado">
+                    <i data-lucide="clock" aria-hidden="true"></i>
                   </span>
                 {% else %}
-                  <span class="status-pill status-approved" title="Aprobado" role="img" aria-label="Aprobado">
-                    <i data-lucide="circle-check" class="status-pill-ico" aria-hidden="true"></i> Aprobado
+                  <span class="estado-ico estado-ico--cancel" title="Cancelado" aria-label="Cancelado">
+                    <i data-lucide="clock" aria-hidden="true"></i>
                   </span>
                 {% endif %}
               </td>

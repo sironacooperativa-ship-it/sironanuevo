@@ -1,0 +1,100 @@
+{% extends "demo/base_demo.html" %}
+{% block title %}Historial de pedidos · Demo{% endblock %}
+{% block content %}
+  <div class="page-header">
+    <div class="min-w-0">
+      <h1 class="page-title d-flex align-items-center gap-2">
+        <span class="stat-ico" aria-hidden="true" style="width: 34px; height: 34px;"><i data-lucide="clipboard-list"></i></span>
+        Historial de pedidos
+      </h1>
+      <p class="page-subtitle">Demo: vista de pedidos con filtros, KPIs y tabla moderna (sin datos reales).</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+      <a class="action-button primary btn btn-primary" href="#" onclick="return false;">
+        <i data-lucide="plus" aria-hidden="true"></i>
+        Nuevo pedido
+      </a>
+      <a class="action-button btn btn-outline-secondary" href="#" onclick="return false;">
+        <i data-lucide="download" aria-hidden="true"></i>
+        Exportar
+      </a>
+    </div>
+  </div>
+
+  <section class="stats-grid mb-3">
+    <article class="metric-card"><div class="metric-top"><div class="metric-title">Pedidos</div><span class="metric-icon"><i data-lucide="clipboard-list"></i></span></div><div class="metric-value">{{ kpi.pedidos }}</div><div class="metric-sub">Total</div></article>
+    <article class="metric-card"><div class="metric-top"><div class="metric-title">Pendientes</div><span class="metric-icon" style="background: rgba(249,115,22,0.12); border-color: rgba(249,115,22,0.22); color:#f97316;"><i data-lucide="clock"></i></span></div><div class="metric-value">{{ kpi.pendientes }}</div><div class="metric-sub">Pago</div></article>
+    <article class="metric-card"><div class="metric-top"><div class="metric-title">Pagadas</div><span class="metric-icon" style="background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); color:#22c55e;"><i data-lucide="check-circle"></i></span></div><div class="metric-value">{{ kpi.pagadas }}</div><div class="metric-sub">Pago</div></article>
+    <article class="metric-card"><div class="metric-top"><div class="metric-title">Canceladas</div><span class="metric-icon" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color:#ef4444;"><i data-lucide="x-circle"></i></span></div><div class="metric-value">{{ kpi.canceladas }}</div><div class="metric-sub">Estado</div></article>
+  </section>
+
+  <section class="modern-filter-card mb-3">
+    <form class="row g-2 align-items-end" onsubmit="return false;">
+      <div class="col-12 col-md-4">
+        <label class="form-label small text-muted mb-1">Buscar</label>
+        <input class="form-control input-modern" value="Cliente Demo" />
+      </div>
+      <div class="col-12 col-md-3">
+        <label class="form-label small text-muted mb-1">Vendedor</label>
+        <select class="form-select input-modern"><option>Todos</option><option>Vendedor Demo</option></select>
+      </div>
+      <div class="col-12 col-md-3">
+        <label class="form-label small text-muted mb-1">Estado</label>
+        <select class="form-select input-modern"><option>Todos</option><option>Pendiente</option><option>Pagada</option><option>Cancelada</option></select>
+      </div>
+      <div class="col-12 col-md-2 d-flex gap-2">
+        <button class="action-button primary btn btn-primary flex-grow-1" type="button"><i data-lucide="filter"></i> Filtrar</button>
+        <button class="action-button btn btn-outline-secondary flex-grow-1" type="button">Limpiar</button>
+      </div>
+    </form>
+  </section>
+
+  <div class="dashboard-card">
+    <div class="card-head">
+      <h2 class="card-title"><i data-lucide="table"></i> Pedidos</h2>
+      <div class="card-subtle">Demo</div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Fecha</th>
+              <th>Cliente</th>
+              <th>Vendedor</th>
+              <th class="text-end">Total</th>
+              <th>Estado</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows %}
+              <tr>
+                <td><span class="prod-code">{{ r.id }}</span></td>
+                <td class="muted">{{ r.fecha }}</td>
+                <td>{{ r.cliente }}</td>
+                <td class="muted">{{ r.vendedor }}</td>
+                <td class="num">{{ r.total }}</td>
+                <td>
+                  {% if r.estado == "Pagada" %}
+                    <span class="status-badge status-badge--success">Pagada</span>
+                  {% elif r.estado == "Cancelada" %}
+                    <span class="status-badge status-badge--danger">Cancelada</span>
+                  {% else %}
+                    <span class="status-badge status-badge--warning">Pendiente</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <button class="icon-button" type="button" onclick="return false;"><i data-lucide="eye"></i></button>
+                  <button class="icon-button" type="button" onclick="return false;"><i data-lucide="pencil"></i></button>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

@@ -43,7 +43,7 @@ def lista_precios_pdf_file_response(*, lista: ListaPrecios) -> FileResponse:
         pagesize=A4,
         rightMargin=14 * mm,
         leftMargin=14 * mm,
-        topMargin=12 * mm,
+        topMargin=18 * mm,
         bottomMargin=12 * mm,
     )
     styles = getSampleStyleSheet()
@@ -63,16 +63,22 @@ def lista_precios_pdf_file_response(*, lista: ListaPrecios) -> FileResponse:
     tw = doc.width
     col_w = [tw * 0.15, tw * 0.18, tw * 0.45, tw * 0.22]
     t = Table(data, colWidths=col_w, repeatRows=1)
+    # Minimalista (sin "dashboard"): solo tabla limpia con encabezado sutil.
     t.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0097B2")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F1F5F9")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#0F172A")),
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
                 ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cccccc")),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f0f9fb")]),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LINEBELOW", (0, 0), (-1, 0), 0.75, colors.HexColor("#CBD5E1")),
+                ("LINEABOVE", (0, 0), (-1, 0), 0.75, colors.HexColor("#CBD5E1")),
+                ("LINEBELOW", (0, 1), (-1, -1), 0.25, colors.HexColor("#E2E8F0")),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
                 ("ALIGN", (0, 1), (0, -1), "LEFT"),
                 ("ALIGN", (-1, 1), (-1, -1), "RIGHT"),
             ]

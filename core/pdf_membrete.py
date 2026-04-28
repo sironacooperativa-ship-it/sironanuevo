@@ -31,18 +31,19 @@ def platypus_membrete(doc_title: str, page_width: float, styles: Any) -> list[An
     text_w = max(page_width - logo_w - gap, 80)
 
     if logo_path:
-        logo = RLImage(logo_path, width=logo_w - 2 * mm, height=12 * mm)
+        # Un poco más alto para que el logo respire (sin ocupar de más).
+        logo = RLImage(logo_path, width=logo_w - 2 * mm, height=14 * mm)
     else:
         from reportlab.platypus import Spacer as RLSpacer
 
-        logo = RLSpacer(logo_w, 12 * mm)
+        logo = RLSpacer(logo_w, 14 * mm)
 
     p_title = Paragraph(
-        f'<para><font size="14"><b>{escape(doc_title)}</b></font></para>',
+        f'<para leading="16"><font size="14"><b>{escape(doc_title)}</b></font></para>',
         styles["Normal"],
     )
     p_stamp = Paragraph(
-        f'<font size="9" color="#555555">Emitido: {escape(stamp)}</font>',
+        f'<para leading="12"><font size="9" color="#555555">Emitido: {escape(stamp)}</font></para>',
         styles["Normal"],
     )
     text_stack = Table([[p_title], [p_stamp]], colWidths=[text_w])
@@ -50,10 +51,11 @@ def platypus_membrete(doc_title: str, page_width: float, styles: Any) -> list[An
         TableStyle(
             [
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, 0), 2),
+                ("TOPPADDING", (0, 0), (-1, -1), 1),
+                ("BOTTOMPADDING", (0, 0), (-1, 0), 4),
                 ("BOTTOMPADDING", (0, 1), (-1, 1), 0),
                 ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
             ]
         )
     )
@@ -65,9 +67,11 @@ def platypus_membrete(doc_title: str, page_width: float, styles: Any) -> list[An
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                 ("LEFTPADDING", (0, 0), (-1, -1), 0),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ("TOPPADDING", (0, 0), (-1, -1), 2),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
                 ("LINEBELOW", (0, 0), (-1, -1), 0.75, colors.HexColor("#cccccc")),
             ]
         )
     )
-    return [row, Spacer(1, 7 * mm)]
+    # Separación extra para que la tabla no quede pegada al membrete.
+    return [row, Spacer(1, 10 * mm)]

@@ -1,0 +1,562 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}SIRONA · Demo{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="{% static 'css/theme.css' %}?v=ios-2026r29" rel="stylesheet" />
+    <link href="{% static 'css/styles.css' %}?v=saas-2026r1" rel="stylesheet" />
+    <style>
+      /* Demo banner */
+      .demo-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 28px;
+        padding: 0 10px;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 850;
+        background: rgba(249, 115, 22, 0.12);
+        color: #9a3412;
+        border: 1px solid rgba(249, 115, 22, 0.22);
+      }
+    </style>
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body class="app-body app-authenticated{% if vendor_mode %} demo-vendor-mode{% endif %}">
+    <nav class="navbar border-bottom bg-white sticky-top sirona-topbar topbar">
+      <div class="container-fluid px-3 px-xl-4 d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-3 min-w-0">
+          <button
+            class="btn app-icon-btn"
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#sironaMenuDemo"
+            aria-controls="sironaMenuDemo"
+            aria-label="Abrir menú"
+            title="Menú"
+          >
+            <i data-lucide="menu" class="app-lucide-toolbar"></i>
+          </button>
+          <a class="navbar-brand d-flex align-items-center py-1 m-0" href="{% if vendor_mode %}{% url 'demo_vendedor_home' %}{% else %}{% url 'demo_home' %}{% endif %}">
+            <img class="brand-logo brand-logo-sm" src="{% static 'img/sirona-logo.png' %}" alt="Cooperativa Sirona" />
+            <span class="ms-2 sirona-app-title d-flex flex-column text-start lh-sm">
+              <span class="text-body">SIRONA Cooperativa - Sistema de Gestión</span>
+              <span class="small text-muted sirona-app-title-sub">{% if vendor_mode %}Portal vendedor (demo){% else %}Demo UI{% endif %}</span>
+            </span>
+          </a>
+          <span class="demo-badge d-none d-md-inline">
+            <i data-lucide="sparkles" aria-hidden="true"></i>
+            Modo demo (sin datos reales)
+          </span>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+          <span class="small text-muted d-none d-md-inline">{{ demo_user.username }}</span>
+          {% if vendor_mode %}
+            <a class="btn btn-sm btn-outline-secondary" href="{% url 'demo_home' %}" title="Volver al modo completo">
+              Volver al modo completo
+            </a>
+          {% else %}
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'demo_vendedor_home' %}" title="Cambiar a modo vendedor">
+              Cambiar a modo vendedor
+            </a>
+          {% endif %}
+          <button class="btn app-icon-btn" type="button" aria-label="Notificaciones" title="Notificaciones">
+            <i data-lucide="bell" class="app-lucide-toolbar"></i>
+          </button>
+          <a class="btn app-icon-btn" href="#" onclick="return false;" title="Salir" aria-label="Salir">
+            <i data-lucide="log-out" class="app-lucide-toolbar"></i>
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    {% if not vendor_mode %}
+    <aside class="sidebar" aria-label="Sidebar">
+      <div class="d-flex align-items-center justify-content-between gap-2 px-1">
+        <a class="sidebar-brand" href="{% url 'demo_home' %}">
+          <img class="sidebar-logo" src="{% static 'img/sirona-logo.png' %}" alt="Sirona" />
+          <span class="sidebar-brand-text">
+            <span class="sidebar-brand-title">Sirona</span>
+            <span class="sidebar-brand-subtitle">Demo UI</span>
+          </span>
+        </a>
+        <button
+          type="button"
+          class="btn app-icon-btn sidebar-collapse-btn d-none d-lg-inline-flex"
+          id="btnSidebarCollapse"
+          aria-label="Colapsar sidebar"
+          title="Colapsar sidebar"
+        >
+          <i data-lucide="panel-left-close" class="app-lucide-toolbar"></i>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Navegación principal">
+        <a class="sidebar-link app-sidebar-link {% if demo_active == 'inicio' %}is-active{% endif %}" href="{% url 'demo_home' %}">
+          <span class="app-sidebar-icon-wrap"><i data-lucide="home"></i></span>
+          <span class="app-sidebar-label sidebar-label">Inicio</span>
+        </a>
+
+        <div class="sidebar-section-title">Productos</div>
+        <div class="sidebar-group is-open" data-group="productos">
+          <div class="sidebar-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="true">
+            <span class="app-sidebar-icon-wrap"><i data-lucide="package"></i></span>
+            <span class="app-sidebar-label sidebar-label">Productos</span>
+            <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+              <i data-lucide="chevron-down"></i>
+            </span>
+          </div>
+          <div class="sidebar-subnav" aria-label="Submenú Productos">
+            <a class="sidebar-link app-sidebar-link {% if demo_active == 'productos' %}is-active{% endif %}" href="{% url 'demo_productos' %}">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="list"></i></span>
+              <span class="app-sidebar-label sidebar-label">Lista de productos</span>
+            </a>
+            <a class="sidebar-link app-sidebar-link {% if demo_active == 'listas' %}is-active{% endif %}" href="{% url 'demo_listas_precios' %}">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="tags"></i></span>
+              <span class="app-sidebar-label sidebar-label">Listas de precios</span>
+            </a>
+            <a class="sidebar-link app-sidebar-link {% if demo_active == 'stock' %}is-active{% endif %}" href="{% url 'demo_stock' %}">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="boxes"></i></span>
+              <span class="app-sidebar-label sidebar-label">Stock</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="sidebar-section-title">Ventas</div>
+        <div class="sidebar-group" data-group="ventas">
+          <div class="sidebar-link sidebar-group-trigger {% if demo_active == 'ventas' %}is-active{% endif %}" role="button" tabindex="0" aria-expanded="{% if demo_active == 'ventas' %}true{% else %}false{% endif %}">
+            <span class="app-sidebar-icon-wrap"><i data-lucide="shopping-bag"></i></span>
+            <span class="app-sidebar-label sidebar-label">Ventas</span>
+            <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+              <i data-lucide="chevron-down"></i>
+            </span>
+          </div>
+          <div class="sidebar-subnav" aria-label="Submenú Ventas">
+            <a class="sidebar-link app-sidebar-link {% if demo_active == 'presupuestos' %}is-active{% endif %}" href="{% url 'demo_presupuestos' %}">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="file-text"></i></span>
+              <span class="app-sidebar-label sidebar-label">Presupuestos</span>
+            </a>
+            <a class="sidebar-link app-sidebar-link {% if demo_active == 'ventas' %}is-active{% endif %}" href="{% url 'demo_ventas' %}">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="receipt"></i></span>
+              <span class="app-sidebar-label sidebar-label">Ventas</span>
+            </a>
+            <a class="sidebar-link app-sidebar-link {% if demo_active == 'pedidos' %}is-active{% endif %}" href="{% url 'demo_pedidos' %}">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="clipboard-list"></i></span>
+              <span class="app-sidebar-label sidebar-label">Historial de pedidos</span>
+            </a>
+            <a class="sidebar-link app-sidebar-link" href="#" onclick="return false;">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="users"></i></span>
+              <span class="app-sidebar-label sidebar-label">Clientes</span>
+            </a>
+            <a class="sidebar-link app-sidebar-link" href="#" onclick="return false;">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="user-check"></i></span>
+              <span class="app-sidebar-label sidebar-label">Vendedores</span>
+            </a>
+            <a class="sidebar-link app-sidebar-link" href="#" onclick="return false;">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="badge-percent"></i></span>
+              <span class="app-sidebar-label sidebar-label">Comisiones</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="sidebar-section-title">Caja</div>
+        <div class="sidebar-group" data-group="caja">
+          <div class="sidebar-link sidebar-group-trigger {% if demo_active == 'caja' %}is-active{% endif %}" role="button" tabindex="0" aria-expanded="{% if demo_active == 'caja' %}true{% else %}false{% endif %}">
+            <span class="app-sidebar-icon-wrap"><i data-lucide="wallet"></i></span>
+            <span class="app-sidebar-label sidebar-label">Caja</span>
+            <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+              <i data-lucide="chevron-down"></i>
+            </span>
+          </div>
+          <div class="sidebar-subnav" aria-label="Submenú Caja">
+            <a class="sidebar-link app-sidebar-link {% if demo_active == 'caja' %}is-active{% endif %}" href="{% url 'demo_caja' %}">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="wallet"></i></span>
+              <span class="app-sidebar-label sidebar-label">Caja</span>
+            </a>
+            <a class="sidebar-link app-sidebar-link" href="#" onclick="return false;">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="landmark"></i></span>
+              <span class="app-sidebar-label sidebar-label">Banco</span>
+            </a>
+            <a class="sidebar-link app-sidebar-link" href="#" onclick="return false;">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="arrow-left-right"></i></span>
+              <span class="app-sidebar-label sidebar-label">Movimientos</span>
+            </a>
+            <a class="sidebar-link app-sidebar-link" href="#" onclick="return false;">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="clock"></i></span>
+              <span class="app-sidebar-label sidebar-label">Deudas</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="sidebar-section-title">Compras</div>
+        <div class="sidebar-group" data-group="compras">
+          <div class="sidebar-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+            <span class="app-sidebar-icon-wrap"><i data-lucide="shopping-cart"></i></span>
+            <span class="app-sidebar-label sidebar-label">Compras</span>
+            <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+              <i data-lucide="chevron-down"></i>
+            </span>
+          </div>
+          <div class="sidebar-subnav" aria-label="Submenú Compras">
+            <a class="sidebar-link app-sidebar-link" href="#" onclick="return false;">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="shopping-cart"></i></span>
+              <span class="app-sidebar-label sidebar-label">Compras</span>
+            </a>
+            <a class="sidebar-link app-sidebar-link" href="#" onclick="return false;">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="truck"></i></span>
+              <span class="app-sidebar-label sidebar-label">Proveedores</span>
+            </a>
+            <a class="sidebar-link app-sidebar-link" href="#" onclick="return false;">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="credit-card"></i></span>
+              <span class="app-sidebar-label sidebar-label">Pagos</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="sidebar-section-title">Gestión</div>
+        <div class="sidebar-group" data-group="gestion">
+          <div class="sidebar-link sidebar-group-trigger {% if demo_active == 'reportes' %}is-active{% endif %}" role="button" tabindex="0" aria-expanded="{% if demo_active == 'reportes' %}true{% else %}false{% endif %}">
+            <span class="app-sidebar-icon-wrap"><i data-lucide="sparkles"></i></span>
+            <span class="app-sidebar-label sidebar-label">Gestión</span>
+            <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+              <i data-lucide="chevron-down"></i>
+            </span>
+          </div>
+          <div class="sidebar-subnav" aria-label="Submenú Gestión">
+            <a class="sidebar-link app-sidebar-link {% if demo_active == 'reportes' %}is-active{% endif %}" href="{% url 'demo_reportes' %}">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="chart-column"></i></span>
+              <span class="app-sidebar-label sidebar-label">Reportes</span>
+            </a>
+            <a class="sidebar-link app-sidebar-link {% if demo_active == 'calendario' %}is-active{% endif %}" href="{% url 'demo_calendario' %}">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="calendar"></i></span>
+              <span class="app-sidebar-label sidebar-label">Calendario</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="sidebar-section-title">Administración</div>
+        <div class="sidebar-group" data-group="admin">
+          <div class="sidebar-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+            <span class="app-sidebar-icon-wrap"><i data-lucide="settings"></i></span>
+            <span class="app-sidebar-label sidebar-label">Administración</span>
+            <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+              <i data-lucide="chevron-down"></i>
+            </span>
+          </div>
+          <div class="sidebar-subnav" aria-label="Submenú Administración">
+            <a class="sidebar-link app-sidebar-link" href="#" onclick="return false;">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="shield"></i></span>
+              <span class="app-sidebar-label sidebar-label">Administración</span>
+            </a>
+            <a class="sidebar-link app-sidebar-link" href="#" onclick="return false;">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="activity"></i></span>
+              <span class="app-sidebar-label sidebar-label">Historial</span>
+            </a>
+            <a class="sidebar-link app-sidebar-link" href="#" onclick="return false;">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="key"></i></span>
+              <span class="app-sidebar-label sidebar-label">Cambio de contraseña</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="sidebar-divider my-2"></div>
+        <a class="sidebar-link app-sidebar-link" href="#" onclick="return false;">
+          <span class="app-sidebar-icon-wrap"><i data-lucide="log-out"></i></span>
+          <span class="app-sidebar-label sidebar-label">Salir</span>
+        </a>
+      </nav>
+    </aside>
+    {% endif %}
+
+    <div class="app-content-area">
+      <main class="app-main">
+        <div class="page-shell">
+          {% block content %}{% endblock %}
+        </div>
+      </main>
+    </div>
+
+    <!-- Offcanvas menu for small screens -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="sironaMenuDemo" aria-label="Menú demo">
+      <div class="offcanvas-header border-bottom">
+        <div class="d-flex align-items-center gap-2">
+          <img class="brand-logo brand-logo-sm" src="{% static 'img/sirona-logo.png' %}" alt="Sirona" />
+          <strong>Sirona · Demo</strong>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+      </div>
+      <div class="offcanvas-body">
+        <nav class="sirona-offcanvas-nav" aria-label="Navegación demo">
+          <a class="app-sidebar-link sirona-offcanvas-nav-link {% if demo_active == 'inicio' %}is-active{% endif %}" href="{% url 'demo_home' %}">
+            <span class="app-sidebar-icon-wrap"><i data-lucide="home"></i></span>
+            <span class="app-sidebar-label">Inicio</span>
+          </a>
+
+          <div class="sidebar-section-title">Productos</div>
+          <div class="sidebar-group offcanvas-group is-open" data-group="productos">
+            <div class="app-sidebar-link sirona-offcanvas-nav-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="true">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="package"></i></span>
+              <span class="app-sidebar-label">Productos</span>
+              <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                <i data-lucide="chevron-down"></i>
+              </span>
+            </div>
+            <div class="sidebar-subnav offcanvas-subnav" aria-label="Submenú Productos">
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link {% if demo_active == 'productos' %}is-active{% endif %}" href="{% url 'demo_productos' %}">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="list"></i></span>
+                <span class="app-sidebar-label">Lista de productos</span>
+              </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link {% if demo_active == 'listas' %}is-active{% endif %}" href="{% url 'demo_listas_precios' %}">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="tags"></i></span>
+                <span class="app-sidebar-label">Listas de precios</span>
+              </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link {% if demo_active == 'stock' %}is-active{% endif %}" href="{% url 'demo_stock' %}">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="boxes"></i></span>
+                <span class="app-sidebar-label">Stock</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="sidebar-section-title">Ventas</div>
+          <div class="sidebar-group offcanvas-group" data-group="ventas">
+            <div class="app-sidebar-link sirona-offcanvas-nav-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="shopping-bag"></i></span>
+              <span class="app-sidebar-label">Ventas</span>
+              <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                <i data-lucide="chevron-down"></i>
+              </span>
+            </div>
+            <div class="sidebar-subnav offcanvas-subnav" aria-label="Submenú Ventas">
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link {% if demo_active == 'presupuestos' %}is-active{% endif %}" href="{% url 'demo_presupuestos' %}">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="file-text"></i></span>
+                <span class="app-sidebar-label">Presupuestos</span>
+              </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link {% if demo_active == 'ventas' %}is-active{% endif %}" href="{% url 'demo_ventas' %}">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="receipt"></i></span>
+                <span class="app-sidebar-label">Ventas</span>
+              </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link {% if demo_active == 'pedidos' %}is-active{% endif %}" href="{% url 'demo_pedidos' %}">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="clipboard-list"></i></span>
+                <span class="app-sidebar-label">Historial de pedidos</span>
+              </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="#" onclick="return false;">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="users"></i></span>
+                <span class="app-sidebar-label">Clientes</span>
+              </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="#" onclick="return false;">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="user-check"></i></span>
+                <span class="app-sidebar-label">Vendedores</span>
+              </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="#" onclick="return false;">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="badge-percent"></i></span>
+                <span class="app-sidebar-label">Comisiones</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="sidebar-section-title">Caja</div>
+          <div class="sidebar-group offcanvas-group" data-group="caja">
+            <div class="app-sidebar-link sirona-offcanvas-nav-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="wallet"></i></span>
+              <span class="app-sidebar-label">Caja</span>
+              <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                <i data-lucide="chevron-down"></i>
+              </span>
+            </div>
+            <div class="sidebar-subnav offcanvas-subnav" aria-label="Submenú Caja">
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link {% if demo_active == 'caja' %}is-active{% endif %}" href="{% url 'demo_caja' %}">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="wallet"></i></span>
+                <span class="app-sidebar-label">Caja</span>
+              </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="#" onclick="return false;">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="landmark"></i></span>
+                <span class="app-sidebar-label">Banco</span>
+              </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="#" onclick="return false;">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="arrow-left-right"></i></span>
+                <span class="app-sidebar-label">Movimientos</span>
+              </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="#" onclick="return false;">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="clock"></i></span>
+                <span class="app-sidebar-label">Deudas</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="sidebar-section-title">Compras</div>
+          <div class="sidebar-group offcanvas-group" data-group="compras">
+            <div class="app-sidebar-link sirona-offcanvas-nav-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="shopping-cart"></i></span>
+              <span class="app-sidebar-label">Compras</span>
+              <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                <i data-lucide="chevron-down"></i>
+              </span>
+            </div>
+            <div class="sidebar-subnav offcanvas-subnav" aria-label="Submenú Compras">
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="#" onclick="return false;">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="shopping-cart"></i></span>
+                <span class="app-sidebar-label">Compras</span>
+              </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="#" onclick="return false;">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="truck"></i></span>
+                <span class="app-sidebar-label">Proveedores</span>
+              </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="#" onclick="return false;">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="credit-card"></i></span>
+                <span class="app-sidebar-label">Pagos</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="sidebar-section-title">Gestión</div>
+          <div class="sidebar-group offcanvas-group is-open" data-group="gestion">
+            <div class="app-sidebar-link sirona-offcanvas-nav-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="true">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="sparkles"></i></span>
+              <span class="app-sidebar-label">Gestión</span>
+              <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                <i data-lucide="chevron-down"></i>
+              </span>
+            </div>
+            <div class="sidebar-subnav offcanvas-subnav" aria-label="Submenú Gestión">
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link {% if demo_active == 'reportes' %}is-active{% endif %}" href="{% url 'demo_reportes' %}">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="chart-column"></i></span>
+                <span class="app-sidebar-label">Reportes</span>
+              </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link {% if demo_active == 'calendario' %}is-active{% endif %}" href="{% url 'demo_calendario' %}">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="calendar"></i></span>
+                <span class="app-sidebar-label">Calendario</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="sidebar-section-title">Administración</div>
+          <div class="sidebar-group offcanvas-group" data-group="admin">
+            <div class="app-sidebar-link sirona-offcanvas-nav-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="settings"></i></span>
+              <span class="app-sidebar-label">Administración</span>
+              <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                <i data-lucide="chevron-down"></i>
+              </span>
+            </div>
+            <div class="sidebar-subnav offcanvas-subnav" aria-label="Submenú Administración">
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="#" onclick="return false;">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="shield"></i></span>
+                <span class="app-sidebar-label">Administración</span>
+              </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="#" onclick="return false;">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="activity"></i></span>
+                <span class="app-sidebar-label">Historial</span>
+              </a>
+              <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="#" onclick="return false;">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="key"></i></span>
+                <span class="app-sidebar-label">Cambio de contraseña</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="sidebar-divider my-2"></div>
+          <a class="app-sidebar-link sirona-offcanvas-nav-link app-sidebar-link-logout" href="#" onclick="return false;">
+            <span class="app-sidebar-icon-wrap"><i data-lucide="log-out"></i></span>
+            <span class="app-sidebar-label">Salir</span>
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+    <script src="{% static 'js/sirona-icons.js' %}?v=4"></script>
+    <script src="{% static 'js/mockData.js' %}?v=1"></script>
+    <script>
+      (function () {
+        try {
+          const key = "sirona_sidebar_collapsed";
+          const saved = localStorage.getItem(key);
+          if (saved === "1") document.body.classList.add("sidebar-collapsed");
+          const btn = document.getElementById("btnSidebarCollapse");
+          function syncBtn() {
+            if (!btn) return;
+            const isCollapsed = document.body.classList.contains("sidebar-collapsed");
+            btn.title = isCollapsed ? "Expandir sidebar" : "Colapsar sidebar";
+            btn.setAttribute("aria-label", btn.title);
+          }
+          function toggleCollapsed() {
+            const isCollapsed = document.body.classList.toggle("sidebar-collapsed");
+            localStorage.setItem(key, isCollapsed ? "1" : "0");
+            syncBtn();
+          }
+          if (btn) btn.addEventListener("click", toggleCollapsed);
+          syncBtn();
+        } catch (e) {}
+      })();
+    </script>
+    <script>
+      // Sidebar: grupos desplegables (demo UI)
+      (function () {
+        try {
+          function wireGroup(groupEl) {
+            const trigger = groupEl.querySelector(".sidebar-group-trigger");
+            const sub = groupEl.querySelector(".sidebar-subnav");
+            const setOpen = (open) => {
+              groupEl.classList.toggle("is-open", open);
+              if (trigger) trigger.setAttribute("aria-expanded", open ? "true" : "false");
+            };
+            const toggle = () => setOpen(!groupEl.classList.contains("is-open"));
+            if (trigger) {
+              trigger.addEventListener("click", toggle);
+              trigger.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  toggle();
+                }
+              });
+            }
+            const hasActive = sub && sub.querySelector("a.is-active");
+            if (hasActive) setOpen(true);
+          }
+          document.querySelectorAll(".sidebar .sidebar-group[data-group]").forEach(wireGroup);
+        } catch (e) {}
+      })();
+    </script>
+    <script>
+      // Offcanvas demo: grupos desplegables (demo UI)
+      (function () {
+        try {
+          function wireGroup(groupEl) {
+            const trigger = groupEl.querySelector(".sidebar-group-trigger");
+            const sub = groupEl.querySelector(".sidebar-subnav");
+            const setOpen = (open) => {
+              groupEl.classList.toggle("is-open", open);
+              if (trigger) trigger.setAttribute("aria-expanded", open ? "true" : "false");
+            };
+            const toggle = () => setOpen(!groupEl.classList.contains("is-open"));
+            if (trigger) {
+              trigger.addEventListener("click", toggle);
+              trigger.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  toggle();
+                }
+              });
+            }
+            const hasActive = sub && sub.querySelector("a.is-active");
+            if (hasActive) setOpen(true);
+          }
+          document.querySelectorAll("#sironaMenuDemo .sidebar-group[data-group]").forEach(wireGroup);
+        } catch (e) {}
+      })();
+    </script>
+    {% block page_scripts %}{% endblock %}
+  </body>
+</html>
+

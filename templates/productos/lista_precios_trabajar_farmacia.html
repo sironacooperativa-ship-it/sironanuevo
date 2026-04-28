@@ -2,92 +2,138 @@
 {% load money %}
 {% block title %}Lista {{ lista.nombre }}{% endblock %}
 {% block content %}
-  <div class="app-page-header d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-    <div>
-      <h1 class="app-page-title mb-1">{{ lista.nombre }}</h1>
-      <p class="text-muted small mb-0">
-        Precios de <strong>Farmacia</strong> (originales del producto). Cambiá acá o en la ficha de cada producto.
-      </p>
-    </div>
-    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'productos_listas_precios' %}">Volver</a>
-  </div>
-
-  <div class="card app-card border-0 shadow-sm mb-3">
-    <div class="card-body p-3">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-12 col-md-8">
-          <label class="form-label small text-muted mb-1">Buscar</label>
-          <input class="form-control form-control-sm rounded-3" name="q" value="{{ q }}" placeholder="Código o descripción" />
+  <span id="sidebarCurrentNode" class="d-none" data-parent-url="{% url 'productos_listas_precios' %}">{{ lista.nombre }}</span>
+  <div class="pricing-page">
+    <section class="hero-card mb-3" aria-label="Encabezado lista de precios">
+      <div class="hero-top">
+        <div class="min-w-0">
+          <h1 class="hero-title text-truncate mb-0">{{ lista.nombre }}</h1>
+          <p class="hero-subtitle">Edición · Lista de precios · Farmacia</p>
+          <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+            <span class="badge-status">Activa</span>
+            <span class="badge-status" style="background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.22);">Farmacia</span>
+          </div>
         </div>
-        <div class="col-12 col-md-4 d-grid">
-          <button class="btn btn-outline-dark btn-sm rounded-pill" type="submit">Filtrar</button>
+        <div class="d-flex flex-wrap gap-2 justify-content-end">
+          <a class="action-pill action-pill--muted" href="{% url 'productos_listas_precios' %}">
+            <i data-lucide="arrow-left" aria-hidden="true"></i>
+            Volver
+          </a>
+          <a class="action-pill action-pill--pdf" href="{% url 'lista_precios_export_pdf' lista.pk %}">
+            <i data-lucide="file-down" aria-hidden="true"></i>
+            PDF
+          </a>
+          <a class="action-pill action-pill--whatsapp" href="{% url 'lista_precios_export_png' lista.pk %}">
+            <i data-lucide="image" aria-hidden="true"></i>
+            WhatsApp
+          </a>
         </div>
-      </form>
-    </div>
-  </div>
-
-  <form method="post">
-    {% csrf_token %}
-    <input type="hidden" name="q" value="{{ q }}" />
-    {% if page_obj %}<input type="hidden" name="page" value="{{ page_obj.number }}" />{% endif %}
-    <div class="table-card presu-lista-modern lista-precio-farm">
-      <div class="table-responsive presu-lista-table-wrap">
-        <table class="modern-table lista-precio-farm-tabla">
-          <thead>
-            <tr>
-              <th scope="col" class="th-cod">Código</th>
-              <th scope="col">Tipo</th>
-              <th scope="col">Descripción</th>
-              <th scope="col" class="text-end col-money" style="width: 10rem">Precio venta</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for p in productos %}
-              <tr>
-                <td class="col-muted"><span class="persona-cod">{{ p.codigo }}</span></td>
-                <td class="col-muted small">{{ p.get_tipo_display }}</td>
-                <td>{{ p.descripcion }}</td>
-                <td class="table-monto">
-                  <input
-                    type="text"
-                    name="pv_{{ p.pk }}"
-                    class="form-control form-control-sm text-end rounded-3"
-                    inputmode="decimal"
-                    value="{{ p.precio_venta }}"
-                  />
-                </td>
-              </tr>
-            {% empty %}
-              <tr>
-                <td colspan="4" class="table-empty">
-                  Ningún producto está en esta lista todavía. Marcá <strong>En lista Farmacia (PDF)</strong> en la ficha de cada producto
-                  o usá acciones en masa en el listado de productos.
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
       </div>
-      {% if productos %}
-        <div class="card-body border-top py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
-          {% if page_obj and page_obj.paginator.num_pages > 1 %}
-            <div class="small text-muted">
-              Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-            </div>
-            <div class="d-flex gap-2">
-              {% if page_obj.has_previous %}
-                <a class="btn btn-sm btn-outline-secondary rounded-pill" href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}">Anterior</a>
-              {% endif %}
-              {% if page_obj.has_next %}
-                <a class="btn btn-sm btn-outline-secondary rounded-pill" href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}">Siguiente</a>
-              {% endif %}
-            </div>
-          {% else %}
-            <span></span>
-          {% endif %}
-          <button type="submit" class="btn btn-primary rounded-pill px-4">Guardar precios</button>
+    </section>
+
+    <section class="modern-filter-bar mb-3" aria-label="Filtros">
+      <form method="get">
+        <div class="filter-toolbar" style="grid-template-columns: 2fr auto;">
+          <div class="filter-field">
+            <label for="lp-q">Buscar</label>
+            <input id="lp-q" class="form-control input-modern" name="q" value="{{ q }}" placeholder="Código o descripción" />
+          </div>
+          <div class="filter-field">
+            <label class="d-none d-md-block" aria-hidden="true">&nbsp;</label>
+            <button class="btn btn-primary action-pill action-pill--primary w-100" type="submit">
+              <i data-lucide="search" aria-hidden="true"></i>
+              Filtrar
+            </button>
+          </div>
         </div>
-      {% endif %}
-    </div>
-  </form>
+        {% if q %}
+          <div class="filter-actions">
+            <a class="action-pill action-pill--muted" href="{% url 'lista_precios_trabajar' lista.pk %}">
+              <i data-lucide="rotate-ccw" aria-hidden="true"></i>
+              Limpiar filtros
+            </a>
+          </div>
+        {% endif %}
+      </form>
+    </section>
+
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="q" value="{{ q }}" />
+      {% if page_obj %}<input type="hidden" name="page" value="{{ page_obj.number }}" />{% endif %}
+      <div class="dashboard-card lista-precio-farm mb-3">
+        <div class="card-head">
+          <h2 class="card-title"><i data-lucide="sliders" aria-hidden="true"></i> Precios (edición rápida)</h2>
+          <div class="card-subtle">Modificá y guardá sin salir de la grilla</div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th scope="col">Producto</th>
+                  <th scope="col">Tipo</th>
+                  <th scope="col" class="text-end" style="width: 11rem">Precio venta</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in productos %}
+                  <tr>
+                    <td>
+                      <div class="prod-cell">
+                        <span class="prod-thumb" aria-hidden="true"><i data-lucide="package"></i></span>
+                        <span class="prod-meta">
+                          <span class="prod-desc">{{ p.descripcion }}</span>
+                          <span class="prod-sub"><span class="prod-code">{{ p.codigo }}</span> · Stock {{ p.stock }}</span>
+                        </span>
+                      </div>
+                    </td>
+                    <td class="muted">{{ p.get_tipo_display }}</td>
+                    <td class="num">
+                      <input
+                        type="text"
+                        name="pv_{{ p.pk }}"
+                        class="pricing-edit-input w-100 text-end"
+                        inputmode="decimal"
+                        value="{{ p.precio_venta }}"
+                      />
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="3" class="table-empty">
+                      Ningún producto está en esta lista todavía. Marcá <strong>En lista Farmacia (PDF)</strong> en la ficha de cada producto
+                      o usá acciones en masa en el listado de productos.
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {% if productos %}
+          <div class="card-body border-top py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            {% if page_obj and page_obj.paginator.num_pages > 1 %}
+              <div class="small text-muted">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</div>
+              <div class="mini-pager">
+                {% if page_obj.has_previous %}
+                  <a class="action-pill action-pill--muted" href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                  <a class="action-pill action-pill--muted" href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+                {% endif %}
+              </div>
+            {% else %}
+              <span></span>
+            {% endif %}
+            <button type="submit" class="action-pill action-pill--primary">
+              <i data-lucide="save" aria-hidden="true"></i>
+              Guardar precios
+            </button>
+          </div>
+        {% endif %}
+      </div>
+    </form>
+  </div>
 {% endblock %}

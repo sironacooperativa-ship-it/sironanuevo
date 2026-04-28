@@ -1,0 +1,75 @@
+{% extends "demo/base_demo.html" %}
+{% block title %}Caja · Demo{% endblock %}
+{% block content %}
+  <div class="page-header">
+    <div class="min-w-0">
+      <h1 class="page-title d-flex align-items-center gap-2">
+        <span class="stat-ico" aria-hidden="true" style="width: 34px; height: 34px;"><i data-lucide="wallet"></i></span>
+        Caja
+      </h1>
+      <p class="page-subtitle">Demo para previsualizar layout de caja y movimientos.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+      <a class="action-button primary btn btn-primary" href="#" onclick="return false;">
+        <i data-lucide="plus"></i>
+        Nuevo movimiento
+      </a>
+      <a class="action-button btn btn-outline-secondary" href="#" onclick="return false;">
+        <i data-lucide="download"></i>
+        Exportar
+      </a>
+    </div>
+  </div>
+
+  <section class="stats-grid mb-3">
+    <article class="metric-card"><div class="metric-top"><div class="metric-title">Saldo</div><span class="metric-icon"><i data-lucide="badge-dollar-sign"></i></span></div><div class="metric-value">{{ kpi.saldo }}</div><div class="metric-sub">Actual</div></article>
+    <article class="metric-card"><div class="metric-top"><div class="metric-title">Ingresos</div><span class="metric-icon" style="background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); color:#22c55e;"><i data-lucide="trending-up"></i></span></div><div class="metric-value">{{ kpi.ingresos }}</div><div class="metric-sub">Mes</div></article>
+    <article class="metric-card"><div class="metric-top"><div class="metric-title">Egresos</div><span class="metric-icon" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color:#ef4444;"><i data-lucide="trending-down"></i></span></div><div class="metric-value">{{ kpi.egresos }}</div><div class="metric-sub">Mes</div></article>
+  </section>
+
+  <section class="modern-filter-card mb-3">
+    <form class="row g-2 align-items-end" onsubmit="return false;">
+      <div class="col-12 col-md-4">
+        <label class="form-label small text-muted mb-1">Buscar</label>
+        <input class="form-control input-modern" value="VTA-9001" />
+      </div>
+      <div class="col-12 col-md-3">
+        <label class="form-label small text-muted mb-1">Medio</label>
+        <select class="form-select input-modern"><option>Todos</option><option>Efectivo</option><option>Transferencia</option></select>
+      </div>
+      <div class="col-12 col-md-3">
+        <label class="form-label small text-muted mb-1">Período</label>
+        <select class="form-select input-modern"><option>Abril 2026</option><option>Marzo 2026</option></select>
+      </div>
+      <div class="col-12 col-md-2 d-flex gap-2">
+        <button class="action-button primary btn btn-primary flex-grow-1" type="button"><i data-lucide="filter"></i> Filtrar</button>
+        <button class="action-button btn btn-outline-secondary flex-grow-1" type="button">Limpiar</button>
+      </div>
+    </form>
+  </section>
+
+  <div class="dashboard-card">
+    <div class="card-head">
+      <h2 class="card-title"><i data-lucide="arrow-left-right"></i> Movimientos</h2>
+      <div class="card-subtle">Demo</div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="report-table">
+          <thead><tr><th>Fecha</th><th>Concepto</th><th>Medio</th><th class="text-end">Monto</th></tr></thead>
+          <tbody>
+            {% for r in rows %}
+              <tr>
+                <td class="muted">{{ r.fecha }}</td>
+                <td>{{ r.concepto }}</td>
+                <td class="muted">{{ r.medio }}</td>
+                <td class="num">{{ r.monto }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

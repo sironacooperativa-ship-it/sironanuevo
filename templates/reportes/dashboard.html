@@ -2,20 +2,25 @@
 {% load money %}
 {% block title %}Reportes{% endblock %}
 {% block content %}
-  <div class="reportes">
-    <header class="rep-header">
-      <h1 class="rep-title">Reportes</h1>
-      <p class="rep-lead">Filtros · KPI · gráficos (mismos criterios del período y del listado)</p>
-    </header>
+  <div class="reports-page">
+    <div class="page-header">
+      <div class="min-w-0">
+        <h1 class="page-title d-flex align-items-center gap-2">
+          <span class="stat-ico" aria-hidden="true" style="width: 34px; height: 34px;"><i data-lucide="bar-chart-3"></i></span>
+          Reportes
+        </h1>
+        <p class="page-subtitle">Analizá y monitoreá el rendimiento de tu gestión</p>
+      </div>
+    </div>
 
     {{ chart|json_script:"reportes-chart" }}
 
-    <section class="rep-filtros-card" aria-label="Filtros">
-      <form method="get" class="rep-filtros-form">
-        <div class="filtros">
-          <div class="filter-group">
+    <section class="modern-filter-bar" aria-label="Filtros">
+      <form method="get">
+        <div class="filter-toolbar">
+          <div class="filter-field">
             <label for="rep-periodo">Período</label>
-            <select name="periodo" id="rep-periodo" class="form-select form-select-sm rep-inp">
+            <select name="periodo" id="rep-periodo" class="form-select input-modern">
               <option value="" {% if not filtros.periodo %}selected{% endif %}>Personalizado / todos</option>
               <option value="7d" {% if filtros.periodo == "7d" %}selected{% endif %}>Últimos 7 días</option>
               <option value="30d" {% if filtros.periodo == "30d" %}selected{% endif %}>Últimos 30 días</option>
@@ -23,17 +28,17 @@
               <option value="mes_ant" {% if filtros.periodo == "mes_ant" %}selected{% endif %}>Mes anterior</option>
             </select>
           </div>
-          <div class="filter-group">
+          <div class="filter-field">
             <label for="rep-desde">Desde</label>
-            <input type="date" name="fecha_desde" id="rep-desde" class="form-control form-control-sm rep-inp" value="{{ filtros.fecha_desde }}" />
+            <input type="date" name="fecha_desde" id="rep-desde" class="form-control input-modern" value="{{ filtros.fecha_desde }}" />
           </div>
-          <div class="filter-group">
+          <div class="filter-field">
             <label for="rep-hasta">Hasta</label>
-            <input type="date" name="fecha_hasta" id="rep-hasta" class="form-control form-control-sm rep-inp" value="{{ filtros.fecha_hasta }}" />
+            <input type="date" name="fecha_hasta" id="rep-hasta" class="form-control input-modern" value="{{ filtros.fecha_hasta }}" />
           </div>
-          <div class="filter-group">
+          <div class="filter-field">
             <label for="rep-vend">Vendedor</label>
-            <select name="vendedor" id="rep-vend" class="form-select form-select-sm rep-inp">
+            <select name="vendedor" id="rep-vend" class="form-select input-modern">
               <option value="">Todos</option>
               {% for v in vendedores_filtro %}
                 <option value="{{ v.pk }}" {% if filtros.vendedor == v.pk|stringformat:"s" %}selected{% endif %}>
@@ -42,9 +47,9 @@
               {% endfor %}
             </select>
           </div>
-          <div class="filter-group">
-            <label for="rep-compr">Comprador</label>
-            <select name="comprador" id="rep-compr" class="form-select form-select-sm rep-inp">
+          <div class="filter-field">
+            <label for="rep-compr">Cliente</label>
+            <select name="comprador" id="rep-compr" class="form-select input-modern">
               <option value="">Todos</option>
               {% for c in compradores_filtro %}
                 <option value="{{ c.pk }}" {% if filtros.comprador == c.pk|stringformat:"s" %}selected{% endif %}>
@@ -53,109 +58,393 @@
               {% endfor %}
             </select>
           </div>
-          <div class="filter-group filter-group--span3">
-            <label for="rep-prod">Producto</label>
-            <select name="producto" id="rep-prod" class="form-select form-select-sm rep-inp">
-              <option value="">Todos</option>
-              {% for p in productos_filtro %}
-                <option value="{{ p.pk }}" {% if filtros.producto == p.pk|stringformat:"s" %}selected{% endif %}>
-                  {{ p.codigo }} — {{ p.descripcion|truncatechars:28 }}
-                </option>
-              {% endfor %}
+          <div class="filter-field">
+            <label for="rep-compare">Comparar con</label>
+            <select name="comparar" id="rep-compare" class="form-select input-modern">
+              <option value="">Ninguno</option>
+              <option value="prev">Período anterior</option>
+              <option value="year">Mismo período (año anterior)</option>
             </select>
           </div>
+          <div class="filter-field">
+            <label class="d-none d-xl-block" aria-hidden="true">&nbsp;</label>
+            <button type="submit" class="btn btn-primary action-button primary w-100">
+              <i data-lucide="sliders-horizontal" aria-hidden="true"></i>
+              Filtrar
+            </button>
+          </div>
         </div>
-        <div class="filtros-actions">
-          <button type="submit" class="rep-btn-apply">Aplicar</button>
-          <a class="rep-btn-clear" href="{% url 'reportes_dashboard' %}">Limpiar</a>
+        <div class="filter-actions">
+          <a class="btn btn-outline-secondary action-button" href="{% url 'reportes_dashboard' %}">
+            <i data-lucide="rotate-ccw" aria-hidden="true"></i>
+            Limpiar
+          </a>
+          <button type="button" class="btn btn-outline-secondary action-button" id="btnExportPdf">
+            <i data-lucide="file-text" aria-hidden="true"></i>
+            Exportar PDF
+          </button>
+          <button type="button" class="btn btn-outline-secondary action-button" id="btnExportExcel">
+            <i data-lucide="download" aria-hidden="true"></i>
+            Exportar Excel
+          </button>
         </div>
-        <p class="rep-hint">Con <strong>período</strong> fijado, se ignora desde / hasta.</p>
+        <div class="filter-hint">Con <strong>período</strong> fijado, se ignora desde / hasta.</div>
       </form>
     </section>
 
-    <section class="kpi-grid" aria-label="KPIs del período">
-      <article class="kpi-card">
-        <div class="kpi-title">Pedidos</div>
-        <div class="kpi-value">{{ kpis.pedidos }}</div>
-        <div class="kpi-sub">Rango filtrado</div>
+    <section class="stats-grid" aria-label="KPIs">
+      <article class="metric-card" data-metric="ventas_neto">
+        <div class="metric-top">
+          <div class="metric-title">Ventas netas</div>
+          <span class="metric-icon"><i data-lucide="badge-dollar-sign"></i></span>
+        </div>
+        <div class="metric-value">{{ kpis.neto_total|ars }}</div>
+        <div class="d-flex align-items-center justify-content-between gap-2">
+          <div class="metric-sub">{{ kpis.pagadas }} pagadas · {{ kpis.pendientes }} pendientes</div>
+          <span class="metric-delta" data-delta-for="ventas_neto">—</span>
+        </div>
       </article>
-      <article class="kpi-card kpi-card--neto">
-        <div class="kpi-title">Neto ventas</div>
-        <div class="kpi-value kpi-value--hero">{{ kpis.neto_total|ars }}</div>
-        <div class="kpi-sub">{{ kpis.pagadas }} pagadas · {{ kpis.pendientes }} pendientes</div>
+
+      <article class="metric-card" data-metric="ordenes">
+        <div class="metric-top">
+          <div class="metric-title">Órdenes</div>
+          <span class="metric-icon"><i data-lucide="clipboard-list"></i></span>
+        </div>
+        <div class="metric-value">{{ kpis.pedidos }}</div>
+        <div class="d-flex align-items-center justify-content-between gap-2">
+          <div class="metric-sub">Rango filtrado</div>
+          <span class="metric-delta" data-delta-for="ordenes">—</span>
+        </div>
       </article>
-      <article class="kpi-card">
-        <div class="kpi-title">Comisión total</div>
-        <div class="kpi-value">{{ kpis.comision_total|ars }}</div>
-        <div class="kpi-sub">Según aplica comisión</div>
+
+      <article class="metric-card" data-metric="compras">
+        <div class="metric-top">
+          <div class="metric-title">Compras</div>
+          <span class="metric-icon" style="background: rgba(249,115,22,0.1); border-color: rgba(249,115,22,0.2); color: #f97316;">
+            <i data-lucide="shopping-cart"></i>
+          </span>
+        </div>
+        <div class="metric-value">{{ compras_kpis.compras_total|ars }}</div>
+        <div class="d-flex align-items-center justify-content-between gap-2">
+          <div class="metric-sub">{{ compras_kpis.compras }} registro{% if compras_kpis.compras != 1 %}s{% endif %}</div>
+          <span class="metric-delta" data-delta-for="compras">—</span>
+        </div>
       </article>
-      <article class="kpi-card kpi-card--compras">
-        <div class="kpi-title">Compras</div>
-        <div class="kpi-value kpi-value--soft">{{ compras_kpis.compras_total|ars }}</div>
-        <div class="kpi-sub">{{ compras_kpis.compras }} registro{% if compras_kpis.compras != 1 %}s{% endif %}</div>
+
+      <article class="metric-card">
+        <div class="metric-top">
+          <div class="metric-title">Clientes activos</div>
+          <span class="metric-icon" style="background: rgba(168,85,247,0.1); border-color: rgba(168,85,247,0.18); color: #a855f7;">
+            <i data-lucide="users"></i>
+          </span>
+        </div>
+        <div class="metric-value">{{ clientes_activos }}</div>
+        <div class="metric-sub">Con al menos un pedido</div>
       </article>
-      <article class="kpi-card kpi-card--margen">
-        <div class="kpi-title">Margen</div>
-        <div class="kpi-value kpi-value--hero">{{ margen|ars }}</div>
-        <div class="kpi-sub">Neto ventas − compras</div>
+
+      <article class="metric-card">
+        <div class="metric-top">
+          <div class="metric-title">Ticket promedio</div>
+          <span class="metric-icon"><i data-lucide="receipt"></i></span>
+        </div>
+        <div class="metric-value">{{ ticket_promedio|ars }}</div>
+        <div class="metric-sub">Neto / pedidos</div>
+      </article>
+
+      <article class="metric-card">
+        <div class="metric-top">
+          <div class="metric-title">Margen</div>
+          <span class="metric-icon" style="background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); color: #22c55e;">
+            <i data-lucide="trending-up"></i>
+          </span>
+        </div>
+        <div class="metric-value">{{ margen|ars }}</div>
+        <div class="metric-sub">Ventas − compras</div>
+      </article>
+
+      <article class="metric-card">
+        <div class="metric-top">
+          <div class="metric-title">Comisiones</div>
+          <span class="metric-icon" style="background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.16); color: #16a34a;">
+            <i data-lucide="badge-percent"></i>
+          </span>
+        </div>
+        <div class="metric-value">{{ kpis.comision_total|ars }}</div>
+        <div class="metric-sub">Según aplica comisión</div>
+      </article>
+
+      <article class="metric-card">
+        <div class="metric-top">
+          <div class="metric-title">Productos vendidos</div>
+          <span class="metric-icon"><i data-lucide="boxes"></i></span>
+        </div>
+        <div class="metric-value">{{ productos_vendidos }}</div>
+        <div class="metric-sub">Unidades totales</div>
       </article>
     </section>
 
-    <div class="charts">
-      <div class="chart-card chart-card--hero">
-        <h2 class="chart-title">Ventas por día (neto)</h2>
-        <div class="rep-canvas rep-canvas--line">
-          <canvas id="chartVentasDia" height="0"></canvas>
+    <section class="reports-grid" aria-label="Dashboard de reportes">
+      {# FILA 1 #}
+      <article class="chart-card span-6">
+        <div class="card-head">
+          <h2 class="card-title"><i data-lucide="activity" aria-hidden="true"></i> Ventas por día (neto)</h2>
+          <div class="card-subtle">Tendencia diaria</div>
         </div>
-      </div>
-      <div class="chart-card chart-card--donut">
-        <h2 class="chart-title">Estado de pedidos</h2>
-        <div class="rep-canvas rep-canvas--donut">
-          <canvas id="chartEstadoPedidos" height="0"></canvas>
+        <div class="card-body">
+          <div class="chart-wrap chart-wrap--hero">
+            <canvas id="chartVentasDia" height="0"></canvas>
+          </div>
         </div>
-      </div>
-    </div>
+      </article>
 
-    <div class="charts-more">
-      <div class="chart-card">
-        <h2 class="chart-title">Compras por día</h2>
-        <div class="rep-canvas">
-          <canvas id="chartComprasDia" height="0"></canvas>
+      <article class="chart-card span-3">
+        <div class="card-head">
+          <h2 class="card-title"><i data-lucide="pie-chart" aria-hidden="true"></i> Estado de pedidos</h2>
+          <div class="card-subtle">Pendientes vs pagadas</div>
         </div>
-      </div>
-      <div class="chart-card">
-        <h2 class="chart-title">Ventas por mes (neto)</h2>
-        <div class="rep-canvas">
-          <canvas id="chartVentasMes" height="0"></canvas>
+        <div class="card-body">
+          <div class="chart-wrap chart-wrap--donut">
+            <canvas id="chartEstadoPedidos" height="0"></canvas>
+          </div>
         </div>
-      </div>
-      <div class="chart-card">
-        <h2 class="chart-title">Compras por mes</h2>
-        <div class="rep-canvas">
-          <canvas id="chartComprasMes" height="0"></canvas>
+      </article>
+
+      <article class="chart-card span-3">
+        <div class="card-head">
+          <h2 class="card-title"><i data-lucide="layers" aria-hidden="true"></i> Resumen por categoría</h2>
+          <div class="card-subtle">Unidades vendidas</div>
         </div>
-      </div>
-      <div class="chart-card">
-        <h2 class="chart-title">Top productos (unidades)</h2>
-        <div class="rep-canvas">
-          <canvas id="chartTopProductos" height="0"></canvas>
+        <div class="card-body">
+          <div class="chart-wrap">
+            <canvas id="chartResumenTipo" height="0"></canvas>
+          </div>
         </div>
-      </div>
-      <div class="chart-card chart-card--span-2">
-        <h2 class="chart-title">Top vendedores (neto)</h2>
-        <div class="rep-canvas rep-canvas--wide">
-          <canvas id="chartTopVendedores" height="0"></canvas>
+      </article>
+
+      {# FILA 2 #}
+      <article class="chart-card span-4">
+        <div class="card-head">
+          <h2 class="card-title"><i data-lucide="bar-chart-2" aria-hidden="true"></i> Compras por día</h2>
+          <div class="card-subtle">Monto diario</div>
         </div>
-      </div>
-    </div>
+        <div class="card-body">
+          <div class="chart-wrap">
+            <canvas id="chartComprasDia" height="0"></canvas>
+          </div>
+        </div>
+      </article>
+
+      <article class="dashboard-card span-4">
+        <div class="card-head">
+          <h2 class="card-title"><i data-lucide="users" aria-hidden="true"></i> Top clientes</h2>
+          <div class="card-subtle">Por neto</div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th class="text-end">Neto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for c in top_clientes %}
+                  <tr>
+                    <td>
+                      <div class="who">
+                        <span class="avatar" aria-hidden="true">{{ c.comprador__apellido|default:"?"|slice:":1" }}</span>
+                        <span class="name">
+                          {% if c.comprador__apellido or c.comprador__nombre %}
+                            {{ c.comprador__apellido }}, {{ c.comprador__nombre }}
+                          {% else %}
+                            {{ c.comprador__codigo }}
+                          {% endif %}
+                        </span>
+                      </div>
+                    </td>
+                    <td class="num">{{ c.neto|ars }}</td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="2" class="text-center text-muted py-4">Sin datos para el rango.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </article>
+
+      <article class="dashboard-card span-4">
+        <div class="card-head">
+          <h2 class="card-title"><i data-lucide="user-check" aria-hidden="true"></i> Top vendedores</h2>
+          <div class="card-subtle">Por neto</div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Vendedor</th>
+                  <th class="text-end">Neto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for v in top_vendedores %}
+                  <tr>
+                    <td>
+                      <div class="who">
+                        <span class="avatar" aria-hidden="true">{{ v.vendedor__apellido|default:"?"|slice:":1" }}</span>
+                        <span class="name">
+                          {% if v.vendedor__apellido or v.vendedor__nombre %}
+                            {{ v.vendedor__apellido }}, {{ v.vendedor__nombre }}
+                          {% else %}
+                            {{ v.vendedor__codigo }}
+                          {% endif %}
+                        </span>
+                      </div>
+                    </td>
+                    <td class="num">{{ v.neto|ars }}</td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="2" class="text-center text-muted py-4">Sin datos para el rango.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </article>
+
+      {# FILA 3 #}
+      <article class="dashboard-card span-4">
+        <div class="card-head">
+          <h2 class="card-title"><i data-lucide="package" aria-hidden="true"></i> Productos más vendidos</h2>
+          <div class="card-subtle">Unidades</div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th class="text-end">Unidades</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in top_productos %}
+                  <tr>
+                    <td>
+                      <div class="who">
+                        <span class="avatar" aria-hidden="true">{{ p.lineas__producto__descripcion|default:"?"|slice:":1" }}</span>
+                        <span class="name">{{ p.lineas__producto__descripcion|default:p.lineas__producto__codigo }}</span>
+                      </div>
+                    </td>
+                    <td class="num">{{ p.unidades }}</td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="2" class="text-center text-muted py-4">Sin datos para el rango.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </article>
+
+      <article class="chart-card span-4">
+        <div class="card-head">
+          <h2 class="card-title"><i data-lucide="sparkles" aria-hidden="true"></i> Comisiones</h2>
+          <div class="card-subtle">Distribución (top vendedores)</div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap chart-wrap--wide">
+            <canvas id="chartTopVendedores" height="0"></canvas>
+          </div>
+          <div class="text-muted small mt-2">* Se muestra neto por vendedor (base de comisión).</div>
+        </div>
+      </article>
+
+      <article class="dashboard-card span-4">
+        <div class="card-head">
+          <h2 class="card-title"><i data-lucide="zap" aria-hidden="true"></i> Acciones rápidas</h2>
+          <div class="card-subtle">Atajos y exportación</div>
+        </div>
+        <div class="card-body">
+          <div class="quick-actions">
+            <a class="quick-action" href="{% url 'ventas_historial' %}">
+              <span class="qa-ico"><i data-lucide="clipboard-list"></i></span>
+              <span class="qa-txt"><span class="qa-title">Reporte ventas</span><span class="qa-sub">Historial de pedidos</span></span>
+            </a>
+            <a class="quick-action" href="{% url 'compra_historial' %}">
+              <span class="qa-ico" style="background: rgba(249,115,22,0.1); border-color: rgba(249,115,22,0.2); color:#f97316;"><i data-lucide="shopping-cart"></i></span>
+              <span class="qa-txt"><span class="qa-title">Reporte compras</span><span class="qa-sub">Historial de compras</span></span>
+            </a>
+            <a class="quick-action" href="{% url 'vendedores_list' %}">
+              <span class="qa-ico" style="background: rgba(168,85,247,0.1); border-color: rgba(168,85,247,0.18); color:#a855f7;"><i data-lucide="user-check"></i></span>
+              <span class="qa-txt"><span class="qa-title">Reporte vendedores</span><span class="qa-sub">Listado y actividad</span></span>
+            </a>
+            <a class="quick-action" href="{% url 'compradores_list' %}">
+              <span class="qa-ico"><i data-lucide="users"></i></span>
+              <span class="qa-txt"><span class="qa-title">Reporte clientes</span><span class="qa-sub">Listado de clientes</span></span>
+            </a>
+            <a class="quick-action" href="#" id="qaPdf">
+              <span class="qa-ico"><i data-lucide="file-text"></i></span>
+              <span class="qa-txt"><span class="qa-title">Exportar PDF</span><span class="qa-sub">Imprimir / guardar</span></span>
+            </a>
+            <a class="quick-action" href="#" id="qaExcel">
+              <span class="qa-ico"><i data-lucide="download"></i></span>
+              <span class="qa-txt"><span class="qa-title">Exportar Excel</span><span class="qa-sub">CSV (abrible en Excel)</span></span>
+            </a>
+          </div>
+        </div>
+      </article>
+
+      {# Extras: mantener gráficos mensuales existentes sin saturar la vista #}
+      <article class="chart-card span-6">
+        <div class="card-head">
+          <h2 class="card-title"><i data-lucide="line-chart" aria-hidden="true"></i> Ventas por mes (neto)</h2>
+          <div class="card-subtle">Tendencia</div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap">
+            <canvas id="chartVentasMes" height="0"></canvas>
+          </div>
+        </div>
+      </article>
+
+      <article class="chart-card span-6">
+        <div class="card-head">
+          <h2 class="card-title"><i data-lucide="line-chart" aria-hidden="true"></i> Compras por mes</h2>
+          <div class="card-subtle">Tendencia</div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap">
+            <canvas id="chartComprasMes" height="0"></canvas>
+          </div>
+        </div>
+      </article>
+
+      <article class="chart-card span-12">
+        <div class="card-head">
+          <h2 class="card-title"><i data-lucide="package-search" aria-hidden="true"></i> Top productos (unidades)</h2>
+          <div class="card-subtle">Gráfico</div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap chart-wrap--wide">
+            <canvas id="chartTopProductos" height="0"></canvas>
+          </div>
+        </div>
+      </article>
+    </section>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script>
     (function () {
       const payload = JSON.parse(document.getElementById("reportes-chart").textContent || "{}");
-      const SIRONA = "#0f97b5";
-      const SIRONA_FADE = "rgba(15, 151, 181, 0.22)";
+      const SIRONA = "#2563eb";
+      const SIRONA_FADE = "rgba(37, 99, 235, 0.22)";
+      const ORANGE = "#f97316";
+      const VIOLET = "#a855f7";
+      const SUCCESS = "#22c55e";
 
       function toNums(arr) {
         return (arr || []).map((x) => parseFloat(String(x).replace(",", ".")) || 0);
@@ -285,8 +574,8 @@
               {
                 label: "Monto",
                 data: toNums(payload.compras_dia_monto),
-                backgroundColor: "rgba(15, 151, 181, 0.16)",
-                borderColor: SIRONA,
+                backgroundColor: "rgba(249, 115, 22, 0.16)",
+                borderColor: ORANGE,
                 borderWidth: 1,
                 borderRadius: 6,
                 maxBarThickness: 28,
@@ -315,7 +604,7 @@
             datasets: [
               {
                 data: payload.estado_counts || [],
-                backgroundColor: ["rgba(250, 230, 160, 0.75)", "rgba(120, 220, 200, 0.65)", "rgba(200, 210, 220, 0.45)"],
+                backgroundColor: ["rgba(249, 115, 22, 0.38)", "rgba(34, 197, 94, 0.3)", "rgba(148, 163, 184, 0.25)"],
                 borderWidth: 0,
                 hoverOffset: 5,
                 spacing: 1,
@@ -376,7 +665,7 @@
           data: {
             labels: payload.labels_top_productos || [],
             datasets: [
-              { label: "Unidades", data: payload.top_productos_unidades || [], backgroundColor: "rgba(15, 151, 181, 0.2)", borderColor: SIRONA, borderWidth: 1, borderRadius: 5 },
+              { label: "Unidades", data: payload.top_productos_unidades || [], backgroundColor: "rgba(168, 85, 247, 0.18)", borderColor: VIOLET, borderWidth: 1, borderRadius: 6 },
             ],
           },
           options: {
@@ -399,7 +688,7 @@
           type: "bar",
           data: {
             labels: payload.labels_top_vendedores || [],
-            datasets: [{ label: "Neto", data: toNums(payload.top_vendedores_neto), backgroundColor: "rgba(15, 151, 181, 0.2)", borderColor: SIRONA, borderWidth: 1, borderRadius: 5 }],
+            datasets: [{ label: "Neto", data: toNums(payload.top_vendedores_neto), backgroundColor: "rgba(34, 197, 94, 0.18)", borderColor: SUCCESS, borderWidth: 1, borderRadius: 6 }],
           },
           options: {
             indexAxis: "y",
@@ -414,6 +703,102 @@
           },
         });
       }
+
+      const ctxTipo = document.getElementById("chartResumenTipo");
+      if (ctxTipo) {
+        new Chart(ctxTipo, {
+          type: "bar",
+          data: {
+            labels: payload.labels_tipo || [],
+            datasets: [
+              {
+                label: "Unidades",
+                data: payload.tipo_unidades || [],
+                backgroundColor: "rgba(37, 99, 235, 0.16)",
+                borderColor: SIRONA,
+                borderWidth: 1,
+                borderRadius: 8,
+                maxBarThickness: 40,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: Object.assign({ legend: { display: false } }, pluginsUnidades),
+            scales: {
+              y: { grid: { color: "rgba(148, 163, 184, 0.1)" }, ticks: { color: "#64748b", font: { size: 11, weight: "500" } }, border: { display: false } },
+              x: { grid: { display: false }, ticks: { color: "#64748b", font: { size: 10, weight: "600" } } },
+            },
+          },
+        });
+      }
+
+      // Exportaciones (UI): PDF = imprimir / Excel = CSV desde payload
+      function downloadCsv(filename, rows) {
+        const csv = rows.map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function exportExcel() {
+        const rows = [["Sección", "Nombre", "Valor"]];
+        (payload.labels_top_clientes || []).forEach((n, i) => rows.push(["Top clientes", n, (payload.top_clientes_neto || [])[i] || "0"]));
+        (payload.labels_top_vendedores || []).forEach((n, i) => rows.push(["Top vendedores", n, (payload.top_vendedores_neto || [])[i] || "0"]));
+        (payload.labels_top_productos || []).forEach((n, i) => rows.push(["Top productos (unidades)", n, (payload.top_productos_unidades || [])[i] || "0"]));
+        (payload.labels_tipo || []).forEach((n, i) => rows.push(["Resumen por categoría (unidades)", n, (payload.tipo_unidades || [])[i] || "0"]));
+        downloadCsv("sirona-reportes.csv", rows);
+      }
+
+      function exportPdf() {
+        window.print();
+      }
+
+      const btnPdf = document.getElementById("btnExportPdf");
+      const btnXls = document.getElementById("btnExportExcel");
+      const qaPdf = document.getElementById("qaPdf");
+      const qaXls = document.getElementById("qaExcel");
+      [btnPdf, qaPdf].forEach((el) => el && el.addEventListener("click", function (e) { e.preventDefault(); exportPdf(); }));
+      [btnXls, qaXls].forEach((el) => el && el.addEventListener("click", function (e) { e.preventDefault(); exportExcel(); }));
+
+      // Deltas rápidos (UI) usando series (último vs anterior)
+      function pctDelta(arr) {
+        const xs = toNums(arr || []);
+        if (xs.length < 2) return null;
+        const a = xs[xs.length - 2];
+        const b = xs[xs.length - 1];
+        if (!Number.isFinite(a) || !Number.isFinite(b) || a === 0) return null;
+        return ((b - a) / Math.abs(a)) * 100;
+      }
+
+      const deltaVentas = pctDelta(payload.ventas_dia_neto);
+      const deltaCompras = pctDelta(payload.compras_dia_monto);
+      const deltaOrdenes = pctDelta(payload.ventas_dia_pedidos);
+
+      function paintDelta(sel, v) {
+        const el = document.querySelector(`[data-delta-for="${sel}"]`);
+        if (!el) return;
+        if (v === null) {
+          el.textContent = "—";
+          return;
+        }
+        const up = v >= 0;
+        el.classList.toggle("is-up", up);
+        el.classList.toggle("is-down", !up);
+        const abs = Math.abs(v);
+        el.textContent = (up ? "+" : "−") + abs.toFixed(1).replace(".", ",") + "%";
+      }
+
+      paintDelta("ventas_neto", deltaVentas);
+      paintDelta("compras", deltaCompras);
+      paintDelta("ordenes", deltaOrdenes);
     })();
   </script>
 {% endblock %}

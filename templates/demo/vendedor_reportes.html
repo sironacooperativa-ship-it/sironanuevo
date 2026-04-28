@@ -1,0 +1,42 @@
+{% extends "demo/base_demo.html" %}
+{% block title %}Reportes vendedor · Demo{% endblock %}
+{% block content %}
+  <div class="page-header">
+    <div class="min-w-0">
+      <h1 class="page-title">Reportes (vendedor)</h1>
+      <p class="page-subtitle">Dashboard reducido para el portal vendedor (demo).</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+      <a class="action-button btn btn-outline-secondary" href="{% url 'demo_vendedor_home' %}">
+        <i data-lucide="arrow-left" aria-hidden="true"></i>
+        Volver
+      </a>
+    </div>
+  </div>
+
+  <section class="stats-grid mb-3">
+    {% for k in kpis %}
+      <article class="metric-card">
+        <div class="metric-top">
+          <div class="metric-title">{{ k.title }}</div>
+          <span class="metric-icon"><i data-lucide="{{ k.icon }}"></i></span>
+        </div>
+        <div class="metric-value">{{ k.value }}</div>
+        <div class="metric-sub">{{ k.sub }}</div>
+      </article>
+    {% endfor %}
+  </section>
+
+  <div class="reports-grid">
+    <section class="chart-card span-12">
+      <div class="card-head">
+        <h2 class="card-title"><i data-lucide="activity"></i> Ventas por día</h2>
+        <div class="card-subtle">Mock</div>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height: 260px; background: linear-gradient(180deg, rgba(37,99,235,0.08), rgba(255,255,255,0)); border-radius: 16px; border: 1px solid #e2e8f0;"></div>
+      </div>
+    </section>
+  </div>
+{% endblock %}
+

@@ -6,6 +6,7 @@ from django.db import transaction
 
 from core.models import PerfilAcceso
 from personas.models import Vendedor
+from productos.models import ListaPrecios
 
 
 User = get_user_model()
@@ -135,6 +136,13 @@ class UsuarioEditarForm(forms.ModelForm):
         ),
         widget=forms.Select(attrs={"class": "form-select"}),
     )
+    listas_precios_bloqueadas = forms.ModelMultipleChoiceField(
+        label="Listas de precio bloqueadas (portal vendedor)",
+        queryset=ListaPrecios.objects.all().order_by("-es_farmacia", "nombre"),
+        required=False,
+        help_text="Estas listas NO estarán disponibles para este vendedor en el portal vendedor.",
+        widget=forms.SelectMultiple(attrs={"class": "form-select", "size": "7"}),
+    )
 
     class Meta:
         model = User
@@ -148,6 +156,10 @@ class UsuarioEditarForm(forms.ModelForm):
             solo = bool(getattr(getattr(inst, "perfil_acceso", None), "solo_vendedor", False))
             v = _vendedor_del_usuario(inst)
             self.fields["vinculo_vendedor"].initial = v.pk if v else None
+            if v:
+                self.fields["listas_precios_bloqueadas"].initial = list(
+                    v.listas_precios_bloqueadas.values_list("pk", flat=True)
+                )
         self.fields["vendedor"].initial = solo
 
     def clean(self):
@@ -175,6 +187,13 @@ class UsuarioEditarForm(forms.ModelForm):
                     _vincular_usuario_a_vendedor(user, vin)
                 elif solo_vendedor and _vendedor_del_usuario(user) is None:
                     _asegurar_vendedor_automatico(user)
+
+                # Listas de precios bloqueadas (solo si el usuario tiene vendedor vinculado).
+                v = vin or _vendedor_del_usuario(user)
+                if v:
+                    v.listas_precios_bloqueadas.set(
+                        self.cleaned_data.get("listas_precios_bloqueadas") or []
+                    )
         return user
 
 

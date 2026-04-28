@@ -2,19 +2,28 @@
 {% load money %}
 {% block title %}Stock{% endblock %}
 {% block content %}
-  <div class="app-page-header mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
-    <h1 class="app-page-title mb-0">Stock</h1>
-    <button
-      class="btn btn-primary btn-sm rounded-pill"
-      type="button"
-      data-bs-toggle="collapse"
-      data-bs-target="#stockCargaCollapse"
-      aria-expanded="{% if form.errors %}true{% else %}false{% endif %}"
-      aria-controls="stockCargaCollapse"
-    >
-      Nuevo movimiento
-    </button>
-  </div>
+  <section class="page-header-card inventory-header">
+    <div class="header-left">
+      <span class="header-ico" aria-hidden="true"><i data-lucide="boxes"></i></span>
+      <div class="min-w-0">
+        <h1 class="header-title">Stock</h1>
+        <p class="header-subtitle">Gestioná el stock disponible de tus productos en tiempo real.</p>
+      </div>
+    </div>
+    <div class="d-flex flex-wrap gap-2 justify-content-end">
+      <button
+        class="action-button primary btn btn-primary"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#stockCargaCollapse"
+        aria-expanded="{% if form.errors %}true{% else %}false{% endif %}"
+        aria-controls="stockCargaCollapse"
+      >
+        <i data-lucide="plus" aria-hidden="true"></i>
+        Nuevo movimiento
+      </button>
+    </div>
+  </section>
 
   <div class="collapse {% if form.errors %}show{% endif %}" id="stockCargaCollapse">
     <div class="card app-card border-0 shadow-sm mb-3">
@@ -80,95 +89,169 @@
     </div>
   </div>
 
-  <div class="card app-card border-0 shadow-sm app-list-filters mb-3 stock-inventory-card">
-    <div class="card-body border-bottom">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-12 col-md-8">
-          <label class="form-label small text-muted mb-1">Buscar producto</label>
-          <input
-            type="search"
-            name="q"
-            class="form-control form-control-sm rounded-3"
-            value="{{ q|default:'' }}"
-            placeholder="Código o descripción"
-            autocomplete="off"
-          />
-        </div>
-        <div class="col-12 col-md-4 d-flex flex-wrap gap-2">
-          <button type="submit" class="btn btn-outline-dark btn-sm rounded-pill">Filtrar</button>
-          <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'stock_home' %}">Limpiar</a>
-        </div>
-      </form>
-      <p class="text-muted small mb-0 mt-2">
-        En <strong>Stock disponible</strong> podés corregir el saldo a mano; se guarda en el producto y se refleja en Productos, presupuestos y ventas.
-      </p>
+  <section class="stats-grid mb-3" aria-label="KPIs inventario">
+    <article class="metric-card">
+      <div class="metric-top">
+        <div class="metric-title">Productos en stock</div>
+        <span class="metric-icon"><i data-lucide="package"></i></span>
+      </div>
+      <div class="metric-value">{{ kpi.productos|default:0 }}</div>
+      <div class="metric-sub">Según filtros</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-top">
+        <div class="metric-title">Productos activos</div>
+        <span class="metric-icon" style="background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); color:#22c55e;"><i data-lucide="check-circle"></i></span>
+      </div>
+      <div class="metric-value">{{ kpi.activos|default:0 }}</div>
+      <div class="metric-sub">Habilitados</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-top">
+        <div class="metric-title">Stock disponible total</div>
+        <span class="metric-icon"><i data-lucide="boxes"></i></span>
+      </div>
+      <div class="metric-value">{{ kpi.stock_total|default:0 }}</div>
+      <div class="metric-sub">Unidades</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-top">
+        <div class="metric-title">Valor total del stock</div>
+        <span class="metric-icon"><i data-lucide="badge-dollar-sign"></i></span>
+      </div>
+      <div class="metric-value">{{ kpi.valor_total|default:0|ars }}</div>
+      <div class="metric-sub">Costo × stock</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-top">
+        <div class="metric-title">Productos sin stock</div>
+        <span class="metric-icon" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color:#ef4444;"><i data-lucide="alert-triangle"></i></span>
+      </div>
+      <div class="metric-value">{{ kpi.sin_stock|default:0 }}</div>
+      <div class="metric-sub">Stock ≤ 0</div>
+    </article>
+  </section>
+
+  <section class="modern-filter-card" aria-label="Filtros">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-12 col-md-6 col-lg-3">
+        <label class="form-label small text-muted mb-1">Buscar producto</label>
+        <input type="search" name="q" class="form-control input-modern" value="{{ q|default:'' }}" placeholder="Código o descripción" autocomplete="off" />
+      </div>
+      <div class="col-12 col-md-6 col-lg-2">
+        <label class="form-label small text-muted mb-1">Tipo</label>
+        <select class="form-select input-modern" name="tipo">
+          <option value="">Todos</option>
+          {% for v, label in tipos %}
+            <option value="{{ v }}" {% if tipo == v %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-md-6 col-lg-3">
+        <label class="form-label small text-muted mb-1">Proveedor</label>
+        <select class="form-select input-modern" name="proveedor">
+          <option value="">Todos</option>
+          {% for pr in proveedores_filtro %}
+            <option value="{{ pr.pk }}" {% if proveedor == pr.pk|stringformat:"s" %}selected{% endif %}>
+              {{ pr.codigo }} — {{ pr.apellido }}, {{ pr.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-md-6 col-lg-2">
+        <label class="form-label small text-muted mb-1">Estado</label>
+        <select class="form-select input-modern" name="estado">
+          <option value="" {% if not estado %}selected{% endif %}>Todos</option>
+          <option value="1" {% if estado == "1" %}selected{% endif %}>Activos</option>
+          <option value="0" {% if estado == "0" %}selected{% endif %}>Inactivos</option>
+        </select>
+      </div>
+      <div class="col-12 col-md-12 col-lg-2 d-flex gap-2">
+        <button type="submit" class="action-button primary btn btn-primary flex-grow-1">
+          <i data-lucide="filter" aria-hidden="true"></i>
+          Filtrar
+        </button>
+        <a class="action-button btn btn-outline-secondary flex-grow-1" href="{% url 'stock_home' %}">Limpiar</a>
+      </div>
+    </form>
+    <p class="text-muted small mb-0 mt-2">
+      En <strong>Stock disponible</strong> podés corregir el saldo a mano; se guarda en el producto y se refleja en Productos, presupuestos y ventas.
+    </p>
+  </section>
+
+  <div class="dashboard-card mb-3">
+    <div class="card-head">
+      <h2 class="card-title"><i data-lucide="table" aria-hidden="true"></i> Productos</h2>
+      <div class="card-subtle">Stock, costo, valor total y estado</div>
     </div>
-    <div class="table-responsive stock-inventory-wrap">
-      <table class="table-stock-saas w-100">
-        <thead>
-          <tr>
-            <th scope="col" class="col-codigo-th">Código</th>
-            <th scope="col" class="col-tipo-th">Tipo</th>
-            <th scope="col" class="col-descripcion-th">Descripción</th>
-            <th scope="col" class="text-end col-stock-th">Stock disp.</th>
-            <th scope="col" class="text-end col-precio-th">Precio</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for p in productos %}
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="report-table">
+          <thead>
             <tr>
-              <td class="col-codigo"><span class="col-codigo-txt">{{ p.codigo }}</span></td>
-              <td class="col-tipo">{{ p.get_tipo_display }}</td>
-              <td class="col-descripcion">
-                <span class="col-descripcion-txt">{{ p.descripcion }}</span>
-              </td>
-              <td class="text-end col-stock">
-                {% if user.is_staff %}
-                  <div class="table-actions stock-saas-stock-actions justify-content-end">
-                    <form
-                      method="post"
-                      action="{% url 'stock_ajuste_inline' %}"
-                      class="d-inline-flex align-items-center gap-2 justify-content-end flex-wrap"
-                    >
+              <th>Código</th>
+              <th>Producto</th>
+              <th class="col-hide-sm">Tipo</th>
+              <th class="col-hide-sm">Marca</th>
+              <th class="text-end">Stock disp.</th>
+              <th class="text-end col-hide-xs">Costo</th>
+              <th class="text-end col-hide-xs">Valor total</th>
+              <th>Estado</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in productos %}
+              <tr>
+                <td><span class="prod-code">{{ p.codigo }}</span></td>
+                <td>
+                  <div class="name">{{ p.descripcion }}</div>
+                </td>
+                <td class="muted col-hide-sm">{{ p.get_tipo_display }}</td>
+                <td class="muted col-hide-sm">{% if p.proveedor_marca %}{{ p.proveedor_marca }}{% else %}—{% endif %}</td>
+                <td class="num">
+                  {% if user.is_staff %}
+                    <form method="post" action="{% url 'stock_ajuste_inline' %}" class="d-inline-flex align-items-center gap-2 justify-content-end flex-wrap">
                       {% csrf_token %}
                       <input type="hidden" name="producto_id" value="{{ p.pk }}" />
                       <input type="hidden" name="retorno_q" value="{{ q|default:'' }}" />
-                      <input
-                        type="number"
-                        name="stock"
-                        id="stock-input-{{ p.pk }}"
-                        class="form-control form-control-sm stock-saas-input text-end"
-                        min="0"
-                        step="1"
-                        value="{{ p.stock }}"
-                        title="Editar stock y aplicar"
-                        aria-label="Stock {{ p.codigo }}"
-                      />
-                      <button
-                        type="submit"
-                        class="btn-icon stock-saas-apply"
-                        title="Aplicar"
-                        aria-label="Aplicar"
-                      >
+                      <input type="number" name="stock" class="pricing-edit-input text-end" style="width: 7rem" min="0" step="1" value="{{ p.stock }}" />
+                      <button type="submit" class="icon-button" title="Aplicar" aria-label="Aplicar">
                         <i data-lucide="check" aria-hidden="true"></i>
                       </button>
                     </form>
-                  </div>
-                {% else %}
-                  <span class="col-stock-numeral">{{ p.stock }}</span>
-                {% endif %}
-              </td>
-              <td class="text-end col-precio col-precio-ars">{{ p.precio_venta|ars }}</td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="5" class="table-empty stock-saas-table-empty">
-                {% if q %}No hay productos que coincidan con la búsqueda.{% else %}No hay productos cargados.{% endif %}
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+                  {% else %}
+                    {{ p.stock }}
+                  {% endif %}
+                </td>
+                <td class="num col-hide-xs">{{ p.costo|ars }}</td>
+                <td class="num col-hide-xs">{{ p.valor_total_stock|ars }}</td>
+                <td>
+                  {% if p.stock <= 0 %}
+                    <span class="status-badge status-badge--danger">Sin stock</span>
+                  {% elif p.stock <= 5 %}
+                    <span class="status-badge status-badge--warning">Bajo</span>
+                  {% else %}
+                    <span class="status-badge status-badge--success">En stock</span>
+                  {% endif %}
+                  {% if p.habilitado %}
+                    <span class="status-badge status-badge--primary ms-1">Activo</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <a class="icon-button" href="{% url 'producto_update' p.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" title="Editar" aria-label="Editar">
+                    <i data-lucide="pencil" aria-hidden="true"></i>
+                  </a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="9" class="table-empty">{% if q %}No hay productos que coincidan con la búsqueda.{% else %}No hay productos cargados.{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
     {% include "includes/pagination_footer.html" %}
   </div>
