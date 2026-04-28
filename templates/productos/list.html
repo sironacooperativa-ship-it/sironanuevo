@@ -35,6 +35,31 @@
     .table-card--productos .app-th-sort:focus {
       color: #0f172a;
     }
+    /* Último en <head>: fuerza el aspecto de icon buttons (vence Bootstrap / caché) */
+    .table-card--productos .table-actions .btn-icon,
+    .table-card--productos .table-actions a.btn-icon {
+      box-sizing: border-box !important;
+      width: 34px !important;
+      min-width: 34px !important;
+      height: 34px !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 10px !important;
+      background: #ffffff !important;
+      -webkit-appearance: none !important;
+      appearance: none !important;
+      line-height: 0 !important;
+    }
+    .table-card--productos .table-actions a.btn-icon {
+      text-decoration: none !important;
+    }
+    .table-card--productos .table-actions .btn-icon svg,
+    .table-card--productos .table-actions a.btn-icon svg {
+      width: 16px !important;
+      height: 16px !important;
+      stroke: currentColor !important;
+    }
   </style>
 {% endblock %}
 {% block title %}Productos{% endblock %}

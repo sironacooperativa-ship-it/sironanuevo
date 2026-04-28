@@ -797,9 +797,10 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   margin: 0;
 }
 
+/* :not(.btn-icon) evita chocar con icon buttons modernos (p. ej. listado productos) */
 .table-action-btn,
-.table-actions button,
-.table-actions a {
+.table-actions button:not(.btn-icon),
+.table-actions a:not(.btn-icon) {
   width: 30px;
   min-width: 30px;
   height: 30px;
@@ -821,8 +822,8 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
 }
 
 .table-action-btn:hover,
-.table-actions button:hover,
-.table-actions a:hover {
+.table-actions button:not(.btn-icon):hover,
+.table-actions a:not(.btn-icon):hover {
   background: var(--sirona-primary-soft);
   border-color: var(--sirona-primary);
   color: var(--sirona-primary);
