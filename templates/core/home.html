@@ -47,23 +47,86 @@
   </style>
 {% endblock %}
 {% block content %}
-  <div class="app-page-header mb-3">
-    <h1 class="app-page-title mb-1">
-      Inicio
-      <span class="text-muted fw-normal">· Hola {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user.username }}{% endif %}</span>
-    </h1>
-    <div class="text-muted small mb-2">Resumen general y recordatorios</div>
-    <div class="d-flex gap-2 flex-wrap">
-      <a class="btn btn-primary btn-sm rounded-pill" href="{% url 'venta_nueva' %}">Nueva venta</a>
-      <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'presupuesto_nuevo' %}">Nuevo presupuesto</a>
-      <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'compra_registrar' %}">Nueva compra</a>
+  <div class="page-header">
+    <div class="min-w-0">
+      <h1 class="page-title">
+        Hola {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user.username }}{% endif %}
+      </h1>
+      <p class="page-subtitle">Resumen general, pendientes y recordatorios</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap align-items-center justify-content-end">
+      <a class="action-button primary btn btn-primary" href="{% url 'venta_nueva' %}">
+        <i data-lucide="shopping-bag" aria-hidden="true"></i>
+        Nueva venta
+      </a>
+      <a class="action-button btn btn-outline-primary" href="{% url 'presupuesto_nuevo' %}">
+        <i data-lucide="file-text" aria-hidden="true"></i>
+        Nuevo presupuesto
+      </a>
+      <a class="action-button btn btn-outline-primary" href="{% url 'compra_registrar' %}">
+        <i data-lucide="shopping-cart" aria-hidden="true"></i>
+        Nueva compra
+      </a>
       <a
-        class="btn btn-outline-primary btn-sm rounded-pill"
+        class="action-button btn btn-outline-primary"
         href="{% url 'producto_create' %}"
         data-sirona-modal-url="{% url 'producto_create' %}?modal=1"
-      >Carga nuevo producto</a>
-      <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'reportes_dashboard' %}">Ver reportes</a>
-      <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'productos_list' %}">Productos</a>
+      >
+        <i data-lucide="package-plus" aria-hidden="true"></i>
+        <span class="d-none d-lg-inline">Carga nuevo producto</span>
+        <span class="d-inline d-lg-none">Carga producto</span>
+      </a>
+      <a class="action-button btn btn-outline-secondary" href="{% url 'reportes_dashboard' %}">
+        <i data-lucide="chart-column" aria-hidden="true"></i>
+        Reportes
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3 align-items-stretch home-kpi-row">
+    <div class="col-12 col-lg-4 order-2 order-lg-1 h-100 d-flex flex-column">
+      <div class="row g-3 flex-grow-1 w-100 mx-0 align-items-stretch flex-fill">
+        <div class="col-6 d-flex align-items-stretch">
+          <div class="stat-card w-100 h-100">
+            <div class="stat-row">
+              <div class="stat-label">Productos habilitados</div>
+              <span class="stat-ico"><i data-lucide="package"></i></span>
+            </div>
+            <div class="stat-value">{{ resumen.productos_habilitados }}</div>
+            <div class="text-muted small">Totales activos</div>
+          </div>
+        </div>
+        <div class="col-6 d-flex align-items-stretch">
+          <div class="stat-card w-100 h-100">
+            <div class="stat-row">
+              <div class="stat-label">Alertas</div>
+              <span class="stat-ico stat-ico--danger"><i data-lucide="alert-triangle"></i></span>
+            </div>
+            <div class="stat-value">{{ stock_critico|length }}</div>
+            <div class="text-muted small">stock ≤ 0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-4 order-1 order-lg-2 h-100 d-flex flex-column">
+      <div class="stat-card w-100 flex-grow-1">
+        <div class="stat-row">
+          <div class="stat-label">Ventas (30 días)</div>
+          <span class="stat-ico"><i data-lucide="badge-dollar-sign"></i></span>
+        </div>
+        <div class="stat-value">{{ kpis_ventas.neto_total|ars }}</div>
+        <div class="text-muted small">{{ kpis_ventas.pedidos }} pedidos — {{ kpis_ventas.pendientes }} pendientes</div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-4 order-3 order-lg-3 h-100 d-flex flex-column">
+      <div class="stat-card w-100 flex-grow-1">
+        <div class="stat-row">
+          <div class="stat-label">Compras (30 días)</div>
+          <span class="stat-ico stat-ico--orange"><i data-lucide="shopping-cart"></i></span>
+        </div>
+        <div class="stat-value">{{ kpis_compras.monto_total|ars }}</div>
+        <div class="text-muted small">{{ kpis_compras.compras }} compras registradas</div>
+      </div>
     </div>
   </div>
 
@@ -285,53 +348,7 @@
     </div>
   {% endif %}
 
-  <div class="row g-3 mb-3 align-items-stretch home-kpi-row">
-    <div class="col-12 col-lg-4 order-3 order-lg-1 h-100 d-flex flex-column">
-      <div class="row g-3 flex-grow-1 w-100 mx-0 align-items-stretch flex-fill">
-        <div class="col-6 d-flex align-items-stretch">
-          <div class="card shadow-sm home-kpi-card w-100 h-100">
-            <div class="card-body py-3">
-              <div class="text-muted small">Productos habilitados</div>
-              <div class="home-kpi-monto-compact mt-1">{{ resumen.productos_habilitados }}</div>
-            </div>
-          </div>
-        </div>
-        <div class="col-6 d-flex align-items-stretch">
-          <div class="card shadow-sm home-kpi-card w-100 h-100">
-            <div class="card-body py-3">
-              <div class="text-muted small">Alertas</div>
-              <div class="home-kpi-monto-compact mt-1">{{ stock_critico|length }}</div>
-              <div class="small text-muted mt-2 mb-0">stock ≤ 0</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-lg-4 order-1 order-lg-2 h-100 d-flex flex-column">
-      <div class="card shadow-sm home-kpi-card w-100 flex-grow-1">
-        <div class="card-body py-3">
-          <div class="text-muted small">Ventas (30 días)</div>
-          <div class="home-kpi-monto-wrap mt-1">
-            <div class="home-kpi-monto-fluid">{{ kpis_ventas.neto_total|ars }}</div>
-          </div>
-          <div class="small text-muted mt-2 mb-0">
-            {{ kpis_ventas.pedidos }} pedidos — {{ kpis_ventas.pendientes }} pendientes
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-lg-4 order-2 order-lg-3 h-100 d-flex flex-column">
-      <div class="card shadow-sm home-kpi-card w-100 flex-grow-1">
-        <div class="card-body py-3">
-          <div class="text-muted small">Compras (30 días)</div>
-          <div class="home-kpi-monto-wrap mt-1">
-            <div class="home-kpi-monto-fluid">{{ kpis_compras.monto_total|ars }}</div>
-          </div>
-          <div class="small text-muted mt-2 mb-0">{{ kpis_compras.compras }} compras registradas</div>
-        </div>
-      </div>
-    </div>
-  </div>
+  {# KPI row moved to top: now uses stat-card system #}
 
   <div class="row g-3 mb-3">
     <div class="col-12 col-lg-6">

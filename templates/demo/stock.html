@@ -1,0 +1,122 @@
+{% extends "demo/base_demo.html" %}
+{% block title %}Stock · Demo{% endblock %}
+{% block content %}
+  <section class="page-header-card inventory-header">
+    <div class="header-left">
+      <span class="header-ico" aria-hidden="true"><i data-lucide="boxes"></i></span>
+      <div class="min-w-0">
+        <h1 class="header-title">Stock</h1>
+        <p class="header-subtitle">Gestioná el stock disponible de tus productos en tiempo real (demo).</p>
+      </div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+      <button class="action-button primary btn btn-primary" type="button" onclick="return false;">
+        <i data-lucide="plus"></i>
+        Nuevo movimiento
+      </button>
+    </div>
+  </section>
+
+  <section class="stats-grid mb-3">
+    <article class="metric-card"><div class="metric-top"><div class="metric-title">Productos</div><span class="metric-icon"><i data-lucide="package"></i></span></div><div class="metric-value">{{ kpi.productos }}</div><div class="metric-sub">Total</div></article>
+    <article class="metric-card"><div class="metric-top"><div class="metric-title">Activos</div><span class="metric-icon" style="background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); color:#22c55e;"><i data-lucide="check-circle"></i></span></div><div class="metric-value">{{ kpi.activos }}</div><div class="metric-sub">Habilitados</div></article>
+    <article class="metric-card"><div class="metric-top"><div class="metric-title">Stock total</div><span class="metric-icon"><i data-lucide="boxes"></i></span></div><div class="metric-value">{{ kpi.stock_total }}</div><div class="metric-sub">Unidades</div></article>
+    <article class="metric-card"><div class="metric-top"><div class="metric-title">Valor total</div><span class="metric-icon"><i data-lucide="badge-dollar-sign"></i></span></div><div class="metric-value">{{ kpi.valor_total }}</div><div class="metric-sub">Costo × stock</div></article>
+    <article class="metric-card"><div class="metric-top"><div class="metric-title">Sin stock</div><span class="metric-icon" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color:#ef4444;"><i data-lucide="alert-triangle"></i></span></div><div class="metric-value">{{ kpi.sin_stock }}</div><div class="metric-sub">Stock ≤ 0</div></article>
+  </section>
+
+  <section class="modern-filter-card mb-3">
+    <form class="row g-2 align-items-end" onsubmit="return false;">
+      <div class="col-12 col-md-6 col-lg-4">
+        <label class="form-label small text-muted mb-1">Buscar producto</label>
+        <input class="form-control input-modern" value="Producto Demo" />
+      </div>
+      <div class="col-12 col-md-6 col-lg-2">
+        <label class="form-label small text-muted mb-1">Tipo</label>
+        <select class="form-select input-modern"><option>Todos</option></select>
+      </div>
+      <div class="col-12 col-md-6 col-lg-3">
+        <label class="form-label small text-muted mb-1">Proveedor</label>
+        <select class="form-select input-modern"><option>Todos</option></select>
+      </div>
+      <div class="col-12 col-md-6 col-lg-3 d-flex gap-2">
+        <button class="action-button primary btn btn-primary flex-grow-1" type="button"><i data-lucide="filter"></i> Filtrar</button>
+        <button class="action-button btn btn-outline-secondary flex-grow-1" type="button">Limpiar</button>
+      </div>
+    </form>
+  </section>
+
+  <div class="dashboard-card mb-3">
+    <div class="card-head">
+      <h2 class="card-title"><i data-lucide="table"></i> Productos</h2>
+      <div class="card-subtle">Demo</div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Producto</th>
+              <th>Tipo</th>
+              <th class="text-end">Stock disp.</th>
+              <th class="text-end">Costo</th>
+              <th class="text-end">Valor total</th>
+              <th>Estado</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows %}
+              <tr>
+                <td><span class="prod-code">{{ r.codigo }}</span></td>
+                <td>
+                  <div class="name">{{ r.desc }}</div>
+                </td>
+                <td class="muted">{{ r.tipo }}</td>
+                <td class="num">{{ r.stock }}</td>
+                <td class="num">{{ r.costo }}</td>
+                <td class="num">{{ r.valor }}</td>
+                <td>
+                  {% if r.stock == 0 %}
+                    <span class="status-badge status-badge--danger">Sin stock</span>
+                  {% else %}
+                    <span class="status-badge status-badge--success">En stock</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <button class="icon-button" type="button" onclick="return false;"><i data-lucide="check"></i></button>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <div class="card-head">
+      <h2 class="card-title"><i data-lucide="clock"></i> Últimos movimientos</h2>
+      <div class="card-subtle">Demo</div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="report-table">
+          <thead><tr><th>Fecha</th><th>Tipo</th><th>Producto</th><th class="text-end">Cant.</th></tr></thead>
+          <tbody>
+            {% for m in movs %}
+              <tr>
+                <td class="muted">{{ m.fecha }}</td>
+                <td class="muted">{{ m.tipo }}</td>
+                <td>{{ m.prod }}</td>
+                <td class="num">{{ m.cant }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

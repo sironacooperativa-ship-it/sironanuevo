@@ -53,6 +53,7 @@
   </style>
 {% endblock %}
 {% block content %}
+  <span id="sidebarCurrentNode" class="d-none" data-parent-url="{% url 'presupuesto_lista' %}">{% if presupuesto.estado == "ACT" %}Presupuesto{% else %}Orden{% endif %} #{{ presupuesto.pk }}</span>
   {% if not vista_publica_compartida %}
   <div class="no-print d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">

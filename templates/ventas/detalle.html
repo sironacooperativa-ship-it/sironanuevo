@@ -22,10 +22,239 @@
         border: none !important;
         box-shadow: none !important;
       }
+      .remito-doc {
+        display: none !important;
+      }
+      .print-doc {
+        display: block !important;
+      }
+      @page {
+        size: A4 portrait;
+        margin: 10mm;
+      }
+    }
+
+    /* Print-only layout */
+    .print-doc {
+      display: none;
+      background: #fff;
+      color: #0f172a;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    .print-sheet {
+      position: relative;
+    }
+
+    .print-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10mm;
+      align-items: start;
+    }
+
+    .cut-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 0;
+      border-left: 1px dashed #cbd5e1;
+      transform: translateX(-5mm);
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .print-half {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 6mm;
+    }
+
+    .p-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8mm;
+      padding-bottom: 3mm;
+      border-bottom: 1px solid #93c5fd;
+      margin-bottom: 3mm;
+    }
+
+    .p-brand {
+      display: flex;
+      gap: 3mm;
+      align-items: flex-start;
+      min-width: 0;
+    }
+
+    .p-brand img {
+      max-height: 10mm;
+      width: auto;
+    }
+
+    .p-brand .t1 {
+      font-weight: 750;
+      font-size: 10px;
+      line-height: 1.1;
+      margin: 0;
+    }
+
+    .p-brand .t2 {
+      font-size: 8px;
+      color: #64748b;
+      margin: 1mm 0 0;
+    }
+
+    .p-meta {
+      text-align: right;
+      font-size: 8px;
+      line-height: 1.15;
+      color: #64748b;
+      white-space: nowrap;
+    }
+
+    .p-meta .kind {
+      font-size: 10px;
+      font-weight: 800;
+      color: #2563eb;
+      letter-spacing: 0.06em;
+    }
+
+    .p-meta .num {
+      font-size: 10px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .p-who {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6mm;
+      margin: 2mm 0 3mm;
+    }
+
+    .who h3 {
+      font-size: 8px;
+      margin: 0 0 1mm;
+      color: #64748b;
+      letter-spacing: 0.08em;
+    }
+
+    .who .row {
+      font-size: 9px;
+      line-height: 1.2;
+      margin: 0.5mm 0;
+    }
+
+    .who .muted {
+      color: #64748b;
+      font-size: 8px;
+    }
+
+    .p-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.5px;
+    }
+
+    .p-table th {
+      background: #eef2ff;
+      color: #0f172a;
+      font-size: 7px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-align: left;
+      padding: 2.5mm 2mm;
+      border-bottom: 1px solid #cbd5e1;
+    }
+
+    .p-table td {
+      padding: 2.2mm 2mm;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+
+    .p-table td.num,
+    .p-table th.num {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .p-table td.c,
+    .p-table th.c {
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .p-totals {
+      width: 55%;
+      margin-left: auto;
+      margin-top: 3mm;
+      border-collapse: collapse;
+      font-size: 9px;
+    }
+
+    .p-totals td {
+      padding: 2mm 2mm;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .p-totals td:last-child {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .p-totals tr.total td {
+      background: #eff6ff;
+      color: #2563eb;
+      font-weight: 800;
+    }
+
+    .p-lines {
+      margin-top: 4mm;
+      font-size: 8px;
+      color: #64748b;
+    }
+
+    .line {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 3mm;
+      align-items: center;
+      margin-top: 3mm;
+    }
+
+    .line .u {
+      border-bottom: 1px solid #cbd5e1;
+      height: 0;
+    }
+
+    .p-foot {
+      margin-top: 4mm;
+      text-align: center;
+      font-size: 8px;
+      color: #64748b;
+    }
+
+    @media print {
+      .print-doc.short @page {
+        size: A4 landscape;
+        margin: 8mm;
+      }
+      .print-doc.long @page {
+        size: A4 portrait;
+        margin: 10mm;
+      }
+      .page-break {
+        page-break-after: always;
+      }
+      thead { display: table-header-group; }
+      tfoot { display: table-footer-group; }
     }
   </style>
 {% endblock %}
 {% block content %}
+  <span id="sidebarCurrentNode" class="d-none" data-parent-url="{% url 'ventas_historial' %}">Pedido #{{ venta.pk }}</span>
   <div class="no-print d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Pedido #{{ venta.pk }}</h1>
     <div class="d-flex flex-wrap gap-2">
@@ -226,6 +455,288 @@
       </div>
     </div>
   </div>
+
+  {# Print-only: Pedido + Remito con la estética del render de referencia #}
+  {% with venta.lineas.all|length as nlineas %}
+    <div class="print-doc {% if nlineas <= 15 %}short{% else %}long{% endif %}">
+      {% if nlineas <= 15 %}
+        <div class="print-sheet">
+          <div class="cut-line" aria-hidden="true"></div>
+          <div class="print-grid">
+            <section class="print-half">
+              <div class="p-head">
+                <div class="p-brand">
+                  <img src="{% static 'img/sirona-logo.png' %}" alt="SIRONA" />
+                  <div>
+                    <p class="t1">SIRONA Cooperativa</p>
+                    <p class="t2">Sistema de Gestión</p>
+                  </div>
+                </div>
+                <div class="p-meta">
+                  <div class="kind">PEDIDO</div>
+                  <div class="num">N.º {{ venta.pk|stringformat:"08d" }}</div>
+                  <div>{{ venta.creado_en|date:"d/m/Y H:i" }}</div>
+                </div>
+              </div>
+
+              <div class="p-who">
+                <div class="who">
+                  <h3>VENDEDOR</h3>
+                  <div class="row"><span class="muted">Código:</span> {{ venta.vendedor.codigo }}</div>
+                  <div class="row"><strong>{{ venta.vendedor.apellido }}, {{ venta.vendedor.nombre }}</strong></div>
+                </div>
+                <div class="who">
+                  <h3>COMPRADOR</h3>
+                  {% if venta.comprador %}
+                    <div class="row"><span class="muted">Código:</span> {{ venta.comprador.codigo }}</div>
+                    <div class="row"><strong>{{ venta.comprador.apellido }}, {{ venta.comprador.nombre }}</strong></div>
+                    {% if venta.comprador.direccion %}<div class="row muted">{{ venta.comprador.direccion|truncatechars:34 }}</div>{% endif %}
+                  {% else %}
+                    <div class="row muted">—</div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <table class="p-table">
+                <thead>
+                  <tr>
+                    <th class="c" style="width: 6%;">N.º</th>
+                    <th style="width: 14%;">Código</th>
+                    <th>Descripción</th>
+                    <th class="c" style="width: 9%;">Cant.</th>
+                    <th class="num" style="width: 16%;">P. Unit.</th>
+                    <th class="num" style="width: 16%;">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for ln in venta.lineas.all %}
+                    <tr>
+                      <td class="c">{{ forloop.counter }}</td>
+                      <td>{{ ln.texto_codigo }}</td>
+                      <td>{{ ln.texto_descripcion|truncatechars:52 }}</td>
+                      <td class="c">{{ ln.cantidad }}</td>
+                      <td class="num">{{ ln.precio_unitario|ars }}</td>
+                      <td class="num">{{ ln.subtotal|ars }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="6" class="muted">Sin líneas</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+
+              <table class="p-totals">
+                <tbody>
+                  <tr><td>Subtotal</td><td>{{ venta.subtotal_lineas|ars }}</td></tr>
+                  {% if venta.descuento_monto and venta.descuento_monto > 0 %}
+                    <tr><td>Descuento</td><td>{{ venta.descuento_monto|ars }}</td></tr>
+                  {% endif %}
+                  <tr class="total"><td>TOTAL</td><td>{{ venta.neto|ars }}</td></tr>
+                </tbody>
+              </table>
+              <div class="p-foot">Gracias por confiar en nosotros.</div>
+            </section>
+
+            <section class="print-half">
+              <div class="p-head">
+                <div class="p-brand">
+                  <img src="{% static 'img/sirona-logo.png' %}" alt="SIRONA" />
+                  <div>
+                    <p class="t1">SIRONA Cooperativa</p>
+                    <p class="t2">Sistema de Gestión</p>
+                  </div>
+                </div>
+                <div class="p-meta">
+                  <div class="kind">REMITO</div>
+                  <div class="num">N.º {{ venta.pk|stringformat:"08d" }}</div>
+                  <div>{{ venta.creado_en|date:"d/m/Y H:i" }}</div>
+                </div>
+              </div>
+
+              <div class="p-who">
+                <div class="who">
+                  <h3>VENDEDOR</h3>
+                  <div class="row"><span class="muted">Código:</span> {{ venta.vendedor.codigo }}</div>
+                  <div class="row"><strong>{{ venta.vendedor.apellido }}, {{ venta.vendedor.nombre }}</strong></div>
+                </div>
+                <div class="who">
+                  <h3>COMPRADOR</h3>
+                  {% if venta.comprador %}
+                    <div class="row"><span class="muted">Código:</span> {{ venta.comprador.codigo }}</div>
+                    <div class="row"><strong>{{ venta.comprador.apellido }}, {{ venta.comprador.nombre }}</strong></div>
+                    {% if venta.comprador.direccion %}<div class="row muted">{{ venta.comprador.direccion|truncatechars:34 }}</div>{% endif %}
+                  {% else %}
+                    <div class="row muted">—</div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <table class="p-table">
+                <thead>
+                  <tr>
+                    <th class="c" style="width: 7%;">N.º</th>
+                    <th style="width: 18%;">Código</th>
+                    <th>Descripción</th>
+                    <th class="c" style="width: 15%;">Cant.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for ln in venta.lineas.all %}
+                    <tr>
+                      <td class="c">{{ forloop.counter }}</td>
+                      <td>{{ ln.texto_codigo }}</td>
+                      <td>{{ ln.texto_descripcion|truncatechars:62 }}</td>
+                      <td class="c">{{ ln.cantidad }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="4" class="muted">Sin líneas</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+
+              <div class="p-lines">
+                <div class="line"><div><b>Total de bultos:</b></div><div class="u"></div></div>
+                <div class="line"><div><b>Observaciones:</b></div><div class="u"></div></div>
+                <div class="line"><div></div><div class="u"></div></div>
+              </div>
+              <div class="p-foot">Gracias por confiar en nosotros.</div>
+            </section>
+          </div>
+        </div>
+      {% else %}
+        <div class="page-break">
+          <section class="print-half" style="border:none; padding:0;">
+            <div class="p-head">
+              <div class="p-brand">
+                <img src="{% static 'img/sirona-logo.png' %}" alt="SIRONA" />
+                <div>
+                  <p class="t1">SIRONA Cooperativa</p>
+                  <p class="t2">Sistema de Gestión</p>
+                </div>
+              </div>
+              <div class="p-meta">
+                <div class="kind">PEDIDO</div>
+                <div class="num">N.º {{ venta.pk|stringformat:"08d" }}</div>
+                <div>{{ venta.creado_en|date:"d/m/Y H:i" }}</div>
+              </div>
+            </div>
+            <div class="p-who">
+              <div class="who">
+                <h3>VENDEDOR</h3>
+                <div class="row"><span class="muted">Código:</span> {{ venta.vendedor.codigo }}</div>
+                <div class="row"><strong>{{ venta.vendedor.apellido }}, {{ venta.vendedor.nombre }}</strong></div>
+              </div>
+              <div class="who">
+                <h3>COMPRADOR</h3>
+                {% if venta.comprador %}
+                  <div class="row"><span class="muted">Código:</span> {{ venta.comprador.codigo }}</div>
+                  <div class="row"><strong>{{ venta.comprador.apellido }}, {{ venta.comprador.nombre }}</strong></div>
+                  {% if venta.comprador.direccion %}<div class="row muted">{{ venta.comprador.direccion|truncatechars:44 }}</div>{% endif %}
+                {% else %}
+                  <div class="row muted">—</div>
+                {% endif %}
+              </div>
+            </div>
+            <table class="p-table">
+              <thead>
+                <tr>
+                  <th class="c" style="width: 5%;">N.º</th>
+                  <th style="width: 12%;">Código</th>
+                  <th>Descripción</th>
+                  <th class="c" style="width: 8%;">Cant.</th>
+                  <th class="num" style="width: 15%;">P. Unit.</th>
+                  <th class="num" style="width: 15%;">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for ln in venta.lineas.all %}
+                  <tr>
+                    <td class="c">{{ forloop.counter }}</td>
+                    <td>{{ ln.texto_codigo }}</td>
+                    <td>{{ ln.texto_descripcion }}</td>
+                    <td class="c">{{ ln.cantidad }}</td>
+                    <td class="num">{{ ln.precio_unitario|ars }}</td>
+                    <td class="num">{{ ln.subtotal|ars }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <table class="p-totals">
+              <tbody>
+                <tr><td>Subtotal</td><td>{{ venta.subtotal_lineas|ars }}</td></tr>
+                {% if venta.descuento_monto and venta.descuento_monto > 0 %}
+                  <tr><td>Descuento</td><td>{{ venta.descuento_monto|ars }}</td></tr>
+                {% endif %}
+                <tr class="total"><td>TOTAL</td><td>{{ venta.neto|ars }}</td></tr>
+              </tbody>
+            </table>
+            <div class="p-foot">Gracias por confiar en nosotros.</div>
+          </section>
+        </div>
+
+        <div>
+          <section class="print-half" style="border:none; padding:0;">
+            <div class="p-head">
+              <div class="p-brand">
+                <img src="{% static 'img/sirona-logo.png' %}" alt="SIRONA" />
+                <div>
+                  <p class="t1">SIRONA Cooperativa</p>
+                  <p class="t2">Sistema de Gestión</p>
+                </div>
+              </div>
+              <div class="p-meta">
+                <div class="kind">REMITO</div>
+                <div class="num">N.º {{ venta.pk|stringformat:"08d" }}</div>
+                <div>{{ venta.creado_en|date:"d/m/Y H:i" }}</div>
+              </div>
+            </div>
+            <div class="p-who">
+              <div class="who">
+                <h3>VENDEDOR</h3>
+                <div class="row"><span class="muted">Código:</span> {{ venta.vendedor.codigo }}</div>
+                <div class="row"><strong>{{ venta.vendedor.apellido }}, {{ venta.vendedor.nombre }}</strong></div>
+              </div>
+              <div class="who">
+                <h3>COMPRADOR</h3>
+                {% if venta.comprador %}
+                  <div class="row"><span class="muted">Código:</span> {{ venta.comprador.codigo }}</div>
+                  <div class="row"><strong>{{ venta.comprador.apellido }}, {{ venta.comprador.nombre }}</strong></div>
+                  {% if venta.comprador.direccion %}<div class="row muted">{{ venta.comprador.direccion|truncatechars:44 }}</div>{% endif %}
+                {% else %}
+                  <div class="row muted">—</div>
+                {% endif %}
+              </div>
+            </div>
+            <table class="p-table">
+              <thead>
+                <tr>
+                  <th class="c" style="width: 6%;">N.º</th>
+                  <th style="width: 14%;">Código</th>
+                  <th>Descripción</th>
+                  <th class="c" style="width: 10%;">Cant.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for ln in venta.lineas.all %}
+                  <tr>
+                    <td class="c">{{ forloop.counter }}</td>
+                    <td>{{ ln.texto_codigo }}</td>
+                    <td>{{ ln.texto_descripcion }}</td>
+                    <td class="c">{{ ln.cantidad }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="p-lines">
+              <div class="line"><div><b>Total de bultos:</b></div><div class="u"></div></div>
+              <div class="line"><div><b>Observaciones:</b></div><div class="u"></div></div>
+              <div class="line"><div></div><div class="u"></div></div>
+            </div>
+            <div class="p-foot">Gracias por confiar en nosotros.</div>
+          </section>
+        </div>
+      {% endif %}
+    </div>
+  {% endwith %}
 
   <div class="no-print d-flex flex-wrap gap-2 justify-content-center mt-4 mb-2">
     <button type="button" class="btn btn-outline-dark btn-sm" onclick="window.print()">Imprimir</button>

@@ -2,6 +2,7 @@
 {% load money %}
 {% block title %}Ficha {{ comprador.codigo }}{% endblock %}
 {% block content %}
+  <span id="sidebarCurrentNode" class="d-none" data-parent-url="{% url 'compradores_list' %}">{{ comprador.codigo }} — {{ comprador.apellido }}, {{ comprador.nombre }}</span>
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Ficha del cliente</h1>
     <span class="text-muted small"><code>{{ comprador.codigo }}</code></span>

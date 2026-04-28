@@ -1,13 +1,23 @@
 {% extends "base.html" %}
 {% block title %}{% if modo == "nuevo" %}Nuevo usuario{% else %}Editar usuario{% endif %}{% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-    <div>
-      <h1 class="h3 mb-0">{% if modo == "nuevo" %}Nuevo usuario{% else %}Editar usuario{% endif %}</h1>
-      {% if usuario %}<div class="text-muted small">{{ usuario.username }}</div>{% endif %}
+  <section class="page-header-card inventory-header">
+    <div class="header-left">
+      <span class="header-ico" aria-hidden="true"><i data-lucide="shield"></i></span>
+      <div class="min-w-0">
+        <h1 class="header-title">{% if modo == "nuevo" %}Nuevo usuario{% else %}Editar usuario{% endif %}</h1>
+        <p class="header-subtitle">
+          {% if usuario %}<span class="text-muted">{{ usuario.username }}</span>{% else %}Administración de accesos{% endif %}
+        </p>
+      </div>
     </div>
-    <a class="btn btn-outline-secondary btn-sm" href="{% url 'admin_usuarios_list' %}">Volver</a>
-  </div>
+    <div class="d-flex flex-wrap gap-2 justify-content-end">
+      <a class="action-pill action-pill--muted" href="{% url 'admin_usuarios_list' %}">
+        <i data-lucide="arrow-left" aria-hidden="true"></i>
+        Volver
+      </a>
+    </div>
+  </section>
 
   <form method="post" novalidate>
     {% csrf_token %}
@@ -15,7 +25,11 @@
       <div class="alert alert-danger">{{ form.non_field_errors }}</div>
     {% endif %}
 
-    <div class="card shadow-sm">
+    <div class="dashboard-card presu-lista-modern mb-3">
+      <div class="card-head">
+        <h2 class="card-title"><i data-lucide="user-cog" aria-hidden="true"></i> Datos</h2>
+        <div class="card-subtle">Usuario, estado y permisos</div>
+      </div>
       <div class="card-body row g-3">
         <div class="col-12 col-md-6">
           <label class="form-label">Usuario</label>
@@ -67,6 +81,23 @@
           {% if form.vinculo_vendedor.help_text %}<div class="form-text">{{ form.vinculo_vendedor.help_text }}</div>{% endif %}
         </div>
 
+        <div class="col-12">
+          <div class="modern-filter-card">
+            <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
+              <div>
+                <div class="fw-semibold">Acceso a listas de precio (portal vendedor)</div>
+                <div class="text-muted small">
+                  Elegí qué listas querés <strong>bloquear</strong> para este vendedor. Si no tiene vendedor vinculado, esta opción no aplica.
+                </div>
+              </div>
+            </div>
+            <label class="form-label" for="{{ form.listas_precios_bloqueadas.id_for_label }}">{{ form.listas_precios_bloqueadas.label }}</label>
+            {{ form.listas_precios_bloqueadas }}
+            {% if form.listas_precios_bloqueadas.errors %}<div class="text-danger small">{{ form.listas_precios_bloqueadas.errors }}</div>{% endif %}
+            {% if form.listas_precios_bloqueadas.help_text %}<div class="form-text">{{ form.listas_precios_bloqueadas.help_text }}</div>{% endif %}
+          </div>
+        </div>
+
         {% if modo == "nuevo" %}
           <div class="col-12 col-md-6">
             <label class="form-label">{{ form.password1.label }}</label>
@@ -87,8 +118,8 @@
         {% endif %}
       </div>
       <div class="card-body border-top d-flex justify-content-end gap-2">
-        <a class="btn btn-outline-secondary" href="{% url 'admin_usuarios_list' %}">Cancelar</a>
-        <button type="submit" class="btn btn-primary">{% if modo == "nuevo" %}Crear{% else %}Guardar{% endif %}</button>
+        <a class="action-pill action-pill--muted" href="{% url 'admin_usuarios_list' %}">Cancelar</a>
+        <button type="submit" class="action-pill">{% if modo == "nuevo" %}Crear{% else %}Guardar{% endif %}</button>
       </div>
     </div>
   </form>

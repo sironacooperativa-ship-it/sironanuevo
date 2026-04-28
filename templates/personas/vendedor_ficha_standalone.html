@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Ficha {{ vendedor.codigo }}{% endblock %}
 {% block content %}
+  <span id="sidebarCurrentNode" class="d-none" data-parent-url="{% url 'vendedores_list' %}">{{ vendedor.codigo }} — {{ vendedor.apellido }}, {{ vendedor.nombre }}</span>
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Ficha del vendedor</h1>
     <span class="text-muted small"><code>{{ vendedor.codigo }}</code></span>

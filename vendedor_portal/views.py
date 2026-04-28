@@ -377,14 +377,25 @@ def vendedor_lista_png(request, slug: str):
         }
         for p, precio in filas
     ]
+    # En modo vendedor, el PNG debe ser una sola imagen completa (sin paginación),
+    # igual al modo completo.
+    total_valor = Decimal("0.00")
+    for _, precio in filas:
+        try:
+            total_valor += Decimal(precio or 0)
+        except Exception:
+            pass
+    kpi = {"productos": len(payload), "valor_total": format_monto_ars(total_valor)}
     return render(
         request,
-        "vendedor_portal/lista_png.html",
+        "productos/lista_precios_compartir.html",
         {
             "vendedor": vendedor,
+            "lista": lista,
             "titulo": f"Lista de precios — {lista.nombre}",
-            "slug": slug,
             "productos": payload,
+            "q": "",
+            "kpi": kpi,
         },
     )
 

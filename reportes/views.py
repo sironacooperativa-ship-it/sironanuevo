@@ -153,6 +153,28 @@ def reportes_dashboard(request):
         .order_by("-neto")[:10]
     )
 
+    top_clientes = (
+        ventas.exclude(comprador_id__isnull=True)
+        .values("comprador_id", "comprador__codigo", "comprador__apellido", "comprador__nombre")
+        .annotate(neto=Coalesce(Sum(neto_nonneg), Value(Decimal("0.00"))), pedidos=Count("id"))
+        .order_by("-neto")[:10]
+    )
+
+    clientes_activos = ventas.exclude(comprador_id__isnull=True).values("comprador_id").distinct().count()
+    productos_vendidos = ventas.aggregate(
+        u=Coalesce(Sum("lineas__cantidad"), Value(0)),
+    )["u"] or 0
+
+    # Resumen por categoría (tipo de producto) usando unidades vendidas por tipo.
+    por_tipo = (
+        ventas.values("lineas__producto__tipo")
+        .annotate(unidades=Coalesce(Sum("lineas__cantidad"), Value(0)))
+        .order_by("-unidades")
+    )
+    tipo_labels_map = dict(Producto.Tipo.choices)
+    labels_tipo = [tipo_labels_map.get((r.get("lineas__producto__tipo") or "").strip(), "—") for r in por_tipo]
+    tipo_unidades = [r["unidades"] for r in por_tipo]
+
     chart = {
         "labels_ventas_dia": [v["dia"].strftime("%d/%m") for v in ventas_por_dia],
         "ventas_dia_neto": [str(q2(v["neto"])) for v in ventas_por_dia],
@@ -169,7 +191,18 @@ def reportes_dashboard(request):
         "top_productos_unidades": [p["unidades"] for p in top_productos],
         "labels_top_vendedores": [_chart_label_vendedor(v) for v in top_vendedores],
         "top_vendedores_neto": [str(q2(v["neto"])) for v in top_vendedores],
+        "labels_top_clientes": [
+            (f'{c.get("comprador__apellido")}, {c.get("comprador__nombre")}'.strip(", ").strip() or c.get("comprador__codigo") or "—")
+            for c in top_clientes
+        ],
+        "top_clientes_neto": [str(q2(c["neto"])) for c in top_clientes],
+        "top_clientes_pedidos": [c["pedidos"] for c in top_clientes],
+        "labels_tipo": labels_tipo,
+        "tipo_unidades": tipo_unidades,
     }
+
+    pedidos = int(kpis.get("pedidos") or 0)
+    ticket_promedio = q2((kpis["neto_total"] / Decimal(pedidos)) if pedidos else Decimal("0.00"))
 
     ctx = {
         "filtros": {
@@ -183,6 +216,12 @@ def reportes_dashboard(request):
         "kpis": kpis,
         "compras_kpis": compras_kpis,
         "margen": margen,
+        "clientes_activos": clientes_activos,
+        "ticket_promedio": ticket_promedio,
+        "productos_vendidos": productos_vendidos,
+        "top_clientes": list(top_clientes),
+        "top_productos": list(top_productos),
+        "top_vendedores": list(top_vendedores),
         "chart": chart,
         "vendedores_filtro": Vendedor.objects.order_by("apellido", "nombre", "codigo"),
         "compradores_filtro": Comprador.objects.order_by("apellido", "nombre", "codigo"),

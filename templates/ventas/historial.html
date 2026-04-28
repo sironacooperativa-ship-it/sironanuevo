@@ -102,8 +102,8 @@
             <th scope="col" class="text-end th-neto col-money">Neto</th>
             <th scope="col" class="text-end th-comision col-money">Comisión</th>
             <th scope="col" class="text-end th-caja col-money">Ingreso caja</th>
-            <th scope="col" class="text-center th-estado col-center" title="Estado">Estado</th>
-            <th scope="col" class="text-end th-acciones presu-th-acciones col-presu-acciones">Acciones</th>
+            <th scope="col" class="text-center th-estado col-center" title="Estado" aria-label="Estado"> </th>
+            <th scope="col" class="text-end th-acciones presu-th-acciones col-presu-acciones" aria-label="Acciones"> </th>
           </tr>
         </thead>
         <tbody>
@@ -131,17 +131,21 @@
               <td class="text-end col-money">{{ v.monto_ingreso_caja|ars }}</td>
               <td class="text-center col-center">
                 {% if v.estado == "PEN" %}
-                  <span class="status-pill status-pending" title="Pendiente de pago" role="img" aria-label="Pendiente de pago">
-                    <i data-lucide="clock" class="status-pill-ico" aria-hidden="true"></i> Pendiente
+                  <span class="estado-ico estado-ico--pending" title="Pendiente" aria-label="Pendiente">
+                    <i data-lucide="clock" aria-hidden="true"></i>
+                  </span>
+                {% elif v.estado == "CAN" %}
+                  <span class="estado-ico estado-ico--cancel" title="Cancelado" aria-label="Cancelado">
+                    <i data-lucide="x-circle" aria-hidden="true"></i>
                   </span>
                 {% else %}
-                  <span class="status-pill status-approved" title="Pagada" role="img" aria-label="Pagada">
-                    <i data-lucide="circle-check" class="status-pill-ico" aria-hidden="true"></i> Pagada
+                  <span class="estado-ico estado-ico--approved" title="Aprobado / Pagada" aria-label="Aprobado / Pagada">
+                    <i data-lucide="check-circle-2" aria-hidden="true"></i>
                   </span>
                 {% endif %}
               </td>
               <td class="col-presu-acciones text-end table-actions-cell">
-                <div class="table-actions presu-row-actions d-flex">
+                <div class="table-actions presu-row-actions d-flex ventas-hist-actions">
                   <a
                     class="btn-icon btn-view"
                     href="{% url 'venta_detalle' v.pk %}"
@@ -205,6 +209,19 @@
           {% endfor %}
         </tbody>
       </table>
+
+      <div class="ventas-hist-legend" aria-label="Leyenda">
+        <div class="ventas-hist-legend-row">
+          <span class="ventas-hist-legend-item"><span class="estado-ico estado-ico--pending" title="Pendiente"><i data-lucide="clock"></i></span> Pendiente</span>
+          <span class="ventas-hist-legend-item"><span class="estado-ico estado-ico--approved" title="Aprobado"><i data-lucide="check-circle-2"></i></span> Aprobado</span>
+          <span class="ventas-hist-legend-item"><span class="estado-ico estado-ico--cancel" title="Cancelado"><i data-lucide="x-circle"></i></span> Cancelado</span>
+          <span class="ventas-hist-legend-sep"></span>
+          <span class="ventas-hist-legend-item"><span class="btn-icon btn-view" aria-hidden="true"><i data-lucide="eye"></i></span> Ver detalle</span>
+          <span class="ventas-hist-legend-item"><span class="btn-icon btn-edit" aria-hidden="true"><i data-lucide="pencil"></i></span> Editar</span>
+          <span class="ventas-hist-legend-item"><span class="btn-icon btn-approve" aria-hidden="true"><i data-lucide="check"></i></span> Aprobar</span>
+          <span class="ventas-hist-legend-item"><span class="btn-icon btn-delete" aria-hidden="true"><i data-lucide="trash-2"></i></span> Eliminar</span>
+        </div>
+      </div>
     </div>
     {% include "includes/pagination_footer.html" %}
   </div>

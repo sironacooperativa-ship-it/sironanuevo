@@ -1,0 +1,184 @@
+{% extends "demo/base_demo.html" %}
+{% load static %}
+{% block title %}Listas de precios · Demo{% endblock %}
+{% block content %}
+  <div class="lp-layout">
+    <div class="lp-main">
+      <section class="hero-card hero-card--turq mb-3">
+        <div class="hero-top">
+          <div class="d-flex align-items-center gap-3 min-w-0">
+            <img src="{% static 'img/sirona-logo.png' %}" alt="SIRONA" class="bg-white rounded-3 p-1 flex-shrink-0" style="max-height: 46px; width: auto" />
+            <div class="min-w-0">
+              <h1 class="hero-title text-truncate mb-0">{{ lista.nombre }}</h1>
+              <p class="hero-subtitle">Lista de precios - {{ lista.tipo }}</p>
+              <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+                <span class="badge-status">{{ lista.estado }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="text-end small flex-shrink-0">
+            <div style="opacity: 0.9">Última actualización</div>
+            <div class="fw-semibold">{{ lista.actualizado }}</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <a class="action-pill action-pill--muted" href="{% url 'demo_productos' %}">
+          <i data-lucide="arrow-left" aria-hidden="true"></i>
+          Volver
+        </a>
+        <a class="action-pill" href="#" onclick="return false;">
+          <i data-lucide="pencil" aria-hidden="true"></i>
+          Editar
+        </a>
+        <a class="action-pill action-pill--pdf" href="#" onclick="return false;">
+          <i data-lucide="file-down" aria-hidden="true"></i>
+          Exportar PDF
+        </a>
+        <a class="action-pill action-pill--excel" href="#" onclick="return false;">
+          <i data-lucide="image" aria-hidden="true"></i>
+          Exportar PNG
+        </a>
+        <a class="action-pill action-pill--whatsapp" href="#" onclick="return false;">
+          <i data-lucide="share-2" aria-hidden="true"></i>
+          Compartir WhatsApp
+        </a>
+      </div>
+
+      <section class="modern-filter-bar mb-3">
+        <form onsubmit="return false;">
+          <div class="filter-toolbar" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;">
+            <div class="filter-field"><label>Buscar</label><input class="form-control input-modern" value="Producto Demo" /></div>
+            <div class="filter-field"><label>Tipo</label><select class="form-select input-modern"><option>Todos</option></select></div>
+            <div class="filter-field"><label>Proveedor</label><select class="form-select input-modern"><option>Todos</option></select></div>
+            <div class="filter-field"><label>Categoría</label><select class="form-select input-modern"><option>Todas</option></select></div>
+            <div class="filter-field"><label>Estado</label><select class="form-select input-modern"><option>Todos</option></select></div>
+            <div class="filter-field"><label>Ordenar</label><select class="form-select input-modern"><option>Descripción (A-Z)</option></select></div>
+          </div>
+          <div class="filter-actions">
+            <button class="action-pill action-pill--primary" type="button"><i data-lucide="filter"></i> Filtrar</button>
+            <button class="action-pill action-pill--muted" type="button"><i data-lucide="rotate-ccw"></i> Limpiar filtros</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="stats-grid pricing-kpis mb-3">
+        <article class="metric-card"><div class="metric-top"><div class="metric-title">Productos</div><span class="metric-icon"><i data-lucide="package"></i></span></div><div class="metric-value">{{ kpi.productos }}</div><div class="metric-sub">En la lista</div></article>
+        <article class="metric-card"><div class="metric-top"><div class="metric-title">Productos activos</div><span class="metric-icon" style="background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); color:#22c55e;"><i data-lucide="check-circle"></i></span></div><div class="metric-value">{{ kpi.activos }}</div><div class="metric-sub">Habilitados</div></article>
+        <article class="metric-card"><div class="metric-top"><div class="metric-title">Valor total</div><span class="metric-icon"><i data-lucide="badge-dollar-sign"></i></span></div><div class="metric-value">{{ kpi.valor_total }}</div><div class="metric-sub">Suma de precios</div></article>
+        <article class="metric-card"><div class="metric-top"><div class="metric-title">Margen promedio</div><span class="metric-icon" style="background: rgba(168,85,247,0.1); border-color: rgba(168,85,247,0.18); color:#a855f7;"><i data-lucide="sparkles"></i></span></div><div class="metric-value">{{ kpi.margen_prom }}</div><div class="metric-sub">Estimado</div></article>
+      </section>
+
+      <div class="dashboard-card pricing-table mb-3">
+        <div class="card-head">
+          <h2 class="card-title"><i data-lucide="table"></i> Productos</h2>
+          <div class="card-subtle">Tabla demo</div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Código</th><th>Descripción</th><th>Tipo</th><th>Proveedor</th>
+                  <th class="text-end">Costo</th><th class="text-end">Stock</th><th class="text-end">Margen %</th>
+                  <th class="text-end">Precio</th><th>Estado</th><th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in rows %}
+                  <tr>
+                    <td><span class="prod-code">{{ r.codigo }}</span></td>
+                    <td>
+                      <div class="prod-meta">
+                        <div class="prod-desc">{{ r.descripcion }}</div>
+                        <div class="prod-sub">Código <span class="prod-code">{{ r.codigo }}</span> · Stock {{ r.stock }}</div>
+                      </div>
+                    </td>
+                    <td class="muted">{{ r.tipo }}</td>
+                    <td class="muted">{{ r.proveedor }}</td>
+                    <td class="num">{{ r.costo }}</td>
+                    <td class="num">{{ r.stock }}</td>
+                    <td class="num">{{ r.margen_pct }}</td>
+                    <td class="num">{{ r.precio }}</td>
+                    <td>
+                      {% if r.stock == 0 %}
+                        <span class="status-badge status-badge--danger">Sin stock</span>
+                      {% else %}
+                        <span class="status-badge status-badge--primary">Activo</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-end">
+                      <button class="icon-button" type="button" onclick="return false;"><i data-lucide="pencil"></i></button>
+                      <button class="icon-button" type="button" onclick="return false;"><i data-lucide="ellipsis"></i></button>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-body border-top py-3 d-flex justify-content-between align-items-center">
+          <span class="text-muted small">Mostrando 1 a 25 de 2.456</span>
+          <div class="d-flex gap-2">
+            <a class="action-pill action-pill--muted" href="#" onclick="return false;">Anterior</a>
+            <a class="action-pill action-pill--primary" href="#" onclick="return false;">1</a>
+            <a class="action-pill action-pill--muted" href="#" onclick="return false;">2</a>
+            <a class="action-pill action-pill--muted" href="#" onclick="return false;">Siguiente</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="lp-preview">
+      <div class="pdf-preview-card">
+        <div class="pdf-preview-head">
+          <h3 class="pdf-preview-title"><i data-lucide="file-text"></i> Vista previa PDF</h3>
+          <span class="status-badge status-badge--primary" style="height: 24px;">A4</span>
+        </div>
+        <div class="pdf-sheet">
+          <div class="pdf-a4">
+            <div class="pdf-header">
+              <div class="pdf-brand">
+                <img src="{% static 'img/sirona-logo.png' %}" alt="SIRONA" />
+                <div>
+                  <p class="pdf-doc-title mb-0">Lista de precios</p>
+                  <p class="pdf-doc-sub mb-0">{{ lista.nombre }} · <span class="status-badge status-badge--primary" style="height:22px; padding:0 8px; font-size:0.66rem;">Activa</span></p>
+                </div>
+              </div>
+              <div class="pdf-stamp">
+                <div><strong>Emitido</strong></div>
+                <div>28/04/2026</div>
+                <div>14:47</div>
+              </div>
+            </div>
+            <div class="pdf-body">
+              <div class="text-muted" style="font-size:0.72rem;">
+                <strong>Filtros:</strong> Tipo: Todos · Proveedor: Todos · Estado: Todos
+              </div>
+              <table class="pdf-mini-table">
+                <thead><tr><th>Código</th><th>Descripción</th><th>Tipo</th><th>Precio</th></tr></thead>
+                <tbody>
+                  {% for r in rows|slice:":6" %}
+                    <tr><td>{{ r.codigo }}</td><td>{{ r.descripcion|truncatechars:24 }}</td><td>{{ r.tipo }}</td><td>{{ r.precio }}</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              <div class="pdf-kpis">
+                <div class="pdf-kpi"><div class="k">Productos</div><div class="v">{{ kpi.productos }}</div></div>
+                <div class="pdf-kpi"><div class="k">Activos</div><div class="v">{{ kpi.activos }}</div></div>
+                <div class="pdf-kpi"><div class="k">Valor total</div><div class="v">{{ kpi.valor_total }}</div></div>
+                <div class="pdf-kpi"><div class="k">Margen prom.</div><div class="v">{{ kpi.margen_prom }}</div></div>
+              </div>
+            </div>
+            <div class="pdf-footer">
+              <span class="d-inline-flex align-items-center gap-2"><i data-lucide="shield"></i> Sirona</span>
+              <span>Página 1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+{% endblock %}
+

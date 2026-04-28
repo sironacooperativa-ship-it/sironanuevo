@@ -1,0 +1,79 @@
+{% extends "demo/base_demo.html" %}
+{% block title %}Reportes · Demo{% endblock %}
+{% block content %}
+  <div class="page-header">
+    <div class="min-w-0">
+      <h1 class="page-title d-flex align-items-center gap-2">
+        <span class="stat-ico" aria-hidden="true" style="width: 34px; height: 34px;"><i data-lucide="chart-column"></i></span>
+        Reportes
+      </h1>
+      <p class="page-subtitle">Analizá y monitoreá el rendimiento de tu gestión (demo).</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+      <a class="action-button btn btn-outline-secondary" href="#" onclick="return false;"><i data-lucide="file-text"></i> Exportar PDF</a>
+      <a class="action-button btn btn-outline-secondary" href="#" onclick="return false;"><i data-lucide="download"></i> Exportar Excel</a>
+    </div>
+  </div>
+
+  <section class="modern-filter-bar mb-3">
+    <form onsubmit="return false;">
+      <div class="filter-toolbar">
+        <div class="filter-field"><label>Período</label><select class="form-select input-modern"><option>Últimos 30 días</option></select></div>
+        <div class="filter-field"><label>Desde</label><input class="form-control input-modern" value="01/04/2026" /></div>
+        <div class="filter-field"><label>Hasta</label><input class="form-control input-modern" value="28/04/2026" /></div>
+        <div class="filter-field"><label>Vendedor</label><select class="form-select input-modern"><option>Vendedor Demo</option></select></div>
+        <div class="filter-field"><label>Cliente</label><select class="form-select input-modern"><option>Cliente Demo</option></select></div>
+        <div class="filter-field"><label>Comparar con</label><select class="form-select input-modern"><option>Período anterior</option></select></div>
+      </div>
+      <div class="filter-actions">
+        <button class="action-pill action-pill--primary" type="button"><i data-lucide="filter"></i> Filtrar</button>
+        <button class="action-pill action-pill--muted" type="button"><i data-lucide="rotate-ccw"></i> Limpiar</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="stats-grid mb-3">
+    {% for k in kpis %}
+      <article class="metric-card">
+        <div class="metric-top">
+          <div class="metric-title">{{ k.title }}</div>
+          <span class="metric-icon"><i data-lucide="{{ k.icon }}"></i></span>
+        </div>
+        <div class="metric-value">{{ k.value }}</div>
+        <div class="metric-sub">{{ k.sub }}</div>
+      </article>
+    {% endfor %}
+  </section>
+
+  <div class="reports-grid">
+    <section class="chart-card span-7">
+      <div class="card-head">
+        <h2 class="card-title"><i data-lucide="activity"></i> Ventas por día</h2>
+        <div class="card-subtle">Mock (sin Chart.js)</div>
+      </div>
+      <div class="card-body">
+        <div class="text-muted small">Aquí se vería el gráfico principal.</div>
+        <div class="chart-wrap" style="height: 240px; background: linear-gradient(180deg, rgba(37,99,235,0.08), rgba(255,255,255,0)); border-radius: 16px; border: 1px solid #e2e8f0;"></div>
+      </div>
+    </section>
+    <section class="dashboard-card span-5">
+      <div class="card-head">
+        <h2 class="card-title"><i data-lucide="users"></i> Top clientes</h2>
+        <div class="card-subtle">Demo</div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="report-table">
+            <thead><tr><th>Cliente</th><th class="text-end">Neto</th></tr></thead>
+            <tbody>
+              {% for t in top %}
+                <tr><td>{{ t.name }}</td><td class="num">{{ t.value }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+{% endblock %}
+
