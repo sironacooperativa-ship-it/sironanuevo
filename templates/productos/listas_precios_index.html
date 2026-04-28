@@ -1,115 +1,9 @@
 {% extends "base.html" %}
-{% block extra_head %}
-  <style>
-    /* Último en <head>: fuerza estética tipo Productos en esta tabla */
-    .listas-precios-index .modern-table th {
-      padding: 14px 16px !important;
-      font-size: 11px !important;
-      font-weight: 500 !important;
-      letter-spacing: 0.06em !important;
-      text-transform: uppercase !important;
-      color: #64748b !important;
-      border-bottom: 1px solid rgba(15, 23, 42, 0.07) !important;
-      background: #f8fafc !important;
-    }
-    .listas-precios-index .modern-table td {
-      padding: 14px 16px !important;
-      border-bottom: 1px solid rgba(15, 23, 42, 0.055) !important;
-    }
-    .listas-precios-index .table-actions-cell {
-      width: 230px !important;
-      min-width: 230px !important;
-      max-width: 260px !important;
-    }
-    .listas-precios-index .table-actions {
-      display: flex !important;
-      align-items: center !important;
-      justify-content: flex-end !important;
-      gap: 8px !important;
-      flex-wrap: nowrap !important;
-    }
-    .listas-precios-index .table-actions form {
-      display: inline-flex !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      border: 0 !important;
-      background: none !important;
-      align-items: center !important;
-      flex: 0 0 auto !important;
-    }
-    .listas-precios-index .table-actions .btn-icon,
-    .listas-precios-index .table-actions a.btn-icon {
-      box-sizing: border-box !important;
-      display: inline-flex !important;
-      width: 34px !important;
-      min-width: 34px !important;
-      height: 34px !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      border: 1px solid #e2e8f0 !important;
-      border-radius: 10px !important;
-      background: #ffffff !important;
-      color: #64748b !important;
-      -webkit-appearance: none !important;
-      appearance: none !important;
-      line-height: 0 !important;
-      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
-      text-decoration: none !important;
-      transition: all 0.18s ease !important;
-      align-items: center !important;
-      justify-content: center !important;
-      cursor: pointer !important;
-      font-family: inherit !important;
-    }
-    .listas-precios-index .table-actions .btn-icon svg,
-    .listas-precios-index .table-actions a.btn-icon svg {
-      width: 16px !important;
-      height: 16px !important;
-      stroke-width: 2 !important;
-      stroke: currentColor !important;
-    }
-    .listas-precios-index .table-actions .btn-icon:hover,
-    .listas-precios-index .table-actions a.btn-icon:hover {
-      transform: translateY(-1px) !important;
-      background: #f8fafc !important;
-      border-color: #cbd5e1 !important;
-      color: #0f172a !important;
-      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08) !important;
-    }
-    .listas-precios-index .table-actions .btn-view,
-    .listas-precios-index .table-actions a.btn-view,
-    .listas-precios-index .table-actions .btn-edit,
-    .listas-precios-index .table-actions a.btn-edit {
-      color: #2563eb !important;
-    }
-    .listas-precios-index .table-actions .btn-view:hover,
-    .listas-precios-index .table-actions a.btn-view:hover,
-    .listas-precios-index .table-actions .btn-edit:hover,
-    .listas-precios-index .table-actions a.btn-edit:hover {
-      background: #eff6ff !important;
-      border-color: #bfdbfe !important;
-      color: #1d4ed8 !important;
-    }
-    .listas-precios-index .table-actions .btn-delete,
-    .listas-precios-index .table-actions button.btn-delete {
-      color: #ef4444 !important;
-    }
-    .listas-precios-index .table-actions .btn-delete:hover,
-    .listas-precios-index .table-actions button.btn-delete:hover {
-      background: #fef2f2 !important;
-      border-color: #fecaca !important;
-      color: #dc2626 !important;
-    }
-  </style>
-{% endblock %}
 {% block title %}Listas de precio{% endblock %}
 {% block content %}
   <div class="app-page-header d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
     <div>
-      <h1 class="app-page-title mb-1">
-        Listas de precio
-        <span class="badge text-bg-warning ms-2" title="Marca temporal para verificar deploy">UI-LP OK</span>
-      </h1>
+      <h1 class="app-page-title mb-1">Listas de precio</h1>
       <p class="text-muted small mb-0">
         <strong>Farmacias</strong> usa los precios del producto (rubro por defecto). Las demás listas tienen precio propio por ítem sin modificar el producto base.
       </p>
@@ -120,7 +14,7 @@
     </div>
   </div>
 
-  <div class="table-card table-card--productos presu-lista-modern listas-precios-index listas-precios-index--saas mb-3">
+  <div class="table-card table-card--productos ui-force-productos presu-lista-modern listas-precios-index listas-precios-index--saas mb-3">
     <div class="table-card-header">
       <h2 class="table-card-title">Listas</h2>
       <span class="table-card-count">{{ listas|length }} lista(s)</span>

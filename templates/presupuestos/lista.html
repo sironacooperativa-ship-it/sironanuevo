@@ -96,7 +96,7 @@
     {% csrf_token %}
     <input type="hidden" name="retorno_query" value="{{ request.GET.urlencode }}" />
   </form>
-  <div class="table-card presu-lista-modern mb-3">
+  <div class="table-card ui-force-productos presu-lista-modern mb-3">
     {% if user.is_staff or has_vendedor_perfil %}
     <div class="table-card-header table-card-header--block presu-lista-bulk border-0 border-bottom">
       <div class="row g-2 align-items-end small">

@@ -2484,6 +2484,120 @@ h2.h6 {
   box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
 }
 
+/* ==========================================================================
+   Forzar estética "Productos" (tablas + acciones) de forma reusable
+   Usar agregando la clase .ui-force-productos al contenedor (table-card/card)
+   ========================================================================== */
+.ui-force-productos .modern-table th {
+  padding: 14px 16px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: #64748b !important;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07) !important;
+  background: #f8fafc !important;
+}
+
+.ui-force-productos .modern-table td {
+  padding: 14px 16px !important;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.055) !important;
+}
+
+.ui-force-productos .table-actions-cell {
+  width: 230px !important;
+  min-width: 230px !important;
+  max-width: 260px !important;
+}
+
+.ui-force-productos .table-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+}
+
+.ui-force-productos .table-actions form {
+  display: inline-flex !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  align-items: center !important;
+  flex: 0 0 auto !important;
+}
+
+.ui-force-productos .table-actions .btn-icon,
+.ui-force-productos .table-actions a.btn-icon {
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  width: 34px !important;
+  min-width: 34px !important;
+  height: 34px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  color: #64748b !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  line-height: 0 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+  text-decoration: none !important;
+  transition: all 0.18s ease !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+}
+
+.ui-force-productos .table-actions .btn-icon svg,
+.ui-force-productos .table-actions a.btn-icon svg {
+  width: 16px !important;
+  height: 16px !important;
+  stroke-width: 2 !important;
+  stroke: currentColor !important;
+}
+
+.ui-force-productos .table-actions .btn-icon:hover,
+.ui-force-productos .table-actions a.btn-icon:hover {
+  transform: translateY(-1px) !important;
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08) !important;
+}
+
+.ui-force-productos .table-actions .btn-view,
+.ui-force-productos .table-actions a.btn-view,
+.ui-force-productos .table-actions .btn-edit,
+.ui-force-productos .table-actions a.btn-edit {
+  color: #2563eb !important;
+}
+
+.ui-force-productos .table-actions .btn-view:hover,
+.ui-force-productos .table-actions a.btn-view:hover,
+.ui-force-productos .table-actions .btn-edit:hover,
+.ui-force-productos .table-actions a.btn-edit:hover {
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  color: #1d4ed8 !important;
+}
+
+.ui-force-productos .table-actions .btn-delete,
+.ui-force-productos .table-actions button.btn-delete {
+  color: #ef4444 !important;
+}
+
+.ui-force-productos .table-actions .btn-delete:hover,
+.ui-force-productos .table-actions button.btn-delete:hover {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #dc2626 !important;
+}
+
 /* Stock (home): tabla de productos — Código, Tipo, Descripción, Stock, Precio */
 .stock-inventory-card {
   font-family: "Inter", var(--bs-font-sans-serif, system-ui), sans-serif;
