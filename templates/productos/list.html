@@ -75,10 +75,13 @@
       </div>
     </div>
     <div class="d-flex flex-wrap gap-2 justify-content-end">
+<<<<<<< HEAD
       <button class="action-button btn btn-outline-secondary" type="button" id="btnProductosStats">
         <i data-lucide="bar-chart-3" aria-hidden="true"></i>
         Estadísticas
       </button>
+=======
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
       <a
         class="action-button primary btn btn-primary"
         href="{% url 'producto_create' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
@@ -102,6 +105,7 @@
     </div>
   </section>
 
+<<<<<<< HEAD
   {% if request.GET.stats == "1" %}
     <section class="stats-grid mb-3" aria-label="KPIs inventario">
       <article class="metric-card">
@@ -154,6 +158,58 @@
       </article>
     </section>
   {% endif %}
+=======
+  <section class="stats-grid mb-3" aria-label="KPIs inventario">
+    <article class="metric-card">
+      <div class="metric-top">
+        <div class="metric-title">Productos</div>
+        <span class="metric-icon"><i data-lucide="package"></i></span>
+      </div>
+      <div class="metric-value">{{ kpi.productos|default:0 }}</div>
+      <div class="metric-sub">Según filtros</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-top">
+        <div class="metric-title">Productos activos</div>
+        <span class="metric-icon" style="background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); color:#22c55e;"><i data-lucide="check-circle"></i></span>
+      </div>
+      <div class="metric-value">{{ kpi.activos|default:0 }}</div>
+      <div class="metric-sub">Habilitados</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-top">
+        <div class="metric-title">Stock disponible total</div>
+        <span class="metric-icon"><i data-lucide="boxes"></i></span>
+      </div>
+      <div class="metric-value">{{ kpi.stock_total|default:0 }}</div>
+      <div class="metric-sub">Unidades</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-top">
+        <div class="metric-title">Valor total del stock</div>
+        <span class="metric-icon"><i data-lucide="badge-dollar-sign"></i></span>
+      </div>
+      <div class="metric-value">{{ kpi.valor_total|default:0|ars }}</div>
+      <div class="metric-sub">Costo × stock</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-top">
+        <div class="metric-title">Productos sin stock</div>
+        <span class="metric-icon" style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color:#ef4444;"><i data-lucide="alert-triangle"></i></span>
+      </div>
+      <div class="metric-value">{{ kpi.sin_stock|default:0 }}</div>
+      <div class="metric-sub">Stock ≤ 0</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-top">
+        <div class="metric-title">Margen promedio</div>
+        <span class="metric-icon" style="background: rgba(168,85,247,0.1); border-color: rgba(168,85,247,0.18); color:#a855f7;"><i data-lucide="sparkles"></i></span>
+      </div>
+      <div class="metric-value">{{ kpi.margen_prom|floatformat:1 }}%</div>
+      <div class="metric-sub">Sobre precio de venta</div>
+    </article>
+  </section>
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
 
   <section class="modern-filter-card" aria-label="Filtros">
       <form class="row g-2 align-items-end" method="get">
