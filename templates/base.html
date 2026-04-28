@@ -104,6 +104,10 @@
   >
     {% if request.user.is_authenticated %}
       {% if vendor_mode %}
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
         <nav class="navbar border-bottom bg-white sticky-top sirona-topbar topbar" id="sironaTopbar">
           <div class="container-fluid px-3 px-xl-4 sirona-topbar-inner">
             <div class="sirona-topbar-left">
@@ -113,6 +117,69 @@
                   <span class="text-body text-truncate">SIRONA Cooperativa</span>
                   <span class="small text-muted sirona-app-title-sub text-truncate">Sistema de Gestión · Portal vendedor</span>
                 </span>
+<<<<<<< HEAD
+=======
+=======
+        <nav class="navbar border-bottom bg-white sticky-top sirona-topbar topbar">
+          <div class="container-fluid px-3 px-xl-4 d-flex align-items-center justify-content-between">
+            <a class="navbar-brand d-flex align-items-center py-1 m-0" href="{% url 'vendedor_home' %}">
+              <img class="brand-logo brand-logo-sm" src="{% static 'img/sirona-logo.png' %}" alt="Cooperativa Sirona" />
+              <span class="ms-2 sirona-app-title d-flex flex-column text-start lh-sm">
+                <span class="text-body">SIRONA Cooperativa - Sistema de Gestión</span>
+                <span class="small text-muted sirona-app-title-sub">Portal vendedor</span>
+              </span>
+            </a>
+            <div class="d-flex align-items-center gap-3">
+              <span class="small text-muted d-none d-md-inline">{{ request.user.username }}</span>
+              {% if has_vendedor_perfil %}
+                {% if not request.user.perfil_acceso or not request.user.perfil_acceso.solo_vendedor %}
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'switch_to_full_mode' %}" title="Volver al sistema completo">
+                    Volver al modo completo
+                  </a>
+                {% endif %}
+              {% endif %}
+              <button
+                class="btn app-icon-btn"
+                type="button"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#sironaCalc"
+                aria-controls="sironaCalc"
+                aria-label="Abrir calculadora"
+                title="Calculadora"
+              >
+                <i data-lucide="calculator" class="app-lucide-toolbar"></i>
+              </button>
+              {% if recibe_notas_admin %}
+                <a
+                  class="btn app-icon-btn position-relative"
+                  href="{% url 'admin_notas_list' %}"
+                  aria-label="Leer mensajes de administración"
+                  title="Mensajes"
+                >
+                  <i data-lucide="message-square" class="app-lucide-toolbar"></i>
+                  {% if notas_admin_no_leidas %}
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger">
+                      {{ notas_admin_no_leidas }}
+                    </span>
+                  {% endif %}
+                </a>
+              {% else %}
+                <button
+                  class="btn app-icon-btn"
+                  type="button"
+                  data-bs-toggle="modal"
+                  data-bs-target="#sironaNotas"
+                  aria-controls="sironaNotas"
+                  aria-label="Enviar nota a administración"
+                  title="Notas"
+                >
+                  <i data-lucide="message-square" class="app-lucide-toolbar"></i>
+                </button>
+              {% endif %}
+              <a class="btn app-icon-btn" href="{% url 'logout' %}" title="Salir" aria-label="Salir">
+                <i data-lucide="log-out" class="app-lucide-toolbar"></i>
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
               </a>
             </div>
 
@@ -220,9 +287,53 @@
           </div>
         </nav>
       {% else %}
+<<<<<<< HEAD
         <nav class="navbar border-bottom bg-white sticky-top sirona-topbar topbar" id="sironaTopbar">
           <div class="container-fluid px-3 px-xl-4 sirona-topbar-inner">
             <div class="sirona-topbar-left">
+=======
+<<<<<<< HEAD
+        <nav class="navbar border-bottom bg-white sticky-top sirona-topbar topbar" id="sironaTopbar">
+          <div class="container-fluid px-3 px-xl-4 sirona-topbar-inner">
+            <div class="sirona-topbar-left">
+=======
+        <nav class="navbar border-bottom bg-white sticky-top sirona-topbar topbar">
+          <div class="container-fluid px-3 px-xl-4 d-flex align-items-center justify-content-between">
+            <button
+              class="btn app-icon-btn"
+              type="button"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#sironaMenu"
+              aria-controls="sironaMenu"
+              aria-label="Abrir menú"
+              title="Menú"
+            >
+              <i data-lucide="menu" class="app-lucide-toolbar"></i>
+            </button>
+            <div class="d-flex align-items-center gap-3 min-w-0">
+              <a class="navbar-brand d-flex align-items-center py-1 m-0" href="{% url 'home' %}">
+                <img class="brand-logo brand-logo-sm" src="{% static 'img/sirona-logo.png' %}" alt="Cooperativa Sirona" />
+                <span class="ms-2 sirona-app-title text-body d-none d-md-inline">SIRONA Cooperativa - Sistema de Gestión</span>
+              </a>
+              <div class="topbar-greeting d-none d-lg-flex">
+                <span class="topbar-hello">Hola</span>
+                <span class="topbar-user">
+                  {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user.username }}{% endif %}
+                </span>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+              <span class="small text-muted d-none d-md-inline">{{ request.user.username }}</span>
+              {% if can_switch_to_vendor_mode %}
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'switch_to_vendor_mode' %}" title="Cambiar a modo vendedor">
+                  Cambiar a modo vendedor
+                </a>
+              {% endif %}
+              <button class="btn app-icon-btn" type="button" id="btnThemeToggle" aria-label="Cambiar modo" title="Modo">
+                <i data-lucide="moon" class="app-lucide-toolbar"></i>
+              </button>
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
               <button
                 class="btn app-icon-btn"
                 type="button"
@@ -559,6 +670,20 @@
             </div>
           </nav>
           <div class="sidebar-footer">
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+            <div class="sidebar-help">
+              <div class="help-title">¿Necesitás ayuda?</div>
+              <p class="help-sub">Accedé a guías y soporte para usar el sistema.</p>
+              <a href="{% url 'admin_notas_list' %}" aria-label="Abrir ayuda">
+                <i data-lucide="life-buoy" aria-hidden="true"></i>
+                Ver ayuda
+              </a>
+            </div>
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
             <a class="sidebar-link app-sidebar-link app-sidebar-link-logout" href="{% url 'logout' %}">
               <span class="app-sidebar-icon-wrap"><i data-lucide="log-out"></i></span>
               <span class="app-sidebar-label sidebar-label">Salir</span>
@@ -765,7 +890,15 @@
       {% endif %}
     {% endif %}
 
+<<<<<<< HEAD
     <div class="app-content-area app-shell {% if request.user.is_authenticated %}app-shell--with-sidebar{% endif %}">
+=======
+<<<<<<< HEAD
+    <div class="app-content-area app-shell {% if request.user.is_authenticated %}app-shell--with-sidebar{% endif %}">
+=======
+    <div class="app-content-area app-shell">
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
       <main class="container-xl py-4 py-md-5 app-main page-shell">
         {% if messages %}
           <div class="app-messages mb-4">
@@ -860,6 +993,10 @@
       })();
     </script>
     <script>
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
       // Topbar: sombra al hacer scroll + atajo Ctrl+K para enfocar búsqueda (solo UI).
       (function () {
         try {
@@ -885,11 +1022,20 @@
       })();
     </script>
     <script>
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
       // Estado activo de navegación (solo UI): marca el link cuya URL coincide.
       (function () {
         try {
           const here = window.location.pathname.replace(/\/+$/, "") || "/";
           const links = document.querySelectorAll(".sidebar a.sidebar-link, #sironaMenu a.app-sidebar-link");
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
           // Choose ONE best match (most specific) so we don't highlight multiple items at once.
           const candidates = [];
           links.forEach((a) => {
@@ -907,6 +1053,16 @@
             candidates.sort((x, y) => y.score - x.score);
             candidates[0].a.classList.add("is-active");
           }
+<<<<<<< HEAD
+=======
+=======
+          links.forEach((a) => {
+            const href = (a.getAttribute("href") || "").replace(/\/+$/, "");
+            if (!href || href === "#") return;
+            if (href === here) a.classList.add("is-active");
+          });
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
           // If subnav items are active, also highlight the parent trigger.
           document.querySelectorAll(".sidebar-group").forEach((g) => {
             if (g.querySelector(".sidebar-subnav a.is-active")) {
@@ -914,6 +1070,10 @@
               if (trig) trig.classList.add("is-active");
             }
           });
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
 
           // Optional: show a tree "current node" under the active sidebar item.
           // Pages can provide:
@@ -941,6 +1101,11 @@
               });
             }
           }
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
         } catch (e) {}
       })();
     </script>
@@ -956,6 +1121,10 @@
             const trigger = groupEl.querySelector(".sidebar-group-trigger");
             const sub = groupEl.querySelector(".sidebar-subnav");
             const setOpen = (open) => {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
               if (open) {
                 // Accordion behavior: keep navigation compact (only one open at a time).
                 document.querySelectorAll(".sidebar .sidebar-group.is-open").forEach((other) => {
@@ -966,6 +1135,11 @@
                   }
                 });
               }
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
               groupEl.classList.toggle("is-open", open);
               if (trigger) trigger.setAttribute("aria-expanded", open ? "true" : "false");
             };
@@ -985,6 +1159,10 @@
 
           document.querySelectorAll(".sidebar .sidebar-group[data-group]").forEach(wireGroup);
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
           function revealActiveInSidebar() {
             // When expanding, ensure the current location is visible:
             // open the group that contains an active subnav link and mark its trigger active.
@@ -1044,6 +1222,26 @@
           if (btnHamb) btnHamb.addEventListener("click", onHambClick);
           syncBtns();
           if (!document.body.classList.contains("sidebar-collapsed")) revealActiveInSidebar();
+<<<<<<< HEAD
+=======
+=======
+          // Colapsar (desktop) con botón visible.
+          const btn = document.getElementById("btnSidebarCollapse");
+          function syncBtn() {
+            if (!btn) return;
+            const isCollapsed = document.body.classList.contains("sidebar-collapsed");
+            btn.title = isCollapsed ? "Expandir sidebar" : "Colapsar sidebar";
+            btn.setAttribute("aria-label", btn.title);
+          }
+          function toggleCollapsed() {
+            const isCollapsed = document.body.classList.toggle("sidebar-collapsed");
+            localStorage.setItem(key, isCollapsed ? "1" : "0");
+            syncBtn();
+          }
+          if (btn) btn.addEventListener("click", toggleCollapsed);
+          syncBtn();
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
         } catch (e) {}
       })();
     </script>
@@ -1055,6 +1253,10 @@
             const trigger = groupEl.querySelector(".sidebar-group-trigger");
             const sub = groupEl.querySelector(".sidebar-subnav");
             const setOpen = (open) => {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
               if (open) {
                 document.querySelectorAll("#sironaMenu .sidebar-group.is-open").forEach((other) => {
                   if (other !== groupEl) {
@@ -1064,6 +1266,11 @@
                   }
                 });
               }
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
               groupEl.classList.toggle("is-open", open);
               if (trigger) trigger.setAttribute("aria-expanded", open ? "true" : "false");
             };

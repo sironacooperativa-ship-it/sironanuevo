@@ -3,7 +3,14 @@
 {% load money %}
 {% block title %}Ver: {{ lista.nombre }}{% endblock %}
 {% block content %}
+<<<<<<< HEAD
   <span id="sidebarCurrentNode" class="d-none" data-parent-url="{% url 'productos_listas_precios' %}">{{ lista.nombre }}</span>
+=======
+<<<<<<< HEAD
+  <span id="sidebarCurrentNode" class="d-none" data-parent-url="{% url 'productos_listas_precios' %}">{{ lista.nombre }}</span>
+=======
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
   <div class="lp-layout">
     <div class="lp-main">
       <section class="hero-card hero-card--turq mb-3" aria-label="Encabezado lista de precios">
@@ -152,6 +159,13 @@
                 <tr>
                   <th scope="col">Código</th>
                   <th scope="col">Descripción</th>
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+                  <th scope="col" class="col-hide-sm">Tipo</th>
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
                   <th scope="col" class="col-hide-xs">Proveedor</th>
                   <th scope="col" class="text-end col-hide-xs">Costo</th>
                   <th scope="col" class="text-end">Stock</th>
@@ -172,6 +186,13 @@
                           <div class="prod-sub">Código <span class="prod-code">{{ p.codigo }}</span> · Stock {{ p.stock }}</div>
                         </div>
                       </td>
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+                      <td class="muted col-hide-sm">{{ p.get_tipo_display }}</td>
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
                       <td class="muted col-hide-xs">—</td>
                       <td class="num col-hide-xs">{{ p.costo|ars }}</td>
                       <td class="num">{{ p.stock }}</td>
@@ -197,7 +218,15 @@
                     </tr>
                   {% empty %}
                     <tr>
+<<<<<<< HEAD
                       <td colspan="9" class="table-empty">
+=======
+<<<<<<< HEAD
+                      <td colspan="9" class="table-empty">
+=======
+                      <td colspan="10" class="table-empty">
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
                         Ningún producto está marcado para esta lista. Activá <strong>En lista Farmacia (PDF)</strong> en cada producto o desde acciones en masa.
                       </td>
                     </tr>
@@ -212,6 +241,13 @@
                           <div class="prod-sub">Código <span class="prod-code">{{ it.producto.codigo }}</span> · Stock {{ it.producto.stock }}</div>
                         </div>
                       </td>
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+                      <td class="muted col-hide-sm">{{ it.producto.get_tipo_display }}</td>
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
                       <td class="muted col-hide-xs">—</td>
                       <td class="num col-hide-xs">{{ it.producto.costo|ars }}</td>
                       <td class="num">{{ it.producto.stock }}</td>
@@ -236,7 +272,15 @@
                       </td>
                     </tr>
                   {% empty %}
+<<<<<<< HEAD
                     <tr><td colspan="9" class="table-empty">Sin ítems en esta lista.</td></tr>
+=======
+<<<<<<< HEAD
+                    <tr><td colspan="9" class="table-empty">Sin ítems en esta lista.</td></tr>
+=======
+                    <tr><td colspan="10" class="table-empty">Sin ítems en esta lista.</td></tr>
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
                   {% endfor %}
                 {% endif %}
               </tbody>

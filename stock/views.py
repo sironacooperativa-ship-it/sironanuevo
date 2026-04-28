@@ -26,8 +26,17 @@ def _stock_productos_queryset(request):
     tipo = (request.GET.get("tipo") or "").strip()
     proveedor = (request.GET.get("proveedor") or "").strip()
     estado = (request.GET.get("estado") or "").strip()
+<<<<<<< HEAD
     # Prefetch proveedor (vía compras) para mostrar "Marca" sin N+1.
     qs = Producto.objects.all().prefetch_related("compras_origen__proveedor").order_by("descripcion", "codigo")
+=======
+<<<<<<< HEAD
+    # Prefetch proveedor (vía compras) para mostrar "Marca" sin N+1.
+    qs = Producto.objects.all().prefetch_related("compras_origen__proveedor").order_by("descripcion", "codigo")
+=======
+    qs = Producto.objects.all().order_by("descripcion", "codigo")
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
     if q:
         qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
     if tipo:
@@ -180,6 +189,10 @@ def stock_home(request):
             p.valor_total_stock = (p.costo or 0) * (p.stock or 0)
         except Exception:
             p.valor_total_stock = 0
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
         # "Marca / Proveedor": mostrar un proveedor asociado por compras (si existe).
         try:
             pr = None
@@ -193,6 +206,11 @@ def stock_home(request):
                 p.proveedor_marca = ""
         except Exception:
             p.proveedor_marca = ""
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
+>>>>>>> e65b030712d6cdb00421032788a56641155c3e11
     movimientos = (
         MovimientoStock.objects.select_related("producto", "usuario")
         .order_by("-creado_en", "-id")[:30]
