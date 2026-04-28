@@ -14,16 +14,16 @@
 
   <form method="post">
     {% csrf_token %}
-    <div class="card shadow-sm">
-      <div class="table-responsive">
-        <table class="sirona-table">
-          <thead class="table-light">
+    <div class="table-card presu-lista-modern import-excel-dup">
+      <div class="table-responsive presu-lista-table-wrap">
+        <table class="modern-table import-excel-dup-tabla">
+          <thead>
             <tr>
-              <th>Fila</th>
-              <th>Código</th>
-              <th>Datos en el Excel</th>
-              <th>Datos en la base</th>
-              <th class="text-nowrap">Decisión</th>
+              <th scope="col">Fila</th>
+              <th scope="col" class="th-cod">Código</th>
+              <th scope="col">Datos en el Excel</th>
+              <th scope="col">Datos en la base</th>
+              <th scope="col" class="text-nowrap">Decisión</th>
             </tr>
           </thead>
           <tbody>
@@ -81,7 +81,7 @@
           </tbody>
         </table>
       </div>
-      <div class="card-body border-top d-flex flex-wrap gap-2 justify-content-end">
+      <div class="p-3 border-top d-flex flex-wrap gap-2 justify-content-end bg-white">
         <a class="btn btn-outline-secondary" href="{% url 'productos_import_excel' %}">Volver a importar</a>
         <button type="submit" class="btn btn-primary">Aplicar decisiones</button>
       </div>

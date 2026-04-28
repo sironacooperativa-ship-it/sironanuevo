@@ -29,31 +29,33 @@
   </p>
 
   {% if ventas_muestra %}
-    <div class="card shadow-sm mb-3">
-      <div class="card-header fw-semibold py-2">Pedidos a eliminar (muestra, hasta 50)</div>
-      <div class="table-responsive">
-        <table class="sirona-table">
-          <thead class="table-light">
+    <div class="table-card presu-lista-modern vendedor-del-muestra mb-3">
+      <div class="table-card-header py-2">
+        <h2 class="table-card-title" style="font-size:0.95rem">Pedidos a eliminar (muestra, hasta 50)</h2>
+      </div>
+      <div class="table-responsive presu-lista-table-wrap">
+        <table class="modern-table vendedor-del-ventas-muestra">
+          <thead>
             <tr>
-              <th>#</th>
-              <th>Fecha</th>
-              <th>Estado</th>
-              <th class="text-end">Neto</th>
+              <th scope="col" class="th-ped">#</th>
+              <th scope="col">Fecha</th>
+              <th scope="col" class="text-center col-center">Estado</th>
+              <th scope="col" class="text-end col-money">Neto</th>
             </tr>
           </thead>
           <tbody>
             {% for x in ventas_muestra %}
               <tr>
-                <td class="fw-semibold">#{{ x.pk }}</td>
-                <td class="text-muted small">{{ x.creado_en|date:"d/m/Y H:i" }}</td>
-                <td>
+                <td class="col-ped col-id-num">#{{ x.pk }}</td>
+                <td class="col-muted small">{{ x.creado_en|date:"d/m/Y H:i" }}</td>
+                <td class="text-center col-center">
                   {% if x.estado == "PEN" %}
-                    <span class="badge text-bg-warning text-dark">Pendiente</span>
+                    <span class="status-pill status-pending" role="img" aria-label="Pendiente">Pendiente</span>
                   {% else %}
-                    <span class="badge text-bg-success">Pagada</span>
+                    <span class="status-pill status-approved" role="img" aria-label="Pagada">Pagada</span>
                   {% endif %}
                 </td>
-                <td class="text-end">{{ x.neto|ars }}</td>
+                <td class="text-end col-money">{{ x.neto|ars }}</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -63,25 +65,27 @@
   {% endif %}
 
   {% if presupuestos_muestra %}
-    <div class="card shadow-sm mb-3">
-      <div class="card-header fw-semibold py-2">Presupuestos a eliminar (muestra, hasta 50)</div>
-      <div class="table-responsive">
-        <table class="sirona-table">
-          <thead class="table-light">
+    <div class="table-card presu-lista-modern vendedor-del-muestra mb-3">
+      <div class="table-card-header py-2">
+        <h2 class="table-card-title" style="font-size:0.95rem">Presupuestos a eliminar (muestra, hasta 50)</h2>
+      </div>
+      <div class="table-responsive presu-lista-table-wrap">
+        <table class="modern-table vendedor-del-presu-muestra">
+          <thead>
             <tr>
-              <th>#</th>
-              <th>Fecha</th>
-              <th>Estado</th>
-              <th class="text-end">Neto</th>
+              <th scope="col" class="th-ped">#</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Estado</th>
+              <th scope="col" class="text-end col-money">Neto</th>
             </tr>
           </thead>
           <tbody>
             {% for p in presupuestos_muestra %}
               <tr>
-                <td class="fw-semibold">#{{ p.pk }}</td>
-                <td class="text-muted small">{{ p.creado_en|date:"d/m/Y H:i" }}</td>
-                <td>{{ p.get_estado_display }}</td>
-                <td class="text-end">{{ p.neto|ars }}</td>
+                <td class="col-ped col-id-num">#{{ p.pk }}</td>
+                <td class="col-muted small">{{ p.creado_en|date:"d/m/Y H:i" }}</td>
+                <td class="col-muted">{{ p.get_estado_display }}</td>
+                <td class="text-end col-money">{{ p.neto|ars }}</td>
               </tr>
             {% endfor %}
           </tbody>

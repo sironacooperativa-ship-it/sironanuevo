@@ -107,50 +107,66 @@
     </div>
   </div>
 
-  <div class="table-card">
+  <div class="table-card presu-lista-modern admin-usuarios-lista mb-3">
     <div class="table-card-header">
       <h2 class="table-card-title">Usuarios</h2>
       <span class="table-card-count">{{ usuarios|length }} usuario(s)</span>
     </div>
-    <div class="table-responsive">
-      <table class="sirona-table">
-        <thead class="table-light">
+    <div class="table-responsive presu-lista-table-wrap">
+      <table class="modern-table admin-usuarios-tabla" id="admin-usuarios-tabla">
+        <thead>
           <tr>
-            <th>Usuario</th>
-            <th>Email</th>
-            <th>Nombre</th>
-            <th class="text-center">Activo</th>
-            <th class="text-center">Staff</th>
-            <th class="text-center">Acciones</th>
+            <th scope="col" class="th-user">Usuario</th>
+            <th scope="col" class="presu-col-ellipsis th-mail">Email</th>
+            <th scope="col" class="presu-col-ellipsis th-nom">Nombre</th>
+            <th scope="col" class="text-center col-center th-activo">Activo</th>
+            <th scope="col" class="text-center col-center th-staff">Staff</th>
+            <th scope="col" class="text-end presu-th-acciones col-presu-acciones">Acciones</th>
           </tr>
         </thead>
         <tbody>
           {% for u in usuarios %}
             <tr>
-              <td class="fw-semibold">{{ u.username }}</td>
-              <td class="text-muted small">{{ u.email|default:"—" }}</td>
-              <td>{{ u.last_name }}{% if u.first_name %}, {{ u.first_name }}{% endif %}</td>
-              <td class="text-center">
+              <td class="col-muted fw-semibold">{{ u.username }}</td>
+              <td class="col-muted small presu-col-ellipsis" title="{{ u.email }}">{{ u.email|default:"—" }}</td>
+              <td class="col-muted presu-col-ellipsis" title="{{ u.last_name }}{% if u.first_name %}, {{ u.first_name }}{% endif %}">
+                {{ u.last_name }}{% if u.first_name %}, {{ u.first_name }}{% endif %}
+              </td>
+              <td class="text-center col-center">
                 {% if u.is_active %}
-                  <span class="badge text-bg-success">Sí</span>
+                  <span class="status-pill status-approved" title="Activo" role="img" aria-label="Sí, activo">
+                    <i data-lucide="circle-check" class="status-pill-ico" aria-hidden="true"></i> Sí
+                  </span>
                 {% else %}
-                  <span class="badge text-bg-secondary">No</span>
+                  <span class="status-pill status-inactive" title="Inactivo" role="img" aria-label="No activo">
+                    <i data-lucide="ban" class="status-pill-ico" aria-hidden="true"></i> No
+                  </span>
                 {% endif %}
               </td>
-              <td class="text-center">
+              <td class="text-center col-center">
                 {% if u.is_staff %}
-                  <span class="badge text-bg-primary">Sí</span>
+                  <span class="status-pill status-pill--staff" title="Staff" role="img" aria-label="Sí, staff">Sí</span>
                 {% else %}
-                  <span class="badge text-bg-light text-dark border">No</span>
+                  <span class="status-pill status-inactive" title="No staff" role="img" aria-label="No staff">No</span>
                 {% endif %}
               </td>
-              <td>
-                <div class="table-actions">
-                  <a class="table-action-btn" href="{% url 'admin_usuario_update' u.pk %}" title="Editar" aria-label="Editar">
-                    <i data-lucide="pencil"></i>
+              <td class="col-presu-acciones text-end table-actions-cell">
+                <div class="table-actions presu-row-actions d-flex">
+                  <a
+                    class="btn-icon btn-edit"
+                    href="{% url 'admin_usuario_update' u.pk %}"
+                    title="Editar usuario"
+                    aria-label="Editar usuario"
+                  >
+                    <i data-lucide="pencil" aria-hidden="true"></i>
                   </a>
-                  <a class="table-action-btn" href="{% url 'admin_usuario_password' u.pk %}" title="Editar contraseña" aria-label="Editar contraseña">
-                    <i data-lucide="pencil"></i>
+                  <a
+                    class="btn-icon btn-view"
+                    href="{% url 'admin_usuario_password' u.pk %}"
+                    title="Editar contraseña"
+                    aria-label="Editar contraseña"
+                  >
+                    <i data-lucide="key" aria-hidden="true"></i>
                   </a>
                 </div>
               </td>

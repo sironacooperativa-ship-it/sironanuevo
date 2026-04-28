@@ -1,188 +1,152 @@
 {% extends "base.html" %}
 {% load money %}
 {% block title %}Reportes{% endblock %}
-{% block extra_head %}
-  <style>
-    .report-kpi-value {
-      font-variant-numeric: tabular-nums;
-      font-weight: 700;
-      line-height: 1.1;
-      font-size: clamp(1.25rem, 2.2vw, 2rem);
-      overflow-wrap: anywhere;
-    }
-  </style>
-{% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-    <h1 class="h3 mb-0">Reportes</h1>
-    <div class="text-muted small">Estadísticas filtrables</div>
-  </div>
+  <div class="report-dashboard-saas dashboard">
+    <header class="report-dash-header">
+      <div>
+        <h1 class="report-dash-h1">Reportes</h1>
+        <p class="report-dash-sub">Métricas y tendencias con filtros por período, vendedor, comprador y producto</p>
+      </div>
+    </header>
 
-  {{ chart|json_script:"reportes-chart" }}
+    {{ chart|json_script:"reportes-chart" }}
 
-  <div class="card shadow-sm mb-3">
-    <div class="card-body">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-12 col-md-6 col-lg-2">
-          <label class="form-label small text-muted mb-0">Período</label>
-          <select name="periodo" class="form-select form-select-sm">
-            <option value="" {% if not filtros.periodo %}selected{% endif %}>Personalizado / todos</option>
-            <option value="7d" {% if filtros.periodo == "7d" %}selected{% endif %}>Últimos 7 días</option>
-            <option value="30d" {% if filtros.periodo == "30d" %}selected{% endif %}>Últimos 30 días</option>
-            <option value="mes" {% if filtros.periodo == "mes" %}selected{% endif %}>Mes actual</option>
-            <option value="mes_ant" {% if filtros.periodo == "mes_ant" %}selected{% endif %}>Mes anterior</option>
-          </select>
+    <section class="report-filter-card" aria-label="Filtros">
+      <form method="get" class="report-filter-form">
+        <div class="report-filter-row">
+          <div class="report-field">
+            <label class="report-field-label" for="rep-periodo">Período</label>
+            <select name="periodo" id="rep-periodo" class="form-select form-select-sm report-input">
+              <option value="" {% if not filtros.periodo %}selected{% endif %}>Personalizado / todos</option>
+              <option value="7d" {% if filtros.periodo == "7d" %}selected{% endif %}>Últimos 7 días</option>
+              <option value="30d" {% if filtros.periodo == "30d" %}selected{% endif %}>Últimos 30 días</option>
+              <option value="mes" {% if filtros.periodo == "mes" %}selected{% endif %}>Mes actual</option>
+              <option value="mes_ant" {% if filtros.periodo == "mes_ant" %}selected{% endif %}>Mes anterior</option>
+            </select>
+          </div>
+          <div class="report-field">
+            <label class="report-field-label" for="rep-desde">Desde</label>
+            <input type="date" name="fecha_desde" id="rep-desde" class="form-control form-control-sm report-input" value="{{ filtros.fecha_desde }}" />
+          </div>
+          <div class="report-field">
+            <label class="report-field-label" for="rep-hasta">Hasta</label>
+            <input type="date" name="fecha_hasta" id="rep-hasta" class="form-control form-control-sm report-input" value="{{ filtros.fecha_hasta }}" />
+          </div>
+          <div class="report-field report-field--wide">
+            <label class="report-field-label" for="rep-vend">Vendedor</label>
+            <select name="vendedor" id="rep-vend" class="form-select form-select-sm report-input">
+              <option value="">Todos</option>
+              {% for v in vendedores_filtro %}
+                <option value="{{ v.pk }}" {% if filtros.vendedor == v.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ v.codigo }} — {{ v.apellido }}, {{ v.nombre }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="report-field report-field--wide">
+            <label class="report-field-label" for="rep-compr">Comprador</label>
+            <select name="comprador" id="rep-compr" class="form-select form-select-sm report-input">
+              <option value="">Todos</option>
+              {% for c in compradores_filtro %}
+                <option value="{{ c.pk }}" {% if filtros.comprador == c.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ c.codigo }} — {{ c.apellido }}, {{ c.nombre }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="report-field report-field--wide">
+            <label class="report-field-label" for="rep-prod">Producto</label>
+            <select name="producto" id="rep-prod" class="form-select form-select-sm report-input">
+              <option value="">Todos</option>
+              {% for p in productos_filtro %}
+                <option value="{{ p.pk }}" {% if filtros.producto == p.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ p.codigo }} — {{ p.descripcion|truncatechars:28 }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
         </div>
-        <div class="col-6 col-md-3 col-lg-2">
-          <label class="form-label small text-muted mb-0">Desde</label>
-          <input type="date" name="fecha_desde" class="form-control form-control-sm" value="{{ filtros.fecha_desde }}" />
+        <div class="report-filter-actions">
+          <button type="submit" class="btn btn-sm report-btn-apply">Aplicar</button>
+          <a class="btn btn-sm report-btn-clear" href="{% url 'reportes_dashboard' %}">Limpiar</a>
         </div>
-        <div class="col-6 col-md-3 col-lg-2">
-          <label class="form-label small text-muted mb-0">Hasta</label>
-          <input type="date" name="fecha_hasta" class="form-control form-control-sm" value="{{ filtros.fecha_hasta }}" />
-        </div>
-        <div class="col-12 col-md-6 col-lg-2">
-          <label class="form-label small text-muted mb-0">Vendedor</label>
-          <select name="vendedor" class="form-select form-select-sm">
-            <option value="">Todos</option>
-            {% for v in vendedores_filtro %}
-              <option value="{{ v.pk }}" {% if filtros.vendedor == v.pk|stringformat:"s" %}selected{% endif %}>
-                {{ v.codigo }} — {{ v.apellido }}, {{ v.nombre }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-12 col-md-6 col-lg-2">
-          <label class="form-label small text-muted mb-0">Comprador</label>
-          <select name="comprador" class="form-select form-select-sm">
-            <option value="">Todos</option>
-            {% for c in compradores_filtro %}
-              <option value="{{ c.pk }}" {% if filtros.comprador == c.pk|stringformat:"s" %}selected{% endif %}>
-                {{ c.codigo }} — {{ c.apellido }}, {{ c.nombre }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-12 col-md-6 col-lg-2">
-          <label class="form-label small text-muted mb-0">Producto</label>
-          <select name="producto" class="form-select form-select-sm">
-            <option value="">Todos</option>
-            {% for p in productos_filtro %}
-              <option value="{{ p.pk }}" {% if filtros.producto == p.pk|stringformat:"s" %}selected{% endif %}>
-                {{ p.codigo }} — {{ p.descripcion|truncatechars:28 }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-12 d-flex gap-1 flex-wrap">
-          <button type="submit" class="btn btn-sm btn-primary">Aplicar</button>
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'reportes_dashboard' %}">Limpiar</a>
-        </div>
+        <p class="report-filter-hint text-muted">Si elegís un <strong>período</strong>, se usa ese rango (desde / hasta no aplican).</p>
       </form>
-      <p class="small text-muted mb-0 mt-2">
-        Si elegís un <strong>período</strong>, el sistema usa ese rango (las fechas desde/hasta no se aplican).
-      </p>
-    </div>
-  </div>
+    </section>
 
-  <div class="row g-3 mb-3">
-    <div class="col-12 col-md-3">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="text-muted small">Pedidos</div>
-          <div class="report-kpi-value">{{ kpis.pedidos }}</div>
-        </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-title">Pedidos</div>
+        <div class="stat-value report-kpi-value">{{ kpis.pedidos }}</div>
+        <div class="stat-sub">En el rango filtrado</div>
+      </div>
+      <div class="stat-card stat-highlight">
+        <div class="stat-title">Neto ventas</div>
+        <div class="stat-value report-kpi-value report-kpi-value--hero">{{ kpis.neto_total|ars }}</div>
+        <div class="stat-sub">{{ kpis.pagadas }} pagadas · {{ kpis.pendientes }} pendientes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Comisión total</div>
+        <div class="stat-value report-kpi-value">{{ kpis.comision_total|ars }}</div>
+        <div class="stat-sub">Según aplica comisión</div>
+      </div>
+      <div class="stat-card stat-subdued">
+        <div class="stat-title">Compras</div>
+        <div class="stat-value report-kpi-value">{{ compras_kpis.compras_total|ars }}</div>
+        <div class="stat-sub">Monto · {{ compras_kpis.compras }} registro{% if compras_kpis.compras != 1 %}s{% endif %}</div>
+      </div>
+      <div class="stat-card stat-highlight stat-card--emerald">
+        <div class="stat-title">Margen</div>
+        <div class="stat-value report-kpi-value report-kpi-value--hero">{{ margen|ars }}</div>
+        <div class="stat-sub">Neto ventas − compras</div>
       </div>
     </div>
-    <div class="col-12 col-md-3">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="text-muted small">Neto ventas</div>
-          <div class="report-kpi-value">{{ kpis.neto_total|ars }}</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-3">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="text-muted small">Comisión total</div>
-          <div class="report-kpi-value">{{ kpis.comision_total|ars }}</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-3">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="text-muted small">Compras (monto)</div>
-          <div class="report-kpi-value">{{ compras_kpis.compras_total|ars }}</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-3">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="text-muted small">Margen estimado</div>
-          <div class="report-kpi-value">{{ margen|ars }}</div>
-          <div class="small text-muted mt-1">ventas netas − compras</div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <div class="row g-3">
-    <div class="col-12 col-lg-8">
-      <div class="card shadow-sm">
-        <div class="card-header fw-semibold">Ventas por día (neto)</div>
-        <div class="card-body">
-          <canvas id="chartVentasDia" height="110"></canvas>
+    <div class="dashboard-charts">
+      <div class="chart-card">
+        <h2 class="chart-title">Ventas por día (neto)</h2>
+        <div class="report-chart-canvas report-chart-canvas--line">
+          <canvas id="chartVentasDia" height="0"></canvas>
+        </div>
+      </div>
+      <div class="chart-card chart-card--doughnut">
+        <h2 class="chart-title">Estado de pedidos</h2>
+        <div class="report-chart-canvas report-chart-canvas--donut">
+          <canvas id="chartEstadoPedidos" height="0"></canvas>
         </div>
       </div>
     </div>
-    <div class="col-12 col-lg-4">
-      <div class="card shadow-sm">
-        <div class="card-header fw-semibold">Estado de pedidos</div>
-        <div class="card-body">
-          <canvas id="chartEstadoPedidos" height="160"></canvas>
+
+    <div class="report-charts-bento">
+      <div class="chart-card">
+        <h2 class="chart-title">Compras por día</h2>
+        <div class="report-chart-canvas">
+          <canvas id="chartComprasDia" height="0"></canvas>
         </div>
       </div>
-    </div>
-    <div class="col-12 col-lg-4">
-      <div class="card shadow-sm">
-        <div class="card-header fw-semibold">Compras por día</div>
-        <div class="card-body">
-          <canvas id="chartComprasDia" height="160"></canvas>
+      <div class="chart-card">
+        <h2 class="chart-title">Ventas por mes (neto)</h2>
+        <div class="report-chart-canvas">
+          <canvas id="chartVentasMes" height="0"></canvas>
         </div>
       </div>
-    </div>
-    <div class="col-12 col-lg-6">
-      <div class="card shadow-sm">
-        <div class="card-header fw-semibold">Ventas por mes (neto)</div>
-        <div class="card-body">
-          <canvas id="chartVentasMes" height="160"></canvas>
+      <div class="chart-card">
+        <h2 class="chart-title">Compras por mes</h2>
+        <div class="report-chart-canvas">
+          <canvas id="chartComprasMes" height="0"></canvas>
         </div>
       </div>
-    </div>
-    <div class="col-12 col-lg-6">
-      <div class="card shadow-sm">
-        <div class="card-header fw-semibold">Compras por mes</div>
-        <div class="card-body">
-          <canvas id="chartComprasMes" height="160"></canvas>
+      <div class="chart-card">
+        <h2 class="chart-title">Top productos (unidades)</h2>
+        <div class="report-chart-canvas">
+          <canvas id="chartTopProductos" height="0"></canvas>
         </div>
       </div>
-    </div>
-    <div class="col-12 col-lg-6">
-      <div class="card shadow-sm">
-        <div class="card-header fw-semibold">Top productos (unidades vendidas)</div>
-        <div class="card-body">
-          <canvas id="chartTopProductos" height="160"></canvas>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-lg-6">
-      <div class="card shadow-sm">
-        <div class="card-header fw-semibold">Top vendedores (neto)</div>
-        <div class="card-body">
-          <canvas id="chartTopVendedores" height="160"></canvas>
+      <div class="chart-card report-chart-bento-span-2">
+        <h2 class="chart-title">Top vendedores (neto)</h2>
+        <div class="report-chart-canvas report-chart-canvas--wide">
+          <canvas id="chartTopVendedores" height="0"></canvas>
         </div>
       </div>
     </div>
@@ -192,14 +156,13 @@
   <script>
     (function () {
       const payload = JSON.parse(document.getElementById("reportes-chart").textContent || "{}");
-      const teal = "#0097B2";
-      const teal2 = "rgba(0,151,178,0.25)";
+      const SIRONA = "#0f97b5";
+      const SIRONA_FADE = "rgba(15, 151, 181, 0.22)";
 
       function toNums(arr) {
         return (arr || []).map((x) => parseFloat(String(x).replace(",", ".")) || 0);
       }
 
-      /** Coincide con el filtro Django `ars`: $ 1.234.567,89 */
       function fmtArs(n) {
         const v = parseFloat(String(n).replace(",", "."));
         if (!Number.isFinite(v)) return "$ 0,00";
@@ -210,7 +173,6 @@
         return neg ? "$ -" + withDots + "," + dec : "$ " + withDots + "," + dec;
       }
 
-      /** Enteros con separador de miles (sin $), p. ej. cantidades */
       function fmtEnteroDots(n) {
         const v = Math.trunc(Number(n) || 0);
         const neg = v < 0;
@@ -219,8 +181,25 @@
         return neg ? "-" + withDots : withDots;
       }
 
+      const tooltipBase = {
+        backgroundColor: "rgba(15, 23, 42, 0.94)",
+        titleColor: "#f8fafc",
+        bodyColor: "#e2e8f0",
+        titleFont: { size: 12, weight: "500" },
+        bodyFont: { size: 13, weight: "500" },
+        padding: 12,
+        cornerRadius: 10,
+        borderColor: "rgba(148, 163, 184, 0.2)",
+        borderWidth: 1,
+        displayColors: true,
+        usePointStyle: true,
+        boxPadding: 4,
+        caretSize: 6,
+      };
+
       const pluginsMoney = {
         tooltip: {
+          ...tooltipBase,
           callbacks: {
             label: function (ctx) {
               const raw = ctx.raw;
@@ -234,6 +213,7 @@
 
       const pluginsUnidades = {
         tooltip: {
+          ...tooltipBase,
           callbacks: {
             label: function (ctx) {
               const raw = ctx.raw;
@@ -245,6 +225,32 @@
         },
       };
 
+      function lineDatasetStyle(backgroundFill) {
+        return {
+          borderColor: SIRONA,
+          backgroundColor: backgroundFill,
+          fill: true,
+          borderWidth: 2.5,
+          tension: 0.3,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: "#fff",
+          pointHoverBorderColor: SIRONA,
+          pointHoverBorderWidth: 2,
+        };
+      }
+
+      const lineOpts = {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: Object.assign({ legend: { display: true, labels: { usePointStyle: true, boxWidth: 8, padding: 12 } } }, pluginsMoney),
+        scales: {
+          y: { grid: { color: "rgba(148, 163, 184, 0.15)" }, ticks: { color: "#64748b", font: { size: 11 } }, border: { display: false } },
+          x: { grid: { display: false }, ticks: { color: "#64748b", maxRotation: 45, minRotation: 0, font: { size: 10 } } },
+        },
+      };
+
       const ctx1 = document.getElementById("chartVentasDia");
       if (ctx1) {
         new Chart(ctx1, {
@@ -252,29 +258,22 @@
           data: {
             labels: payload.labels_ventas_dia || [],
             datasets: [
-              {
-                label: "Neto",
-                data: toNums(payload.ventas_dia_neto),
-                borderColor: teal,
-                backgroundColor: teal2,
-                fill: true,
-                tension: 0.25,
-              },
+              Object.assign(
+                { label: "Neto", data: toNums(payload.ventas_dia_neto) },
+                lineDatasetStyle(function (context) {
+                  const chart = context.chart;
+                  const { ctx, chartArea } = chart;
+                  if (!chartArea) return SIRONA_FADE;
+                  const g = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                  g.addColorStop(0, "rgba(15, 151, 181, 0.32)");
+                  g.addColorStop(0.5, "rgba(15, 151, 181, 0.1)");
+                  g.addColorStop(1, "rgba(15, 151, 181, 0)");
+                  return g;
+                })
+              ),
             ],
           },
-          options: {
-            responsive: true,
-            plugins: Object.assign({ legend: { display: true } }, pluginsMoney),
-            scales: {
-              y: {
-                ticks: {
-                  callback: function (v) {
-                    return fmtArs(v);
-                  },
-                },
-              },
-            },
-          },
+          options: lineOpts,
         });
       }
 
@@ -285,20 +284,25 @@
           data: {
             labels: payload.labels_compras_dia || [],
             datasets: [
-              { label: "Monto", data: toNums(payload.compras_dia_monto), backgroundColor: teal2, borderColor: teal },
+              {
+                label: "Monto",
+                data: toNums(payload.compras_dia_monto),
+                backgroundColor: "rgba(15, 151, 181, 0.18)",
+                borderColor: SIRONA,
+                borderWidth: 1,
+                borderRadius: 6,
+                maxBarThickness: 28,
+              },
             ],
           },
           options: {
             responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: "index", intersect: false },
             plugins: Object.assign({ legend: { display: false } }, pluginsMoney),
             scales: {
-              y: {
-                ticks: {
-                  callback: function (v) {
-                    return fmtArs(v);
-                  },
-                },
-              },
+              y: { grid: { color: "rgba(148, 163, 184, 0.12)" }, ticks: { color: "#64748b", callback: function (v) { return fmtArs(v); } }, border: { display: false } },
+              x: { grid: { display: false }, ticks: { color: "#64748b", font: { size: 10 } } },
             },
           },
         });
@@ -313,22 +317,26 @@
             datasets: [
               {
                 data: payload.estado_counts || [],
-                backgroundColor: ["rgba(255,193,7,0.35)", "rgba(25,135,84,0.35)"],
-                borderColor: ["#ffc107", "#198754"],
+                backgroundColor: ["rgba(250, 204, 21, 0.55)", "rgba(45, 212, 191, 0.45)", "rgba(148, 163, 184, 0.3)"],
+                borderWidth: 0,
+                hoverOffset: 6,
+                spacing: 2,
               },
             ],
           },
           options: {
             responsive: true,
+            maintainAspectRatio: false,
+            cutout: "64%",
+            layout: { padding: 8 },
             plugins: {
-              legend: { position: "bottom" },
+              legend: { position: "bottom", labels: { usePointStyle: true, pointStyle: "circle", padding: 12, color: "#475569", font: { size: 12, weight: "500" } } },
               tooltip: {
+                ...tooltipBase,
                 callbacks: {
                   label: function (ctx) {
                     const n = Number(ctx.raw) || 0;
-                    const total = ctx.dataset.data.reduce(function (a, b) {
-                      return a + b;
-                    }, 0);
+                    const total = ctx.dataset.data.reduce(function (a, b) { return a + b; }, 0);
                     const pct = total ? Math.round((n / total) * 100) : 0;
                     return (ctx.label ? ctx.label + ": " : "") + fmtEnteroDots(n) + " (" + pct + "%)";
                   },
@@ -345,21 +353,9 @@
           type: "line",
           data: {
             labels: payload.labels_ventas_mes || [],
-            datasets: [{ label: "Neto", data: toNums(payload.ventas_mes_neto), borderColor: teal, tension: 0.25 }],
+            datasets: [Object.assign({ label: "Neto", data: toNums(payload.ventas_mes_neto) }, lineDatasetStyle(SIRONA_FADE), { borderWidth: 2.2 })],
           },
-          options: {
-            responsive: true,
-            plugins: Object.assign({ legend: { display: true } }, pluginsMoney),
-            scales: {
-              y: {
-                ticks: {
-                  callback: function (v) {
-                    return fmtArs(v);
-                  },
-                },
-              },
-            },
-          },
+          options: lineOpts,
         });
       }
 
@@ -369,21 +365,9 @@
           type: "line",
           data: {
             labels: payload.labels_compras_mes || [],
-            datasets: [{ label: "Monto", data: toNums(payload.compras_mes_monto), borderColor: teal, tension: 0.25 }],
+            datasets: [Object.assign({ label: "Monto", data: toNums(payload.compras_mes_monto) }, lineDatasetStyle(SIRONA_FADE), { borderWidth: 2.2 })],
           },
-          options: {
-            responsive: true,
-            plugins: Object.assign({ legend: { display: true } }, pluginsMoney),
-            scales: {
-              y: {
-                ticks: {
-                  callback: function (v) {
-                    return fmtArs(v);
-                  },
-                },
-              },
-            },
-          },
+          options: lineOpts,
         });
       }
 
@@ -393,20 +377,19 @@
           type: "bar",
           data: {
             labels: payload.labels_top_productos || [],
-            datasets: [{ label: "Unidades", data: payload.top_productos_unidades || [], backgroundColor: teal2, borderColor: teal }],
+            datasets: [
+              { label: "Unidades", data: payload.top_productos_unidades || [], backgroundColor: "rgba(15, 151, 181, 0.2)", borderColor: SIRONA, borderWidth: 1, borderRadius: 5 },
+            ],
           },
           options: {
             indexAxis: "y",
             responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: "index", intersect: false },
             plugins: Object.assign({ legend: { display: false } }, pluginsUnidades),
             scales: {
-              x: {
-                ticks: {
-                  callback: function (v) {
-                    return fmtEnteroDots(v);
-                  },
-                },
-              },
+              x: { grid: { color: "rgba(148, 163, 184, 0.12)" }, ticks: { color: "#64748b", callback: function (v) { return fmtEnteroDots(v); } }, border: { display: false } },
+              y: { grid: { display: false }, ticks: { color: "#64748b", font: { size: 10 } } },
             },
           },
         });
@@ -418,20 +401,17 @@
           type: "bar",
           data: {
             labels: payload.labels_top_vendedores || [],
-            datasets: [{ label: "Neto", data: toNums(payload.top_vendedores_neto), backgroundColor: teal2, borderColor: teal }],
+            datasets: [{ label: "Neto", data: toNums(payload.top_vendedores_neto), backgroundColor: "rgba(15, 151, 181, 0.2)", borderColor: SIRONA, borderWidth: 1, borderRadius: 5 }],
           },
           options: {
             indexAxis: "y",
             responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: "index", intersect: false },
             plugins: Object.assign({ legend: { display: false } }, pluginsMoney),
             scales: {
-              x: {
-                ticks: {
-                  callback: function (v) {
-                    return fmtArs(v);
-                  },
-                },
-              },
+              x: { grid: { color: "rgba(148, 163, 184, 0.12)" }, ticks: { color: "#64748b", callback: function (v) { return fmtArs(v); } }, border: { display: false } },
+              y: { grid: { display: false }, ticks: { color: "#64748b", font: { size: 10 } } },
             },
           },
         });
@@ -439,4 +419,3 @@
     })();
   </script>
 {% endblock %}
-

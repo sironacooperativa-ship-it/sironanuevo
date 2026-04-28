@@ -71,47 +71,64 @@
     </div>
   </div>
 
-  <div class="table-card">
+  <div class="table-card presu-lista-modern compras-historial-lista mb-3">
     <div class="table-card-header">
       <h2 class="table-card-title">Compras</h2>
       <span class="table-card-count">{{ page_obj.paginator.count }} resultado(s)</span>
     </div>
-    <div class="table-responsive">
-      <table class="sirona-table">
-        <thead class="table-light">
+    <div class="table-responsive presu-lista-table-wrap">
+      <table class="modern-table compras-historial-tabla" id="compras-hist-tabla">
+        <thead>
           <tr>
-            <th>#</th>
-            <th>Fecha compra</th>
-            <th>Proveedor</th>
-            <th>Producto</th>
-            <th class="table-monto">Cant.</th>
-            <th class="table-monto">Monto</th>
-            <th>Medio</th>
-            <th class="text-center">Caja</th>
-            <th>Estado</th>
-            {% if es_admin_compras %}<th class="text-end">Admin</th>{% endif %}
+            <th scope="col" class="col-ped th-id">#</th>
+            <th scope="col" class="th-fecha">Fecha compra</th>
+            <th scope="col" class="presu-col-ellipsis th-prov">Proveedor</th>
+            <th scope="col" class="th-prod">Producto</th>
+            <th scope="col" class="text-end col-money th-cant">Cant.</th>
+            <th scope="col" class="text-end col-money th-monto">Monto</th>
+            <th scope="col" class="th-medio">Medio</th>
+            <th scope="col" class="text-center th-caja-ico col-center">Caja</th>
+            <th scope="col" class="text-center th-compra-estado col-center">Estado</th>
+            {% if es_admin_compras %}
+              <th scope="col" class="text-end presu-th-acciones col-presu-acciones th-admin">Admin</th>
+            {% endif %}
           </tr>
         </thead>
         <tbody>
           {% for c in compras %}
-            <tr class="{% if c.anulada %}table-secondary{% endif %}">
-              <td><span class="fw-semibold">#{{ c.pk }}</span></td>
-              <td class="table-fecha">{{ c.fecha_compra|date:"d/m/Y" }}</td>
-              <td>{{ c.proveedor.apellido }}, {{ c.proveedor.nombre }}</td>
-              <td><span class="text-muted">{{ c.producto.codigo }}</span> {{ c.producto.descripcion|truncatechars:40 }}</td>
-              <td class="table-monto">{{ c.cantidad }}</td>
-              <td class="table-monto">{{ c.monto|ars }}</td>
-              <td class="small">{{ c.get_medio_pago_display }}</td>
-              <td>
-                <div class="table-actions">
+            <tr class="{% if c.anulada %}compra-fila-anulada{% endif %}">
+              <td class="col-ped col-id-num">#{{ c.pk }}</td>
+              <td class="col-muted">{{ c.fecha_compra|date:"d/m/Y" }}</td>
+              <td class="col-muted presu-col-ellipsis" title="{{ c.proveedor.apellido }}, {{ c.proveedor.nombre }}">
+                {{ c.proveedor.apellido }}, {{ c.proveedor.nombre }}
+              </td>
+              <td class="th-prod-cel small">
+                <span class="compra-cod-prod text-muted font-monospace">{{ c.producto.codigo }}</span>
+                {{ c.producto.descripcion|truncatechars:40 }}
+              </td>
+              <td class="text-end col-money compra-cant-cel">{{ c.cantidad }}</td>
+              <td class="text-end col-money">{{ c.monto|ars }}</td>
+              <td class="col-muted small th-medio-cel">{{ c.get_medio_pago_display }}</td>
+              <td class="text-center compra-caja-cel">
+                <div class="table-actions presu-row-actions d-flex justify-content-center">
                   {% if c.movimiento_caja %}
-                    <a class="table-action-btn" href="{% url 'caja_detail' c.movimiento_caja.pk %}" title="Ver egreso" aria-label="Ver egreso">
-                      <i data-lucide="eye"></i>
+                    <a
+                      class="btn-icon btn-view"
+                      href="{% url 'caja_detail' c.movimiento_caja.pk %}"
+                      title="Ver egreso en caja"
+                      aria-label="Ver egreso en caja"
+                    >
+                      <i data-lucide="eye" aria-hidden="true"></i>
                     </a>
                   {% endif %}
                   {% if c.movimiento_credito %}
-                    <a class="table-action-btn" href="{% url 'caja_detail' c.movimiento_credito.pk %}" title="Ver nota de crédito" aria-label="Ver nota de crédito">
-                      <i data-lucide="eye"></i>
+                    <a
+                      class="btn-icon btn-view"
+                      href="{% url 'caja_detail' c.movimiento_credito.pk %}"
+                      title="Ver nota de crédito en caja"
+                      aria-label="Ver nota de crédito en caja"
+                    >
+                      <i data-lucide="file-text" aria-hidden="true"></i>
                     </a>
                   {% endif %}
                   {% if not c.movimiento_caja and not c.movimiento_credito %}
@@ -119,27 +136,41 @@
                   {% endif %}
                 </div>
               </td>
-              <td class="small">
+              <td class="text-center col-center">
                 {% if c.anulada %}
-                  <span class="badge text-bg-warning">Anulada</span>
+                  <span class="status-pill status-pill--warning" title="Anulada" role="img" aria-label="Anulada">
+                    <i data-lucide="x-circle" class="status-pill-ico" aria-hidden="true"></i> Anulada
+                  </span>
                 {% else %}
-                  <span class="text-muted">Vigente</span>
+                  <span class="status-pill status-approved" title="Vigente" role="img" aria-label="Vigente">
+                    <i data-lucide="circle-check" class="status-pill-ico" aria-hidden="true"></i> Vigente
+                  </span>
                 {% endif %}
               </td>
               {% if es_admin_compras %}
-                <td>
-                  <div class="table-actions">
-                    <form method="post" action="{% url 'compra_admin_eliminar' c.pk %}" onsubmit="return confirm('¿Eliminar definitivamente la compra #{{ c.pk }}? Se borrarán los movimientos de caja vinculados y se descontará la cantidad del stock.');">
+                <td class="col-presu-acciones text-end table-actions-cell">
+                  <div class="table-actions presu-row-actions d-flex">
+                    <form
+                      class="d-inline m-0 presu-accion-form"
+                      method="post"
+                      action="{% url 'compra_admin_eliminar' c.pk %}"
+                      onsubmit="return confirm('¿Eliminar definitivamente la compra #{{ c.pk }}? Se borrarán los movimientos de caja vinculados y se descontará la cantidad del stock.');"
+                    >
                       {% csrf_token %}
-                      <button type="submit" class="table-action-btn" title="Eliminar" aria-label="Eliminar">
-                        <i data-lucide="x" class="text-danger"></i>
+                      <button type="submit" class="btn-icon btn-delete" title="Eliminar compra" aria-label="Eliminar compra">
+                        <i data-lucide="trash-2" aria-hidden="true"></i>
                       </button>
                     </form>
                     {% if not c.anulada and c.movimiento_caja %}
-                      <form method="post" action="{% url 'compra_admin_anular' c.pk %}" onsubmit="return confirm('¿Anular la compra #{{ c.pk }}? Quedará marcada como anulada y se registrará una nota de crédito en caja por el mismo monto.');">
+                      <form
+                        class="d-inline m-0 presu-accion-form"
+                        method="post"
+                        action="{% url 'compra_admin_anular' c.pk %}"
+                        onsubmit="return confirm('¿Anular la compra #{{ c.pk }}? Quedará marcada como anulada y se registrará una nota de crédito en caja por el mismo monto.');"
+                      >
                         {% csrf_token %}
-                        <button type="submit" class="table-action-btn" title="Actualizar" aria-label="Actualizar">
-                          <i data-lucide="refresh-cw"></i>
+                        <button type="submit" class="btn-icon btn-refresh" title="Anular compra" aria-label="Anular compra">
+                          <i data-lucide="refresh-cw" aria-hidden="true"></i>
                         </button>
                       </form>
                     {% endif %}

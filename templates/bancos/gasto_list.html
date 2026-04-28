@@ -8,50 +8,55 @@
     <a class="btn btn-primary btn-sm" href="{% url 'banco_gasto_nuevo' %}">Nuevo gasto</a>
   </div>
 
-  <div class="table-card">
+  <div class="table-card presu-lista-modern bancos-gastos-lista mb-3">
     <div class="table-card-header">
       <h2 class="table-card-title">Gastos registrados</h2>
       <span class="table-card-count">Transferencias</span>
     </div>
-    <div class="table-responsive">
-      <table class="sirona-table">
-        <thead class="table-light">
+    <div class="table-responsive presu-lista-table-wrap">
+      <table class="modern-table bancos-gastos-tabla" id="bancos-gastos-tabla">
+        <thead>
           <tr>
-            <th>Fecha</th>
-            <th>Descripción</th>
-            <th>Cuenta</th>
-            <th class="table-monto">Monto</th>
-            <th class="text-center">Caja</th>
-            <th></th>
+            <th scope="col" class="th-fecha">Fecha</th>
+            <th scope="col">Descripción</th>
+            <th scope="col" class="th-cta">Cuenta</th>
+            <th scope="col" class="text-end col-money th-monto">Monto</th>
+            <th scope="col" class="text-end presu-th-acciones col-presu-acciones">Acciones</th>
           </tr>
         </thead>
         <tbody>
           {% for g in gastos %}
             <tr>
-              <td class="table-fecha">{{ g.fecha|date:"d/m/Y" }}</td>
-              <td>{{ g.descripcion }}</td>
-              <td class="small">{{ g.cuenta_bancaria.banco }}</td>
-              <td class="table-monto">{{ g.monto|ars }}</td>
-              <td>
-                <div class="table-actions">
-                  <a class="table-action-btn" href="{% url 'caja_detail' g.movimiento_caja_id %}" title="Ver caja" aria-label="Ver caja">
-                    <i data-lucide="eye"></i>
+              <td class="col-muted">{{ g.fecha|date:"d/m/Y" }}</td>
+              <td class="banco-gasto-desc">{{ g.descripcion }}</td>
+              <td class="col-muted small banco-gasto-cta">{{ g.cuenta_bancaria.banco }}</td>
+              <td class="text-end col-money banco-gasto-monto">{{ g.monto|ars }}</td>
+              <td class="col-presu-acciones text-end table-actions-cell">
+                <div class="table-actions presu-row-actions d-flex">
+                  <a
+                    class="btn-icon btn-view"
+                    href="{% url 'caja_detail' g.movimiento_caja_id %}"
+                    title="Ver caja"
+                    aria-label="Ver caja"
+                  >
+                    <i data-lucide="eye" aria-hidden="true"></i>
                   </a>
-                </div>
-              </td>
-              <td>
-                <div class="table-actions">
-                  <form method="post" action="{% url 'banco_gasto_eliminar' g.pk %}" onsubmit="return confirm('¿Eliminar este gasto y el movimiento de caja?');">
+                  <form
+                    class="d-inline m-0 presu-accion-form"
+                    method="post"
+                    action="{% url 'banco_gasto_eliminar' g.pk %}"
+                    onsubmit="return confirm('¿Eliminar este gasto y el movimiento de caja?');"
+                  >
                     {% csrf_token %}
-                    <button type="submit" class="table-action-btn" title="Eliminar" aria-label="Eliminar">
-                      <i data-lucide="x" class="text-danger"></i>
+                    <button type="submit" class="btn-icon btn-delete" title="Eliminar" aria-label="Eliminar">
+                      <i data-lucide="trash-2" aria-hidden="true"></i>
                     </button>
                   </form>
                 </div>
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="6" class="table-empty">No hay gastos registrados.</td></tr>
+            <tr><td colspan="5" class="table-empty">No hay gastos registrados.</td></tr>
           {% endfor %}
         </tbody>
       </table>

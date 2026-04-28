@@ -43,45 +43,47 @@
     </div>
   </div>
 
-  <div class="card shadow-sm">
-    <div class="card-header fw-semibold">Movimientos</div>
-    <div class="table-responsive">
-      <table class="sirona-table">
-        <thead class="table-light">
+  <div class="table-card presu-lista-modern bancos-cuenta-movs mb-4">
+    <div class="table-card-header">
+      <h2 class="table-card-title">Movimientos</h2>
+    </div>
+    <div class="table-responsive presu-lista-table-wrap">
+      <table class="modern-table bancos-cuenta-tabla">
+        <thead>
           <tr>
-            <th>Fecha</th>
-            <th>Origen</th>
-            <th>Concepto</th>
-            <th class="text-end">Debe / Haber</th>
-            <th class="text-end">Saldo</th>
+            <th scope="col">Fecha</th>
+            <th scope="col">Origen</th>
+            <th scope="col">Concepto</th>
+            <th scope="col" class="text-end col-money">Debe / Haber</th>
+            <th scope="col" class="text-end col-money">Saldo</th>
           </tr>
         </thead>
         <tbody>
-          <tr class="table-light">
-            <td>—</td>
-            <td>—</td>
-            <td>Saldo inicial</td>
-            <td class="text-end">—</td>
-            <td class="text-end fw-semibold">{{ cuenta.saldo_inicial|ars }}</td>
+          <tr class="bancos-cuenta-saldo-ini">
+            <td class="col-muted">—</td>
+            <td class="col-muted">—</td>
+            <td class="fw-medium">Saldo inicial</td>
+            <td class="text-end col-muted">—</td>
+            <td class="text-end col-money fw-semibold">{{ cuenta.saldo_inicial|ars }}</td>
           </tr>
           {% for r in rows %}
             <tr>
-              <td>{{ r.m.fecha|date:"d/m/Y" }}</td>
-              <td><span class="badge text-bg-light text-dark">{{ r.m.get_origen_display }}</span></td>
-              <td>
+              <td class="col-muted">{{ r.m.fecha|date:"d/m/Y" }}</td>
+              <td><span class="status-pill status-inactive">{{ r.m.get_origen_display }}</span></td>
+              <td class="bancos-cuenta-conc">
                 {{ r.m.concepto }}
                 {% if r.m.movimiento_caja_id %}
                   <a class="small ms-1" href="{% url 'caja_detail' r.m.movimiento_caja_id %}">caja</a>
                 {% endif %}
               </td>
-              <td class="text-end">
+              <td class="text-end col-money">
                 {% if r.m.credito %}
                   <span class="text-success">+ {{ r.m.monto|ars }}</span>
                 {% else %}
                   <span class="text-danger">− {{ r.m.monto|ars }}</span>
                 {% endif %}
               </td>
-              <td class="text-end fw-semibold">{{ r.saldo|ars }}</td>
+              <td class="text-end col-money fw-semibold">{{ r.saldo|ars }}</td>
             </tr>
           {% empty %}
             <tr><td colspan="5" class="table-empty">Sin movimientos aún.</td></tr>

@@ -30,29 +30,29 @@
       </div>
     </div>
     <div class="col-12 col-lg-6">
-      <div class="border rounded p-3">
+      <div class="border rounded p-3 presu-lista-modern">
         <div class="fw-semibold mb-2">Historial de pedidos</div>
-        <div class="table-responsive">
-          <table class="sirona-table">
-            <thead class="table-light">
+        <div class="table-responsive presu-lista-table-wrap">
+          <table class="modern-table ficha-comprador-ventas">
+            <thead>
               <tr>
-                <th>#</th>
-                <th>Fecha</th>
-                <th class="text-end">Neto</th>
-                <th>Estado</th>
+                <th scope="col" class="th-ped">#</th>
+                <th scope="col">Fecha</th>
+                <th scope="col" class="text-end col-money">Neto</th>
+                <th scope="col" class="text-center col-center">Estado</th>
               </tr>
             </thead>
             <tbody>
               {% for v in ventas %}
                 <tr>
-                  <td><a href="{% url 'venta_detalle' v.pk %}">#{{ v.pk }}</a></td>
-                  <td class="text-muted small">{{ v.creado_en|date:"d/m/Y" }}</td>
-                  <td class="text-end">{{ v.neto|ars }}</td>
-                  <td class="small">
+                  <td class="col-ped col-id-num"><a class="text-decoration-none" href="{% url 'venta_detalle' v.pk %}">#{{ v.pk }}</a></td>
+                  <td class="col-muted small">{{ v.creado_en|date:"d/m/Y" }}</td>
+                  <td class="text-end col-money">{{ v.neto|ars }}</td>
+                  <td class="text-center col-center small">
                     {% if v.estado == "PEN" %}
-                      <span class="badge text-bg-warning text-dark">Pendiente</span>
+                      <span class="status-pill status-pending" role="img" aria-label="Pendiente">Pendiente</span>
                     {% else %}
-                      <span class="badge text-bg-success">Pagada</span>
+                      <span class="status-pill status-approved" role="img" aria-label="Pagada">Pagada</span>
                     {% endif %}
                   </td>
                 </tr>
@@ -65,28 +65,34 @@
       </div>
     </div>
     <div class="col-12">
-      <div class="border rounded p-3">
+      <div class="border rounded p-3 presu-lista-modern">
         <div class="fw-semibold mb-2">Pagos (caja)</div>
-        <div class="table-responsive">
-          <table class="sirona-table">
-            <thead class="table-light">
+        <div class="table-responsive presu-lista-table-wrap">
+          <table class="modern-table ficha-comprador-pagos">
+            <thead>
               <tr>
-                <th>Fecha</th>
-                <th>Pedido</th>
-                <th class="text-end">Monto</th>
-                <th></th>
+                <th scope="col">Fecha</th>
+                <th scope="col" class="th-ped">Pedido</th>
+                <th scope="col" class="text-end col-money">Monto</th>
+                <th scope="col" class="text-end presu-th-acciones col-presu-acciones"></th>
               </tr>
             </thead>
             <tbody>
               {% for m in pagos %}
                 <tr>
-                  <td class="text-muted small">{{ m.fecha|date:"d/m/Y" }}</td>
-                  <td>{% if m.venta_id %}<a href="{% url 'venta_detalle' m.venta_id %}">#{{ m.venta_id }}</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
-                  <td class="text-end">{{ m.delta|ars }}</td>
-                  <td class="table-actions-cell">
-                    <div class="table-actions">
-                      <a class="table-action-btn" href="{% url 'caja_detail' m.pk %}" title="Ver" aria-label="Ver">
-                        <i data-lucide="eye"></i>
+                  <td class="text-muted col-muted small">{{ m.fecha|date:"d/m/Y" }}</td>
+                  <td>
+                    {% if m.venta_id %}
+                      <a class="text-decoration-none" href="{% url 'venta_detalle' m.venta_id %}">#{{ m.venta_id }}</a>
+                    {% else %}
+                      <span class="text-muted">—</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end col-money">{{ m.delta|ars }}</td>
+                  <td class="table-actions-cell col-presu-acciones text-end">
+                    <div class="table-actions presu-row-actions d-flex justify-content-end">
+                      <a class="btn-icon btn-view" href="{% url 'caja_detail' m.pk %}" title="Ver" aria-label="Ver">
+                        <i data-lucide="eye" aria-hidden="true"></i>
                       </a>
                     </div>
                   </td>

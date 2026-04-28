@@ -94,6 +94,14 @@ def calendario_home(request):
             return xlsx_response("calendario", sheets)
         return pdf_response("calendario", title, sheets)
 
+    calendario_mes = {
+        "hoy": date.today().isoformat(),
+        "eventos": [
+            {"fecha": e.fecha.isoformat(), "titulo": (e.titulo or "")[:200], "tipo": e.tipo}
+            for e in eventos
+        ],
+    }
+
     return render(
         request,
         "calendario/home.html",
@@ -105,6 +113,7 @@ def calendario_home(request):
             "vencimientos": vencimientos,
             "eventos": eventos,
             "q": q,
+            "calendario_mes": calendario_mes,
         },
     )
 

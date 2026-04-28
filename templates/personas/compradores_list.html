@@ -3,7 +3,7 @@
 {% block content %}
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Clientes</h1>
-    <a class="btn btn-primary" href="{% url 'comprador_create' %}">Nuevo</a>
+    <a class="btn btn-primary btn-sm" href="{% url 'comprador_create' %}">Nuevo</a>
   </div>
 
   <div class="card shadow-sm mb-3">
@@ -28,76 +28,91 @@
     </div>
   </div>
 
-  <div class="table-card">
+  <div class="table-card presu-lista-modern personas-lista-modern mb-3">
     <div class="table-card-header">
       <h2 class="table-card-title">Clientes</h2>
       <span class="table-card-count">Listado de clientes</span>
     </div>
-    <div class="table-responsive">
-      <table class="sirona-table">
-        <thead class="table-light">
+    <div class="table-responsive presu-lista-table-wrap">
+      <table class="modern-table personas-compradores-tabla" id="compradores-tabla">
+        <thead>
           <tr>
-            <th>Código</th>
-            <th>Apellido</th>
-            <th>Nombre</th>
-            <th>Vendedor</th>
-            <th class="text-center">Estado</th>
-            <th>Dirección</th>
-            <th class="text-end">Acciones</th>
+            <th scope="col" class="th-cod">Código</th>
+            <th scope="col" class="presu-col-ellipsis th-apellido">Apellido</th>
+            <th scope="col" class="presu-col-ellipsis th-nombre">Nombre</th>
+            <th scope="col" class="presu-col-ellipsis">Vendedor</th>
+            <th scope="col" class="text-center th-estado col-center">Estado</th>
+            <th scope="col" class="th-dir">Dirección</th>
+            <th scope="col" class="text-end presu-th-acciones col-presu-acciones">Acciones</th>
           </tr>
         </thead>
         <tbody>
           {% for c in compradores %}
             <tr>
-              <td><code>{{ c.codigo }}</code></td>
-              <td>{{ c.apellido }}</td>
-              <td>{{ c.nombre }}</td>
-              <td class="small">
+              <td class="col-muted persona-cod-cel"><span class="persona-cod">{{ c.codigo }}</span></td>
+              <td class="col-muted presu-col-ellipsis" title="{{ c.apellido }}">{{ c.apellido }}</td>
+              <td class="col-muted presu-col-ellipsis" title="{{ c.nombre }}">{{ c.nombre }}</td>
+              <td class="col-muted small presu-col-ellipsis" title="{% if c.vendedor_asignado %}{{ c.vendedor_asignado.apellido }}, {{ c.vendedor_asignado.nombre }}{% endif %}">
                 {% if c.vendedor_asignado %}
                   {{ c.vendedor_asignado.apellido }}, {{ c.vendedor_asignado.nombre }}
                 {% else %}
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td class="text-center">
+              <td class="text-center col-center">
                 {% if c.habilitado %}
-                  <span class="badge text-bg-success">Habilitado</span>
+                  <span class="status-pill status-approved" title="Habilitado" role="img" aria-label="Habilitado">
+                    <i data-lucide="circle-check" class="status-pill-ico" aria-hidden="true"></i> Habilitado
+                  </span>
                 {% else %}
-                  <span class="badge text-bg-secondary">Inhabilitado</span>
+                  <span class="status-pill status-inactive" title="Inhabilitado" role="img" aria-label="Inhabilitado">
+                    <i data-lucide="ban" class="status-pill-ico" aria-hidden="true"></i> Inhabilitado
+                  </span>
                 {% endif %}
               </td>
-              <td>{{ c.direccion }}</td>
-              <td>
-                <div class="table-actions">
+              <td class="col-muted th-dir-cel small">{{ c.direccion|default:"—" }}</td>
+              <td class="col-presu-acciones text-end table-actions-cell">
+                <div class="table-actions presu-row-actions d-flex">
                   <button
                     type="button"
-                    class="table-action-btn"
+                    class="btn-icon btn-view"
                     data-sirona-modal-url="{% url 'comprador_ficha' c.pk %}?modal=1"
                     title="Ver ficha"
                     aria-label="Ver ficha"
                   >
-                    <i data-lucide="eye"></i>
+                    <i data-lucide="eye" aria-hidden="true"></i>
                   </button>
-                  <a class="table-action-btn" href="{% url 'comprador_update' c.id %}" title="Editar" aria-label="Editar">
-                    <i data-lucide="pencil"></i>
+                  <a class="btn-icon btn-edit" href="{% url 'comprador_update' c.id %}" title="Editar" aria-label="Editar">
+                    <i data-lucide="pencil" aria-hidden="true"></i>
                   </a>
                   {% if user.is_staff %}
-                    <form method="post" action="{% url 'comprador_toggle' c.id %}">
+                    <form class="d-inline m-0 presu-accion-form" method="post" action="{% url 'comprador_toggle' c.id %}">
                       {% csrf_token %}
                       {% if c.habilitado %}
-                        <button class="table-action-btn" type="submit" onclick="return confirm('¿Inhabilitar {{ c.codigo }}?');" title="Eliminar habilitación" aria-label="Eliminar habilitación">
-                          <i data-lucide="x" class="text-danger"></i>
+                        <button
+                          class="btn-icon btn-inhabilitar"
+                          type="submit"
+                          onclick="return confirm('¿Inhabilitar {{ c.codigo }}?');"
+                          title="Inhabilitar"
+                          aria-label="Inhabilitar"
+                        >
+                          <i data-lucide="user-x" aria-hidden="true"></i>
                         </button>
                       {% else %}
-                        <button class="table-action-btn" type="submit" title="Habilitar" aria-label="Habilitar">
-                          <i data-lucide="check" class="text-secondary"></i>
+                        <button class="btn-icon btn-approve" type="submit" title="Habilitar" aria-label="Habilitar">
+                          <i data-lucide="user-check" aria-hidden="true"></i>
                         </button>
                       {% endif %}
                     </form>
-                    <form method="post" action="{% url 'comprador_delete' c.id %}" onsubmit="return confirm('¿Eliminar {{ c.codigo }}?');">
+                    <form
+                      class="d-inline m-0 presu-accion-form"
+                      method="post"
+                      action="{% url 'comprador_delete' c.id %}"
+                      onsubmit="return confirm('¿Eliminar {{ c.codigo }}?');"
+                    >
                       {% csrf_token %}
-                      <button class="table-action-btn" type="submit" title="Eliminar" aria-label="Eliminar">
-                        <i data-lucide="x" class="text-danger"></i>
+                      <button type="submit" class="btn-icon btn-delete" title="Eliminar" aria-label="Eliminar">
+                        <i data-lucide="trash-2" aria-hidden="true"></i>
                       </button>
                     </form>
                   {% endif %}
@@ -117,4 +132,3 @@
     {% include "includes/export_buttons.html" %}
   </div>
 {% endblock %}
-

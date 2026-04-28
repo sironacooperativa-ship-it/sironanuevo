@@ -1,19 +1,6 @@
 {% extends "base.html" %}
 {% load money %}
 {% block title %}Pedidos{% endblock %}
-{% block extra_head %}
-  <style>
-    .ventas-historial-tabla .ventas-hist-venc,
-    .ventas-historial-tabla th.ventas-hist-venc {
-      font-size: 0.8rem;
-      line-height: 1.2;
-    }
-    .ventas-historial-tabla .ventas-hist-neto {
-      min-width: 9.25rem;
-      width: 9%;
-    }
-  </style>
-{% endblock %}
 {% block content %}
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Historial de pedidos</h1>
@@ -96,106 +83,101 @@
     </div>
   </div>
 
-  <div class="table-card">
+  <div class="table-card presu-lista-modern ventas-historial-modern mb-3">
     <div class="table-card-header">
       <h2 class="table-card-title">Pedidos</h2>
       <span class="table-card-count">{{ page_obj.paginator.count }} resultado(s)</span>
     </div>
-    <div class="table-responsive">
-      <table class="sirona-table ventas-historial-tabla">
-        <thead class="table-light">
+    <div class="table-responsive presu-lista-table-wrap venta-hist-table-wrap">
+      <table class="modern-table ventas-historial-tabla" id="venta-hist-tabla">
+        <thead>
           <tr>
-            <th>Pedido</th>
-            <th>Fecha registro</th>
-            <th>Vendedor</th>
-            <th>Comprador</th>
-            <th class="ventas-hist-venc">Venc. pago</th>
-            <th class="table-monto ventas-hist-neto">Neto</th>
-            <th class="table-monto">Comisión</th>
-            <th class="table-monto">Ingreso caja</th>
-            <th>Estado</th>
-            <th class="table-monto">Acciones</th>
+            <th scope="col" class="col-ped th-pedido">Pedido</th>
+            <th scope="col" class="th-fecha">Fecha registro</th>
+            <th scope="col" class="th-vend presu-col-ellipsis">Vendedor</th>
+            <th scope="col" class="th-compra presu-col-ellipsis">Comprador</th>
+            <th scope="col" class="ventas-hist-venc th-venc">Venc. pago</th>
+            <th scope="col" class="text-end th-neto col-money">Neto</th>
+            <th scope="col" class="text-end th-comision col-money">Comisión</th>
+            <th scope="col" class="text-end th-caja col-money">Ingreso caja</th>
+            <th scope="col" class="text-center th-estado col-center" title="Estado">Estado</th>
+            <th scope="col" class="text-end th-acciones presu-th-acciones col-presu-acciones">Acciones</th>
           </tr>
         </thead>
         <tbody>
           {% for v in ventas %}
             <tr>
-              <td><span class="fw-semibold">#{{ v.pk }}</span></td>
-              <td class="table-fecha">{{ v.creado_en|date:"d/m/Y H:i" }}</td>
-              <td class="table-text" title="{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}">{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}</td>
-              <td class="table-text small" title="{% if v.comprador %}{{ v.comprador.apellido }}, {{ v.comprador.nombre }}{% endif %}">
+              <td class="col-ped col-id-num">#{{ v.pk }}</td>
+              <td class="col-muted">{{ v.creado_en|date:"d/m/Y H:i" }}</td>
+              <td class="col-muted presu-col-ellipsis" title="{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}">{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}</td>
+              <td class="col-muted presu-col-ellipsis" title="{% if v.comprador %}{{ v.comprador.apellido }}, {{ v.comprador.nombre }}{% endif %}">
                 {% if v.comprador %}
                   {{ v.comprador.apellido }}, {{ v.comprador.nombre }}
                 {% else %}
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td class="table-fecha ventas-hist-venc">{% if v.fecha_vencimiento_pago %}{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
-              <td class="table-monto ventas-hist-neto">{{ v.neto|ars }}</td>
-              <td class="table-monto small">
+              <td class="col-muted ventas-hist-venc">{% if v.fecha_vencimiento_pago %}{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+              <td class="text-end col-money ventas-hist-neto">{{ v.neto|ars }}</td>
+              <td class="text-end col-money comision-cel small">
                 {% if v.aplica_comision %}
                   {{ v.comision_porcentaje }}% <span class="text-muted">({{ v.monto_comision|ars }})</span>
                 {% else %}
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td class="table-monto">{{ v.monto_ingreso_caja|ars }}</td>
-              <td class="text-center">
+              <td class="text-end col-money">{{ v.monto_ingreso_caja|ars }}</td>
+              <td class="text-center col-center">
                 {% if v.estado == "PEN" %}
-                  <span
-                    class="ventas-hist-pendiente-icon"
-                    title="Pedido pendiente de pago"
-                    role="img"
-                    aria-label="Pedido pendiente de pago"
-                    >!</span>
+                  <span class="status-pill status-pending" title="Pendiente de pago" role="img" aria-label="Pendiente de pago">
+                    <i data-lucide="clock" class="status-pill-ico" aria-hidden="true"></i> Pendiente
+                  </span>
                 {% else %}
-                  <span
-                    class="ventas-hist-pagada-icon"
-                    title="Pagada"
-                    role="img"
-                    aria-label="Pagada"
-                    >✓</span>
+                  <span class="status-pill status-approved" title="Pagada" role="img" aria-label="Pagada">
+                    <i data-lucide="circle-check" class="status-pill-ico" aria-hidden="true"></i> Pagada
+                  </span>
                 {% endif %}
               </td>
-              <td>
-                <div class="table-actions">
+              <td class="col-presu-acciones text-end table-actions-cell">
+                <div class="table-actions presu-row-actions d-flex">
                   <a
-                    class="table-action-btn"
+                    class="btn-icon btn-view"
                     href="{% url 'venta_detalle' v.pk %}"
                     title="Ver pedido"
                     aria-label="Ver pedido"
                   >
-                    <i data-lucide="eye" class="ventas-hist-icon"></i>
+                    <i data-lucide="eye" aria-hidden="true"></i>
                   </a>
                   <a
-                    class="table-action-btn"
+                    class="btn-icon btn-edit"
                     href="{% url 'venta_editar' v.pk %}"
                     title="Editar pedido"
                     aria-label="Editar pedido"
                   >
-                    <i data-lucide="pencil" class="ventas-hist-icon"></i>
+                    <i data-lucide="pencil" aria-hidden="true"></i>
                   </a>
                   {% if v.estado == "PEN" %}
                     <a
-                      class="table-action-btn"
+                      class="btn-icon btn-approve"
                       href="{% url 'venta_registrar_pago' v.pk %}"
                       title="Aprobar pago"
                       aria-label="Aprobar pago"
                     >
-                      <i data-lucide="check" class="ventas-hist-icon"></i>
+                      <i data-lucide="check" aria-hidden="true"></i>
                     </a>
                   {% elif v.pago_movimiento %}
                     <a
-                      class="table-action-btn"
+                      class="btn-icon btn-view"
                       href="{% url 'caja_detail' v.pago_movimiento.pk %}"
                       title="Ver movimiento en caja"
                       aria-label="Ver movimiento en caja"
                     >
-                      <i data-lucide="eye" class="ventas-hist-icon"></i>
+                      <i data-lucide="eye" aria-hidden="true"></i>
                     </a>
                   {% endif %}
                   {% if user.is_staff %}
                     <form
+                      class="d-inline m-0 presu-accion-form"
                       method="post"
                       action="{% url 'venta_eliminar' v.pk %}"
                       onsubmit="return confirm('¿Eliminar el pedido #{{ v.pk }}? Se revierte stock y, si estaba pagado, el ingreso en caja.');"
@@ -203,11 +185,11 @@
                       {% csrf_token %}
                       <button
                         type="submit"
-                        class="table-action-btn"
+                        class="btn-icon btn-delete"
                         title="Eliminar pedido"
                         aria-label="Eliminar pedido"
                       >
-                        <i data-lucide="x" class="ventas-hist-icon text-danger"></i>
+                        <i data-lucide="trash-2" aria-hidden="true"></i>
                       </button>
                     </form>
                   {% endif %}

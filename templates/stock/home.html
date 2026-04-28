@@ -80,7 +80,7 @@
     </div>
   </div>
 
-  <div class="card shadow-sm mb-3">
+  <div class="card shadow-sm mb-3 stock-inventory-card">
     <div class="card-body border-bottom py-3">
       <form method="get" class="row g-2 align-items-end">
         <div class="col-12 col-md-8">
@@ -103,30 +103,32 @@
         En <strong>Stock disponible</strong> podés corregir el saldo a mano; se guarda en el producto y se refleja en Productos, presupuestos y ventas.
       </p>
     </div>
-    <div class="table-responsive">
-      <table class="sirona-table">
-        <thead class="table-light">
+    <div class="table-responsive stock-inventory-wrap">
+      <table class="table-stock-saas w-100">
+        <thead>
           <tr>
-            <th>Código</th>
-            <th>Descripción</th>
-            <th>Tipo</th>
-            <th class="table-monto" style="min-width: 9rem">Stock disponible</th>
-            <th class="table-monto">Precio venta</th>
+            <th scope="col" class="col-codigo-th">Código</th>
+            <th scope="col" class="col-tipo-th">Tipo</th>
+            <th scope="col" class="col-descripcion-th">Descripción</th>
+            <th scope="col" class="text-end col-stock-th">Stock disp.</th>
+            <th scope="col" class="text-end col-precio-th">Precio</th>
           </tr>
         </thead>
         <tbody>
           {% for p in productos %}
             <tr>
-              <td><code>{{ p.codigo }}</code></td>
-              <td>{{ p.descripcion }}</td>
-              <td class="text-muted">{{ p.get_tipo_display }}</td>
-              <td class="table-monto">
+              <td class="col-codigo"><span class="col-codigo-txt">{{ p.codigo }}</span></td>
+              <td class="col-tipo">{{ p.get_tipo_display }}</td>
+              <td class="col-descripcion">
+                <span class="col-descripcion-txt">{{ p.descripcion }}</span>
+              </td>
+              <td class="text-end col-stock">
                 {% if user.is_staff %}
-                  <div class="table-actions">
+                  <div class="table-actions stock-saas-stock-actions justify-content-end">
                     <form
                       method="post"
                       action="{% url 'stock_ajuste_inline' %}"
-                      class="d-inline-flex align-items-center gap-1 justify-content-end flex-wrap"
+                      class="d-inline-flex align-items-center gap-2 justify-content-end flex-wrap"
                     >
                       {% csrf_token %}
                       <input type="hidden" name="producto_id" value="{{ p.pk }}" />
@@ -135,28 +137,32 @@
                         type="number"
                         name="stock"
                         id="stock-input-{{ p.pk }}"
-                        class="form-control form-control-sm text-end"
-                        style="width: 5.25rem; max-width: 100%"
+                        class="form-control form-control-sm stock-saas-input text-end"
                         min="0"
                         step="1"
                         value="{{ p.stock }}"
                         title="Editar stock y aplicar"
                         aria-label="Stock {{ p.codigo }}"
                       />
-                      <button type="submit" class="table-action-btn" title="Aplicar" aria-label="Aplicar">
-                        <i data-lucide="check"></i>
+                      <button
+                        type="submit"
+                        class="btn-icon stock-saas-apply"
+                        title="Aplicar"
+                        aria-label="Aplicar"
+                      >
+                        <i data-lucide="check" aria-hidden="true"></i>
                       </button>
                     </form>
                   </div>
                 {% else %}
-                  <span class="small text-muted">{{ p.stock }}</span>
+                  <span class="col-stock-numeral">{{ p.stock }}</span>
                 {% endif %}
               </td>
-              <td class="table-monto">{{ p.precio_venta|ars }}</td>
+              <td class="text-end col-precio col-precio-ars">{{ p.precio_venta|ars }}</td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="5" class="table-empty">
+              <td colspan="5" class="table-empty stock-saas-table-empty">
                 {% if q %}No hay productos que coincidan con la búsqueda.{% else %}No hay productos cargados.{% endif %}
               </td>
             </tr>
@@ -167,33 +173,33 @@
     {% include "includes/pagination_footer.html" %}
   </div>
 
-  <div class="card shadow-sm">
-    <div class="card-body">
-      <h2 class="h6 mb-3">Últimos movimientos</h2>
-      <div class="table-responsive">
-        <table class="sirona-table">
-          <thead class="table-light">
+  <div class="table-card presu-lista-modern stock-ult-movs">
+    <div class="table-card-header">
+      <h2 class="table-card-title">Últimos movimientos</h2>
+    </div>
+    <div class="table-responsive presu-lista-table-wrap">
+      <table class="modern-table stock-ult-movs-tabla">
+        <thead>
+          <tr>
+            <th scope="col" class="th-fecha">Fecha</th>
+            <th scope="col">Tipo</th>
+            <th scope="col" class="presu-col-ellipsis th-prod">Producto</th>
+            <th scope="col" class="text-end col-money">Cant.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in movimientos %}
             <tr>
-              <th>Fecha</th>
-              <th>Tipo</th>
-              <th>Producto</th>
-              <th class="table-monto">Cant.</th>
+              <td class="col-muted table-fecha">{{ m.creado_en|date:"d/m H:i" }}</td>
+              <td class="col-muted">{{ m.get_tipo_display }}</td>
+              <td class="col-muted small presu-col-ellipsis" title="{{ m.producto.descripcion }}">{{ m.producto.descripcion }}</td>
+              <td class="text-end col-money">{{ m.cantidad }}</td>
             </tr>
-          </thead>
-          <tbody>
-            {% for m in movimientos %}
-              <tr>
-                <td class="table-fecha">{{ m.creado_en|date:"d/m H:i" }}</td>
-                <td>{{ m.get_tipo_display }}</td>
-                <td class="small">{{ m.producto.descripcion }}</td>
-                <td class="table-monto">{{ m.cantidad }}</td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="4" class="table-empty">Sin movimientos aún.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+          {% empty %}
+            <tr><td colspan="4" class="table-empty">Sin movimientos aún.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
 

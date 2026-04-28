@@ -29,15 +29,15 @@
 
     <input type="hidden" name="retorno_query" value="{{ retorno_query|default:'' }}" />
 
-    <div class="card shadow-sm">
-      <div class="table-responsive">
-        <table class="sirona-table">
-          <thead class="table-light">
+    <div class="table-card presu-lista-modern productos-conflicto-lista">
+      <div class="table-responsive presu-lista-table-wrap">
+        <table class="modern-table productos-conflicto-tabla">
+          <thead>
             <tr>
-              <th>Producto</th>
-              <th class="text-end">Precio en lista</th>
-              <th class="text-end">Precio del producto</th>
-              <th>Qué queda</th>
+              <th scope="col">Producto</th>
+              <th scope="col" class="text-end col-money">Precio en lista</th>
+              <th scope="col" class="text-end col-money">Precio del producto</th>
+              <th scope="col">Qué queda</th>
             </tr>
           </thead>
           <tbody>
@@ -64,7 +64,7 @@
           </tbody>
         </table>
       </div>
-      <div class="card-body border-top d-flex justify-content-end gap-2">
+      <div class="p-3 border-top d-flex justify-content-end gap-2 bg-white">
         <a class="btn btn-outline-secondary" href="{% url 'productos_list' %}{% if retorno_query %}?{{ retorno_query }}{% endif %}">Cancelar</a>
         <button type="submit" class="btn btn-primary">Aplicar</button>
       </div>

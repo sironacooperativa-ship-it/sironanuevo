@@ -20,7 +20,7 @@
       Aumento aplicado sobre costo: <strong>{{ pct }}%</strong>. Revisá los precios finales y tocá <strong>Guardar cambios</strong>.
     </div>
 
-    <form method="post" class="card app-card border-0 shadow-sm">
+    <form method="post" class="card app-card presu-lista-modern border-0 shadow-sm">
       {% csrf_token %}
       <input type="hidden" name="step" value="confirm" />
       <input type="hidden" name="pct_aumento" value="{{ pct }}" />
@@ -34,16 +34,16 @@
         <input type="hidden" name="producto_id" value="{{ row.producto.pk }}" />
       {% endfor %}
 
-      <div class="table-responsive">
-        <table class="sirona-table app-table">
-          <thead class="table-light">
+      <div class="table-responsive presu-lista-table-wrap">
+        <table class="modern-table app-table productos-aumento-confirm">
+          <thead>
             <tr>
-              <th>Código</th>
-              <th>Descripción</th>
-              <th class="text-end">Costo actual</th>
-              <th class="text-end">Nuevo costo</th>
-              <th class="text-end">% gan.</th>
-              <th class="text-end" style="min-width: 9rem">Precio final</th>
+              <th scope="col" class="th-cod">Código</th>
+              <th scope="col">Descripción</th>
+              <th scope="col" class="text-end col-money">Costo actual</th>
+              <th scope="col" class="text-end col-money">Nuevo costo</th>
+              <th scope="col" class="text-end col-money">% gan.</th>
+              <th scope="col" class="text-end" style="min-width: 9rem">Precio final</th>
             </tr>
           </thead>
           <tbody>
@@ -171,21 +171,21 @@
         </div>
       </div>
 
-      <div class="card app-card border-0 shadow-sm overflow-hidden">
-        <div class="table-responsive">
-          <table class="sirona-table app-table">
-            <thead class="table-light">
+      <div class="card app-card presu-lista-modern border-0 shadow-sm overflow-hidden">
+        <div class="table-responsive presu-lista-table-wrap">
+          <table class="modern-table app-table productos-aumento-sel">
+            <thead>
               <tr>
                 <th scope="col" class="text-center" style="width: 2.5rem;">
                   <label class="visually-hidden" for="chkSelTodos">Seleccionar todos</label>
                   <input type="checkbox" class="form-check-input" id="chkSelTodos" title="Seleccionar todos" />
                 </th>
-                <th>Código</th>
-                <th>Descripción</th>
-                <th>Tipo</th>
-                <th class="text-end">Costo</th>
-                <th class="text-end">% gan.</th>
-                <th class="text-end">Precio actual</th>
+                <th scope="col" class="th-cod">Código</th>
+                <th scope="col">Descripción</th>
+                <th scope="col">Tipo</th>
+                <th scope="col" class="text-end col-money">Costo</th>
+                <th scope="col" class="text-end col-money">% gan.</th>
+                <th scope="col" class="text-end col-money">Precio actual</th>
               </tr>
             </thead>
             <tbody>

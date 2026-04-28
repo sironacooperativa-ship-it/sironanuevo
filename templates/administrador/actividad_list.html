@@ -41,39 +41,39 @@
     </div>
   </div>
 
-  <div class="table-card">
+  <div class="table-card presu-lista-modern admin-actividad-lista mb-3">
     <div class="table-card-header">
       <h2 class="table-card-title">Registros</h2>
       <span class="table-card-count">{{ page_obj.paginator.count }} resultado(s)</span>
     </div>
-    <div class="table-responsive">
-      <table class="sirona-table">
-        <thead class="table-light">
+    <div class="table-responsive presu-lista-table-wrap">
+      <table class="modern-table admin-actividad-tabla">
+        <thead>
           <tr>
-            <th>Fecha y hora</th>
-            <th>Usuario</th>
-            <th>IP</th>
-            <th></th>
-            <th>Ruta</th>
-            <th class="text-end">HTTP</th>
-            <th>Nota</th>
+            <th scope="col" class="th-fecha">Fecha y hora</th>
+            <th scope="col" class="presu-col-ellipsis th-user">Usuario</th>
+            <th scope="col" class="th-ip">IP</th>
+            <th scope="col" class="th-met">Mét.</th>
+            <th scope="col" class="th-ruta">Ruta</th>
+            <th scope="col" class="text-end col-money th-http">HTTP</th>
+            <th scope="col" class="th-nota">Nota</th>
           </tr>
         </thead>
         <tbody>
           {% for r in page_obj %}
             <tr>
-              <td class="table-fecha">{{ r.fecha_hora|date:"d/m/Y H:i:s" }}</td>
-              <td class="small">{{ r.nombre_usuario }}</td>
-              <td class="small text-muted font-monospace">{{ r.ip|default:"—" }}</td>
-              <td class="text-nowrap"><span class="badge text-bg-light text-dark">{{ r.metodo }}</span></td>
-              <td class="small">
-                <code class="text-break">{{ r.ruta }}</code>
+              <td class="col-muted table-fecha">{{ r.fecha_hora|date:"d/m/Y H:i:s" }}</td>
+              <td class="col-muted small presu-col-ellipsis" title="{{ r.nombre_usuario }}">{{ r.nombre_usuario }}</td>
+              <td class="col-muted small font-monospace th-ip-cel">{{ r.ip|default:"—" }}</td>
+              <td class="text-nowrap"><span class="status-pill status-inactive admin-act-met-pill">{{ r.metodo }}</span></td>
+              <td class="small nota-cel-pagina-wrap">
+                <code class="text-break nota-cod-pagina d-inline-block">{{ r.ruta }}</code>
                 {% if r.consulta %}
                   <div class="text-muted font-monospace" style="font-size: 0.75rem;">?{{ r.consulta|truncatechars:80 }}</div>
                 {% endif %}
               </td>
-              <td class="table-monto">{{ r.codigo_estado }}</td>
-              <td class="small">{% if r.descripcion %}<span class="text-primary">{{ r.descripcion }}</span>{% else %}—{% endif %}</td>
+              <td class="text-end col-money">{{ r.codigo_estado }}</td>
+              <td class="small col-muted th-nota-cel">{% if r.descripcion %}<span class="text-primary">{{ r.descripcion }}</span>{% else %}—{% endif %}</td>
             </tr>
           {% empty %}
             <tr><td colspan="7" class="table-empty">Sin registros con los filtros actuales.</td></tr>

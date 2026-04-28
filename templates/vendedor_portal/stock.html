@@ -25,22 +25,25 @@
     </div>
   </div>
 
-  <div class="card shadow-sm">
-    <div class="table-responsive">
-      <table class="sirona-table">
-        <thead class="table-light">
+  <div class="table-card presu-lista-modern vendedor-stock-lista">
+    <div class="table-card-header">
+      <h2 class="table-card-title">Productos</h2>
+    </div>
+    <div class="table-responsive presu-lista-table-wrap">
+      <table class="modern-table vendedor-stock-tabla">
+        <thead>
           <tr>
-            <th>Código</th>
-            <th>Producto</th>
-            <th class="text-end">Disponible</th>
+            <th scope="col" class="th-cod">Código</th>
+            <th scope="col" class="presu-col-ellipsis">Producto</th>
+            <th scope="col" class="text-end col-money">Disponible</th>
           </tr>
         </thead>
         <tbody>
           {% for p in productos %}
             <tr>
-              <td><code>{{ p.codigo }}</code></td>
-              <td>{{ p.descripcion }}</td>
-              <td class="text-end fw-semibold">{{ p.stock }}</td>
+              <td class="col-muted"><span class="persona-cod">{{ p.codigo }}</span></td>
+              <td class="col-muted presu-col-ellipsis" title="{{ p.descripcion }}">{{ p.descripcion }}</td>
+              <td class="text-end col-money fw-semibold">{{ p.stock }}</td>
             </tr>
           {% empty %}
             <tr><td colspan="3" class="table-empty">No hay productos.</td></tr>

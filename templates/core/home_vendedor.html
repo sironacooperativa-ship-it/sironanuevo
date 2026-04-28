@@ -43,35 +43,37 @@
     </div>
   </div>
 
-  <div class="card shadow-sm sirona-card-table-accent">
-    <div class="card-header sirona-card-header-table-accent fw-semibold">Mis pedidos con pago pendiente</div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="sirona-table">
-          <thead class="table-light">
+  <div class="table-card presu-lista-modern home-vend-pend">
+    <div class="table-card-header">
+      <h2 class="table-card-title">Mis pedidos con pago pendiente</h2>
+    </div>
+    <div class="table-responsive presu-lista-table-wrap p-0">
+      <table class="modern-table home-vend-pend-tabla">
+        <thead>
+          <tr>
+            <th scope="col" class="th-ped">Pedido</th>
+            <th scope="col" class="th-fecha">Fecha pedido</th>
+            <th scope="col" class="presu-col-ellipsis">Cliente</th>
+            <th scope="col" class="text-end col-money">Monto</th>
+            <th scope="col">Venc. pago</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in ventas_pendientes %}
             <tr>
-              <th>Pedido</th>
-              <th>Fecha pedido</th>
-              <th>Cliente</th>
-              <th class="text-end">Monto</th>
-              <th>Venc. pago</th>
+              <td class="col-ped col-id-num">#{{ v.pk }}</td>
+              <td class="col-muted small">{{ v.creado_en|date:"d/m/Y H:i" }}</td>
+              <td class="col-muted presu-col-ellipsis" title="{% if v.comprador_id %}{{ v.comprador }}{% endif %}">
+                {% if v.comprador_id %}{{ v.comprador }}{% else %}<span class="text-muted">—</span>{% endif %}
+              </td>
+              <td class="text-end col-money">{{ v.neto|ars }}</td>
+              <td class="col-muted">{% if v.fecha_vencimiento_pago %}{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
             </tr>
-          </thead>
-          <tbody>
-            {% for v in ventas_pendientes %}
-              <tr>
-                <td class="fw-semibold">#{{ v.pk }}</td>
-                <td class="text-muted small">{{ v.creado_en|date:"d/m/Y H:i" }}</td>
-                <td>{% if v.comprador_id %}{{ v.comprador }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
-                <td class="text-end">{{ v.neto|ars }}</td>
-                <td>{% if v.fecha_vencimiento_pago %}{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="5" class="table-empty">No tenés pedidos con pago pendiente.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+          {% empty %}
+            <tr><td colspan="5" class="table-empty">No tenés pedidos con pago pendiente.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
 {% endblock %}

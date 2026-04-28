@@ -81,16 +81,16 @@
     {% csrf_token %}
     <input type="hidden" name="q" value="{{ q }}" />
     {% if page_obj %}<input type="hidden" name="page" value="{{ page_obj.number }}" />{% endif %}
-    <div class="table-card">
-      <div class="table-responsive">
-        <table class="sirona-table">
-          <thead class="table-light">
+    <div class="table-card presu-lista-modern lista-precio-rubro">
+      <div class="table-responsive presu-lista-table-wrap">
+        <table class="modern-table lista-precio-rubro-tabla">
+          <thead>
             <tr>
-              <th>Código</th>
-              <th>Tipo</th>
-              <th>Descripción</th>
-              <th class="table-monto" style="width: 10rem">Precio en {{ lista.nombre }}</th>
-              <th style="width: 5rem"></th>
+              <th scope="col" class="th-cod">Código</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">Descripción</th>
+              <th scope="col" class="text-end col-money" style="width: 10rem">Precio en {{ lista.nombre }}</th>
+              <th scope="col" style="width: 5rem"></th>
             </tr>
           </thead>
           <tbody>
@@ -108,17 +108,17 @@
                     value="{{ it.precio_venta }}"
                   />
                 </td>
-                <td>
-                  <div class="table-actions">
+                <td class="text-end col-presu-acciones table-actions-cell">
+                  <div class="table-actions presu-row-actions d-flex justify-content-end">
                     <button
                       type="submit"
                       form="formQuitarItem{{ it.pk }}"
-                      class="table-action-btn"
+                      class="btn-icon btn-delete"
                       onclick="return confirm('¿Quitar de esta lista?');"
                       title="Quitar"
                       aria-label="Quitar"
                     >
-                      <i data-lucide="x" class="text-danger"></i>
+                      <i data-lucide="x" aria-hidden="true"></i>
                     </button>
                   </div>
                 </td>

@@ -1691,3 +1691,1842 @@ h2.h6 {
   color: #fff;
 }
 
+/* Inicio: card con tabla “dashboard” (p. ej. pedidos pago pendiente) */
+.card-table {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+  font-family: "Inter", var(--bs-font-sans-serif, system-ui), sans-serif;
+  color: #0f172a;
+}
+
+/* Encabezado: mismo criterio que un “card-header” SaaS (no usar .card de Bootstrap) */
+.card-table .card-table-header,
+.card-header.card-table-header {
+  padding: 18px 20px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #0f172a;
+  background: #fff;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.card-table .card-table-body {
+  background: #fff;
+}
+
+.card-table .table-responsive.table-modern-wrap {
+  background: #fff;
+  border: 0;
+  border-radius: 0;
+}
+
+.table-modern {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 400;
+}
+
+.card-table .table-modern thead {
+  background: #f8fafc;
+}
+
+.card-table .table-modern th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  border: 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+  vertical-align: middle;
+  white-space: nowrap;
+  box-shadow: none;
+  background-clip: padding-box;
+}
+
+.card-table .table-modern th.text-end {
+  text-align: right;
+}
+
+.card-table .table-modern th.text-center,
+.card-table .table-modern th.col-accion {
+  text-align: center;
+}
+
+.card-table .table-modern td {
+  padding: 14px 16px;
+  color: #0f172a;
+  font-weight: 400;
+  border: 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.055);
+  background: #fff;
+  vertical-align: middle;
+}
+
+.card-table .table-modern tbody tr {
+  transition: background 0.2s ease;
+}
+
+.card-table .table-modern tbody tr:hover {
+  background: #f1f5f9;
+}
+
+.card-table .table-modern tbody tr:hover > td {
+  background: #f1f5f9;
+}
+
+.card-table .table-modern tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* Columnas: jerarquía (spec “pendiente”) */
+.card-table .table-modern .col-id {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.card-table .table-modern .col-id a {
+  color: #2563eb;
+  font-weight: 500;
+}
+
+.card-table .table-modern .col-id a:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.card-table .table-modern .col-fecha {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.card-table .table-modern .col-venc {
+  font-size: 12px;
+}
+
+.card-table .table-modern .col-vendedor {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.card-table .table-modern .col-cliente {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0f172a;
+  max-width: 20rem;
+}
+
+.card-table .table-modern .col-cliente-na {
+  font-weight: 400;
+}
+
+.card-table .table-modern .col-monto {
+  text-align: right;
+  font-weight: 500;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.card-table .table-modern-mono,
+.card-table .table-modern .table-modern-mono {
+  font-feature-settings: "tnum" 1;
+}
+
+.card-table .table-modern th.col-monto {
+  text-align: right;
+}
+
+.card-table .table-modern th.col-fecha {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.card-table .table-modern th.col-accion,
+.card-table .table-modern td.col-accion {
+  text-align: center;
+  width: 5.25rem;
+  min-width: 5.25rem;
+  max-width: 5.5rem;
+}
+
+/* Badge contador (no saturado) */
+.card-table .home-pedidos-pendiente-badge {
+  background: #f1f5f9;
+  color: #475569;
+  font-weight: 500;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.65rem;
+  border: 0;
+}
+
+/* Acción: icono redondeado (a.btn-icon, fuera de .table-card--productos) */
+.card-table .home-pedidos-pendiente-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  white-space: normal;
+}
+
+.card-table .home-pedidos-pendiente-actions a.btn-icon {
+  text-decoration: none;
+}
+
+.card-table a.home-pedidos-pendiente-approve,
+.card-table a.home-pedidos-pendiente-approve.btn-icon {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #15803d;
+  -webkit-appearance: none;
+  appearance: none;
+  line-height: 0;
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  vertical-align: middle;
+  cursor: pointer;
+  margin: 0;
+}
+
+.card-table a.home-pedidos-pendiente-approve:hover {
+  transform: translateY(-1px);
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #14532d;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  text-decoration: none;
+  color: #14532d;
+}
+
+.card-table a.home-pedidos-pendiente-approve svg,
+.card-table a.btn-icon.home-pedidos-pendiente-approve svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+  color: currentColor;
+  stroke: currentColor;
+  flex: 0 0 auto;
+}
+
+/* Vacío: respirar sin línea negra */
+.card-table .table-empty {
+  text-align: center;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 1.5rem 1.25rem !important;
+  border: 0 !important;
+  background: #fff;
+}
+
+.card-table .table-modern tbody tr:hover > td.table-empty {
+  background: #fff;
+}
+
+/* Footer: link sin peso extra */
+.card-table .card-table-footer {
+  padding: 12px 20px 16px;
+  background: #fafbfc;
+  border-top: 1px solid #f1f5f9;
+  line-height: 1.4;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.card-table .card-table-footer a {
+  color: #2563eb;
+  font-weight: 500;
+}
+
+.card-table .card-table-footer a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* —— Presupuestos: lista — card + modern-table + btn-icon (solo .presu-lista-modern) —— */
+.presu-lista-modern.table-card {
+  margin-top: 14px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+  font-family: "Inter", var(--bs-font-sans-serif, system-ui), sans-serif;
+}
+
+.presu-lista-modern .table-card-header--block.presu-lista-bulk {
+  background: #fafbfc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 14px 18px 16px;
+}
+
+.presu-lista-modern .presu-lista-table-wrap {
+  background: #fff;
+}
+
+.presu-lista-modern .modern-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: #0f172a;
+}
+
+.presu-lista-modern .presu-lista {
+  min-width: 1100px;
+}
+
+.presu-lista-modern .modern-table thead {
+  background: #f8fafc;
+}
+
+.presu-lista-modern .modern-table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  border: 0;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+  vertical-align: middle;
+  box-shadow: none;
+  background-clip: padding-box;
+  background: #f8fafc;
+}
+
+.presu-lista-modern .modern-table th.text-end,
+.presu-lista-modern .modern-table th.col-money {
+  text-align: right;
+}
+
+.presu-lista-modern .modern-table th.text-center,
+.presu-lista-modern .modern-table th.col-center {
+  text-align: center;
+}
+
+.presu-lista-modern .modern-table th.presu-th-acciones,
+.presu-lista-modern .modern-table th.col-presu-acciones {
+  text-align: right;
+}
+
+.presu-lista-modern .modern-table td {
+  padding: 15px 16px;
+  color: #0f172a;
+  font-weight: 400;
+  border: 0;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+  background: #fff;
+  transition: background 0.18s ease;
+}
+
+.presu-lista-modern .modern-table td.col-muted {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.presu-lista-modern .modern-table .presu-col-ellipsis,
+.presu-lista-modern .modern-table td.presu-col-ellipsis {
+  white-space: normal;
+  min-width: 7.5rem;
+  max-width: 14rem;
+  line-height: 1.35;
+  word-wrap: break-word;
+}
+
+.presu-lista-modern .presu-th-acciones.presu-col-ellipsis,
+.presu-lista-modern th.presu-col-ellipsis {
+  max-width: none;
+}
+
+.presu-lista-modern .col-money {
+  text-align: right;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.presu-lista-modern .col-id-num {
+  font-weight: 500;
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.presu-lista-modern .col-pedido-link a {
+  color: #2563eb;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.presu-lista-modern .col-pedido-link a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.presu-lista-modern .status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.presu-lista-modern .status-pill-ico,
+.presu-lista-modern .status-pill svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  stroke-width: 2.25;
+}
+
+.presu-lista-modern .status-pill.status-pending {
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+}
+
+.presu-lista-modern .status-pill.status-approved {
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+}
+
+.presu-lista-modern .modern-table tbody tr:hover > td {
+  background: #f8fafc;
+}
+
+.presu-lista-modern .modern-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Acciones: fila horizontal, gap 8, no columna (flex + alineado a la derecha en celda) */
+.presu-lista-modern .col-presu-acciones.table-actions-cell,
+.presu-lista-modern td.text-end.col-presu-acciones {
+  width: 1%;
+  min-width: 200px;
+  max-width: none;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.presu-lista-modern .table-actions.presu-row-actions,
+.presu-lista-modern .table-actions {
+  display: flex !important;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.presu-lista-modern .presu-accion-form,
+.presu-lista-modern .table-actions form,
+.presu-lista-modern .presu-row-actions form {
+  display: inline-flex;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+/* Icon buttons (no reglas .table-action-btn globales: usan :not(.btn-icon)) */
+.presu-lista-modern a.btn-icon,
+.presu-lista-modern button.btn-icon {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  text-decoration: none;
+  box-sizing: border-box;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  font-family: inherit;
+  font-size: 0;
+  margin: 0;
+  transition: all 0.18s ease;
+  vertical-align: middle;
+  flex: 0 0 auto;
+}
+
+.presu-lista-modern a.btn-icon:hover,
+.presu-lista-modern button.btn-icon:hover {
+  transform: translateY(-1px);
+  text-decoration: none;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+}
+
+.presu-lista-modern a.btn-icon svg,
+.presu-lista-modern button.btn-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+  color: currentColor;
+  stroke: currentColor;
+  flex: 0 0 auto;
+}
+
+.presu-lista-modern .btn-icon.btn-view,
+.presu-lista-modern a.btn-view {
+  color: #2563eb;
+  border-color: #e2e8f0;
+  background: #fff;
+}
+.presu-lista-modern a.btn-icon.btn-view:hover,
+.presu-lista-modern a.btn-view:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+}
+
+.presu-lista-modern .btn-icon.btn-edit,
+.presu-lista-modern a.btn-edit {
+  color: #2563eb;
+}
+.presu-lista-modern a.btn-icon.btn-edit:hover,
+.presu-lista-modern a.btn-edit:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.presu-lista-modern .btn-icon.btn-refresh,
+.presu-lista-modern button.btn-refresh {
+  color: #475569;
+}
+.presu-lista-modern button.btn-icon.btn-refresh:hover,
+.presu-lista-modern button.btn-refresh:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #334155;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+}
+
+.presu-lista-modern .btn-icon.btn-approve,
+.presu-lista-modern a.btn-approve,
+.presu-lista-modern button.btn-approve {
+  color: #059669;
+}
+.presu-lista-modern a.btn-icon.btn-approve:hover,
+.presu-lista-modern button.btn-approve:hover {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #047857;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+}
+
+.presu-lista-modern .btn-icon.btn-delete,
+.presu-lista-modern button.btn-delete {
+  color: #ef4444;
+}
+.presu-lista-modern button.btn-icon.btn-delete:hover,
+.presu-lista-modern button.btn-delete:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+}
+
+/* Columna 10: ancho para iconos en fila (sobre regla .presu-lista) */
+.presu-lista-modern .presu-lista th:nth-child(10),
+.presu-lista-modern .presu-lista td:nth-child(10) {
+  min-width: 240px;
+  width: auto;
+  max-width: none;
+  text-align: right;
+}
+
+/* Vacío: fondo con hover de fila sin rayas duras */
+.presu-lista-modern .table-empty {
+  text-align: center;
+  color: #64748b;
+  font-weight: 500;
+  font-size: 14px;
+  padding: 1.5rem 1rem;
+}
+.presu-lista-modern tbody tr:hover > td.table-empty {
+  background: #f8fafc;
+}
+
+/* Stock (home): tabla de productos — Código, Tipo, Descripción, Stock, Precio */
+.stock-inventory-card {
+  font-family: "Inter", var(--bs-font-sans-serif, system-ui), sans-serif;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.stock-inventory-wrap {
+  background: #fff;
+}
+
+.table-stock-saas {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 400;
+  color: #0f172a;
+}
+
+.table-stock-saas thead {
+  background: #f8fafc;
+}
+
+.table-stock-saas th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  border: 0;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+  white-space: nowrap;
+  box-shadow: none;
+  background-clip: padding-box;
+}
+
+.table-stock-saas th.text-end,
+.table-stock-saas th.col-precio-th,
+.table-stock-saas th.col-stock-th {
+  text-align: right;
+}
+
+.table-stock-saas td {
+  padding: 16px;
+  vertical-align: middle;
+  border: 0;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fff;
+}
+
+.table-stock-saas tbody tr {
+  transition: background 0.2s ease;
+}
+
+.table-stock-saas tbody tr:hover {
+  background: #f8fafc;
+}
+
+.table-stock-saas tbody tr:hover > td {
+  background: #f8fafc;
+}
+
+.table-stock-saas tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table-stock-saas .col-codigo {
+  width: 1%;
+  max-width: 8.5rem;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.table-stock-saas .col-codigo-txt {
+  color: #e11d48;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: ui-monospace, "Cascadia Code", "Roboto Mono", monospace;
+  letter-spacing: 0.01em;
+}
+
+.table-stock-saas .col-tipo {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 400;
+  max-width: 7rem;
+}
+
+.table-stock-saas .col-descripcion {
+  min-width: 12rem;
+  max-width: 36rem;
+}
+
+.table-stock-saas .col-descripcion-txt {
+  font-size: 14px;
+  color: #0f172a;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.table-stock-saas .col-precio,
+.table-stock-saas .col-precio-ars {
+  text-align: right;
+  font-weight: 500;
+  color: #0f172a;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  white-space: nowrap;
+  width: 0.1%;
+  min-width: 7rem;
+}
+
+.table-stock-saas th.col-precio-th,
+.table-stock-saas th.col-stock-th {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.table-stock-saas .col-stock {
+  min-width: 9rem;
+}
+
+.table-stock-saas .col-stock .stock-saas-stock-actions {
+  display: flex;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  white-space: normal;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0;
+}
+
+.table-stock-saas .col-stock .stock-saas-input {
+  width: 4.9rem;
+  min-width: 0;
+  max-width: 100%;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.4rem;
+  background: #fff;
+}
+
+.table-stock-saas .col-stock-numeral {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+/* Botón aplicar: icono, no pisa estilos globales .table-action-btn (usa .btn-icon) */
+.stock-inventory-wrap button.btn-icon.stock-saas-apply,
+.stock-inventory-wrap .stock-saas-apply {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #15803d;
+  -webkit-appearance: none;
+  appearance: none;
+  line-height: 0;
+  cursor: pointer;
+  margin: 0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: all 0.18s ease;
+}
+
+.stock-inventory-wrap button.btn-icon.stock-saas-apply:hover {
+  transform: translateY(-1px);
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #14532d;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+}
+
+.stock-inventory-wrap .stock-saas-apply svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+  color: currentColor;
+  stroke: currentColor;
+}
+
+/* Celda vacía: sin raya dura (última fila única) */
+.table-stock-saas .stock-saas-table-empty,
+.table-stock-saas td.table-empty {
+  text-align: center;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 1.5rem 1.25rem !important;
+  border: 0 !important;
+  background: #fff !important;
+}
+
+.table-stock-saas tbody tr:hover > td.stock-saas-table-empty {
+  background: #fff;
+}
+
+/* —— Historial de pedidos: vive bajo .presu-lista-modern; solo ajustes de la tabla de ventas —— */
+.ventas-historial-modern.presu-lista-modern .ventas-historial-tabla {
+  min-width: 1200px;
+  table-layout: auto;
+  line-height: 1.4;
+}
+
+.ventas-historial-modern.presu-lista-modern .ventas-historial-tabla th:nth-child(10),
+.ventas-historial-modern.presu-lista-modern .ventas-historial-tabla td:nth-child(10) {
+  min-width: 240px;
+  width: auto;
+  max-width: none;
+  text-align: right;
+}
+
+.ventas-historial-modern.presu-lista-modern .modern-table .ventas-hist-venc,
+.ventas-historial-modern.presu-lista-modern .ventas-historial-tabla th.ventas-hist-venc {
+  font-size: 0.8rem;
+  line-height: 1.25;
+  white-space: normal;
+  min-width: 6.5rem;
+  max-width: 7.5rem;
+}
+
+.ventas-historial-modern.presu-lista-modern .ventas-hist-neto,
+.ventas-historial-modern.presu-lista-modern .modern-table .ventas-hist-neto {
+  min-width: 9.25rem;
+  width: auto;
+}
+
+.ventas-historial-modern.presu-lista-modern .comision-cel {
+  font-size: 0.8rem;
+  line-height: 1.3;
+  font-weight: 500;
+}
+
+.ventas-historial-modern.presu-lista-modern .th-vend,
+.ventas-historial-modern.presu-lista-modern .th-compra {
+  min-width: 5.5rem;
+}
+
+/* —— Listas SaaS: pills y botones extra (bajo .presu-lista-modern) —— */
+.presu-lista-modern .status-pill.status-inactive {
+  color: #64748b;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+.presu-lista-modern .status-pill.status-pill--staff {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.presu-lista-modern .status-pill.status-pill--warning {
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+}
+
+.presu-lista-modern a.btn-icon.btn-inhabilitar,
+.presu-lista-modern button.btn-icon.btn-inhabilitar {
+  color: #b45309;
+  border-color: #e2e8f0;
+  background: #fff;
+}
+
+.presu-lista-modern a.btn-icon.btn-inhabilitar:hover,
+.presu-lista-modern button.btn-icon.btn-inhabilitar:hover {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  color: #92400e;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+}
+
+/* Personas: cód. sin <code> rosado, tabla ancha */
+.presu-lista-modern.personas-lista-modern .personas-vendedores-tabla,
+.presu-lista-modern.personas-lista-modern .personas-compradores-tabla,
+.presu-lista-modern.personas-lista-modern .personas-proveedores-tabla {
+  width: 100%;
+  min-width: 1100px;
+  table-layout: auto;
+  line-height: 1.4;
+}
+
+.presu-lista-modern .persona-cod {
+  font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", Menlo, monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  letter-spacing: 0.02em;
+}
+
+.presu-lista-modern .persona-cod-cel {
+  white-space: nowrap;
+}
+
+.presu-lista-modern .persona-badge-grupo {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  white-space: nowrap;
+}
+
+.presu-lista-modern .th-grupo-cel,
+.presu-lista-modern .th-dir-cel {
+  max-width: 16rem;
+  line-height: 1.35;
+  word-wrap: break-word;
+  white-space: normal;
+}
+
+/* Admin: usuarios, notas */
+.presu-lista-modern.admin-usuarios-lista .admin-usuarios-tabla,
+.presu-lista-modern.admin-notas-lista .admin-notas-tabla {
+  width: 100%;
+  min-width: 960px;
+  table-layout: auto;
+  line-height: 1.4;
+}
+
+.admin-nota-sin-leer > td {
+  background: #fffbeb;
+}
+
+.admin-nota-sin-leer:hover > td,
+.presu-lista-modern .modern-table tbody tr.admin-nota-sin-leer:hover > td {
+  background: #fff7d6;
+}
+
+.presu-lista-modern .nota-cod-pagina {
+  font-size: 12px;
+  color: #334155;
+  background: #f1f5f9;
+  padding: 0.1rem 0.35rem;
+  border-radius: 6px;
+  border: 0;
+}
+
+.presu-lista-modern .nota-cel-msg {
+  max-width: 32rem;
+  line-height: 1.4;
+  color: #0f172a;
+}
+
+/* Bancos: gastos */
+.presu-lista-modern.bancos-gastos-lista .bancos-gastos-tabla {
+  width: 100%;
+  min-width: 800px;
+  line-height: 1.4;
+}
+
+.presu-lista-modern .banco-gasto-desc {
+  min-width: 8rem;
+  max-width: 24rem;
+  line-height: 1.35;
+  word-wrap: break-word;
+  white-space: normal;
+}
+
+/* Compras: historial */
+.presu-lista-modern.compras-historial-lista .compras-historial-tabla {
+  width: 100%;
+  min-width: 1120px;
+  line-height: 1.4;
+  table-layout: auto;
+}
+
+.presu-lista-modern .compras-historial-tabla .th-prod-cel,
+.presu-lista-modern .th-prod-cel {
+  max-width: 22rem;
+  line-height: 1.35;
+  white-space: normal;
+  word-wrap: break-word;
+  font-size: 13px;
+}
+
+.presu-lista-modern .compra-cod-prod {
+  display: inline;
+  font-size: 0.8rem;
+  margin-right: 0.25rem;
+}
+
+.presu-lista-modern .compras-historial-tabla th:nth-child(8),
+.presu-lista-modern .compras-historial-tabla th:nth-child(9) {
+  min-width: 8rem;
+}
+
+.compra-fila-anulada > td {
+  background: #f8fafc;
+}
+
+.compra-fila-anulada:hover > td,
+.presu-lista-modern .modern-table tbody tr.compra-fila-anulada:hover > td {
+  background: #f1f5f9;
+}
+
+.presu-lista-modern .compras-historial-tabla .compra-cant-cel {
+  font-variant-numeric: tabular-nums;
+}
+
+.presu-lista-modern .status-pill.status-pill--danger {
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.presu-lista-modern .admin-act-met-pill {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 0 8px;
+  min-height: 24px;
+}
+
+.presu-lista-modern .vendedor-ranking--yo > td {
+  background: #eff6ff;
+}
+
+.presu-lista-modern .vendedor-ranking--yo:hover > td,
+.presu-lista-modern .modern-table tbody tr.vendedor-ranking--yo:hover > td {
+  background: #dbeafe;
+}
+
+/* Líneas de presupuesto/venta: celdas con inputs compactas */
+.presu-lista-modern .form-lineas-tabla td {
+  vertical-align: middle;
+}
+
+.presu-lista-modern .form-lineas-tabla .form-control,
+.presu-lista-modern .form-lineas-tabla .form-select {
+  font-size: 13px;
+}
+
+/* Home: filas de vencimiento en resumen calendario */
+.presu-lista-modern .home-venc-urg > td {
+  background: #fff1f2;
+}
+
+.presu-lista-modern .home-venc-med > td {
+  background: #f0fdf4;
+}
+
+/* Calendario: pie con exportar junto a table-card */
+.table-card + .card-footer,
+.presu-lista-modern + .card-footer {
+  border-radius: 0 0 16px 16px;
+}
+
+/* ——— Calendario: vista agenda (layout + calendario mensual vanilla) ——— */
+.calendario-agenda-page {
+  font-family: "Inter", -apple-system, system-ui, sans-serif;
+  color: #0f172a;
+  --agenda-primary: #0f97b5;
+  --agenda-primary-dark: #0a7a91;
+  --agenda-muted: #64748b;
+  padding-bottom: 1.5rem;
+}
+
+.calendario-agenda-header {
+  margin-bottom: 1.25rem;
+}
+
+.calendario-agenda-h1 {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: #0f172a;
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.02em;
+}
+
+.calendario-agenda-sub {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--agenda-muted);
+  font-weight: 400;
+}
+
+.calendario-agenda-sub strong {
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.calendar-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 991.98px) {
+  .calendar-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.calendario-agenda-col--main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.agenda-card {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.agenda-card + .agenda-card {
+  margin-top: 0;
+}
+
+.vencimientos-card {
+  margin-top: 0;
+}
+
+.agenda-card-title {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0 0 8px;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.agenda-card-hint,
+.agenda-table-meta {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  margin: 0 0 12px;
+  color: #64748b;
+}
+
+/* Formulario izquierda */
+.calendario-agenda-page .calen-saas-input,
+.calendario-agenda-page .agenda-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 14px;
+  color: #0f172a;
+  margin-bottom: 0;
+  font-family: inherit;
+}
+
+.calendario-agenda-page .calen-saas-textarea {
+  min-height: 5.5rem;
+  resize: vertical;
+}
+
+.calendario-agenda-page .calen-saas-input:focus,
+.calendario-agenda-page .agenda-input:focus {
+  outline: none;
+  border-color: var(--agenda-primary);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(15, 151, 181, 0.15);
+}
+
+.agenda-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.agenda-label--inline {
+  margin-bottom: 8px;
+}
+
+.agenda-field {
+  margin-bottom: 12px;
+}
+
+.agenda-error {
+  font-size: 0.75rem;
+  color: #b91c1c;
+  margin-top: 4px;
+}
+
+.agenda-btn-primary {
+  width: 100%;
+  border-radius: 12px;
+  padding: 12px;
+  background: var(--agenda-primary);
+  color: #fff;
+  font-weight: 500;
+  border: none;
+  font-size: 14px;
+  margin-top: 4px;
+  transition: background 0.2s ease;
+}
+
+.agenda-btn-primary:hover {
+  background: var(--agenda-primary-dark);
+  color: #fff;
+}
+
+/* Buscador */
+.search-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+  margin-bottom: 0;
+}
+
+.search-bar-grow {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.search-bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.agenda-btn-outline {
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #0f172a;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+
+.agenda-btn-outline:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.agenda-btn-ghost {
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--agenda-muted);
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: background 0.2s;
+}
+
+.agenda-btn-ghost:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+/* Caja calendario mensual */
+.calendario-agenda-page .calendar-box {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.calendario-mes-wrap {
+  min-height: 12rem;
+}
+
+/* — Calendario JS: grid mensual — */
+.calen-mes-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.calen-mes-title {
+  flex: 1 1 auto;
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 500;
+  text-transform: capitalize;
+  color: #0f172a;
+  margin: 0;
+  min-width: 0;
+}
+
+.calen-mes-nav-btn,
+.calen-mes-nav-today {
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 1.1rem;
+  line-height: 1;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+
+.calen-mes-nav-today {
+  width: auto;
+  padding: 0 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-left: auto;
+}
+
+.calen-mes-nav-btn:hover,
+.calen-mes-nav-today:hover {
+  background: #fff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.calen-mes-nav-btn:focus-visible,
+.calen-mes-nav-today:focus-visible {
+  outline: 2px solid var(--agenda-primary);
+  outline-offset: 2px;
+}
+
+.calen-mes-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.calen-mes-wd {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 2px;
+}
+
+.calen-mes-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  background: #e2e8f0;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.calen-mes-cell {
+  min-height: 4.5rem;
+  background: #fff;
+  padding: 4px 4px 6px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  transition: background 0.15s ease;
+}
+
+.calen-mes-cell--pad {
+  background: #f8fafc;
+  min-height: 2.25rem;
+}
+
+.calen-mes-cell--in:hover {
+  background: #f0fdfa;
+}
+
+.calen-mes-cell--today {
+  background: var(--agenda-primary) !important;
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.calen-mes-cell--today .calen-mes-daynum {
+  color: #fff;
+  font-weight: 600;
+}
+
+.calen-mes-cell--today .calen-mes-evs,
+.calen-mes-cell--today .calen-mes-ev,
+.calen-mes-cell--today .calen-mes-more {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.calen-mes-cell--today .calen-mes-dot--man,
+.calen-mes-cell--today .calen-mes-dot--ped,
+.calen-mes-cell--today .calen-mes-dot--com {
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.calen-mes-daynum {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #475569;
+  margin-bottom: 2px;
+  flex-shrink: 0;
+}
+
+.calen-mes-cell--pad .calen-mes-daynum {
+  color: #cbd5e1;
+}
+
+.calen-mes-evs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.calen-mes-ev {
+  display: flex;
+  align-items: flex-start;
+  gap: 3px;
+  margin-bottom: 2px;
+  color: #334155;
+  word-break: break-word;
+}
+
+.calen-mes-cell--today .calen-mes-ev-txt {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.calen-mes-dot {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+  background: #0f97b5;
+}
+
+.calen-mes-dot--man {
+  background: #0f97b5;
+}
+.calen-mes-dot--ped {
+  background: #8b5cf6;
+}
+.calen-mes-dot--com {
+  background: #f59e0b;
+}
+
+.calen-mes-ev-txt {
+  flex: 1;
+  min-width: 0;
+}
+
+.calen-mes-more {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  padding-left: 8px;
+}
+
+.calen-mes-cell--today .calen-mes-more {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Tablas vencimientos: texto más compacto en esta vista */
+.calendario-agenda-page .presu-lista-modern .modern-table {
+  font-size: 0.8125rem;
+}
+
+.calendario-agenda-page .presu-lista-modern .modern-table th {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.agenda-export {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agenda-export-label {
+  font-size: 0.8rem;
+}
+
+/* ——— Reportes / dashboard (SaaS) ——— */
+.report-dashboard-saas {
+  font-family: "Inter", -apple-system, system-ui, sans-serif;
+  color: #0f172a;
+  --rep-primary: #0f97b5;
+  --rep-text: #0f172a;
+  --rep-muted: #64748b;
+  --rep-hint: #94a3b8;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-bottom: 1.5rem;
+}
+
+.report-dash-header {
+  margin: 0;
+}
+
+.report-dash-h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--rep-text);
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.02em;
+}
+
+.report-dash-sub {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--rep-muted);
+  font-weight: 400;
+  max-width: 42rem;
+  line-height: 1.45;
+}
+
+/* Filtros */
+.report-filter-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+  padding: 18px 20px;
+}
+
+.report-filter-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.report-filter-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px 16px;
+  align-items: end;
+}
+
+@media (min-width: 992px) {
+  .report-filter-row {
+    grid-template-columns: minmax(140px, 0.8fr) repeat(2, minmax(120px, 0.6fr)) repeat(3, minmax(180px, 1fr));
+  }
+}
+
+.report-field--wide {
+  min-width: 0;
+}
+
+.report-field-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.report-input,
+.report-filter-card .form-control,
+.report-filter-card .form-select {
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 0.85rem;
+}
+
+.report-input:focus,
+.report-filter-card .form-control:focus,
+.report-filter-card .form-select:focus {
+  border-color: var(--rep-primary);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(15, 151, 181, 0.15);
+  outline: none;
+}
+
+.report-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.report-btn-apply {
+  background: var(--rep-primary) !important;
+  border: none;
+  color: #fff;
+  font-weight: 500;
+  padding: 0.45rem 1rem;
+  border-radius: 10px;
+}
+
+.report-btn-apply:hover {
+  background: #0a7a91 !important;
+  color: #fff;
+}
+
+.report-btn-clear {
+  border-radius: 10px;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  background: #fff;
+  padding: 0.45rem 1rem;
+}
+
+.report-btn-clear:hover {
+  background: #f8fafc;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+.report-filter-hint {
+  font-size: 0.8rem;
+  margin: 0 !important;
+  line-height: 1.4;
+}
+
+/* KPIs */
+.report-dashboard-saas .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1199.98px) {
+  .report-dashboard-saas .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .report-dashboard-saas .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 419.98px) {
+  .report-dashboard-saas .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.report-dashboard-saas .stat-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  min-width: 0;
+}
+
+.report-dashboard-saas .stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.report-dashboard-saas .stat-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+.report-dashboard-saas .stat-value,
+.report-kpi-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  letter-spacing: -0.02em;
+}
+
+.report-kpi-value--hero {
+  font-size: clamp(1.1rem, 1.3vw + 0.5rem, 1.4rem);
+}
+
+.report-dashboard-saas .stat-sub {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.35;
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+.report-dashboard-saas .stat-highlight {
+  border: 1px solid #dbeafe;
+  background: linear-gradient(180deg, #f8fbff 0%, #f1f5f9 100%);
+  box-shadow: 0 8px 20px rgba(15, 151, 181, 0.08);
+}
+
+.report-dashboard-saas .stat-card--emerald {
+  border-color: #d1fae5;
+  background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 100%);
+  box-shadow: 0 8px 20px rgba(5, 150, 105, 0.06);
+}
+
+.report-dashboard-saas .stat-subdued {
+  border-color: rgba(148, 163, 184, 0.2);
+  background: #f8fafc;
+}
+
+.report-dashboard-saas .stat-subdued .stat-title,
+.report-dashboard-saas .stat-subdued .stat-sub {
+  color: #94a3b8;
+}
+
+.report-dashboard-saas .stat-subdued .stat-value {
+  color: #64748b;
+  font-size: 1.15rem;
+}
+
+/* Grilla principal: línea + dona */
+.report-dashboard-saas .dashboard-charts {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 991.98px) {
+  .report-dashboard-saas .dashboard-charts {
+    grid-template-columns: 1fr;
+  }
+}
+
+.report-dashboard-saas .chart-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+  min-width: 0;
+}
+
+.report-dashboard-saas .chart-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0f172a;
+  margin: 0 0 12px;
+  letter-spacing: -0.01em;
+}
+
+.report-chart-canvas {
+  position: relative;
+  height: 220px;
+  width: 100%;
+  min-height: 180px;
+}
+
+.report-dashboard-saas .report-chart-canvas--line {
+  height: 280px;
+  min-height: 220px;
+}
+
+.report-dashboard-saas .report-chart-canvas--donut {
+  height: 300px;
+  min-height: 240px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+@media (max-width: 991.98px) {
+  .report-dashboard-saas .report-chart-canvas--donut {
+    max-width: 360px;
+  }
+}
+
+.report-dashboard-saas .report-chart-canvas--wide {
+  min-height: 200px;
+  height: 260px;
+}
+
+.report-dashboard-saas .report-charts-bento {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.report-dashboard-saas .report-chart-bento-span-2 {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 767.98px) {
+  .report-dashboard-saas .report-charts-bento {
+    grid-template-columns: 1fr;
+  }
+
+  .report-dashboard-saas .report-chart-bento-span-2 {
+    grid-column: 1;
+  }
+}
+

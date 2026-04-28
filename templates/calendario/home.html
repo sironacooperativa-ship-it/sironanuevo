@@ -1,148 +1,175 @@
 {% extends "base.html" %}
+{% load static %}
 {% load money %}
 {% block title %}Calendario{% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-    <h1 class="h3 mb-0">Calendario</h1>
-    <span class="text-muted small">Ventana: {{ desde|date:"d/m/y" }} → {{ hasta|date:"d/m/y" }}</span>
-  </div>
-
-  <div class="row g-3">
-    <div class="col-12 col-lg-4">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h2 class="h5 mb-3">Nuevo evento</h2>
-          <form method="post" novalidate>
-            {% csrf_token %}
-            <div class="mb-2">
-              <label class="form-label">Fecha</label>
-              {{ form.fecha }}
-              {% if form.fecha.errors %}<div class="text-danger small">{{ form.fecha.errors }}</div>{% endif %}
-            </div>
-            <div class="mb-2">
-              <label class="form-label">Título</label>
-              {{ form.titulo }}
-              {% if form.titulo.errors %}<div class="text-danger small">{{ form.titulo.errors }}</div>{% endif %}
-            </div>
-            <div class="mb-2">
-              <label class="form-label">Tipo</label>
-              {{ form.tipo }}
-              {% if form.tipo.errors %}<div class="text-danger small">{{ form.tipo.errors }}</div>{% endif %}
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Descripción</label>
-              {{ form.descripcion }}
-            </div>
-            <button class="btn btn-primary w-100" type="submit">Guardar</button>
-          </form>
-        </div>
-      </div>
+  <div class="calendario-agenda-page">
+    <div class="calendario-agenda-header">
+      <h1 class="calendario-agenda-h1">Calendario</h1>
+      <p class="calendario-agenda-sub">
+        Ventana de listas: <strong>{{ desde|date:"d/m/y" }}</strong> →
+        <strong>{{ hasta|date:"d/m/y" }}</strong>
+        <span class="text-muted d-none d-sm-inline"> · 90 días</span>
+      </p>
     </div>
 
-    <div class="col-12 col-lg-8">
-      <div class="card shadow-sm mb-3">
-        <div class="card-body">
-          <form class="row g-2 align-items-end" method="get">
-            <div class="col-12 col-md-8">
-              <label class="form-label mb-1">Buscar en eventos</label>
-              <input class="form-control" name="q" value="{{ q }}" placeholder="texto..." />
+    <div class="calendar-layout">
+      <aside class="calendario-agenda-col calendario-agenda-col--form">
+        <div class="agenda-card">
+          <h2 class="agenda-card-title">Nuevo evento</h2>
+          <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="agenda-field">
+              <label class="agenda-label" for="id_fecha">Fecha</label>
+              {{ form.fecha }}
+              {% if form.fecha.errors %}<div class="agenda-error">{{ form.fecha.errors }}</div>{% endif %}
             </div>
-            <div class="col-12 col-md-4 d-flex gap-2">
-              <button class="btn btn-outline-dark w-100" type="submit">Buscar</button>
-              <a class="btn btn-outline-secondary w-100" href="{% url 'calendario_home' %}">Limpiar</a>
+            <div class="agenda-field">
+              <label class="agenda-label" for="id_titulo">Título</label>
+              {{ form.titulo }}
+              {% if form.titulo.errors %}<div class="agenda-error">{{ form.titulo.errors }}</div>{% endif %}
+            </div>
+            <div class="agenda-field">
+              <label class="agenda-label" for="id_tipo">Tipo</label>
+              {{ form.tipo }}
+              {% if form.tipo.errors %}<div class="agenda-error">{{ form.tipo.errors }}</div>{% endif %}
+            </div>
+            <div class="agenda-field">
+              <label class="agenda-label" for="id_descripcion">Descripción</label>
+              {{ form.descripcion }}
+            </div>
+            <button class="agenda-btn-primary" type="submit">Guardar</button>
+          </form>
+        </div>
+      </aside>
+
+      <div class="calendario-agenda-col calendario-agenda-col--main">
+        <div class="agenda-card">
+          <form class="search-bar" method="get" action="{% url 'calendario_home' %}">
+            <div class="search-bar-grow">
+              <label class="agenda-label agenda-label--inline" for="calen-q">Buscar en eventos</label>
+              <input
+                class="agenda-input"
+                id="calen-q"
+                name="q"
+                value="{{ q }}"
+                type="search"
+                placeholder="Título o descripción…"
+                autocomplete="off"
+              />
+            </div>
+            <div class="search-bar-actions">
+              <button class="agenda-btn-outline" type="submit">Buscar</button>
+              <a class="agenda-btn-ghost" href="{% url 'calendario_home' %}">Limpiar</a>
             </div>
           </form>
         </div>
-      </div>
 
-      <div class="card shadow-sm mb-3">
-        <div class="card-header fw-semibold">Vencimientos de cheques (90 días)</div>
-        <div class="table-responsive">
-          <table class="sirona-table">
-            <thead class="table-light">
-              <tr>
-                <th>Vencimiento</th>
-                <th>Operación</th>
-                <th>Cheque</th>
-                <th class="text-end">Monto</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for m in cheques %}
-                <tr>
-                  <td>{{ m.fecha_vencimiento_cheque|date:"d/m/y" }}</td>
-                  <td><a href="{% url 'caja_detail' m.id %}">{{ m.operacion }}</a></td>
-                  <td>{{ m.numero_cheque }}</td>
-                  <td class="text-end">{{ m.monto|ars }}</td>
-                </tr>
-              {% empty %}
-                <tr><td colspan="4" class="table-empty">Sin cheques por vencer.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        <div class="agenda-card vencimientos-card">
+          <h2 class="agenda-card-title">Calendario</h2>
+          <p class="agenda-card-hint">Eventos de la búsqueda actual (misma ventana de 90 días). Usá el mes arriba para otra vista.</p>
+          {{ calendario_mes|json_script:"calendario-mes-data" }}
+          <div id="calendario-mes-root" class="calendario-mes-wrap calendar-box" aria-live="polite"></div>
         </div>
-      </div>
 
-      <div class="card shadow-sm mb-3">
-        <div class="card-header fw-semibold">Vencimientos de medicamentos (90 días)</div>
-        <div class="table-responsive">
-          <table class="sirona-table">
-            <thead class="table-light">
-              <tr>
-                <th>Vencimiento</th>
-                <th>Código</th>
-                <th>Producto</th>
-                <th class="text-end">Stock</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for p in vencimientos %}
+        <div class="agenda-card vencimientos-card presu-lista-modern calen-ch-90">
+          <h2 class="agenda-card-title">Vencimientos de cheques (90 días)</h2>
+          <p class="agenda-table-meta text-muted">Próximos vencimientos de cheques en la ventana del calendario.</p>
+          <div class="table-responsive presu-lista-table-wrap">
+            <table class="modern-table calen-ch-tabla">
+              <thead>
                 <tr>
-                  <td>{{ p.fecha_vencimiento|date:"d/m/y" }}</td>
-                  <td><code>{{ p.codigo }}</code></td>
-                  <td>{{ p.descripcion }}</td>
-                  <td class="text-end">{{ p.stock }}</td>
+                  <th scope="col">Vencimiento</th>
+                  <th scope="col">Operación</th>
+                  <th scope="col">Cheque</th>
+                  <th scope="col" class="text-end col-money">Monto</th>
                 </tr>
-              {% empty %}
-                <tr><td colspan="4" class="table-empty">Sin productos por vencer.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {% for m in cheques %}
+                  <tr>
+                    <td class="col-muted">{{ m.fecha_vencimiento_cheque|date:"d/m/y" }}</td>
+                    <td class="col-muted"><a class="text-decoration-none" href="{% url 'caja_detail' m.id %}">{{ m.operacion }}</a></td>
+                    <td class="col-muted"><span class="persona-cod">{{ m.numero_cheque }}</span></td>
+                    <td class="text-end col-money">{{ m.monto|ars }}</td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="4" class="table-empty">Sin cheques por vencer.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-      <div class="card shadow-sm">
-        <div class="card-header fw-semibold">Eventos / pedidos (90 días)</div>
-        <div class="table-responsive">
-          <table class="sirona-table">
-            <thead class="table-light">
-              <tr>
-                <th>Fecha</th>
-                <th>Título</th>
-                <th>Tipo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for e in eventos %}
+        <div class="agenda-card vencimientos-card presu-lista-modern calen-meds-90">
+          <h2 class="agenda-card-title">Vencimientos de medicamentos (90 días)</h2>
+          <p class="agenda-table-meta text-muted">Productos con lote a vencer en la misma ventana.</p>
+          <div class="table-responsive presu-lista-table-wrap">
+            <table class="modern-table calen-meds-tabla">
+              <thead>
                 <tr>
-                  <td>{{ e.fecha|date:"d/m/y" }}</td>
-                  <td>{{ e.titulo }}</td>
-                  <td>{{ e.get_tipo_display }}</td>
+                  <th scope="col">Vencimiento</th>
+                  <th scope="col" class="th-cod">Código</th>
+                  <th scope="col">Producto</th>
+                  <th scope="col" class="text-end col-money">Stock</th>
                 </tr>
-              {% empty %}
-                <tr><td colspan="3" class="table-empty">Sin eventos.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {% for p in vencimientos %}
+                  <tr>
+                    <td class="col-muted">{{ p.fecha_vencimiento|date:"d/m/y" }}</td>
+                    <td class="col-muted"><span class="persona-cod">{{ p.codigo }}</span></td>
+                    <td class="col-muted">{{ p.descripcion }}</td>
+                    <td class="text-end col-money">{{ p.stock }}</td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="4" class="table-empty">Sin productos por vencer.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div class="card-footer bg-white border-top py-3">
-          <div class="d-flex flex-wrap align-items-center gap-2">
-            <span class="text-muted small">Exportar tablas de esta vista:</span>
-            {% include "includes/export_buttons.html" %}
+
+        <div class="agenda-card vencimientos-card presu-lista-modern calen-ev-90">
+          <h2 class="agenda-card-title">Eventos / pedidos (90 días)</h2>
+          <p class="agenda-table-meta text-muted">Misma búsqueda y ventana que el calendario y la lista.</p>
+          <div class="table-responsive presu-lista-table-wrap">
+            <table class="modern-table calen-ev-tabla">
+              <thead>
+                <tr>
+                  <th scope="col">Fecha</th>
+                  <th scope="col">Título</th>
+                  <th scope="col">Tipo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for e in eventos %}
+                  <tr>
+                    <td class="col-muted">{{ e.fecha|date:"d/m/y" }}</td>
+                    <td class="col-muted">{{ e.titulo }}</td>
+                    <td class="col-muted">{{ e.get_tipo_display }}</td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="3" class="table-empty">Sin eventos.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="agenda-export">
+            <span class="agenda-export-label text-muted">Exportar tablas de esta vista</span>
+            <div class="d-flex flex-wrap align-items-center gap-2">{% include "includes/export_buttons.html" %}</div>
           </div>
         </div>
       </div>
     </div>
   </div>
 {% endblock %}
-
+{% block page_scripts %}
+  <script src="{% static 'js/calendario-mes.js' %}?v=1" defer></script>
+{% endblock %}

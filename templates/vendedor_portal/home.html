@@ -121,7 +121,7 @@
       <input type="hidden" name="comision_porcentaje" value="{{ vendedor.comision_porcentaje }}" />
       <input type="hidden" name="aplica_comision" value="1" />
 
-      <div class="card shadow-sm mb-3">
+      <div class="card shadow-sm presu-lista-modern mb-3">
         <div class="card-header fw-semibold">Nuevo presupuesto</div>
         <div class="card-body">
           <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
@@ -160,15 +160,15 @@
               />
             </div>
           </div>
-          <div class="table-responsive mb-3">
-            <table class="sirona-table" id="tablaLineas">
-              <thead class="table-light">
+          <div class="table-responsive presu-lista-table-wrap mb-3">
+            <table class="modern-table form-lineas-tabla" id="tablaLineas">
+              <thead>
                 <tr>
-                  <th>Producto</th>
-                  <th class="text-end" style="width: 6.5rem">Cant.</th>
-                  <th class="text-end" style="width: 8rem">Precio</th>
-                  <th class="text-end" style="width: 8rem">Subtotal</th>
-                  <th style="width: 3rem"></th>
+                  <th scope="col">Producto</th>
+                  <th scope="col" class="text-end" style="width: 6.5rem">Cant.</th>
+                  <th scope="col" class="text-end" style="width: 8rem">Precio</th>
+                  <th scope="col" class="text-end" style="width: 8rem">Subtotal</th>
+                  <th scope="col" style="width: 3rem"></th>
                 </tr>
               </thead>
               <tbody id="lineasBody"></tbody>
@@ -361,7 +361,7 @@
             '<td class="text-end"><input type="number" name="linea_cantidad" class="form-control form-control-sm text-end" min="1" step="1" value="" placeholder="1" title="Cantidad" /></td>' +
             '<td class="text-end"><input type="text" name="linea_precio_unitario" class="form-control form-control-sm text-end" inputmode="decimal" placeholder="Lista" autocomplete="off" title="Vacío = precio de lista del producto" /></td>' +
             '<td class="text-end fw-semibold js-subtotal">—</td>' +
-            '<td><div class="table-actions"><button type="button" class="table-action-btn js-remove" title="Quitar" aria-label="Quitar"><i data-lucide="x"></i></button></div></td>';
+            '<td><div class="table-actions presu-row-actions d-flex"><button type="button" class="btn-icon btn-delete js-remove" title="Quitar" aria-label="Quitar"><i data-lucide="x"></i></button></div></td>';
           tr.children[0].appendChild(buildSelect(tr));
           tr.querySelector('input[name="linea_cantidad"]').addEventListener("input", () => {
             refreshRow(tr);

@@ -67,47 +67,47 @@
     </div>
   </div>
 
-  <div class="card shadow-sm sirona-card-table-accent mb-3">
-    <div class="card-header sirona-card-header-table-accent fw-semibold d-flex flex-wrap align-items-center gap-2">
+  <div class="card-table home-pedidos-pendiente mb-3">
+    <div class="card-table-header d-flex flex-wrap align-items-center gap-2">
       <span class="me-auto">Pedidos con pago pendiente</span>
       {% if ventas_pendientes_total %}
-        <span class="badge rounded-pill sirona-badge-table-accent">{{ ventas_pendientes_total }} sin cobrar</span>
+        <span class="badge home-pedidos-pendiente-badge rounded-pill">{{ ventas_pendientes_total }} sin cobrar</span>
       {% endif %}
     </div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="sirona-table">
-          <thead class="table-light">
+    <div class="card-table-body">
+      <div class="table-responsive table-modern-wrap">
+        <table class="table-modern">
+          <thead>
             <tr>
-              <th>Pedido</th>
-              <th>Fecha pedido</th>
-              <th>Vendedor</th>
-              <th>Cliente</th>
-              <th class="text-end">Monto</th>
-              <th>Venc. pago</th>
-              <th class="text-center">Acción</th>
+              <th scope="col">Pedido</th>
+              <th scope="col" class="col-fecha">Fecha pedido</th>
+              <th scope="col" class="col-vendedor">Vendedor</th>
+              <th scope="col" class="col-cliente">Cliente</th>
+              <th scope="col" class="text-end col-monto">Monto</th>
+              <th scope="col" class="col-fecha">Venc. pago</th>
+              <th scope="col" class="text-center col-accion">Acción</th>
             </tr>
           </thead>
           <tbody>
             {% for v in ventas_pendientes %}
               <tr>
-                <td class="fw-semibold">
-                  <a href="{% url 'venta_detalle' v.pk %}">#{{ v.pk }}</a>
+                <td class="col-id">
+                  <a class="text-decoration-none" href="{% url 'venta_detalle' v.pk %}">#{{ v.pk }}</a>
                 </td>
-                <td class="text-muted small">{{ v.creado_en|date:"d/m/Y H:i" }}</td>
-                <td>{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}</td>
-                <td>{% if v.comprador_id %}{{ v.comprador }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
-                <td class="text-end">{{ v.neto|ars }}</td>
-                <td>{% if v.fecha_vencimiento_pago %}{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
-                <td class="table-actions-cell">
-                  <div class="table-actions">
+                <td class="col-fecha">{{ v.creado_en|date:"d/m/Y H:i" }}</td>
+                <td class="col-vendedor">{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}</td>
+                <td class="col-cliente">{% if v.comprador_id %}{{ v.comprador }}{% else %}<span class="text-muted col-cliente-na">—</span>{% endif %}</td>
+                <td class="text-end col-monto table-modern-mono">{{ v.neto|ars }}</td>
+                <td class="col-fecha col-venc">{% if v.fecha_vencimiento_pago %}{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                <td class="text-center col-accion">
+                  <div class="table-actions home-pedidos-pendiente-actions">
                     <a
-                      class="table-action-btn"
+                      class="btn-icon home-pedidos-pendiente-approve"
                       href="{% url 'venta_registrar_pago' v.pk %}"
                       title="Aprobar cobro"
                       aria-label="Aprobar cobro"
                     >
-                      <i data-lucide="check" class="ventas-hist-icon"></i>
+                      <i data-lucide="check" aria-hidden="true"></i>
                     </a>
                   </div>
                 </td>
@@ -122,44 +122,44 @@
       </div>
     </div>
     {% if ventas_pendientes_total > ventas_pendientes|length %}
-      <div class="card-footer py-2 small text-muted">
+      <div class="card-table-footer text-muted small">
         Mostrando los {{ ventas_pendientes|length }} más recientes de {{ ventas_pendientes_total }}.
-        <a href="{% url 'ventas_historial' %}" title="Abrir listado completo de pedidos">Listado de pedidos</a>
+        <a class="text-decoration-none" href="{% url 'ventas_historial' %}" title="Abrir listado completo de pedidos">Listado de pedidos</a>
       </div>
     {% elif ventas_pendientes_total %}
-      <div class="card-footer py-2 small text-muted">
-        <a href="{% url 'ventas_historial' %}" title="Abrir listado completo de pedidos">Listado de pedidos</a>
+      <div class="card-table-footer text-muted small">
+        <a class="text-decoration-none" href="{% url 'ventas_historial' %}" title="Abrir listado completo de pedidos">Listado de pedidos</a>
       </div>
     {% endif %}
   </div>
 
   {% if hoy_recordatorios or hoy_pagos or hoy_cheques %}
-    <div class="card shadow-sm mb-3 border-primary border-opacity-25">
+    <div class="card shadow-sm presu-lista-modern mb-3 border-primary border-opacity-25 home-dash-hoy">
       <div class="card-header fw-semibold">Hoy vence</div>
       <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="sirona-table">
-            <thead class="table-light">
+        <div class="table-responsive presu-lista-table-wrap">
+          <table class="modern-table home-hoy-vence-tabla">
+            <thead>
               <tr>
-                <th>Tipo</th>
-                <th>Detalle</th>
-                <th class="text-end">Acción</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Detalle</th>
+                <th scope="col" class="text-end presu-th-acciones col-presu-acciones">Acción</th>
               </tr>
             </thead>
             <tbody>
               {% for v in hoy_pagos %}
                 <tr>
-                  <td class="small">Pago pedido</td>
-                  <td>#{{ v.pk }} — {{ v.vendedor.apellido }}, {{ v.vendedor.nombre }} — {{ v.neto|ars }}</td>
-                  <td class="table-actions-cell">
-                    <div class="table-actions">
+                  <td class="col-muted small">Pago pedido</td>
+                  <td class="col-muted">#{{ v.pk }} — {{ v.vendedor.apellido }}, {{ v.vendedor.nombre }} — {{ v.neto|ars }}</td>
+                  <td class="table-actions-cell col-presu-acciones text-end">
+                    <div class="table-actions presu-row-actions d-flex justify-content-end">
                       <a
-                        class="table-action-btn"
+                        class="btn-icon btn-approve"
                         href="{% url 'venta_registrar_pago' v.pk %}"
                         title="Aprobar cobro"
                         aria-label="Aprobar cobro"
                       >
-                        <i data-lucide="check" class="ventas-hist-icon"></i>
+                        <i data-lucide="check" aria-hidden="true"></i>
                       </a>
                     </div>
                   </td>
@@ -167,12 +167,14 @@
               {% endfor %}
               {% for m in hoy_cheques %}
                 <tr>
-                  <td class="small">Cheque</td>
-                  <td><code>{{ m.numero_cheque }}</code> — {{ m.operacion }} — {{ m.monto|ars }}</td>
-                  <td class="table-actions-cell">
-                    <div class="table-actions">
-                      <a class="table-action-btn" href="{% url 'caja_detail' m.pk %}" title="Ver" aria-label="Ver">
-                        <i data-lucide="eye"></i>
+                  <td class="col-muted small">Cheque</td>
+                  <td class="col-muted">
+                    <span class="persona-cod">{{ m.numero_cheque }}</span> — {{ m.operacion }} — {{ m.monto|ars }}
+                  </td>
+                  <td class="table-actions-cell col-presu-acciones text-end">
+                    <div class="table-actions presu-row-actions d-flex justify-content-end">
+                      <a class="btn-icon btn-view" href="{% url 'caja_detail' m.pk %}" title="Ver" aria-label="Ver">
+                        <i data-lucide="eye" aria-hidden="true"></i>
                       </a>
                     </div>
                   </td>
@@ -180,12 +182,12 @@
               {% endfor %}
               {% for e in hoy_recordatorios %}
                 <tr>
-                  <td class="small">{{ e.get_tipo_display }}</td>
-                  <td>{{ e.titulo }}</td>
-                  <td class="table-actions-cell">
-                    <div class="table-actions">
-                      <a class="table-action-btn" href="{% url 'calendario_home' %}" title="Ver" aria-label="Ver">
-                        <i data-lucide="eye"></i>
+                  <td class="col-muted small">{{ e.get_tipo_display }}</td>
+                  <td class="col-muted">{{ e.titulo }}</td>
+                  <td class="table-actions-cell col-presu-acciones text-end">
+                    <div class="table-actions presu-row-actions d-flex justify-content-end">
+                      <a class="btn-icon btn-view" href="{% url 'calendario_home' %}" title="Ver" aria-label="Ver">
+                        <i data-lucide="eye" aria-hidden="true"></i>
                       </a>
                     </div>
                   </td>
@@ -199,7 +201,7 @@
   {% endif %}
 
   {% if cheques_a_pagar or meds_venc_90 or meds_venc_180 %}
-    <div class="card shadow-sm mb-3">
+    <div class="card shadow-sm presu-lista-modern mb-3 home-dash-cal">
       <div class="card-header fw-semibold">Resumen del calendario</div>
       <div class="card-body">
         <div class="row g-3">
@@ -208,24 +210,26 @@
               <div class="fw-semibold">Vencimientos de cheques a pagar</div>
               <a class="btn btn-sm btn-outline-secondary py-0" href="{% url 'caja_cheques' %}">Ver todos</a>
             </div>
-            <div class="table-responsive">
-              <table class="sirona-table">
-                <thead class="table-light">
+            <div class="table-responsive presu-lista-table-wrap">
+              <table class="modern-table home-cheques-pagar-tabla">
+                <thead>
                   <tr>
-                    <th>Vencimiento</th>
-                    <th>Detalle</th>
-                    <th class="text-end"></th>
+                    <th scope="col">Vencimiento</th>
+                    <th scope="col">Detalle</th>
+                    <th scope="col" class="text-end presu-th-acciones col-presu-acciones"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {% for m in cheques_a_pagar %}
                     <tr>
-                      <td class="text-muted small">{% if m.fecha_vencimiento_cheque %}{{ m.fecha_vencimiento_cheque|date:"d/m/Y" }}{% else %}—{% endif %}</td>
-                      <td class="small"><code>{{ m.numero_cheque }}</code> — {{ m.operacion }} — {{ m.monto|ars }}</td>
-                      <td class="table-actions-cell">
-                        <div class="table-actions">
-                          <a class="table-action-btn" href="{% url 'caja_detail' m.pk %}" title="Ver" aria-label="Ver">
-                            <i data-lucide="eye"></i>
+                      <td class="col-muted text-muted small">{% if m.fecha_vencimiento_cheque %}{{ m.fecha_vencimiento_cheque|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+                      <td class="col-muted small">
+                        <span class="persona-cod">{{ m.numero_cheque }}</span> — {{ m.operacion }} — {{ m.monto|ars }}
+                      </td>
+                      <td class="table-actions-cell col-presu-acciones text-end">
+                        <div class="table-actions presu-row-actions d-flex justify-content-end">
+                          <a class="btn-icon btn-view" href="{% url 'caja_detail' m.pk %}" title="Ver" aria-label="Ver">
+                            <i data-lucide="eye" aria-hidden="true"></i>
                           </a>
                         </div>
                       </td>
@@ -240,28 +244,28 @@
 
           <div class="col-12 col-lg-6">
             <div class="fw-semibold mb-2">Medicamentos por vencer</div>
-            <div class="table-responsive">
-              <table class="sirona-table">
-                <thead class="table-light">
+            <div class="table-responsive presu-lista-table-wrap">
+              <table class="modern-table home-meds-venc-tabla">
+                <thead>
                   <tr>
-                    <th>Vencimiento</th>
-                    <th>Producto</th>
-                    <th class="text-end">Stock</th>
+                    <th scope="col">Vencimiento</th>
+                    <th scope="col">Producto</th>
+                    <th scope="col" class="text-end col-money">Stock</th>
                   </tr>
                 </thead>
                 <tbody>
                   {% for p in meds_venc_90 %}
-                    <tr class="table-danger">
+                    <tr class="table-danger home-venc-urg">
                       <td class="small text-danger fw-semibold">{{ p.fecha_vencimiento|date:"d/m/Y" }}</td>
-                      <td class="small"><code>{{ p.codigo }}</code> — {{ p.descripcion }}</td>
-                      <td class="text-end small">{{ p.stock }}</td>
+                      <td class="small"><span class="persona-cod">{{ p.codigo }}</span> — {{ p.descripcion }}</td>
+                      <td class="text-end small col-money">{{ p.stock }}</td>
                     </tr>
                   {% endfor %}
                   {% for p in meds_venc_180 %}
-                    <tr class="table-success">
+                    <tr class="table-success home-venc-med">
                       <td class="small text-success fw-semibold">{{ p.fecha_vencimiento|date:"d/m/Y" }}</td>
-                      <td class="small"><code>{{ p.codigo }}</code> — {{ p.descripcion }}</td>
-                      <td class="text-end small">{{ p.stock }}</td>
+                      <td class="small"><span class="persona-cod">{{ p.codigo }}</span> — {{ p.descripcion }}</td>
+                      <td class="text-end small col-money">{{ p.stock }}</td>
                     </tr>
                   {% empty %}
                     {% if not meds_venc_90 %}
@@ -331,24 +335,24 @@
 
   <div class="row g-3 mb-3">
     <div class="col-12 col-lg-6">
-      <div class="card shadow-sm">
+      <div class="card shadow-sm presu-lista-modern h-100">
         <div class="card-header fw-semibold">Recordatorios (próximos 7 días)</div>
         <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="sirona-table">
-              <thead class="table-light">
+          <div class="table-responsive presu-lista-table-wrap">
+            <table class="modern-table home-rec7-tabla">
+              <thead>
                 <tr>
-                  <th>Fecha</th>
-                  <th>Tipo</th>
-                  <th>Título</th>
+                  <th scope="col">Fecha</th>
+                  <th scope="col">Tipo</th>
+                  <th scope="col">Título</th>
                 </tr>
               </thead>
               <tbody>
                 {% for e in recordatorios %}
                   <tr>
-                    <td class="text-muted small">{{ e.fecha|date:"d/m/Y" }}</td>
-                    <td class="small">{{ e.get_tipo_display }}</td>
-                    <td>{{ e.titulo }}</td>
+                    <td class="text-muted col-muted small">{{ e.fecha|date:"d/m/Y" }}</td>
+                    <td class="col-muted small">{{ e.get_tipo_display }}</td>
+                    <td class="col-muted">{{ e.titulo }}</td>
                   </tr>
                 {% empty %}
                   <tr><td colspan="3" class="table-empty">No hay recordatorios próximos.</td></tr>
@@ -363,26 +367,26 @@
       </div>
     </div>
     <div class="col-12 col-lg-6">
-      <div class="card shadow-sm">
+      <div class="card shadow-sm presu-lista-modern h-100">
         <div class="card-header fw-semibold">Cheques (próximos 7 días)</div>
         <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="sirona-table">
-              <thead class="table-light">
+          <div class="table-responsive presu-lista-table-wrap">
+            <table class="modern-table home-ch7-tabla">
+              <thead>
                 <tr>
-                  <th>Vencimiento</th>
-                  <th>Nº</th>
-                  <th>Operación</th>
-                  <th class="text-end">Monto</th>
+                  <th scope="col">Vencimiento</th>
+                  <th scope="col">Nº</th>
+                  <th scope="col">Operación</th>
+                  <th scope="col" class="text-end col-money">Monto</th>
                 </tr>
               </thead>
               <tbody>
                 {% for m in cheques_proximos %}
                   <tr>
-                    <td class="text-muted small">{{ m.fecha_vencimiento_cheque|date:"d/m/Y" }}</td>
-                    <td><code>{{ m.numero_cheque }}</code></td>
-                    <td class="small">{{ m.operacion }}</td>
-                    <td class="text-end">{{ m.monto|ars }}</td>
+                    <td class="text-muted col-muted small">{{ m.fecha_vencimiento_cheque|date:"d/m/Y" }}</td>
+                    <td class="col-muted"><span class="persona-cod">{{ m.numero_cheque }}</span></td>
+                    <td class="col-muted small">{{ m.operacion }}</td>
+                    <td class="text-end col-money">{{ m.monto|ars }}</td>
                   </tr>
                 {% empty %}
                   <tr><td colspan="4" class="table-empty">No hay cheques próximos.</td></tr>
@@ -399,24 +403,24 @@
   </div>
 
   {% if stock_critico %}
-    <div class="card shadow-sm border-danger mb-3">
+    <div class="card shadow-sm presu-lista-modern border-danger mb-3">
       <div class="card-header fw-semibold bg-danger bg-opacity-10">Stock crítico</div>
       <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="sirona-table">
-            <thead class="table-light">
+        <div class="table-responsive presu-lista-table-wrap">
+          <table class="modern-table home-stock-critico-tabla">
+            <thead>
               <tr>
-                <th>Código</th>
-                <th>Producto</th>
-                <th class="text-end">Stock</th>
+                <th scope="col" class="th-cod">Código</th>
+                <th scope="col">Producto</th>
+                <th scope="col" class="text-end col-money">Stock</th>
               </tr>
             </thead>
             <tbody>
               {% for p in stock_critico %}
                 <tr>
-                  <td><code>{{ p.codigo }}</code></td>
-                  <td>{{ p.descripcion }}</td>
-                  <td class="text-end fw-semibold">{{ p.stock }}</td>
+                  <td class="col-muted"><span class="persona-cod">{{ p.codigo }}</span></td>
+                  <td class="col-muted">{{ p.descripcion }}</td>
+                  <td class="text-end col-money fw-semibold">{{ p.stock }}</td>
                 </tr>
               {% endfor %}
             </tbody>
@@ -430,26 +434,26 @@
   {% endif %}
 
   {% if vencimientos_prod %}
-    <div class="card shadow-sm mb-3">
+    <div class="card shadow-sm presu-lista-modern mb-3">
       <div class="card-header fw-semibold">Vencimientos de productos (próximos 30 días)</div>
       <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="sirona-table">
-            <thead class="table-light">
+        <div class="table-responsive presu-lista-table-wrap">
+          <table class="modern-table home-venc-prod-tabla">
+            <thead>
               <tr>
-                <th>Fecha</th>
-                <th>Código</th>
-                <th>Producto</th>
-                <th class="text-end">Stock</th>
+                <th scope="col">Fecha</th>
+                <th scope="col" class="th-cod">Código</th>
+                <th scope="col">Producto</th>
+                <th scope="col" class="text-end col-money">Stock</th>
               </tr>
             </thead>
             <tbody>
               {% for p in vencimientos_prod %}
                 <tr>
-                  <td class="text-muted small">{{ p.fecha_vencimiento|date:"d/m/Y" }}</td>
-                  <td><code>{{ p.codigo }}</code></td>
-                  <td>{{ p.descripcion }}</td>
-                  <td class="text-end">{{ p.stock }}</td>
+                  <td class="text-muted col-muted small">{{ p.fecha_vencimiento|date:"d/m/Y" }}</td>
+                  <td class="col-muted"><span class="persona-cod">{{ p.codigo }}</span></td>
+                  <td class="col-muted">{{ p.descripcion }}</td>
+                  <td class="text-end col-money">{{ p.stock }}</td>
                 </tr>
               {% endfor %}
             </tbody>
