@@ -192,14 +192,7 @@
               <th>Código</th>
               <th>Producto</th>
               <th class="col-hide-sm">Tipo</th>
-<<<<<<< HEAD
               <th class="col-hide-sm">Marca</th>
-=======
-<<<<<<< HEAD
-              <th class="col-hide-sm">Marca</th>
-=======
->>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
               <th class="text-end">Stock disp.</th>
               <th class="text-end col-hide-xs">Costo</th>
               <th class="text-end col-hide-xs">Valor total</th>
@@ -215,14 +208,7 @@
                   <div class="name">{{ p.descripcion }}</div>
                 </td>
                 <td class="muted col-hide-sm">{{ p.get_tipo_display }}</td>
-<<<<<<< HEAD
                 <td class="muted col-hide-sm">{% if p.proveedor_marca %}{{ p.proveedor_marca }}{% else %}—{% endif %}</td>
-=======
-<<<<<<< HEAD
-                <td class="muted col-hide-sm">{% if p.proveedor_marca %}{{ p.proveedor_marca }}{% else %}—{% endif %}</td>
-=======
->>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
                 <td class="num">
                   {% if user.is_staff %}
                     <form method="post" action="{% url 'stock_ajuste_inline' %}" class="d-inline-flex align-items-center gap-2 justify-content-end flex-wrap">
@@ -260,15 +246,7 @@
               </tr>
             {% empty %}
               <tr>
-<<<<<<< HEAD
                 <td colspan="9" class="table-empty">{% if q %}No hay productos que coincidan con la búsqueda.{% else %}No hay productos cargados.{% endif %}</td>
-=======
-<<<<<<< HEAD
-                <td colspan="9" class="table-empty">{% if q %}No hay productos que coincidan con la búsqueda.{% else %}No hay productos cargados.{% endif %}</td>
-=======
-                <td colspan="8" class="table-empty">{% if q %}No hay productos que coincidan con la búsqueda.{% else %}No hay productos cargados.{% endif %}</td>
->>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
               </tr>
             {% endfor %}
           </tbody>

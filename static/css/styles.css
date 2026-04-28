@@ -61,17 +61,8 @@ body.app-body {
 }
 
 @media (min-width: 992px) {
-<<<<<<< HEAD
   /* Only reserve space when the sidebar is actually rendered (authenticated). */
   .app-shell.app-shell--with-sidebar {
-=======
-<<<<<<< HEAD
-  /* Only reserve space when the sidebar is actually rendered (authenticated). */
-  .app-shell.app-shell--with-sidebar {
-=======
-  .app-shell {
->>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
     padding-left: var(--sidebar-w);
   }
 }
@@ -94,14 +85,7 @@ body.app-body {
     flex-direction: column;
     padding: 18px 16px;
     z-index: 1020;
-<<<<<<< HEAD
     transition: width 0.22s ease, padding 0.22s ease;
-=======
-<<<<<<< HEAD
-    transition: width 0.22s ease, padding 0.22s ease;
-=======
->>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
   }
 }
 
@@ -125,14 +109,7 @@ body.app-body {
   flex-direction: column;
   min-width: 0;
   line-height: 1.1;
-<<<<<<< HEAD
   transition: opacity 0.18s ease, transform 0.18s ease;
-=======
-<<<<<<< HEAD
-  transition: opacity 0.18s ease, transform 0.18s ease;
-=======
->>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
 }
 
 .sidebar .sidebar-brand-title {
@@ -238,14 +215,7 @@ body.sidebar-collapsed .sidebar-collapse-btn i[data-lucide] {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-<<<<<<< HEAD
   transition: opacity 0.18s ease, transform 0.18s ease;
-=======
-<<<<<<< HEAD
-  transition: opacity 0.18s ease, transform 0.18s ease;
-=======
->>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
 }
 
 /* thinner lucide icons in sidebar */
@@ -275,25 +245,13 @@ body.sidebar-collapsed .sidebar {
   padding: 18px 10px;
 }
 
-<<<<<<< HEAD
 body.sidebar-collapsed .app-shell.app-shell--with-sidebar {
-=======
-<<<<<<< HEAD
-body.sidebar-collapsed .app-shell.app-shell--with-sidebar {
-=======
-body.sidebar-collapsed .app-shell {
->>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
   padding-left: 86px;
 }
 
 body.sidebar-collapsed .sidebar .sidebar-brand-text,
 body.sidebar-collapsed .sidebar .sidebar-label,
 body.sidebar-collapsed .sidebar .app-sidebar-label {
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
   opacity: 0;
   width: 0;
   max-width: 0;
@@ -303,12 +261,6 @@ body.sidebar-collapsed .sidebar .app-sidebar-label {
   visibility: hidden;
   transform: translateX(-4px);
   transition: opacity 0.18s ease, transform 0.18s ease;
-<<<<<<< HEAD
-=======
-=======
-  display: none;
->>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
 }
 
 body.sidebar-collapsed .sidebar .sidebar-nav {
@@ -402,10 +354,6 @@ body.sidebar-collapsed .sidebar-link.is-active::before {
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
 /* Tree-like "current node" under active sidebar item (detail pages) */
 .sidebar-tree-current {
   margin: -2px 10px 6px 44px; /* aligns under label after icon */
@@ -617,11 +565,6 @@ body.sidebar-collapsed .sidebar-tree-current {
   background: #94a3b8;
 }
 
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
 /* Mobile offcanvas: cleaner drawer feel */
 #sironaMenu.offcanvas {
   --bs-offcanvas-width: min(92vw, 330px);
@@ -649,10 +592,6 @@ nav.navbar.sirona-topbar.bg-white.topbar {
   border-bottom: 1px solid rgba(226, 232, 240, 0.9) !important;
 }
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
 .sirona-topbar {
   min-height: 64px;
 }
@@ -964,11 +903,6 @@ nav.navbar.sirona-topbar.bg-white.topbar {
   border-top-color: rgba(148, 163, 184, 0.18);
 }
 
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
 .topbar .topbar-greeting {
   display: flex;
   flex-direction: column;
@@ -1508,10 +1442,6 @@ a.btn-icon.btn-approve {
   color: var(--s-success);
 }
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
 /* ===== Productos: acciones por selección múltiple (pill buttons) ===== */
 .productos-bulk-btn {
   display: inline-flex;
@@ -1715,11 +1645,6 @@ a.btn-icon.btn-approve {
   }
 }
 
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
 /* ===== Ventas > Historial: estado + acciones + leyenda sticky ===== */
 .venta-hist-table-wrap {
   position: relative;
@@ -1866,10 +1791,6 @@ a.btn-icon.btn-approve {
 }
 
 .theme-dark body.app-body {
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
   /* Balanced dark palette (premium, low-glare) */
   --s-bg: #070b14;
   --s-card: #0b1220;
@@ -1877,17 +1798,6 @@ a.btn-icon.btn-approve {
   --s-ink: #e6edf7;
   --s-muted: rgba(230, 237, 247, 0.68);
   --s-border: rgba(148, 163, 184, 0.18);
-<<<<<<< HEAD
-=======
-=======
-  --s-bg: #0b1220;
-  --s-card: #0f172a;
-  --s-card-2: #111c33;
-  --s-ink: #e2e8f0;
-  --s-muted: rgba(226, 232, 240, 0.72);
-  --s-border: rgba(148, 163, 184, 0.22);
->>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
   background: radial-gradient(900px 400px at 20% -10%, rgba(37, 99, 235, 0.18), transparent 60%),
     radial-gradient(700px 320px at 90% 0%, rgba(168, 85, 247, 0.16), transparent 55%),
     var(--s-bg);
@@ -1903,10 +1813,6 @@ a.btn-icon.btn-approve {
   border-bottom-color: var(--s-border) !important;
 }
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
 .theme-dark .card,
 .theme-dark .table-card,
 .theme-dark .dashboard-card,
@@ -1983,19 +1889,6 @@ a.btn-icon.btn-approve {
 
 .theme-dark .form-control::placeholder {
   color: rgba(230, 237, 247, 0.45);
-<<<<<<< HEAD
-=======
-=======
-.theme-dark .sidebar-link:hover,
-.theme-dark .sidebar-link:focus {
-  background: rgba(226, 232, 240, 0.06);
-}
-
-.theme-dark .sidebar-link.is-active {
-  background: rgba(37, 99, 235, 0.18);
-  border-color: rgba(37, 99, 235, 0.25);
->>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
 }
 
 .theme-dark .modern-table thead th {
@@ -2009,15 +1902,7 @@ a.btn-icon.btn-approve {
 }
 
 .theme-dark .modern-table tbody tr:hover td {
-<<<<<<< HEAD
   background: rgba(230, 237, 247, 0.04);
-=======
-<<<<<<< HEAD
-  background: rgba(230, 237, 247, 0.04);
-=======
-  background: rgba(226, 232, 240, 0.04);
->>>>>>> 152dd224f366688bc72e3cf0ba31cde837876460
->>>>>>> e65b030712d6cdb00421032788a56641155c3e11
 }
 
 /* ==========================================================================
