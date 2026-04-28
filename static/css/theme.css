@@ -2555,8 +2555,8 @@ h2.h6 {
 
 .ui-force-productos .table-actions .btn-icon svg,
 .ui-force-productos .table-actions a.btn-icon svg {
-  width: 16px !important;
-  height: 16px !important;
+  width: 18px !important;
+  height: 18px !important;
   stroke-width: 2 !important;
   stroke: currentColor !important;
 }
@@ -2596,6 +2596,13 @@ h2.h6 {
   background: #fef2f2 !important;
   border-color: #fecaca !important;
   color: #dc2626 !important;
+}
+
+/* Listas de precio: columna acciones más chica + íconos con más presencia */
+.listas-precios-index.ui-force-productos .table-actions-cell {
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 200px !important;
 }
 
 /* Stock (home): tabla de productos — Código, Tipo, Descripción, Stock, Precio */
