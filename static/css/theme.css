@@ -821,15 +821,8 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
 }
 
-/* Botones chicos: por defecto, estética tipo Productos (pill + tipografía limpia) */
-.btn.btn-sm:not(.btn-icon):not(.productos-bulk-btn):not(.sirona-calc-btn) {
-  border-radius: 999px;
-  font-weight: 500;
-}
-
-.btn.btn-sm:not(.btn-icon):not(.productos-bulk-btn) {
-  letter-spacing: -0.01em;
-}
+/* Nota: evitamos aplicar “pill” global a todos los .btn-sm.
+   Solo se usa en pantallas donde se setea explícitamente (como Productos). */
 
 .table-action-btn:hover,
 .table-actions button:not(.btn-icon):hover,
@@ -2044,7 +2037,7 @@ h2.h6 {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 400;
   color: #0f172a;
 }
@@ -2058,7 +2051,7 @@ h2.h6 {
 }
 
 .presu-lista-modern .modern-table th {
-  padding: 12px 14px;
+  padding: 14px 16px;
   text-align: left;
   font-size: 11px;
   font-weight: 500;
@@ -2090,7 +2083,7 @@ h2.h6 {
 }
 
 .presu-lista-modern .modern-table td {
-  padding: 13px 14px;
+  padding: 15px 16px;
   color: #0f172a;
   font-weight: 400;
   border: 0;
@@ -2102,7 +2095,7 @@ h2.h6 {
 
 .presu-lista-modern .modern-table td.col-muted {
   color: #64748b;
-  font-size: 12.5px;
+  font-size: 13px;
 }
 
 .presu-lista-modern .modern-table .presu-col-ellipsis,

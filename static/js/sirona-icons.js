@@ -8,8 +8,8 @@
       L.createIcons({
         attrs: {
           "stroke-width": 2,
-          width: 16,
-          height: 16,
+          width: 18,
+          height: 18,
         },
       });
     }
