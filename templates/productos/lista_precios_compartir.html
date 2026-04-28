@@ -2,47 +2,56 @@
 {% load static %}
 {% block title %}{{ titulo }}{% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-    <div>
-      <h1 class="h5 mb-1">{{ titulo }}</h1>
-      <div class="text-muted small">Generá un PNG para compartir por WhatsApp (o descargá el PDF).</div>
+  <section class="page-header-card inventory-header">
+    <div class="header-left">
+      <span class="header-ico" aria-hidden="true"><i data-lucide="image"></i></span>
+      <div class="min-w-0">
+        <h1 class="header-title">{{ titulo }}</h1>
+        <p class="header-subtitle">Exportá una sola imagen completa para WhatsApp (sin cortes).</p>
+      </div>
     </div>
-    <div class="d-flex gap-2">
-      <a class="btn btn-outline-secondary btn-sm" href="{% url 'lista_precios_ver' lista.pk %}">Volver a la vista</a>
-      <a class="btn btn-outline-primary btn-sm" href="{% url 'lista_precios_export_pdf' lista.pk %}">PDF</a>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+      <a class="action-button btn btn-outline-secondary" href="{% url 'lista_precios_ver' lista.pk %}">
+        <i data-lucide="arrow-left" aria-hidden="true"></i>
+        Volver
+      </a>
+      <a class="action-button btn btn-outline-primary" href="{% url 'lista_precios_export_pdf' lista.pk %}">
+        <i data-lucide="file-text" aria-hidden="true"></i>
+        PDF
+      </a>
     </div>
-  </div>
+  </section>
 
   {{ productos|json_script:"lp-productos" }}
 
-  <div class="card shadow-sm mb-3">
-    <div class="card-body">
-      <div class="row g-2 align-items-end">
-        <div class="col-12 col-md-4">
-          <label class="form-label">Página</label>
-          <input type="number" class="form-control" id="inpPage" min="1" value="1" />
-        </div>
-        <div class="col-12 col-md-4">
-          <label class="form-label">Filas por página</label>
-          <input type="number" class="form-control" id="inpPageSize" min="10" max="60" value="35" />
-        </div>
-        <div class="col-12 col-md-4 d-grid">
-          <button class="btn btn-primary" type="button" id="btnRender" style="background: #0097b2; border-color: #007a91">Generar</button>
-        </div>
-      </div>
-
-      <div class="d-flex flex-wrap gap-2 mt-3">
-        <button class="btn btn-outline-primary" type="button" id="btnDownload" disabled>Descargar PNG</button>
-        <button class="btn btn-outline-secondary" type="button" id="btnShare" disabled>Compartir</button>
-      </div>
-      <div class="text-muted small mt-2" id="meta"></div>
+  <div class="modern-filter-card">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <button class="action-button primary btn btn-primary" type="button" id="btnRender">
+        <i data-lucide="sparkles" aria-hidden="true"></i>
+        Generar PNG completo
+      </button>
+      <button class="action-button btn btn-outline-primary" type="button" id="btnDownload" disabled>
+        <i data-lucide="download" aria-hidden="true"></i>
+        Descargar PNG
+      </button>
+      <button class="action-button btn btn-outline-secondary" type="button" id="btnShare" disabled>
+        <i data-lucide="share-2" aria-hidden="true"></i>
+        Compartir
+      </button>
+      <span class="text-muted small ms-auto" id="meta"></span>
+    </div>
+    <div class="text-muted small mt-2">
+      Nota: si tu lista es muy grande, la imagen puede tardar unos segundos en generarse.
     </div>
   </div>
 
-  <div class="card shadow-sm">
+  <div class="dashboard-card">
+    <div class="card-head">
+      <h2 class="card-title"><i data-lucide="eye" aria-hidden="true"></i> Vista previa</h2>
+      <div class="card-subtle">Una sola imagen</div>
+    </div>
     <div class="card-body">
-      <div class="text-muted small mb-2">Vista previa</div>
-      <canvas id="cnv" style="max-width: 100%; height: auto; border: 1px solid #eee"></canvas>
+      <canvas id="cnv" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 12px"></canvas>
     </div>
   </div>
 
@@ -55,31 +64,18 @@
       const btnRender = document.getElementById("btnRender");
       const btnDownload = document.getElementById("btnDownload");
       const btnShare = document.getElementById("btnShare");
-      const inpPage = document.getElementById("inpPage");
-      const inpPageSize = document.getElementById("inpPageSize");
 
       let lastBlob = null;
 
-      function clamp(n, a, b) {
-        n = Number(n || 0);
-        if (!Number.isFinite(n)) n = a;
-        return Math.max(a, Math.min(b, n));
-      }
-
       function render() {
-        const pageSize = clamp(inpPageSize.value, 10, 60);
-        const pages = Math.max(1, Math.ceil(productos.length / pageSize));
-        const page = clamp(inpPage.value, 1, pages);
-        inpPage.value = String(page);
-
-        const start = (page - 1) * pageSize;
-        const chunk = productos.slice(start, start + pageSize);
+        const chunk = productos;
 
         const w = 1080;
         const pad = 48;
-        const headerH = 150;
-        const rowH = 54;
-        const h = headerH + pad + Math.max(1, chunk.length) * rowH + pad;
+        const headerH = 164;
+        const filterH = 86;
+        const rowH = chunk.length > 400 ? 44 : 54;
+        const h = headerH + filterH + pad + Math.max(1, chunk.length) * rowH + pad;
         cnv.width = w;
         cnv.height = h;
         const ctx = cnv.getContext("2d");
@@ -88,16 +84,72 @@
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, w, h);
 
-        ctx.fillStyle = "#0097B2";
+        // Hero gradient (turquoise Sirona)
+        const grad = ctx.createLinearGradient(0, 0, w, headerH);
+        grad.addColorStop(0, "#0ea5a5");
+        grad.addColorStop(0.65, "#2563eb");
+        grad.addColorStop(1, "#38bdf8");
+        ctx.fillStyle = grad;
         ctx.fillRect(0, 0, w, headerH);
+
+        // Logo (original)
+        const logo = new Image();
+        logo.crossOrigin = "anonymous";
+        logo.src = "{% static 'img/sirona-logo.png' %}";
+
         ctx.fillStyle = "#ffffff";
         ctx.font = "bold 42px system-ui, -apple-system, Segoe UI, Arial";
         ctx.fillText("{{ titulo|escapejs }}", pad, 62);
         ctx.font = "26px system-ui, -apple-system, Segoe UI, Arial";
         const fecha = new Date().toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
-        ctx.fillText("Emitido: " + fecha + "  ·  Página " + page + "/" + pages, pad, 112);
+        ctx.fillText("Emitido: " + fecha + "  ·  Activa", pad, 112);
 
+        const drawLogo = () => {
+          try {
+            if (!logo || !logo.complete || !logo.width) return;
+            const lh = 36;
+            const lw = Math.round((logo.width / logo.height) * lh);
+            ctx.save();
+            ctx.fillStyle = "rgba(255,255,255,0.92)";
+            ctx.strokeStyle = "rgba(255,255,255,0.25)";
+            ctx.lineWidth = 2;
+            const bx = w - pad - lw - 18;
+            const by = 24;
+            const bw = lw + 18;
+            const bh = lh + 16;
+            const r = 14;
+            ctx.beginPath();
+            ctx.moveTo(bx + r, by);
+            ctx.arcTo(bx + bw, by, bx + bw, by + bh, r);
+            ctx.arcTo(bx + bw, by + bh, bx, by + bh, r);
+            ctx.arcTo(bx, by + bh, bx, by, r);
+            ctx.arcTo(bx, by, bx + bw, by, r);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.drawImage(logo, bx + 9, by + 8, lw, lh);
+            ctx.restore();
+          } catch (e) {}
+        };
+
+        // Filters block (applied)
         let y = headerH + 18;
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "bold 22px system-ui, -apple-system, Segoe UI, Arial";
+        ctx.fillText("Filtros aplicados", pad, y + 24);
+        ctx.fillStyle = "#64748b";
+        ctx.font = "20px system-ui, -apple-system, Segoe UI, Arial";
+        const qtxt = "{{ q|default:''|escapejs }}";
+        ctx.fillText("Buscar: " + (qtxt ? qtxt : "—"), pad, y + 54);
+        ctx.textAlign = "right";
+        ctx.fillText("Tipo: Todos  ·  Proveedor: Todos  ·  Estado: Todos", w - pad, y + 54);
+        ctx.textAlign = "left";
+        y += filterH;
+
+        // ensure logo draws even if it loads a bit later
+        if (logo.complete) drawLogo();
+        else logo.onload = function () { drawLogo(); };
+
         ctx.fillStyle = "#505050";
         ctx.font = "22px system-ui, -apple-system, Segoe UI, Arial";
         ctx.fillText("Código", pad, y + 22);
@@ -115,11 +167,11 @@
         ctx.stroke();
         y += 18;
 
-        ctx.font = "26px system-ui, -apple-system, Segoe UI, Arial";
+        ctx.font = chunk.length > 400 ? "22px system-ui, -apple-system, Segoe UI, Arial" : "26px system-ui, -apple-system, Segoe UI, Arial";
         for (let i = 0; i < chunk.length; i++) {
           const p = chunk[i];
           if (i % 2 === 1) {
-            ctx.fillStyle = "#f0f9fb";
+            ctx.fillStyle = "#f8fafc";
             ctx.fillRect(0, y - 8, w, rowH);
           }
           ctx.fillStyle = "#1e1e1e";
@@ -134,8 +186,7 @@
           y += rowH;
         }
 
-        meta.textContent =
-          "Productos: " + productos.length + " · Página " + page + "/" + pages + " · Filas: " + chunk.length;
+        meta.textContent = "Productos: " + productos.length + " · Filas: " + chunk.length + (qtxt ? " · Buscar: " + qtxt : "");
 
         btnDownload.disabled = false;
         btnShare.disabled = false;

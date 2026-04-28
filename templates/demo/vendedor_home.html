@@ -1,0 +1,85 @@
+{% extends "demo/base_demo.html" %}
+{% block title %}Portal vendedor · Demo{% endblock %}
+{% block content %}
+  <div class="page-header">
+    <div class="min-w-0">
+      <h1 class="page-title">Portal vendedor</h1>
+      <p class="page-subtitle">Resumen del vendedor: {{ vendedor.codigo }} — {{ vendedor.apellido }}, {{ vendedor.nombre }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+      <a class="action-button primary btn btn-primary" href="#" onclick="return false;">
+        <i data-lucide="shopping-bag" aria-hidden="true"></i>
+        Nueva venta
+      </a>
+      <a class="action-button btn btn-outline-primary" href="{% url 'demo_presupuestos' %}">
+        <i data-lucide="file-text" aria-hidden="true"></i>
+        Nuevo presupuesto
+      </a>
+      <a class="action-button btn btn-outline-secondary" href="{% url 'demo_vendedor_reportes' %}">
+        <i data-lucide="chart-column" aria-hidden="true"></i>
+        Reportes
+      </a>
+    </div>
+  </div>
+
+  <section class="stats-grid mb-3">
+    <article class="metric-card">
+      <div class="metric-top">
+        <div class="metric-title">Ventas (30 días)</div>
+        <span class="metric-icon"><i data-lucide="badge-dollar-sign"></i></span>
+      </div>
+      <div class="metric-value">{{ kpis.neto_30 }}</div>
+      <div class="metric-sub">{{ kpis.pedidos }} pedidos</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-top">
+        <div class="metric-title">Pagadas</div>
+        <span class="metric-icon" style="background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); color:#22c55e;"><i data-lucide="check-circle"></i></span>
+      </div>
+      <div class="metric-value">{{ kpis.pagadas }}</div>
+      <div class="metric-sub">Últimos 30 días</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-top">
+        <div class="metric-title">Pendientes</div>
+        <span class="metric-icon" style="background: rgba(249,115,22,0.12); border-color: rgba(249,115,22,0.22); color:#f97316;"><i data-lucide="clock"></i></span>
+      </div>
+      <div class="metric-value">{{ kpis.pendientes }}</div>
+      <div class="metric-sub">Pagos</div>
+    </article>
+  </section>
+
+  <div class="dashboard-card">
+    <div class="card-head">
+      <h2 class="card-title"><i data-lucide="clipboard-list"></i> Mis pedidos con pago pendiente</h2>
+      <div class="card-subtle">Demo</div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Pedido</th>
+              <th>Fecha</th>
+              <th>Cliente</th>
+              <th class="text-end">Monto</th>
+              <th>Venc. pago</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in pendientes %}
+              <tr>
+                <td><span class="prod-code">{{ p.id }}</span></td>
+                <td class="muted">{{ p.fecha }}</td>
+                <td>{{ p.cliente }}</td>
+                <td class="num">{{ p.monto }}</td>
+                <td class="muted">{{ p.venc }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

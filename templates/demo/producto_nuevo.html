@@ -1,0 +1,94 @@
+{% extends "demo/base_demo.html" %}
+{% block title %}Nuevo producto · Demo{% endblock %}
+{% block content %}
+  <section class="page-header-card inventory-header">
+    <div class="header-left">
+      <span class="header-ico" aria-hidden="true"><i data-lucide="package-plus"></i></span>
+      <div class="min-w-0">
+        <h1 class="header-title">Nuevo producto</h1>
+        <p class="header-subtitle">Demo: formulario visual (no guarda ni modifica datos reales).</p>
+      </div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+      <a class="action-button btn btn-outline-secondary" href="{% url 'demo_productos' %}">
+        <i data-lucide="arrow-left" aria-hidden="true"></i>
+        Volver
+      </a>
+      <a class="action-button primary btn btn-primary" href="#" onclick="return false;">
+        <i data-lucide="check" aria-hidden="true"></i>
+        Guardar (demo)
+      </a>
+    </div>
+  </section>
+
+  <div class="dashboard-card">
+    <div class="card-head">
+      <h2 class="card-title"><i data-lucide="edit-3" aria-hidden="true"></i> Datos del producto</h2>
+      <div class="card-subtle">Campos de ejemplo</div>
+    </div>
+    <div class="card-body">
+      <form class="row g-3" onsubmit="return false;">
+        <div class="col-12 col-md-3">
+          <label class="form-label">Código</label>
+          <input class="form-control input-modern" value="ME0001" />
+        </div>
+        <div class="col-12 col-md-9">
+          <label class="form-label">Descripción</label>
+          <input class="form-control input-modern" value="Producto Demo 1" />
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label">Tipo</label>
+          <select class="form-select input-modern">
+            {% for t in tipos %}<option>{{ t }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">Proveedor</label>
+          <select class="form-select input-modern">
+            {% for p in proveedores %}<option>{{ p }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">Estado</label>
+          <select class="form-select input-modern">
+            <option>Activo</option>
+            <option>Inactivo</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-md-3">
+          <label class="form-label">Costo</label>
+          <input class="form-control input-modern" value="$ 3.700,00" />
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label">Stock</label>
+          <input class="form-control input-modern" value="200" />
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label">Margen %</label>
+          <input class="form-control input-modern" value="31,0" />
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label">Precio</label>
+          <input class="form-control input-modern" value="$ 3.315,00" />
+        </div>
+
+        <div class="col-12">
+          <div class="modern-filter-card mb-0">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+              <div class="text-muted small">
+                En demo, “Guardar” no ejecuta acciones reales. Es solo para previsualizar estética.
+              </div>
+              <div class="d-flex gap-2 flex-wrap">
+                <a class="action-pill action-pill--muted" href="#" onclick="return false;">Cancelar</a>
+                <a class="action-pill action-pill--primary" href="#" onclick="return false;">Guardar (demo)</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+

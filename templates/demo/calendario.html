@@ -1,0 +1,192 @@
+{% extends "demo/base_demo.html" %}
+{% block title %}Calendario · Demo{% endblock %}
+{% block extra_head %}
+  <style>
+    .cal-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+    }
+    @media (min-width: 1200px) {
+      .cal-shell {
+        grid-template-columns: minmax(0, 1fr) 360px;
+      }
+    }
+    .cal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .cal-month {
+      font-weight: 950;
+      letter-spacing: -0.03em;
+      color: #0f172a;
+      margin: 0;
+      font-size: 1.25rem;
+    }
+    .cal-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+      padding: 10px 12px;
+      border-bottom: 1px solid #e2e8f0;
+      background: linear-gradient(180deg, rgba(248,250,252,0.9), rgba(255,255,255,1));
+    }
+    .cal-wd {
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(100,116,139,0.8);
+      text-align: center;
+      user-select: none;
+    }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+      padding: 12px;
+      background: #fff;
+    }
+    .cal-day {
+      min-height: 104px;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      background: #fff;
+      padding: 10px 10px 8px;
+      overflow: hidden;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .cal-day:hover {
+      transform: translateY(-1px);
+      border-color: #cbd5e1;
+      box-shadow: 0 12px 28px rgba(2, 6, 23, 0.08);
+    }
+    .cal-day.is-empty {
+      background: #f8fafc;
+      border-style: dashed;
+      opacity: 0.65;
+    }
+    .cal-num {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .cal-num span {
+      font-weight: 900;
+      color: #0f172a;
+      font-variant-numeric: tabular-nums;
+    }
+    .cal-pill {
+      height: 20px;
+      padding: 0 8px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      font-weight: 900;
+      border: 1px solid #e2e8f0;
+      color: #64748b;
+      background: #f8fafc;
+      white-space: nowrap;
+    }
+    .ev {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 12px;
+      margin-bottom: 6px;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      font-size: 0.78rem;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      flex: 0 0 auto;
+      background: #94a3b8;
+    }
+    .c-primary .dot { background: #2563eb; }
+    .c-success .dot { background: #22c55e; }
+    .c-warning .dot { background: #f97316; }
+    .c-orange .dot { background: #f97316; }
+    .c-violet .dot { background: #a855f7; }
+    .c-muted .dot { background: #94a3b8; }
+  </style>
+{% endblock %}
+{% block content %}
+  <div class="page-header">
+    <div class="min-w-0">
+      <h1 class="page-title d-flex align-items-center gap-2">
+        <span class="stat-ico" aria-hidden="true" style="width: 34px; height: 34px;"><i data-lucide="calendar"></i></span>
+        Calendario
+      </h1>
+      <p class="page-subtitle">Vista demo tipo almanaque (sin datos reales).</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+      <a class="action-button btn btn-outline-secondary" href="#" onclick="return false;"><i data-lucide="chevron-left"></i></a>
+      <a class="action-button btn btn-outline-secondary" href="#" onclick="return false;"><i data-lucide="chevron-right"></i></a>
+      <a class="action-button primary btn btn-primary" href="#" onclick="return false;"><i data-lucide="plus"></i> Nuevo evento</a>
+    </div>
+  </div>
+
+  <div class="cal-shell">
+    <section class="dashboard-card">
+      <div class="card-head">
+        <h2 class="card-title"><i data-lucide="calendar-days"></i> {{ mes_label }}</h2>
+        <div class="card-subtle">Almanaque</div>
+      </div>
+      <div class="cal-weekdays">
+        {% for w in semana_labels %}<div class="cal-wd">{{ w }}</div>{% endfor %}
+      </div>
+      <div class="cal-grid" aria-label="Calendario mensual">
+        {% for week in grid %}
+          {% for d in week %}
+            <div class="cal-day {% if not d %}is-empty{% endif %}">
+              <div class="cal-num">
+                <span>{% if d %}{{ d }}{% else %}—{% endif %}</span>
+                {% if d and eventos.d %}
+                  <span class="cal-pill">{{ eventos.d|length }} evento(s)</span>
+                {% endif %}
+              </div>
+              {% if d %}
+                {% for ev in eventos.d %}
+                  <div class="ev c-{{ ev.c }}">
+                    <span class="dot" aria-hidden="true"></span>
+                    <span>{{ ev.t }}</span>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            </div>
+          {% endfor %}
+        {% endfor %}
+      </div>
+    </section>
+
+    <aside class="dashboard-card">
+      <div class="card-head">
+        <h2 class="card-title"><i data-lucide="list"></i> Próximos</h2>
+        <div class="card-subtle">Demo</div>
+      </div>
+      <div class="card-body">
+        <div class="text-muted small mb-2">Ejemplos de agenda</div>
+        <div class="d-grid gap-2">
+          <div class="ev c-primary"><span class="dot"></span><span>02/04 · Visita Cliente Demo</span></div>
+          <div class="ev c-warning"><span class="dot"></span><span>08/04 · Cobro pendiente</span></div>
+          <div class="ev c-orange"><span class="dot"></span><span>14/04 · Compra Proveedor Demo</span></div>
+          <div class="ev c-success"><span class="dot"></span><span>22/04 · Entrega pedido</span></div>
+          <div class="ev c-violet"><span class="dot"></span><span>28/04 · Reporte mensual</span></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+{% endblock %}
+

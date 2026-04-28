@@ -17,6 +17,7 @@
     />
     <!-- theme: ios-2026r29 -->
     <link href="{% static 'css/theme.css' %}?v=ios-2026r29" rel="stylesheet" />
+    <link href="{% static 'css/styles.css' %}?v=saas-2026r1" rel="stylesheet" />
     <link href="{% static 'css/ui-force-productos.css' %}?v=1" rel="stylesheet" />
     <link href="{% static 'css/sirona-calc.css' %}" rel="stylesheet" />
     <style>
@@ -103,7 +104,7 @@
   >
     {% if request.user.is_authenticated %}
       {% if vendor_mode %}
-        <nav class="navbar border-bottom bg-white sticky-top sirona-topbar">
+        <nav class="navbar border-bottom bg-white sticky-top sirona-topbar topbar">
           <div class="container-fluid px-3 px-xl-4 d-flex align-items-center justify-content-between">
             <a class="navbar-brand d-flex align-items-center py-1 m-0" href="{% url 'vendedor_home' %}">
               <img class="brand-logo brand-logo-sm" src="{% static 'img/sirona-logo.png' %}" alt="Cooperativa Sirona" />
@@ -166,7 +167,7 @@
           </div>
         </nav>
       {% else %}
-        <nav class="navbar border-bottom bg-white sticky-top sirona-topbar">
+        <nav class="navbar border-bottom bg-white sticky-top sirona-topbar topbar">
           <div class="container-fluid px-3 px-xl-4 d-flex align-items-center justify-content-between">
             <button
               class="btn app-icon-btn"
@@ -179,10 +180,18 @@
             >
               <i data-lucide="menu" class="app-lucide-toolbar"></i>
             </button>
-            <a class="navbar-brand d-flex align-items-center py-1 m-0" href="{% url 'home' %}">
-              <img class="brand-logo brand-logo-sm" src="{% static 'img/sirona-logo.png' %}" alt="Cooperativa Sirona" />
-              <span class="ms-2 sirona-app-title text-body">SIRONA Cooperativa - Sistema de Gestión</span>
-            </a>
+            <div class="d-flex align-items-center gap-3 min-w-0">
+              <a class="navbar-brand d-flex align-items-center py-1 m-0" href="{% url 'home' %}">
+                <img class="brand-logo brand-logo-sm" src="{% static 'img/sirona-logo.png' %}" alt="Cooperativa Sirona" />
+                <span class="ms-2 sirona-app-title text-body d-none d-md-inline">SIRONA Cooperativa - Sistema de Gestión</span>
+              </a>
+              <div class="topbar-greeting d-none d-lg-flex">
+                <span class="topbar-hello">Hola</span>
+                <span class="topbar-user">
+                  {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user.username }}{% endif %}
+                </span>
+              </div>
+            </div>
             <div class="d-flex align-items-center gap-3">
               <span class="small text-muted d-none d-md-inline">{{ request.user.username }}</span>
               {% if can_switch_to_vendor_mode %}
@@ -190,6 +199,9 @@
                   Cambiar a modo vendedor
                 </a>
               {% endif %}
+              <button class="btn app-icon-btn" type="button" id="btnThemeToggle" aria-label="Cambiar modo" title="Modo">
+                <i data-lucide="moon" class="app-lucide-toolbar"></i>
+              </button>
               <button
                 class="btn app-icon-btn"
                 type="button"
@@ -234,6 +246,228 @@
             </div>
           </div>
         </nav>
+      {% endif %}
+
+      {% if not vendor_mode %}
+        <aside class="sidebar" aria-label="Sidebar">
+          <div class="d-flex align-items-center justify-content-between gap-2 px-1">
+            <a class="sidebar-brand" href="{% url 'home' %}">
+              <img class="sidebar-logo" src="{% static 'img/sirona-logo.png' %}" alt="Sirona" />
+              <span class="sidebar-brand-text">
+                <span class="sidebar-brand-title">Sirona</span>
+                <span class="sidebar-brand-subtitle">Sistema de gestión</span>
+              </span>
+            </a>
+            <button
+              type="button"
+              class="btn app-icon-btn sidebar-collapse-btn d-none d-lg-inline-flex"
+              id="btnSidebarCollapse"
+              aria-label="Colapsar sidebar"
+              title="Colapsar sidebar"
+            >
+              <i data-lucide="menu" class="app-lucide-toolbar"></i>
+            </button>
+          </div>
+          <nav class="sidebar-nav" aria-label="Navegación principal">
+            <a class="sidebar-link app-sidebar-link" href="{% url 'home' %}" title="Inicio">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="home"></i></span>
+              <span class="app-sidebar-label sidebar-label">Inicio</span>
+            </a>
+
+            <div class="sidebar-section-title">Productos</div>
+            <div class="sidebar-group" data-group="productos">
+              <div class="sidebar-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="package"></i></span>
+                <span class="app-sidebar-label sidebar-label">Productos</span>
+                <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                  <i data-lucide="chevron-down"></i>
+                </span>
+              </div>
+              <div class="sidebar-subnav" aria-label="Submenú Productos">
+                <a class="sidebar-link app-sidebar-link" href="{% url 'productos_list' %}" title="Lista de productos">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="list"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Lista de productos</span>
+                </a>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'productos_listas_precios' %}" title="Listas de precios">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="tags"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Listas de precios</span>
+                </a>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'stock_home' %}" title="Stock">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="boxes"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Stock</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="sidebar-section-title">Ventas</div>
+            <div class="sidebar-group" data-group="ventas">
+              <div class="sidebar-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="shopping-bag"></i></span>
+                <span class="app-sidebar-label sidebar-label">Ventas</span>
+                <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                  <i data-lucide="chevron-down"></i>
+                </span>
+              </div>
+              <div class="sidebar-subnav" aria-label="Submenú Ventas">
+                <a class="sidebar-link app-sidebar-link" href="{% url 'presupuesto_lista' %}" title="Presupuestos">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="file-text"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Presupuestos</span>
+                </a>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'ventas_historial' %}" title="Ventas">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="receipt"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Ventas</span>
+                </a>
+                <a
+                  class="sidebar-link app-sidebar-link"
+                  href="{% url 'ventas_historial' %}"
+                  title="Listado de pedidos: ver, editar, cobrar o eliminar según permisos"
+                >
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="clipboard-list"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Historial de pedidos</span>
+                </a>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'compradores_list' %}" title="Clientes">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="users"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Clientes</span>
+                </a>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'vendedores_list' %}" title="Vendedores">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="user-check"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Vendedores</span>
+                </a>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'ventas_comisiones' %}" title="Comisiones">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="badge-percent"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Comisiones</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="sidebar-section-title">Caja</div>
+            <div class="sidebar-group" data-group="caja">
+              <div class="sidebar-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="wallet"></i></span>
+                <span class="app-sidebar-label sidebar-label">Caja</span>
+                <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                  <i data-lucide="chevron-down"></i>
+                </span>
+              </div>
+              <div class="sidebar-subnav" aria-label="Submenú Caja">
+                <a class="sidebar-link app-sidebar-link" href="{% url 'caja_list' %}" title="Caja">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="wallet"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Caja</span>
+                </a>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'bancos_cuentas' %}" title="Banco">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="landmark"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Banco</span>
+                </a>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'caja_list' %}" title="Movimientos">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="arrow-left-right"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Movimientos</span>
+                </a>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'ventas_historial' %}" title="Deudas">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="clock"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Deudas</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="sidebar-section-title">Compras</div>
+            <div class="sidebar-group" data-group="compras">
+              <div class="sidebar-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="shopping-cart"></i></span>
+                <span class="app-sidebar-label sidebar-label">Compras</span>
+                <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                  <i data-lucide="chevron-down"></i>
+                </span>
+              </div>
+              <div class="sidebar-subnav" aria-label="Submenú Compras">
+                <a class="sidebar-link app-sidebar-link" href="{% url 'compra_historial' %}" title="Compras">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="shopping-cart"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Compras</span>
+                </a>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'proveedores_list' %}" title="Proveedores">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="truck"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Proveedores</span>
+                </a>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'caja_list' %}" title="Pagos">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="credit-card"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Pagos</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="sidebar-section-title">Gestión</div>
+            <div class="sidebar-group" data-group="gestion">
+              <div class="sidebar-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="sparkles"></i></span>
+                <span class="app-sidebar-label sidebar-label">Gestión</span>
+                <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                  <i data-lucide="chevron-down"></i>
+                </span>
+              </div>
+              <div class="sidebar-subnav" aria-label="Submenú Gestión">
+                <a class="sidebar-link app-sidebar-link" href="{% url 'reportes_dashboard' %}" title="Reportes">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="chart-column"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Reportes</span>
+                </a>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'calendario_home' %}" title="Calendario">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="calendar-days"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Calendario</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="sidebar-section-title">Administración</div>
+            <div class="sidebar-group" data-group="admin">
+              <div class="sidebar-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="shield"></i></span>
+                <span class="app-sidebar-label sidebar-label">Administración</span>
+                <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                  <i data-lucide="chevron-down"></i>
+                </span>
+              </div>
+              <div class="sidebar-subnav" aria-label="Submenú Administración">
+                <a class="sidebar-link app-sidebar-link" href="{% url 'admin_usuarios_list' %}" title="Administración">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="shield"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Administración</span>
+                </a>
+                {% if request.user.is_staff %}
+                  <a class="sidebar-link app-sidebar-link" href="{% url 'admin_actividad_list' %}" title="Historial">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="history"></i></span>
+                    <span class="app-sidebar-label sidebar-label">Historial</span>
+                  </a>
+                  {% if recibe_notas_admin %}
+                    <a class="sidebar-link app-sidebar-link" href="{% url 'admin_notas_list' %}" title="Historial">
+                      <span class="app-sidebar-icon-wrap"><i data-lucide="inbox"></i></span>
+                      <span class="app-sidebar-label sidebar-label">
+                        Notas
+                        {% if notas_admin_no_leidas %}
+                          <span class="badge text-bg-warning text-dark ms-1">{{ notas_admin_no_leidas }}</span>
+                        {% endif %}
+                      </span>
+                    </a>
+                  {% endif %}
+                {% endif %}
+                <a class="sidebar-link app-sidebar-link" href="{% url 'cambiar_password' %}" title="Cambio de contraseña">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="key"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Cambio de contraseña</span>
+                </a>
+              </div>
+            </div>
+          </nav>
+          <div class="sidebar-footer">
+            <div class="sidebar-help">
+              <div class="help-title">¿Necesitás ayuda?</div>
+              <p class="help-sub">Accedé a guías y soporte para usar el sistema.</p>
+              <a href="{% url 'admin_notas_list' %}" aria-label="Abrir ayuda">
+                <i data-lucide="life-buoy" aria-hidden="true"></i>
+                Ver ayuda
+              </a>
+            </div>
+            <a class="sidebar-link app-sidebar-link app-sidebar-link-logout" href="{% url 'logout' %}">
+              <span class="app-sidebar-icon-wrap"><i data-lucide="log-out"></i></span>
+              <span class="app-sidebar-label sidebar-label">Salir</span>
+            </a>
+          </div>
+        </aside>
       {% endif %}
 
       <div
@@ -332,18 +566,29 @@
                 <span class="app-sidebar-icon-wrap"><i data-lucide="home"></i></span>
                 <span class="app-sidebar-label">Inicio</span>
               </a>
-              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'productos_list' %}">
-                <span class="app-sidebar-icon-wrap"><i data-lucide="package"></i></span>
-                <span class="app-sidebar-label">Productos</span>
-              </a>
-              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'productos_listas_precios' %}">
-                <span class="app-sidebar-icon-wrap"><i data-lucide="tags"></i></span>
-                <span class="app-sidebar-label">Listas de precio</span>
-              </a>
-              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'stock_home' %}">
-                <span class="app-sidebar-icon-wrap"><i data-lucide="boxes"></i></span>
-                <span class="app-sidebar-label">Stock</span>
-              </a>
+              <div class="sidebar-group offcanvas-group" data-group="productos">
+                <div class="app-sidebar-link sirona-offcanvas-nav-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="package"></i></span>
+                  <span class="app-sidebar-label">Productos</span>
+                  <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                    <i data-lucide="chevron-down"></i>
+                  </span>
+                </div>
+                <div class="sidebar-subnav offcanvas-subnav" aria-label="Submenú Productos">
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'productos_list' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="list"></i></span>
+                    <span class="app-sidebar-label">Productos</span>
+                  </a>
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'productos_listas_precios' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="tags"></i></span>
+                    <span class="app-sidebar-label">Listas de precios</span>
+                  </a>
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'stock_home' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="boxes"></i></span>
+                    <span class="app-sidebar-label">Stock</span>
+                  </a>
+                </div>
+              </div>
               <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'caja_list' %}">
                 <span class="app-sidebar-icon-wrap"><i data-lucide="wallet"></i></span>
                 <span class="app-sidebar-label">Caja</span>
@@ -423,8 +668,8 @@
       {% endif %}
     {% endif %}
 
-    <div class="app-content-area">
-      <main class="container-xl py-4 py-md-5 app-main">
+    <div class="app-content-area app-shell">
+      <main class="container-xl py-4 py-md-5 app-main page-shell">
         {% if messages %}
           <div class="app-messages mb-4">
             {% for message in messages %}
@@ -501,6 +746,120 @@
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
 
     <script src="{% static 'js/sirona-icons.js' %}?v=4"></script>
+    <script>
+      // Modo visual (solo UI): guarda preferencia local.
+      (function () {
+        try {
+          const key = "sirona_theme";
+          const saved = localStorage.getItem(key);
+          if (saved === "dark") document.documentElement.classList.add("theme-dark");
+          const btn = document.getElementById("btnThemeToggle");
+          if (!btn) return;
+          btn.addEventListener("click", function () {
+            const isDark = document.documentElement.classList.toggle("theme-dark");
+            localStorage.setItem(key, isDark ? "dark" : "light");
+          });
+        } catch (e) {}
+      })();
+    </script>
+    <script>
+      // Estado activo de navegación (solo UI): marca el link cuya URL coincide.
+      (function () {
+        try {
+          const here = window.location.pathname.replace(/\/+$/, "") || "/";
+          const links = document.querySelectorAll(".sidebar a.sidebar-link, #sironaMenu a.app-sidebar-link");
+          links.forEach((a) => {
+            const href = (a.getAttribute("href") || "").replace(/\/+$/, "");
+            if (!href || href === "#") return;
+            if (href === here) a.classList.add("is-active");
+          });
+          // If subnav items are active, also highlight the parent trigger.
+          document.querySelectorAll(".sidebar-group").forEach((g) => {
+            if (g.querySelector(".sidebar-subnav a.is-active")) {
+              const trig = g.querySelector(".sidebar-group-trigger");
+              if (trig) trig.classList.add("is-active");
+            }
+          });
+        } catch (e) {}
+      })();
+    </script>
+    <script>
+      // Sidebar: grupos desplegables + colapsado (UI).
+      (function () {
+        try {
+          const key = "sirona_sidebar_collapsed";
+          const saved = localStorage.getItem(key);
+          if (saved === "1") document.body.classList.add("sidebar-collapsed");
+
+          function wireGroup(groupEl) {
+            const trigger = groupEl.querySelector(".sidebar-group-trigger");
+            const sub = groupEl.querySelector(".sidebar-subnav");
+            const setOpen = (open) => {
+              groupEl.classList.toggle("is-open", open);
+              if (trigger) trigger.setAttribute("aria-expanded", open ? "true" : "false");
+            };
+            const toggle = () => setOpen(!groupEl.classList.contains("is-open"));
+            if (trigger) {
+              trigger.addEventListener("click", toggle);
+              trigger.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  toggle();
+                }
+              });
+            }
+            const hasActive = sub && sub.querySelector("a.is-active");
+            if (hasActive) setOpen(true);
+          }
+
+          document.querySelectorAll(".sidebar .sidebar-group[data-group]").forEach(wireGroup);
+
+          // Colapsar (desktop) con botón visible.
+          const btn = document.getElementById("btnSidebarCollapse");
+          function syncBtn() {
+            if (!btn) return;
+            const isCollapsed = document.body.classList.contains("sidebar-collapsed");
+            btn.title = isCollapsed ? "Expandir sidebar" : "Colapsar sidebar";
+            btn.setAttribute("aria-label", btn.title);
+          }
+          function toggleCollapsed() {
+            const isCollapsed = document.body.classList.toggle("sidebar-collapsed");
+            localStorage.setItem(key, isCollapsed ? "1" : "0");
+            syncBtn();
+          }
+          if (btn) btn.addEventListener("click", toggleCollapsed);
+          syncBtn();
+        } catch (e) {}
+      })();
+    </script>
+    <script>
+      // Offcanvas: grupos desplegables (UI).
+      (function () {
+        try {
+          function wireGroup(groupEl) {
+            const trigger = groupEl.querySelector(".sidebar-group-trigger");
+            const sub = groupEl.querySelector(".sidebar-subnav");
+            const setOpen = (open) => {
+              groupEl.classList.toggle("is-open", open);
+              if (trigger) trigger.setAttribute("aria-expanded", open ? "true" : "false");
+            };
+            const toggle = () => setOpen(!groupEl.classList.contains("is-open"));
+            if (trigger) {
+              trigger.addEventListener("click", toggle);
+              trigger.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  toggle();
+                }
+              });
+            }
+            const hasActive = sub && sub.querySelector("a.is-active");
+            if (hasActive) setOpen(true);
+          }
+          document.querySelectorAll("#sironaMenu .sidebar-group[data-group]").forEach(wireGroup);
+        } catch (e) {}
+      })();
+    </script>
     <script src="{% static 'js/sirona-offcanvas-nav.js' %}?v=1"></script>
     <script src="{% static 'js/sirona-modal.js' %}?v=2"></script>
     <script src="{% static 'js/sirona-scroll-top.js' %}?v=1"></script>

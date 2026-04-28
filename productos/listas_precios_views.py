@@ -7,7 +7,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Avg, Case, Count, DecimalField, ExpressionWrapper, F, Q, Sum, Value, When
 from django.http import HttpResponseForbidden
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
@@ -351,6 +351,30 @@ def lista_precios_ver(request, pk: int):
         )
         if q:
             qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
+        kpi = qs.aggregate(
+            productos=Count("id"),
+            activos=Count("id", filter=Q(habilitado=True)),
+            valor_total=Sum("precio_venta"),
+            stock_total=Sum("stock"),
+            sin_stock=Count("id", filter=Q(stock__lte=0)),
+        )
+        # Margen promedio estimado: (precio - costo)/costo. Evita división por cero.
+        margen_pct = ExpressionWrapper(
+            (F("precio_venta") - F("costo")) * Value(100.0) / F("costo"),
+            output_field=DecimalField(max_digits=10, decimal_places=2),
+        )
+        kpi["margen_prom"] = (
+            qs.aggregate(
+                m=Avg(
+                    Case(
+                        When(costo__gt=0, then=margen_pct),
+                        default=None,
+                        output_field=DecimalField(max_digits=10, decimal_places=2),
+                    )
+                )
+            ).get("m")
+            or Decimal("0.00")
+        )
         paginator = Paginator(qs, 120)
         page_obj = paginator.get_page(page or 1)
         return render(
@@ -363,6 +387,7 @@ def lista_precios_ver(request, pk: int):
                 "page_obj": page_obj,
                 "q": q,
                 "emitido_en": emitido_en,
+                "kpi": kpi,
             },
         )
 
@@ -375,6 +400,20 @@ def lista_precios_ver(request, pk: int):
         items = items.filter(
             Q(producto__descripcion__icontains=q) | Q(producto__codigo__icontains=q)
         )
+    kpi = items.aggregate(
+        productos=Count("id"),
+        activos=Count("id", filter=Q(producto__habilitado=True)),
+        valor_total=Sum("precio_venta"),
+        stock_total=Sum("producto__stock"),
+        sin_stock=Count("id", filter=Q(producto__stock__lte=0)),
+        margen_prom=Avg(
+            Case(
+                When(producto__costo__gt=0, then=(F("precio_venta") - F("producto__costo")) * Value(100.0) / F("producto__costo")),
+                default=None,
+                output_field=DecimalField(max_digits=10, decimal_places=2),
+            )
+        ),
+    )
     paginator = Paginator(items, 120)
     page_obj = paginator.get_page(page or 1)
     return render(
@@ -387,6 +426,7 @@ def lista_precios_ver(request, pk: int):
             "page_obj": page_obj,
             "q": q,
             "emitido_en": emitido_en,
+            "kpi": kpi,
         },
     )
 
@@ -402,16 +442,34 @@ def lista_precios_export_pdf(request, pk: int):
 @require_http_methods(["GET"])
 def lista_precios_export_png(request, pk: int):
     lista = get_object_or_404(ListaPrecios, pk=pk)
+    q = (request.GET.get("q") or "").strip()
     filas = filas_lista_precios(lista)
-    payload = [
-        {
-            "codigo": p.codigo,
-            "tipo": p.get_tipo_display(),
-            "descripcion": p.descripcion,
-            "precio": format_monto_ars(precio),
-        }
-        for p, precio in filas
-    ]
+    if q:
+        ql = q.lower()
+        filas = [(p, precio) for (p, precio) in filas if ql in (p.descripcion or "").lower() or ql in (p.codigo or "").lower()]
+
+    payload = []
+    for p, precio in filas:
+        payload.append(
+            {
+                "codigo": p.codigo,
+                "tipo": p.get_tipo_display(),
+                "descripcion": p.descripcion,
+                "precio": format_monto_ars(precio),
+                "stock": int(p.stock or 0),
+            }
+        )
+
+    total_valor = Decimal("0.00")
+    for _, precio in filas:
+        try:
+            total_valor += Decimal(precio or 0)
+        except Exception:
+            pass
+    kpi = {
+        "productos": len(payload),
+        "valor_total": format_monto_ars(total_valor),
+    }
     return render(
         request,
         "productos/lista_precios_compartir.html",
@@ -419,5 +477,7 @@ def lista_precios_export_png(request, pk: int):
             "lista": lista,
             "titulo": f"Lista de precios — {lista.nombre}",
             "productos": payload,
+            "q": q,
+            "kpi": kpi,
         },
     )

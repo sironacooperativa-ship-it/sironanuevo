@@ -3,116 +3,388 @@
 {% load money %}
 {% block title %}Ver: {{ lista.nombre }}{% endblock %}
 {% block content %}
-  <div class="lista-precios-membrete rounded-3 mb-3 p-3 p-md-4 text-white shadow-sm" style="background: linear-gradient(135deg, #0097b2 0%, #007a91 100%)">
-    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
-      <div class="d-flex align-items-center gap-3 min-w-0">
-        <img
-          src="{% static 'img/sirona-logo.png' %}"
-          alt="SIRONA"
-          class="bg-white rounded-2 p-1 flex-shrink-0"
-          style="max-height: 48px; width: auto"
-        />
-        <div class="min-w-0">
-          <div class="fs-5 fw-bold text-truncate">{{ lista.nombre }}</div>
-          <div class="small" style="opacity: 0.92">
-            Lista de precios · {% if lista.es_farmacia %}Farmacia{% else %}Rubro{% endif %}
-            {% if lista.es_farmacia %}<span class="badge bg-light text-dark ms-1">Farmacia</span>{% endif %}
+  <div class="lp-layout">
+    <div class="lp-main">
+      <section class="hero-card hero-card--turq mb-3" aria-label="Encabezado lista de precios">
+        <div class="hero-top">
+          <div class="d-flex align-items-center gap-3 min-w-0">
+            <img src="{% static 'img/sirona-logo.png' %}" alt="SIRONA" class="bg-white rounded-3 p-1 flex-shrink-0" style="max-height: 46px; width: auto" />
+            <div class="min-w-0">
+              <h1 class="hero-title text-truncate mb-0">{{ lista.nombre }}</h1>
+              <p class="hero-subtitle">Lista de precios - {% if lista.es_farmacia %}Farmacia{% else %}Rubro{% endif %}</p>
+              <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+                <span class="badge-status">Activa</span>
+                {% if lista.es_farmacia %}
+                  <span class="badge-status" style="background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.22);">Farmacia</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="text-end small flex-shrink-0">
+            <div style="opacity: 0.9">Última actualización</div>
+            <div class="fw-semibold">{{ emitido_en|date:"d/m/Y H:i" }}</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div class="d-flex flex-wrap gap-2">
+          <a class="action-pill action-pill--muted" href="{% url 'productos_listas_precios' %}">
+            <i data-lucide="arrow-left" aria-hidden="true"></i>
+            Volver
+          </a>
+          <a class="action-pill" href="{% url 'lista_precios_trabajar' lista.pk %}">
+            <i data-lucide="pencil" aria-hidden="true"></i>
+            Editar
+          </a>
+          <a class="action-pill action-pill--pdf" href="{% url 'lista_precios_export_pdf' lista.pk %}">
+            <i data-lucide="file-down" aria-hidden="true"></i>
+            Exportar PDF
+          </a>
+          <a class="action-pill action-pill--excel" href="#" id="btnListaExportExcel">
+            <i data-lucide="download" aria-hidden="true"></i>
+            Exportar Excel
+          </a>
+          <a class="action-pill action-pill--whatsapp" href="{% url 'lista_precios_export_png' lista.pk %}{% if q %}?q={{ q|urlencode }}{% endif %}">
+            <i data-lucide="image" aria-hidden="true"></i>
+            Exportar PNG
+          </a>
+        </div>
+      </div>
+
+      <section class="stats-grid pricing-kpis" aria-label="KPIs de la lista">
+        <article class="metric-card">
+          <div class="metric-top">
+            <div class="metric-title">Productos</div>
+            <span class="metric-icon"><i data-lucide="package"></i></span>
+          </div>
+          <div class="metric-value">{{ kpi.productos|default:0 }}</div>
+          <div class="metric-sub">Total en la lista</div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-top">
+            <div class="metric-title">Productos activos</div>
+            <span class="metric-icon" style="background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); color:#22c55e;"><i data-lucide="check-circle"></i></span>
+          </div>
+          <div class="metric-value">{{ kpi.activos|default:0 }}</div>
+          <div class="metric-sub">Habilitados</div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-top">
+            <div class="metric-title">Valor total</div>
+            <span class="metric-icon"><i data-lucide="badge-dollar-sign"></i></span>
+          </div>
+          <div class="metric-value">{{ kpi.valor_total|default:0|ars }}</div>
+          <div class="metric-sub">Suma de precios</div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-top">
+            <div class="metric-title">Margen promedio</div>
+            <span class="metric-icon" style="background: rgba(168,85,247,0.1); border-color: rgba(168,85,247,0.18); color:#a855f7;"><i data-lucide="sparkles"></i></span>
+          </div>
+          <div class="metric-value">{{ kpi.margen_prom|floatformat:1 }}%</div>
+          <div class="metric-sub">Estimado vs costo</div>
+        </article>
+      </section>
+
+      <section class="modern-filter-bar mb-3" aria-label="Filtros">
+        <form method="get">
+          <div class="filter-toolbar" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;">
+            <div class="filter-field">
+              <label for="lp-q">Buscar</label>
+              <input id="lp-q" class="form-control input-modern" name="q" value="{{ q }}" placeholder="Código o descripción" />
+            </div>
+            <div class="filter-field">
+              <label>Tipo</label>
+              <select class="form-select input-modern" disabled>
+                <option>Todos</option>
+              </select>
+            </div>
+            <div class="filter-field">
+              <label>Proveedor</label>
+              <select class="form-select input-modern" disabled>
+                <option>Todos</option>
+              </select>
+            </div>
+            <div class="filter-field">
+              <label>Categoría</label>
+              <select class="form-select input-modern" disabled>
+                <option>Todas</option>
+              </select>
+            </div>
+            <div class="filter-field">
+              <label>Estado</label>
+              <select class="form-select input-modern" disabled>
+                <option>Todos</option>
+              </select>
+            </div>
+            <div class="filter-field">
+              <label>Ordenar</label>
+              <select class="form-select input-modern" disabled>
+                <option>Descripción (A-Z)</option>
+              </select>
+            </div>
+          </div>
+          <div class="filter-actions">
+            <button class="btn btn-primary action-pill action-pill--primary" type="submit">
+              <i data-lucide="filter" aria-hidden="true"></i>
+              Filtrar
+            </button>
+            <a class="action-pill action-pill--muted" href="{% url 'lista_precios_ver' lista.pk %}">
+              <i data-lucide="rotate-ccw" aria-hidden="true"></i>
+              Limpiar filtros
+            </a>
+            <span class="text-muted small ms-auto">* Tipo/Proveedor/Categoría/Estado/Orden: UI lista para activar sin romper rutas.</span>
+          </div>
+        </form>
+      </section>
+
+      <div class="dashboard-card pricing-table lista-precio-ver mb-3">
+        <div class="card-head">
+          <h2 class="card-title"><i data-lucide="table" aria-hidden="true"></i> Productos</h2>
+          <div class="card-subtle">Tabla moderna con badges, hover y acciones</div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th scope="col">Código</th>
+                  <th scope="col">Descripción</th>
+                  <th scope="col" class="col-hide-sm">Tipo</th>
+                  <th scope="col" class="col-hide-xs">Proveedor</th>
+                  <th scope="col" class="text-end col-hide-xs">Costo</th>
+                  <th scope="col" class="text-end">Stock</th>
+                  <th scope="col" class="text-end col-hide-xs">Margen %</th>
+                  <th scope="col" class="text-end">Precio</th>
+                  <th scope="col">Estado</th>
+                  <th scope="col" class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if es_farmacia %}
+                  {% for p in productos %}
+                    <tr>
+                      <td><span class="prod-code">{{ p.codigo }}</span></td>
+                      <td>
+                        <div class="prod-meta">
+                          <div class="prod-desc">{{ p.descripcion }}</div>
+                          <div class="prod-sub">Código <span class="prod-code">{{ p.codigo }}</span> · Stock {{ p.stock }}</div>
+                        </div>
+                      </td>
+                      <td class="muted col-hide-sm">{{ p.get_tipo_display }}</td>
+                      <td class="muted col-hide-xs">—</td>
+                      <td class="num col-hide-xs">{{ p.costo|ars }}</td>
+                      <td class="num">{{ p.stock }}</td>
+                      <td class="num col-hide-xs">{% if p.porcentaje_ganancia %}{{ p.porcentaje_ganancia }}%{% else %}—{% endif %}</td>
+                      <td class="num">{{ p.precio_venta|ars }}</td>
+                      <td>
+                        {% if p.stock <= 0 %}
+                          <span class="status-badge status-badge--danger">Sin stock</span>
+                        {% elif p.stock <= 5 %}
+                          <span class="status-badge status-badge--warning">Bajo</span>
+                        {% else %}
+                          <span class="status-badge status-badge--success">En stock</span>
+                        {% endif %}
+                        {% if p.habilitado %}
+                          <span class="status-badge status-badge--primary ms-1">Activo</span>
+                        {% endif %}
+                      </td>
+                      <td class="text-end">
+                        <a class="icon-button" href="{% url 'producto_update' p.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" title="Editar producto" aria-label="Editar producto">
+                          <i data-lucide="pencil" aria-hidden="true"></i>
+                        </a>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="10" class="table-empty">
+                        Ningún producto está marcado para esta lista. Activá <strong>En lista Farmacia (PDF)</strong> en cada producto o desde acciones en masa.
+                      </td>
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  {% for it in items %}
+                    <tr>
+                      <td><span class="prod-code">{{ it.producto.codigo }}</span></td>
+                      <td>
+                        <div class="prod-meta">
+                          <div class="prod-desc">{{ it.producto.descripcion }}</div>
+                          <div class="prod-sub">Código <span class="prod-code">{{ it.producto.codigo }}</span> · Stock {{ it.producto.stock }}</div>
+                        </div>
+                      </td>
+                      <td class="muted col-hide-sm">{{ it.producto.get_tipo_display }}</td>
+                      <td class="muted col-hide-xs">—</td>
+                      <td class="num col-hide-xs">{{ it.producto.costo|ars }}</td>
+                      <td class="num">{{ it.producto.stock }}</td>
+                      <td class="num col-hide-xs">{% if it.producto.porcentaje_ganancia %}{{ it.producto.porcentaje_ganancia }}%{% else %}—{% endif %}</td>
+                      <td class="num">{{ it.precio_venta|ars }}</td>
+                      <td>
+                        {% if it.producto.stock <= 0 %}
+                          <span class="status-badge status-badge--danger">Sin stock</span>
+                        {% elif it.producto.stock <= 5 %}
+                          <span class="status-badge status-badge--warning">Bajo</span>
+                        {% else %}
+                          <span class="status-badge status-badge--success">En stock</span>
+                        {% endif %}
+                        {% if it.producto.habilitado %}
+                          <span class="status-badge status-badge--primary ms-1">Activo</span>
+                        {% endif %}
+                      </td>
+                      <td class="text-end">
+                        <a class="icon-button" href="{% url 'producto_update' it.producto.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" title="Editar producto" aria-label="Editar producto">
+                          <i data-lucide="pencil" aria-hidden="true"></i>
+                        </a>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="10" class="table-empty">Sin ítems en esta lista.</td></tr>
+                  {% endfor %}
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% if page_obj and page_obj.paginator.num_pages > 1 %}
+          <div class="card-body border-top py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="small text-muted">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</div>
+            <div class="d-flex gap-2">
+              {% if page_obj.has_previous %}
+                <a class="action-pill action-pill--muted" href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+              {% endif %}
+              {% if page_obj.has_next %}
+                <a class="action-pill action-pill--muted" href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <aside class="lp-preview" aria-label="Vista previa PDF">
+      <div class="pdf-preview-card">
+        <div class="pdf-preview-head">
+          <h3 class="pdf-preview-title"><i data-lucide="file-text" aria-hidden="true"></i> Vista previa PDF</h3>
+          <a class="action-pill action-pill--pdf" style="height: 34px; padding: 0 12px;" href="{% url 'lista_precios_export_pdf' lista.pk %}">
+            <i data-lucide="download" aria-hidden="true"></i>
+            PDF
+          </a>
+        </div>
+        <div class="pdf-sheet">
+          <div class="pdf-a4" role="img" aria-label="Previsualización del PDF">
+            <div class="pdf-header">
+              <div class="pdf-brand">
+                <img src="{% static 'img/sirona-logo.png' %}" alt="SIRONA" />
+                <div class="min-w-0">
+                  <p class="pdf-doc-title mb-0">Lista de precios</p>
+                  <p class="pdf-doc-sub mb-0">{{ lista.nombre }} · <span class="status-badge status-badge--primary" style="height:22px; padding:0 8px; font-size:0.66rem;">Activa</span></p>
+                </div>
+              </div>
+              <div class="pdf-stamp">
+                <div><strong>Emitido</strong></div>
+                <div>{{ emitido_en|date:"d/m/Y" }}</div>
+                <div>{{ emitido_en|date:"H:i" }}</div>
+              </div>
+            </div>
+            <div class="pdf-body">
+              <div class="text-muted" style="font-size:0.72rem;">
+                <strong>Filtros:</strong>
+                Tipo: <span class="text-body">Todos</span> ·
+                Proveedor: <span class="text-body">Todos</span> ·
+                Estado: <span class="text-body">Todos</span>
+                {% if q %} · Buscar: <span class="text-body">{{ q }}</span>{% endif %}
+              </div>
+
+              <table class="pdf-mini-table" aria-label="Tabla PDF (muestra)">
+                <thead>
+                  <tr>
+                    <th style="width: 18%;">Código</th>
+                    <th>Descripción</th>
+                    <th style="width: 26%;">Tipo</th>
+                    <th style="width: 18%;">Precio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% if es_farmacia %}
+                    {% for p in productos|slice:":8" %}
+                      <tr>
+                        <td>{{ p.codigo }}</td>
+                        <td>{{ p.descripcion|truncatechars:26 }}</td>
+                        <td>{{ p.get_tipo_display }}</td>
+                        <td>{{ p.precio_venta|ars }}</td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="4" class="text-muted">Sin filas</td></tr>
+                    {% endfor %}
+                  {% else %}
+                    {% for it in items|slice:":8" %}
+                      <tr>
+                        <td>{{ it.producto.codigo }}</td>
+                        <td>{{ it.producto.descripcion|truncatechars:26 }}</td>
+                        <td>{{ it.producto.get_tipo_display }}</td>
+                        <td>{{ it.precio_venta|ars }}</td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="4" class="text-muted">Sin filas</td></tr>
+                    {% endfor %}
+                  {% endif %}
+                </tbody>
+              </table>
+
+              <div class="pdf-kpis" aria-label="Resumen KPIs">
+                <div class="pdf-kpi"><div class="k">Productos</div><div class="v">{{ kpi.productos|default:0 }}</div></div>
+                <div class="pdf-kpi"><div class="k">Activos</div><div class="v">{{ kpi.activos|default:0 }}</div></div>
+                <div class="pdf-kpi"><div class="k">Valor total</div><div class="v">{{ kpi.valor_total|default:0|ars }}</div></div>
+                <div class="pdf-kpi"><div class="k">Margen prom.</div><div class="v">{{ kpi.margen_prom|floatformat:1 }}%</div></div>
+              </div>
+            </div>
+            <div class="pdf-footer">
+              <span class="d-inline-flex align-items-center gap-2"><i data-lucide="shield" aria-hidden="true"></i> Sirona</span>
+              <span>Página 1</span>
+            </div>
           </div>
         </div>
       </div>
-      <div class="text-end small flex-shrink-0">
-        <div style="opacity: 0.85">Emitido</div>
-        <div class="fw-semibold">{{ emitido_en|date:"d/m/Y H:i" }}</div>
-      </div>
-    </div>
+    </aside>
   </div>
 
-  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-    <div class="d-flex flex-wrap gap-2">
-      <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'productos_listas_precios' %}">Listas</a>
-      <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'lista_precios_trabajar' lista.pk %}">
-        <i data-lucide="pencil" class="align-text-bottom" style="width: 1rem; height: 1rem"></i>
-        Editar
-      </a>
-      <a class="btn btn-primary btn-sm rounded-pill" href="{% url 'lista_precios_export_pdf' lista.pk %}">
-        <i data-lucide="file-down" class="align-text-bottom" style="width: 1rem; height: 1rem"></i>
-        PDF
-      </a>
-      <a class="btn btn-light btn-sm rounded-pill text-dark" href="{% url 'lista_precios_export_png' lista.pk %}">
-        <i data-lucide="image" class="align-text-bottom" style="width: 1rem; height: 1rem"></i>
-        PNG (WhatsApp)
-      </a>
-    </div>
-  </div>
+  <script>
+    // Export “Excel” (CSV) desde la tabla visible (solo UI).
+    (function () {
+      function downloadCsv(filename, rows) {
+        const csv = rows.map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
 
-  <div class="card app-card border-0 shadow-sm mb-3">
-    <div class="card-body p-3">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-12 col-md-8">
-          <label class="form-label small mb-1" style="color: #007a91">Buscar</label>
-          <input class="form-control form-control-sm rounded-3" name="q" value="{{ q }}" placeholder="Código o descripción" />
-        </div>
-        <div class="col-12 col-md-4 d-grid">
-          <button class="btn btn-sm rounded-pill text-white border-0" type="submit" style="background: #0097b2">Filtrar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <div class="table-card presu-lista-modern lista-precio-ver">
-    <div class="table-responsive presu-lista-table-wrap">
-      <table class="modern-table lista-precio-ver-tabla">
-        <thead>
-          <tr>
-            <th scope="col" class="th-cod">Código</th>
-            <th scope="col">Tipo</th>
-            <th scope="col">Descripción</th>
-            <th scope="col" class="text-end col-money" style="width: 10rem">Precio</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% if es_farmacia %}
-            {% for p in productos %}
-              <tr>
-                <td class="col-muted"><span class="persona-cod">{{ p.codigo }}</span></td>
-                <td class="col-muted small">{{ p.get_tipo_display }}</td>
-                <td>{{ p.descripcion }}</td>
-                <td class="table-monto">{{ p.precio_venta|ars }}</td>
-              </tr>
-            {% empty %}
-              <tr>
-                <td colspan="4" class="table-empty">
-                  Ningún producto está marcado para esta lista. Activá <strong>En lista Farmacia (PDF)</strong> en cada producto o desde acciones en masa.
-                </td>
-              </tr>
-            {% endfor %}
-          {% else %}
-            {% for it in items %}
-              <tr>
-                <td class="col-muted"><span class="persona-cod">{{ it.producto.codigo }}</span></td>
-                <td class="col-muted small">{{ it.producto.get_tipo_display }}</td>
-                <td>{{ it.producto.descripcion }}</td>
-                <td class="table-monto">{{ it.precio_venta|ars }}</td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="4" class="table-empty">Sin ítems en esta lista.</td></tr>
-            {% endfor %}
-          {% endif %}
-        </tbody>
-      </table>
-    </div>
-    {% if page_obj and page_obj.paginator.num_pages > 1 %}
-      <div class="card-body border-top py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <div class="small text-muted">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</div>
-        <div class="d-flex gap-2">
-          {% if page_obj.has_previous %}
-            <a class="btn btn-sm btn-outline-secondary rounded-pill" href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}">Anterior</a>
-          {% endif %}
-          {% if page_obj.has_next %}
-            <a class="btn btn-sm btn-outline-secondary rounded-pill" href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}">Siguiente</a>
-          {% endif %}
-        </div>
-      </div>
-    {% endif %}
-  </div>
+      const btn = document.getElementById("btnListaExportExcel");
+      if (!btn) return;
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        const rows = [["Codigo", "Tipo", "Descripcion", "Precio"]];
+        const table = document.querySelector(".pricing-table table");
+        if (!table) return;
+        const bodyRows = table.querySelectorAll("tbody tr");
+        bodyRows.forEach((tr) => {
+          const tds = tr.querySelectorAll("td");
+          if (!tds || tds.length < 3) return;
+          const prodSub = tds[0].innerText || "";
+          const codeMatch = prodSub.match(/[A-Z]{2}\d{4}|[A-Z]{2}\d{3,4}|[A-Z0-9]{4,}/);
+          const codigo = codeMatch ? codeMatch[0] : "";
+          const tipo = (tds[1].innerText || "").trim();
+          const desc = (tds[0].querySelector(".prod-desc")?.innerText || "").trim();
+          const precio = (tds[2].innerText || "").trim();
+          rows.push([codigo, tipo, desc, precio]);
+        });
+        downloadCsv("sirona-lista-precios.csv", rows);
+      });
+    })();
+  </script>
 {% endblock %}

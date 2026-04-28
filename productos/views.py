@@ -9,7 +9,20 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
-from django.db.models import Case, CharField, Q, Value, When
+from django.db.models import (
+    Avg,
+    Case,
+    CharField,
+    Count,
+    DecimalField,
+    ExpressionWrapper,
+    F,
+    Q,
+    Sum,
+    Value,
+    When,
+)
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.http import FileResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
@@ -545,6 +558,22 @@ def productos_list(request):
             return xlsx_response(base, [("Productos", headers, rows)])
         return pdf_response(base, "Listado de productos", [("Productos", headers, rows)])
 
+    # KPIs del inventario (según filtros actuales).
+    valor_total_expr = ExpressionWrapper(
+        F("costo") * F("stock"),
+        output_field=DecimalField(max_digits=18, decimal_places=2),
+    )
+    kpi = productos.aggregate(
+        productos=Count("id"),
+        activos=Count("id", filter=Q(habilitado=True)),
+        stock_total=Coalesce(Sum("stock"), Value(0)),
+        sin_stock=Count("id", filter=Q(stock__lte=0)),
+        valor_total=Coalesce(Sum(valor_total_expr), Value(Decimal("0.00"))),
+        margen_prom=Coalesce(Avg("porcentaje_ganancia"), Value(Decimal("0.00"))),
+    )
+    kpi["valor_total"] = q2(kpi.get("valor_total") or Decimal("0.00"))
+    kpi["margen_prom"] = q2(kpi.get("margen_prom") or Decimal("0.00"))
+
     page = (request.GET.get("page") or "").strip()
     paginator = Paginator(productos, 100)
     page_obj = paginator.get_page(page or 1)
@@ -576,6 +605,7 @@ def productos_list(request):
             "listas_precios_filtro": listas_precios_filtro,
             "page_obj": page_obj,
             "querystring": querystring,
+            "kpi": kpi,
         },
     )
 

@@ -2,54 +2,82 @@
 {% load money %}
 {% block title %}Lista {{ lista.nombre }}{% endblock %}
 {% block content %}
-  <div class="app-page-header d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-    <div>
-      <h1 class="app-page-title mb-1">{{ lista.nombre }}</h1>
-      <p class="text-muted small mb-0">
-        Precios propios de este rubro. No modifican el precio de Farmacia ni la ficha del producto.
-      </p>
-    </div>
-    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'productos_listas_precios' %}">Volver</a>
-  </div>
+  <div class="pricing-page">
+    <section class="hero-card mb-3" aria-label="Encabezado lista de precios">
+      <div class="hero-top">
+        <div class="min-w-0">
+          <h1 class="hero-title text-truncate mb-0">{{ lista.nombre }}</h1>
+          <p class="hero-subtitle">Edición · Lista de precios · Rubro</p>
+          <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+            <span class="badge-status">Activa</span>
+          </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2 justify-content-end">
+          <a class="action-pill action-pill--muted" href="{% url 'productos_listas_precios' %}">
+            <i data-lucide="arrow-left" aria-hidden="true"></i>
+            Volver
+          </a>
+          <a class="action-pill action-pill--pdf" href="{% url 'lista_precios_export_pdf' lista.pk %}">
+            <i data-lucide="file-down" aria-hidden="true"></i>
+            PDF
+          </a>
+          <a class="action-pill action-pill--whatsapp" href="{% url 'lista_precios_export_png' lista.pk %}">
+            <i data-lucide="image" aria-hidden="true"></i>
+            WhatsApp
+          </a>
+        </div>
+      </div>
+    </section>
 
-  <div class="card app-card border-0 shadow-sm mb-3">
-    <div class="card-body p-3">
-      <form method="post" class="row g-2 align-items-end">
+    <section class="modern-filter-bar mb-3" aria-label="Acciones de lista">
+      <form method="post">
         {% csrf_token %}
         <input type="hidden" name="q" value="{{ q }}" />
         <input type="hidden" name="accion" value="renombrar" />
-        <div class="col-12 col-md-9">
-          <label class="form-label small text-muted mb-1">Nombre de la lista</label>
-          <input class="form-control form-control-sm rounded-3" name="nombre" value="{{ lista.nombre }}" />
-        </div>
-        <div class="col-12 col-md-3 d-grid">
-          <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill">Guardar nombre</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <div class="card app-card border-0 shadow-sm mb-3">
-    <div class="card-body p-3">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-12 col-md-8">
-          <label class="form-label small text-muted mb-1">Buscar en esta lista</label>
-          <input class="form-control form-control-sm rounded-3" name="q" value="{{ q }}" placeholder="Código o descripción" />
-        </div>
-        <div class="col-12 col-md-4 d-grid">
-          <button class="btn btn-outline-dark btn-sm rounded-pill" type="submit">Filtrar</button>
+        <div class="filter-toolbar" style="grid-template-columns: 2fr auto;">
+          <div class="filter-field">
+            <label for="lp-nombre">Nombre de la lista</label>
+            <input id="lp-nombre" class="form-control input-modern" name="nombre" value="{{ lista.nombre }}" />
+          </div>
+          <div class="filter-field">
+            <label class="d-none d-md-block" aria-hidden="true">&nbsp;</label>
+            <button type="submit" class="action-pill action-pill--primary w-100">
+              <i data-lucide="save" aria-hidden="true"></i>
+              Guardar nombre
+            </button>
+          </div>
         </div>
       </form>
+    </section>
 
-      <form method="post" class="mt-3 pt-3 border-top">
+    <section class="modern-filter-bar mb-3" aria-label="Filtros y agregado">
+      <form method="get">
+        <div class="filter-toolbar" style="grid-template-columns: 2fr auto;">
+          <div class="filter-field">
+            <label for="lp-q">Buscar en esta lista</label>
+            <input id="lp-q" class="form-control input-modern" name="q" value="{{ q }}" placeholder="Código o descripción" />
+          </div>
+          <div class="filter-field">
+            <label class="d-none d-md-block" aria-hidden="true">&nbsp;</label>
+            <button class="action-pill action-pill--primary w-100" type="submit">
+              <i data-lucide="search" aria-hidden="true"></i>
+              Filtrar
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <div class="filter-hint">Agregá productos habilitados a este rubro sin afectar la lista Farmacia.</div>
+
+      <form method="post" class="mt-2">
         {% csrf_token %}
         <input type="hidden" name="q" value="{{ q }}" />
         {% if page_disp_obj %}<input type="hidden" name="page_disp" value="{{ page_disp_obj.number }}" />{% endif %}
         <input type="hidden" name="accion" value="agregar" />
-        <div class="row g-2 align-items-end">
-          <div class="col">
-            <label class="form-label small text-muted mb-1">Agregar producto habilitado</label>
-            <select name="producto_id" class="form-select form-select-sm rounded-3">
+        <div class="filter-toolbar" style="grid-template-columns: 2fr auto;">
+          <div class="filter-field">
+            <label for="lp-add">Agregar producto habilitado</label>
+            <select id="lp-add" name="producto_id" class="form-select input-modern">
               <option value="">— Elegir —</option>
               {% for p in disponibles %}
                 <option value="{{ p.pk }}">{{ p.get_tipo_display }} — {{ p.codigo }} — {{ p.descripcion }} (ref. Farmacia {{ p.precio_venta|ars }})</option>
@@ -60,93 +88,107 @@
                 <span>Disponibles · página {{ page_disp_obj.number }} de {{ page_disp_obj.paginator.num_pages }}</span>
                 <span class="d-flex gap-2">
                   {% if page_disp_obj.has_previous %}
-                    <a href="?q={{ q|urlencode }}&page={{ page_obj.number }}&page_disp={{ page_disp_obj.previous_page_number }}">Anterior</a>
+                    <a class="text-decoration-none" href="?q={{ q|urlencode }}&page={{ page_obj.number }}&page_disp={{ page_disp_obj.previous_page_number }}">Anterior</a>
                   {% endif %}
                   {% if page_disp_obj.has_next %}
-                    <a href="?q={{ q|urlencode }}&page={{ page_obj.number }}&page_disp={{ page_disp_obj.next_page_number }}">Siguiente</a>
+                    <a class="text-decoration-none" href="?q={{ q|urlencode }}&page={{ page_obj.number }}&page_disp={{ page_disp_obj.next_page_number }}">Siguiente</a>
                   {% endif %}
                 </span>
               </div>
             {% endif %}
           </div>
-          <div class="col-auto">
-            <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill" {% if not disponibles %}disabled{% endif %}>Agregar</button>
+          <div class="filter-field">
+            <label class="d-none d-md-block" aria-hidden="true">&nbsp;</label>
+            <button type="submit" class="action-pill w-100" {% if not disponibles %}disabled{% endif %}>
+              <i data-lucide="plus" aria-hidden="true"></i>
+              Agregar
+            </button>
           </div>
         </div>
       </form>
-    </div>
-  </div>
+    </section>
 
   <form method="post" id="formListaRubro">
     {% csrf_token %}
     <input type="hidden" name="q" value="{{ q }}" />
     {% if page_obj %}<input type="hidden" name="page" value="{{ page_obj.number }}" />{% endif %}
-    <div class="table-card presu-lista-modern lista-precio-rubro">
-      <div class="table-responsive presu-lista-table-wrap">
-        <table class="modern-table lista-precio-rubro-tabla">
+    <div class="dashboard-card lista-precio-rubro mb-3">
+      <div class="card-head">
+        <h2 class="card-title"><i data-lucide="table" aria-hidden="true"></i> Precios del rubro</h2>
+        <div class="card-subtle">Edición rápida + quitar ítems</div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="report-table">
           <thead>
             <tr>
-              <th scope="col" class="th-cod">Código</th>
+              <th scope="col">Producto</th>
               <th scope="col">Tipo</th>
-              <th scope="col">Descripción</th>
-              <th scope="col" class="text-end col-money" style="width: 10rem">Precio en {{ lista.nombre }}</th>
-              <th scope="col" style="width: 5rem"></th>
+              <th scope="col" class="text-end" style="width: 11rem">Precio en {{ lista.nombre }}</th>
+              <th scope="col" class="text-end" style="width: 5.5rem">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {% for it in items %}
               <tr>
-                <td class="text-muted"><code>{{ it.producto.codigo }}</code></td>
-                <td class="text-muted small">{{ it.producto.get_tipo_display }}</td>
-                <td>{{ it.producto.descripcion }}</td>
-                <td class="table-monto">
+                <td>
+                  <div class="prod-cell">
+                    <span class="prod-thumb" aria-hidden="true"><i data-lucide="tag"></i></span>
+                    <span class="prod-meta">
+                      <span class="prod-desc">{{ it.producto.descripcion }}</span>
+                      <span class="prod-sub"><span class="prod-code">{{ it.producto.codigo }}</span> · Stock {{ it.producto.stock }}</span>
+                    </span>
+                  </div>
+                </td>
+                <td class="muted">{{ it.producto.get_tipo_display }}</td>
+                <td class="num">
                   <input
                     type="text"
                     name="ip_{{ it.pk }}"
-                    class="form-control form-control-sm text-end rounded-3"
+                    class="pricing-edit-input w-100 text-end"
                     inputmode="decimal"
                     value="{{ it.precio_venta }}"
                   />
                 </td>
-                <td class="text-end col-presu-acciones table-actions-cell">
-                  <div class="table-actions presu-row-actions d-flex justify-content-end">
-                    <button
-                      type="submit"
-                      form="formQuitarItem{{ it.pk }}"
-                      class="btn-icon btn-delete"
-                      onclick="return confirm('¿Quitar de esta lista?');"
-                      title="Quitar"
-                      aria-label="Quitar"
-                    >
-                      <i data-lucide="x" aria-hidden="true"></i>
-                    </button>
-                  </div>
+                <td class="text-end">
+                  <button
+                    type="submit"
+                    form="formQuitarItem{{ it.pk }}"
+                    class="btn-icon btn-delete"
+                    onclick="return confirm('¿Quitar de esta lista?');"
+                    title="Quitar"
+                    aria-label="Quitar"
+                  >
+                    <i data-lucide="x" aria-hidden="true"></i>
+                  </button>
                 </td>
               </tr>
             {% empty %}
-              <tr><td colspan="5" class="table-empty">Todavía no hay productos en esta lista.</td></tr>
+              <tr><td colspan="4" class="table-empty">Todavía no hay productos en esta lista.</td></tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
+      </div>
       {% if items %}
         <div class="card-body border-top py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
           {% if page_obj and page_obj.paginator.num_pages > 1 %}
-            <div class="small text-muted">
-              Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-            </div>
-            <div class="d-flex gap-2">
+            <div class="small text-muted">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</div>
+            <div class="mini-pager">
               {% if page_obj.has_previous %}
-                <a class="btn btn-sm btn-outline-secondary rounded-pill" href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}&page_disp={{ page_disp_obj.number }}">Anterior</a>
+                <a class="action-pill action-pill--muted" href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}&page_disp={{ page_disp_obj.number }}">Anterior</a>
               {% endif %}
               {% if page_obj.has_next %}
-                <a class="btn btn-sm btn-outline-secondary rounded-pill" href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}&page_disp={{ page_disp_obj.number }}">Siguiente</a>
+                <a class="action-pill action-pill--muted" href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}&page_disp={{ page_disp_obj.number }}">Siguiente</a>
               {% endif %}
             </div>
           {% else %}
             <span></span>
           {% endif %}
-          <button type="submit" class="btn btn-primary rounded-pill px-4">Guardar precios</button>
+          <button type="submit" class="action-pill action-pill--primary">
+            <i data-lucide="save" aria-hidden="true"></i>
+            Guardar precios
+          </button>
         </div>
       {% endif %}
     </div>
@@ -160,4 +202,5 @@
       <input type="hidden" name="quitar_item" value="{{ it.pk }}" />
     </form>
   {% endfor %}
+  </div>
 {% endblock %}
