@@ -4,35 +4,33 @@
   {{ chart|json_script:"vendedor-reportes-chart" }}
 {% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-    <div>
-      <h1 class="h4 mb-1">Reportes</h1>
-      <div class="text-muted small">Tu actividad y ranking de vendedores.</div>
+  <div class="vendedor-reportes">
+    <div class="app-page-header mb-3 d-flex flex-wrap align-items-center gap-2">
+      <div class="me-auto">
+        <h1 class="app-page-title mb-0">Reportes</h1>
+        <div class="text-muted small">Tu actividad y ranking de vendedores</div>
+      </div>
+      <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'vendedor_home' %}">Volver</a>
     </div>
-    <div class="d-flex gap-2">
-      <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor_home' %}">Volver</a>
-    </div>
-  </div>
 
-  <div class="row g-3">
-    <div class="col-12 col-lg-4">
-      <div class="card shadow-sm h-100">
-        <div class="card-body">
-          <h2 class="h6 mb-2">Mi actividad</h2>
-          <div class="small">
-            <div class="d-flex justify-content-between"><span>Pedidos</span><span class="fw-semibold">{{ actividad.pedidos }}</span></div>
-            <div class="d-flex justify-content-between"><span>Neto total</span><span class="fw-semibold">$ {{ actividad.neto_total }}</span></div>
-            <div class="d-flex justify-content-between"><span>Posición</span><span class="fw-semibold">{% if posicion %}#{{ posicion }}{% else %}—{% endif %}</span></div>
+    <div class="row g-3">
+      <div class="col-12 col-lg-4">
+        <div class="card app-card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="text-muted small mb-2">Mi actividad</div>
+            <div class="vendedor-kpi">
+              <div class="vendedor-kpi-row"><span>Pedidos</span><span class="fw-semibold">{{ actividad.pedidos }}</span></div>
+              <div class="vendedor-kpi-row"><span>Neto total</span><span class="fw-semibold">$ {{ actividad.neto_total }}</span></div>
+              <div class="vendedor-kpi-row"><span>Posición</span><span class="fw-semibold">{% if posicion %}#{{ posicion }}{% else %}—{% endif %}</span></div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <div class="col-12 col-lg-8">
-      <div class="table-card presu-lista-modern h-100 vendedor-ranking-card">
-        <div class="table-card-header">
-          <h2 class="table-card-title" style="font-size:0.95rem">Ranking de vendedores (neto acumulado)</h2>
-        </div>
-        <div class="p-0">
+      <div class="col-12 col-lg-8">
+        <div class="table-card presu-lista-modern h-100 vendedor-ranking-card">
+          <div class="table-card-header">
+            <h2 class="table-card-title">Ranking de vendedores (neto acumulado)</h2>
+          </div>
           <div class="table-responsive presu-lista-table-wrap">
             <table class="modern-table vendedor-ranking-tabla">
               <thead>
@@ -60,61 +58,69 @@
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="card shadow-sm mt-3">
-    <div class="card-body">
-      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-        <div>
-          <h2 class="h6 mb-0">Mis ventas (serie temporal)</h2>
-          <div class="text-muted small">Elegí la vista para ver por día, semana o mes.</div>
+    <div class="card app-card border-0 shadow-sm mt-3">
+      <div class="card-body">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+          <div>
+            <h2 class="h6 mb-0">Mis ventas</h2>
+            <div class="text-muted small">Elegí la vista para ver por día, semana o mes</div>
+          </div>
+          <form method="get" class="d-flex flex-wrap gap-2 align-items-center">
+            <select name="g" class="form-select form-select-sm rounded-3 vendedor-reportes-select">
+              <option value="day" {% if chart.gran == "day" %}selected{% endif %}>Por día</option>
+              <option value="week" {% if chart.gran == "week" %}selected{% endif %}>Por semana</option>
+              <option value="month" {% if chart.gran == "month" %}selected{% endif %}>Por mes</option>
+            </select>
+            <select name="r" class="form-select form-select-sm rounded-3 vendedor-reportes-select">
+              <option value="weekly" {% if chart.rango == "weekly" %}selected{% endif %}>Última semana</option>
+              <option value="monthly" {% if chart.rango == "monthly" %}selected{% endif %}>Últimos 30 días</option>
+              <option value="bimonthly" {% if chart.rango == "bimonthly" %}selected{% endif %}>Últimos 2 meses</option>
+              <option value="annual" {% if chart.rango == "annual" %}selected{% endif %}>Último año</option>
+              <option value="all" {% if chart.rango == "all" %}selected{% endif %}>Toda la trayectoria</option>
+            </select>
+            <button class="btn btn-sm btn-primary rounded-pill px-3" type="submit">Ver</button>
+          </form>
         </div>
-        <form method="get" class="d-flex flex-wrap gap-2 align-items-center">
-          <select name="g" class="form-select form-select-sm" style="min-width: 10rem">
-            <option value="day" {% if chart.gran == "day" %}selected{% endif %}>Por día</option>
-            <option value="week" {% if chart.gran == "week" %}selected{% endif %}>Por semana</option>
-            <option value="month" {% if chart.gran == "month" %}selected{% endif %}>Por mes</option>
-          </select>
-          <select name="r" class="form-select form-select-sm" style="min-width: 12rem">
-            <option value="weekly" {% if chart.rango == "weekly" %}selected{% endif %}>Última semana</option>
-            <option value="monthly" {% if chart.rango == "monthly" %}selected{% endif %}>Últimos 30 días</option>
-            <option value="bimonthly" {% if chart.rango == "bimonthly" %}selected{% endif %}>Últimos 2 meses</option>
-            <option value="annual" {% if chart.rango == "annual" %}selected{% endif %}>Último año</option>
-            <option value="all" {% if chart.rango == "all" %}selected{% endif %}>Toda la trayectoria</option>
-          </select>
-          <button class="btn btn-sm btn-primary" type="submit">Ver</button>
-        </form>
-      </div>
 
-      <div class="row g-3">
-        <div class="col-12 col-lg-8">
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <canvas id="chartMiNeto" height="110"></canvas>
+        <div class="row g-3">
+          <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm vendedor-chart-card">
+              <div class="card-body">
+                <div class="vendedor-chart-wrap vendedor-chart-wrap--line">
+                  <canvas id="chartMiNeto" height="0"></canvas>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="col-12 col-lg-4">
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <canvas id="chartMiPedidos" height="160"></canvas>
+          <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm vendedor-chart-card">
+              <div class="card-body">
+                <div class="vendedor-chart-wrap vendedor-chart-wrap--bar">
+                  <canvas id="chartMiPedidos" height="0"></canvas>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="card shadow-sm mt-3">
-    <div class="card-body">
-      <h2 class="h6 mb-2">Todos los vendedores (últimos 3 meses, semana a semana)</h2>
-      <div class="text-muted small mb-2">Totales globales: neto y pedidos por semana.</div>
-      <div class="row g-3">
-        <div class="col-12 col-lg-8">
-          <canvas id="chartGlobalNeto" height="110"></canvas>
-        </div>
-        <div class="col-12 col-lg-4">
-          <canvas id="chartGlobalPedidos" height="160"></canvas>
+    <div class="card app-card border-0 shadow-sm mt-3">
+      <div class="card-body">
+        <h2 class="h6 mb-1">Todos los vendedores</h2>
+        <div class="text-muted small mb-2">Últimos 3 meses, semana a semana</div>
+        <div class="row g-3">
+          <div class="col-12 col-lg-8">
+            <div class="vendedor-chart-wrap vendedor-chart-wrap--line">
+              <canvas id="chartGlobalNeto" height="0"></canvas>
+            </div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="vendedor-chart-wrap vendedor-chart-wrap--bar">
+              <canvas id="chartGlobalPedidos" height="0"></canvas>
+            </div>
+          </div>
         </div>
       </div>
     </div>

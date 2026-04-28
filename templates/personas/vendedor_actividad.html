@@ -49,10 +49,11 @@
                 {% endif %}
               </td>
               <td class="text-end col-presu-acciones table-actions-cell">
-                <a
-                  class="btn btn-sm btn-outline-primary"
-                  href="{% url 'comprador_update' row.comprador.pk %}"
-                >Ficha cliente</a>
+                <div class="table-actions presu-row-actions d-flex">
+                  <a class="btn-icon btn-edit" href="{% url 'comprador_update' row.comprador.pk %}" title="Ficha cliente" aria-label="Ficha cliente">
+                    <i data-lucide="pencil" aria-hidden="true"></i>
+                  </a>
+                </div>
               </td>
             </tr>
           {% empty %}

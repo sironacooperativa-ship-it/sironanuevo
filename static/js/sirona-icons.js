@@ -7,9 +7,9 @@
     if (L && typeof L.createIcons === "function") {
       L.createIcons({
         attrs: {
-          "stroke-width": 1.65,
-          width: 18,
-          height: 18,
+          "stroke-width": 2,
+          width: 16,
+          height: 16,
         },
       });
     }

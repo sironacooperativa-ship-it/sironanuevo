@@ -2,20 +2,25 @@
 {% load money %}
 {% block title %}{{ cuenta.banco }}{% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-    <div>
-      <h1 class="h3 mb-0">{{ cuenta.banco }}</h1>
-      <p class="text-muted font-monospace small mb-0">{{ cuenta.cuenta }}</p>
+  <div class="app-page-header mb-3 d-flex flex-wrap align-items-center gap-2">
+    <div class="me-auto">
+      <h1 class="app-page-title mb-0">{{ cuenta.banco }}</h1>
+      <p class="text-muted font-monospace small mb-0"><span class="persona-cod">{{ cuenta.cuenta }}</span></p>
     </div>
     <div class="d-flex gap-2 align-items-center flex-wrap">
-      <a class="btn btn-outline-secondary btn-sm" href="{% url 'bancos_cuentas' %}">Volver</a>
+      <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'bancos_cuentas' %}">Volver</a>
     </div>
   </div>
 
-  <p class="lead">Saldo actual: <strong class="{% if saldo_final < 0 %}text-danger{% endif %}">{{ saldo_final|ars }}</strong></p>
+  <div class="card app-card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <div class="text-muted small mb-1">Saldo actual</div>
+      <div class="fs-4 fw-semibold {% if saldo_final < 0 %}text-danger{% endif %}">{{ saldo_final|ars }}</div>
+      <div class="small text-muted mt-1">Incluye saldo inicial y movimientos cargados.</div>
+    </div>
+  </div>
 
-  <div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Ajuste de cuenta</div>
+  <div class="card app-card border-0 shadow-sm app-list-filters mb-4">
     <div class="card-body">
       <p class="small text-muted">Para impuestos, comisiones bancarias u otros movimientos que no pasan por caja.</p>
       <form method="post" action="{% url 'banco_cuenta_ajuste' cuenta.pk %}" class="row g-3 align-items-end">
@@ -37,7 +42,7 @@
           {{ ajuste_form.concepto }}
         </div>
         <div class="col-12 col-md-2">
-          <button type="submit" class="btn btn-primary w-100">Registrar ajuste</button>
+          <button type="submit" class="btn btn-primary rounded-pill w-100">Registrar</button>
         </div>
       </form>
     </div>

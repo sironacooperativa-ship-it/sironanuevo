@@ -44,8 +44,8 @@
           <tbody>
             {% for p in productos %}
               <tr>
-                <td class="text-muted"><code>{{ p.codigo }}</code></td>
-                <td class="text-muted small">{{ p.get_tipo_display }}</td>
+                <td class="col-muted"><span class="persona-cod">{{ p.codigo }}</span></td>
+                <td class="col-muted small">{{ p.get_tipo_display }}</td>
                 <td>{{ p.descripcion }}</td>
                 <td class="table-monto">
                   <input

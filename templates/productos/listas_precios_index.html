@@ -14,37 +14,61 @@
     </div>
   </div>
 
-  <div class="card app-card border-0 shadow-sm">
-    <div class="list-group list-group-flush">
-      {% for l in listas %}
-        <div class="list-group-item d-flex flex-wrap align-items-center justify-content-between gap-2 py-3">
-          <div>
-            <div class="fw-semibold">
-              {{ l.nombre }}
-              {% if l.es_farmacia %}<span class="badge text-bg-secondary ms-1">Farmacia</span>{% endif %}
-            </div>
-            <div class="text-muted small">Slug: <code>{{ l.slug }}</code></div>
-          </div>
-          <div class="d-flex flex-wrap gap-2">
-            <a class="btn btn-sm btn-outline-secondary rounded-pill px-2" href="{% url 'lista_precios_ver' l.pk %}" title="Ver lista" aria-label="Ver lista">
-              <i data-lucide="eye"></i>
-            </a>
-            <a class="btn btn-sm btn-outline-primary rounded-pill px-2" href="{% url 'lista_precios_trabajar' l.pk %}" title="Editar" aria-label="Editar">
-              <i data-lucide="pencil"></i>
-            </a>
-            {% if not l.es_farmacia %}
-              <form method="post" action="{% url 'lista_precios_eliminar' l.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar esta lista y sus precios de rubro?');">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Eliminar" aria-label="Eliminar">
-                  <i data-lucide="x" class="text-danger"></i>
-                </button>
-              </form>
-            {% endif %}
-          </div>
-        </div>
-      {% empty %}
-        <div class="list-group-item text-muted small">No hay listas. Creá una nueva o ejecutá migraciones.</div>
-      {% endfor %}
+  <div class="table-card presu-lista-modern listas-precios-index mb-3">
+    <div class="table-card-header">
+      <h2 class="table-card-title">Listas</h2>
+      <span class="table-card-count">{{ listas|length }} lista(s)</span>
+    </div>
+    <div class="table-responsive presu-lista-table-wrap">
+      <table class="modern-table listas-precios-index-tabla">
+        <thead>
+          <tr>
+            <th scope="col" class="presu-col-ellipsis">Nombre</th>
+            <th scope="col">Tipo</th>
+            <th scope="col" class="presu-col-ellipsis">Slug</th>
+            <th scope="col" class="text-end presu-th-acciones col-presu-acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in listas %}
+            <tr>
+              <td class="col-muted presu-col-ellipsis" title="{{ l.nombre }}">
+                <span class="fw-semibold">{{ l.nombre }}</span>
+              </td>
+              <td class="col-muted small">
+                {% if l.es_farmacia %}
+                  <span class="status-pill status-pill--staff" title="Farmacia">Farmacia</span>
+                {% else %}
+                  <span class="text-muted">Rubro</span>
+                {% endif %}
+              </td>
+              <td class="col-muted small presu-col-ellipsis" title="{{ l.slug }}">
+                <span class="persona-cod">{{ l.slug }}</span>
+              </td>
+              <td class="col-presu-acciones text-end table-actions-cell">
+                <div class="table-actions presu-row-actions d-flex">
+                  <a class="btn-icon btn-view" href="{% url 'lista_precios_ver' l.pk %}" title="Ver" aria-label="Ver">
+                    <i data-lucide="eye" aria-hidden="true"></i>
+                  </a>
+                  <a class="btn-icon btn-edit" href="{% url 'lista_precios_trabajar' l.pk %}" title="Editar" aria-label="Editar">
+                    <i data-lucide="pencil" aria-hidden="true"></i>
+                  </a>
+                  {% if not l.es_farmacia %}
+                    <form method="post" action="{% url 'lista_precios_eliminar' l.pk %}" class="d-inline m-0 presu-accion-form" onsubmit="return confirm('¿Eliminar esta lista y sus precios de rubro?');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn-icon btn-delete" title="Eliminar" aria-label="Eliminar">
+                        <i data-lucide="trash-2" aria-hidden="true"></i>
+                      </button>
+                    </form>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="table-empty">No hay listas. Creá una nueva.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
 {% endblock %}
