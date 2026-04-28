@@ -969,55 +969,34 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   width: 160px;
 }
 
-.presu-lista th:nth-child(1),
-.presu-lista td:nth-child(1) {
-  width: 32px;
-  text-align: center;
-}
-
+/* Presupuestos: evitar widths por nth-child (cambia con staff/checkbox) */
 .presu-lista {
-  min-width: 980px;
+  min-width: 1080px;
+  width: 100%;
+  table-layout: fixed;
 }
 
-.presu-lista th:nth-child(2),
-.presu-lista td:nth-child(2) {
+.presu-lista .col-center {
   width: 44px;
 }
 
-.presu-lista th:nth-child(3),
-.presu-lista td:nth-child(3) {
-  width: 160px;
+.presu-lista .col-ped {
+  width: 64px;
 }
 
-.presu-lista th:nth-child(4),
-.presu-lista td:nth-child(4) {
-  width: 160px;
+.presu-lista .col-money {
+  width: 140px;
 }
 
-.presu-lista th:nth-child(6),
-.presu-lista td:nth-child(6) {
-  width: 110px;
+.presu-lista .col-presu-acciones {
+  width: 1%;
+  white-space: nowrap;
 }
 
-.presu-lista th:nth-child(7),
-.presu-lista td:nth-child(7) {
-  width: 130px;
-}
-
-.presu-lista th:nth-child(8),
-.presu-lista td:nth-child(8) {
-  width: 80px;
-  text-align: center;
-}
-
-.presu-lista th:nth-child(9),
-.presu-lista td:nth-child(9) {
-  width: 80px;
-}
-
-.presu-lista th:nth-child(10),
-.presu-lista td:nth-child(10) {
-  width: 190px;
+.presu-lista .presu-col-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card.sirona-card-table-accent,
@@ -2182,7 +2161,7 @@ h2.h6 {
 .presu-lista-modern .col-presu-acciones.table-actions-cell,
 .presu-lista-modern td.text-end.col-presu-acciones {
   width: 1%;
-  min-width: 200px;
+  min-width: 160px;
   max-width: none;
   text-align: right;
   white-space: nowrap;
@@ -2253,8 +2232,8 @@ h2.h6 {
 
 .presu-lista-modern a.btn-icon svg,
 .presu-lista-modern button.btn-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   stroke-width: 2;
   color: currentColor;
   stroke: currentColor;
