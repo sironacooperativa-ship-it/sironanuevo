@@ -4272,6 +4272,76 @@ a.btn-icon.btn-approve {
   }
 }
 
+/* ===== Coherencia global: Lucide + tablas dentro del área de contenido ===== */
+.app-body .app-main.page-shell {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.app-body .app-main .table-responsive,
+.app-body .app-main .presu-lista-table-wrap,
+.app-body .app-main .dashboard-card,
+.app-body .app-main .table-card {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.app-body .app-main .table-responsive,
+.app-body .app-main .presu-lista-table-wrap {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Tablas que forzaban min-width > viewport: ocupan el ancho útil; scroll horizontal solo en .table-responsive */
+.app-body .app-main .presu-lista,
+.app-body .app-main .ventas-historial-tabla,
+.app-body .app-main .ventas-historial-modern.presu-lista-modern .ventas-historial-tabla {
+  min-width: 100%;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.app-body .app-main table.report-table,
+.app-body .app-main table.modern-table {
+  max-width: 100%;
+}
+
+.stock-page,
+.vendedor-portal-page {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Lucide: mismo trazo en contenido, topbar, modales y paneles (sidebar/offcanvas siguen con reglas propias) */
+.app-body .app-main [data-lucide] svg,
+.app-body .sirona-topbar [data-lucide] svg,
+.app-body .app-scroll-top [data-lucide] svg,
+.app-body .modal [data-lucide] svg,
+.app-body #sironaMenu [data-lucide] svg,
+.app-body #sironaCalc [data-lucide] svg {
+  stroke-width: 1.75;
+}
+
+.app-body .app-main .table-actions svg,
+.app-body .app-main .table-action-btn svg,
+.app-body .app-main .btn-icon svg,
+.app-body .app-main .icon-button svg {
+  stroke-width: 1.75;
+}
+
+.app-body .app-main .icon-button:not(.stock-icon-btn) svg {
+  width: 16px;
+  height: 16px;
+}
+
+.app-body .app-main .dashboard-card .card-title svg,
+.app-body .app-main .table-card-title svg,
+.app-body .app-main .page-header-card .header-ico svg {
+  width: 18px;
+  height: 18px;
+}
+
 @media print {
   .sidebar,
   .sirona-topbar,

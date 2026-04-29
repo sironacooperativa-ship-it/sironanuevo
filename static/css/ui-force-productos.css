@@ -73,9 +73,9 @@
 
 .ui-force-productos .table-actions .btn-icon svg,
 .ui-force-productos .table-actions a.btn-icon svg {
-  width: 18px !important;
-  height: 18px !important;
-  stroke-width: 2 !important;
+  width: 16px !important;
+  height: 16px !important;
+  stroke-width: 1.75 !important;
   stroke: currentColor !important;
 }
 
