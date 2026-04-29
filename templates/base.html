@@ -227,8 +227,6 @@
                 class="btn app-icon-btn"
                 type="button"
                 id="btnHamburgerMenu"
-                data-bs-toggle="offcanvas"
-                data-bs-target="#sironaMenu"
                 aria-controls="sironaMenu"
                 aria-label="Abrir menú"
                 title="Menú"
@@ -1012,14 +1010,26 @@
           const btnSidebar = document.getElementById("btnSidebarCollapse");
           const btnHamb = document.getElementById("btnHamburgerMenu");
 
+          function isDesktopNav() {
+            return window.matchMedia && window.matchMedia("(min-width: 992px)").matches;
+          }
+
           function syncBtns() {
             const isHidden = document.body.classList.contains("sidebar-hidden");
-            const title = isHidden ? "Mostrar sidebar" : "Ocultar sidebar";
-            [btnSidebar, btnHamb].forEach((b) => {
-              if (!b) return;
-              b.title = title;
-              b.setAttribute("aria-label", title);
-            });
+            const deskTitle = isHidden ? "Mostrar sidebar" : "Ocultar sidebar";
+            if (btnSidebar) {
+              btnSidebar.title = deskTitle;
+              btnSidebar.setAttribute("aria-label", deskTitle);
+            }
+            if (btnHamb) {
+              if (isDesktopNav()) {
+                btnHamb.title = deskTitle;
+                btnHamb.setAttribute("aria-label", deskTitle);
+              } else {
+                btnHamb.title = "Menú";
+                btnHamb.setAttribute("aria-label", "Abrir menú");
+              }
+            }
           }
 
           function toggleHidden() {
@@ -1029,19 +1039,40 @@
             if (!isHidden) revealActiveInSidebar();
           }
 
-          // Desktop: el hamburger oculta/muestra. Mobile: deja el offcanvas (overlay).
+          // Escritorio: sin data-bs-toggle — solo alterna sidebar (sin drawer ni X).
+          // Mobile: abrimos el offcanvas por API (overlay con cerrar).
           function onHambClick(e) {
-            const isDesktop = window.matchMedia && window.matchMedia("(min-width: 992px)").matches;
-            if (!isDesktop) return; // let bootstrap offcanvas handle it
-            if (e && typeof e.preventDefault === "function") e.preventDefault();
-            if (e && typeof e.stopPropagation === "function") e.stopPropagation();
-            toggleHidden();
+            if (isDesktopNav()) {
+              if (e && typeof e.preventDefault === "function") e.preventDefault();
+              if (e && typeof e.stopPropagation === "function") e.stopPropagation();
+              toggleHidden();
+              return;
+            }
+            const menu = document.getElementById("sironaMenu");
+            if (!menu || typeof bootstrap === "undefined") return;
+            bootstrap.Offcanvas.getOrCreateInstance(menu).show();
           }
 
           if (btnSidebar) btnSidebar.addEventListener("click", toggleHidden);
           if (btnHamb) btnHamb.addEventListener("click", onHambClick);
           syncBtns();
           if (!document.body.classList.contains("sidebar-hidden")) revealActiveInSidebar();
+
+          if (window.matchMedia) {
+            const mqDesk = window.matchMedia("(min-width: 992px)");
+            function onDeskBreakpointChange() {
+              syncBtns();
+              if (mqDesk.matches) {
+                const menu = document.getElementById("sironaMenu");
+                if (menu && typeof bootstrap !== "undefined") {
+                  const inst = bootstrap.Offcanvas.getInstance(menu);
+                  if (inst) inst.hide();
+                }
+              }
+            }
+            if (typeof mqDesk.addEventListener === "function") mqDesk.addEventListener("change", onDeskBreakpointChange);
+            else if (typeof mqDesk.addListener === "function") mqDesk.addListener(onDeskBreakpointChange);
+          }
         } catch (e) {}
       })();
     </script>
