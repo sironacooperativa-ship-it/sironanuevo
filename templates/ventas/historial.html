@@ -74,6 +74,15 @@
             {% endfor %}
           </select>
         </div>
+        <div class="col-12 col-md-6 col-lg-2">
+          <label class="form-label small text-muted mb-0">Estado</label>
+          <select name="estado" class="form-select form-select-sm">
+            <option value="" {% if not filtros.estado %}selected{% endif %}>Todos</option>
+            <option value="PEN" {% if filtros.estado == "PEN" %}selected{% endif %}>Pendiente de pago</option>
+            <option value="PAG" {% if filtros.estado == "PAG" %}selected{% endif %}>Pagada</option>
+            <option value="CAN" {% if filtros.estado == "CAN" %}selected{% endif %}>Cancelada</option>
+          </select>
+        </div>
         <div class="col-12 d-flex gap-2 flex-wrap">
           <button type="submit" class="btn btn-sm btn-outline-dark rounded-pill">Filtrar</button>
           <a class="btn btn-sm btn-outline-secondary rounded-pill" href="{% url 'ventas_historial' %}">Limpiar</a>
@@ -94,12 +103,9 @@
       <table class="modern-table ventas-historial-tabla" id="venta-hist-tabla">
         <thead>
           <tr>
-            <th scope="col" class="col-ped th-pedido">Pedido</th>
-            <th scope="col" class="th-fecha">Fecha registro</th>
+            <th scope="col" class="col-ped th-pedido">Pedido / fecha</th>
             <th scope="col" class="th-vend presu-col-ellipsis">Vendedor</th>
             <th scope="col" class="th-compra presu-col-ellipsis">Comprador</th>
-            <th scope="col" class="ventas-hist-venc th-venc">Venc. pago</th>
-            <th scope="col" class="text-end th-neto col-money">Neto</th>
             <th scope="col" class="text-end th-comision col-money">Comisión</th>
             <th scope="col" class="text-end th-caja col-money">Ingreso caja</th>
             <th scope="col" class="text-center th-estado col-center" title="Estado" aria-label="Estado"> </th>
@@ -109,26 +115,39 @@
         <tbody>
           {% for v in ventas %}
             <tr>
-              <td class="col-ped col-id-num">#{{ v.pk }}</td>
-              <td class="col-muted">{{ v.creado_en|date:"d/m/Y H:i" }}</td>
-              <td class="col-muted presu-col-ellipsis" title="{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}">{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}</td>
+              <td class="col-ped col-id-num">
+                <div class="ventas-hist-cell-title">Pedido #{{ v.pk }}</div>
+                <div class="ventas-hist-cell-sub text-muted small">{{ v.creado_en|date:"d/m/Y H:i" }}</div>
+              </td>
+              <td class="col-muted presu-col-ellipsis" title="{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}">
+                <div class="ventas-hist-cell-title">{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}</div>
+                <div class="ventas-hist-cell-sub text-muted small">Código: {{ v.vendedor.codigo }}</div>
+              </td>
               <td class="col-muted presu-col-ellipsis" title="{% if v.comprador %}{{ v.comprador.apellido }}, {{ v.comprador.nombre }}{% endif %}">
                 {% if v.comprador %}
-                  {{ v.comprador.apellido }}, {{ v.comprador.nombre }}
+                  <div class="ventas-hist-cell-title">{{ v.comprador.apellido }}, {{ v.comprador.nombre }}</div>
+                  <div class="ventas-hist-cell-sub text-muted small">
+                    Código: {{ v.comprador.codigo }}
+                    {% if v.fecha_vencimiento_pago %}
+                      <span class="ventas-hist-cell-sep">·</span> Vence: {{ v.fecha_vencimiento_pago|date:"d/m/Y" }}
+                    {% endif %}
+                  </div>
                 {% else %}
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td class="col-muted ventas-hist-venc">{% if v.fecha_vencimiento_pago %}{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
-              <td class="text-end col-money ventas-hist-neto">{{ v.neto|ars }}</td>
-              <td class="text-end col-money comision-cel small">
+              <td class="text-end col-money comision-cel">
                 {% if v.aplica_comision %}
-                  {{ v.comision_porcentaje }}% <span class="text-muted">({{ v.monto_comision|ars }})</span>
+                  <div class="ventas-hist-cell-title">{{ v.comision_porcentaje }}%</div>
+                  <div class="ventas-hist-cell-sub text-muted small">{{ v.monto_comision|ars }}</div>
                 {% else %}
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td class="text-end col-money">{{ v.monto_ingreso_caja|ars }}</td>
+              <td class="text-end col-money ventas-hist-caja">
+                <div class="ventas-hist-caja-main">{{ v.monto_ingreso_caja|ars }}</div>
+                <div class="ventas-hist-caja-sub text-muted small">(Neto: {{ v.neto|ars }})</div>
+              </td>
               <td class="text-center col-center">
                 {% if v.estado == "PEN" %}
                   <span class="estado-ico estado-ico--pending" title="Pendiente" aria-label="Pendiente">
@@ -204,23 +223,22 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="10" class="table-empty">No hay ventas con los filtros actuales.</td>
+              <td colspan="7" class="table-empty">No hay ventas con los filtros actuales.</td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
-
-      <div class="ventas-hist-legend" aria-label="Leyenda">
-        <div class="ventas-hist-legend-row">
-          <span class="ventas-hist-legend-item"><span class="estado-ico estado-ico--pending" title="Pendiente"><i data-lucide="clock"></i></span> Pendiente</span>
-          <span class="ventas-hist-legend-item"><span class="estado-ico estado-ico--approved" title="Aprobado"><i data-lucide="check-circle-2"></i></span> Aprobado</span>
-          <span class="ventas-hist-legend-item"><span class="estado-ico estado-ico--cancel" title="Cancelado"><i data-lucide="x-circle"></i></span> Cancelado</span>
-          <span class="ventas-hist-legend-sep"></span>
-          <span class="ventas-hist-legend-item"><span class="btn-icon btn-view" aria-hidden="true"><i data-lucide="eye"></i></span> Ver detalle</span>
-          <span class="ventas-hist-legend-item"><span class="btn-icon btn-edit" aria-hidden="true"><i data-lucide="pencil"></i></span> Editar</span>
-          <span class="ventas-hist-legend-item"><span class="btn-icon btn-approve" aria-hidden="true"><i data-lucide="check"></i></span> Aprobar</span>
-          <span class="ventas-hist-legend-item"><span class="btn-icon btn-delete" aria-hidden="true"><i data-lucide="trash-2"></i></span> Eliminar</span>
-        </div>
+    </div>
+    <div class="ventas-hist-legend" aria-label="Leyenda">
+      <div class="ventas-hist-legend-row">
+        <span class="ventas-hist-legend-item"><span class="estado-ico estado-ico--pending" title="Pendiente"><i data-lucide="clock"></i></span> Pendiente</span>
+        <span class="ventas-hist-legend-item"><span class="estado-ico estado-ico--approved" title="Aprobado"><i data-lucide="check-circle-2"></i></span> Aprobado</span>
+        <span class="ventas-hist-legend-item"><span class="estado-ico estado-ico--cancel" title="Cancelado"><i data-lucide="x-circle"></i></span> Cancelado</span>
+        <span class="ventas-hist-legend-sep"></span>
+        <span class="ventas-hist-legend-item"><span class="btn-icon btn-view" aria-hidden="true"><i data-lucide="eye"></i></span> Ver detalle</span>
+        <span class="ventas-hist-legend-item"><span class="btn-icon btn-edit" aria-hidden="true"><i data-lucide="pencil"></i></span> Editar</span>
+        <span class="ventas-hist-legend-item"><span class="btn-icon btn-approve" aria-hidden="true"><i data-lucide="check"></i></span> Aprobar</span>
+        <span class="ventas-hist-legend-item"><span class="btn-icon btn-delete" aria-hidden="true"><i data-lucide="trash-2"></i></span> Eliminar</span>
       </div>
     </div>
     {% include "includes/pagination_footer.html" %}

@@ -130,54 +130,78 @@
     </div>
   </div>
 
-  <div class="card-table home-pedidos-pendiente mb-3">
+  <div class="card-table home-pedidos-pendiente home-pend-modern mb-3">
     <div class="card-table-header d-flex flex-wrap align-items-center gap-2">
-      <span class="me-auto">Pedidos con pago pendiente</span>
+      <span class="me-auto fw-semibold">Pedidos con pago pendiente</span>
       {% if ventas_pendientes_total %}
         <span class="badge home-pedidos-pendiente-badge rounded-pill">{{ ventas_pendientes_total }} sin cobrar</span>
       {% endif %}
     </div>
     <div class="card-table-body">
-      <div class="table-responsive table-modern-wrap">
-        <table class="table-modern">
+      <div class="table-responsive presu-lista-table-wrap">
+        <table class="modern-table home-pend-tabla">
           <thead>
             <tr>
-              <th scope="col">Pedido</th>
-              <th scope="col" class="col-fecha">Fecha pedido</th>
-              <th scope="col" class="col-vendedor">Vendedor</th>
-              <th scope="col" class="col-cliente">Cliente</th>
-              <th scope="col" class="text-end col-monto">Monto</th>
-              <th scope="col" class="col-fecha">Venc. pago</th>
-              <th scope="col" class="text-center col-accion">Acción</th>
+              <th scope="col" class="home-pend-th-main">Cliente</th>
+              <th scope="col" class="home-pend-th-main">Vendedor</th>
+              <th scope="col" class="home-pend-th-main">Pedido</th>
+              <th scope="col" class="text-end home-pend-th-main col-money">Monto</th>
+              <th scope="col" class="home-pend-th-main">Vence</th>
+              <th scope="col" class="text-end home-pend-th-actions presu-th-acciones col-presu-acciones" aria-label="Acción"></th>
             </tr>
           </thead>
           <tbody>
             {% for v in ventas_pendientes %}
               <tr>
-                <td class="col-id">
-                  <a class="text-decoration-none" href="{% url 'venta_detalle' v.pk %}">#{{ v.pk }}</a>
+                <td class="home-pend-cell">
+                  {% if v.comprador_id %}
+                    <div class="home-pend-k">{{ v.comprador.apellido }}, {{ v.comprador.nombre }}</div>
+                    <div class="home-pend-sub text-muted">
+                      <span class="persona-cod">{{ v.comprador.codigo }}</span>
+                      {% if v.comprador.direccion %}
+                        <span class="home-pend-sep">·</span>
+                        <span class="home-pend-clip">{{ v.comprador.direccion|truncatechars:44 }}</span>
+                      {% endif %}
+                    </div>
+                  {% else %}
+                    <div class="home-pend-k text-muted">Sin cliente</div>
+                    <div class="home-pend-sub text-muted">—</div>
+                  {% endif %}
                 </td>
-                <td class="col-fecha">{{ v.creado_en|date:"d/m/Y H:i" }}</td>
-                <td class="col-vendedor">{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}</td>
-                <td class="col-cliente">{% if v.comprador_id %}{{ v.comprador }}{% else %}<span class="text-muted col-cliente-na">—</span>{% endif %}</td>
-                <td class="text-end col-monto table-modern-mono">{{ v.neto|ars }}</td>
-                <td class="col-fecha col-venc">{% if v.fecha_vencimiento_pago %}{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
-                <td class="text-center col-accion">
-                  <div class="table-actions home-pedidos-pendiente-actions">
+                <td class="home-pend-cell">
+                  <div class="home-pend-k">{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}</div>
+                  <div class="home-pend-sub text-muted"><span class="persona-cod">{{ v.vendedor.codigo }}</span></div>
+                </td>
+                <td class="home-pend-cell">
+                  <div class="home-pend-k">
+                    <a class="text-decoration-none" href="{% url 'venta_detalle' v.pk %}">#{{ v.pk }}</a>
+                  </div>
+                  <div class="home-pend-sub text-muted">{{ v.creado_en|date:"d/m/Y" }} · {{ v.creado_en|date:"H:i" }}</div>
+                </td>
+                <td class="text-end col-money home-pend-monto">{{ v.neto|ars }}</td>
+                <td class="home-pend-venc">
+                  {% if v.fecha_vencimiento_pago %}
+                    <span class="home-pend-venc-pill">{{ v.fecha_vencimiento_pago|date:"d/m/Y" }}</span>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                <td class="text-end table-actions-cell col-presu-acciones home-pend-actions">
+                  <div class="table-actions presu-row-actions d-flex justify-content-end">
                     <a
-                      class="btn-icon home-pedidos-pendiente-approve"
+                      class="btn-icon btn-approve home-pend-pay"
                       href="{% url 'venta_registrar_pago' v.pk %}"
-                      title="Aprobar cobro"
-                      aria-label="Aprobar cobro"
+                      title="Registrar cobro"
+                      aria-label="Registrar cobro"
                     >
-                      <i data-lucide="check" aria-hidden="true"></i>
+                      <i data-lucide="circle-dollar-sign" aria-hidden="true"></i>
                     </a>
                   </div>
                 </td>
               </tr>
             {% empty %}
               <tr>
-                <td colspan="7" class="table-empty">No hay pedidos con pago pendiente.</td>
+                <td colspan="6" class="table-empty">No hay pedidos con pago pendiente.</td>
               </tr>
             {% endfor %}
           </tbody>

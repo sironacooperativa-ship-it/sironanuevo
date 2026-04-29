@@ -16,8 +16,8 @@
       rel="stylesheet"
     />
     <!-- theme: ios-2026r29 -->
-    <link href="{% static 'css/theme.css' %}?v=ios-2026r29" rel="stylesheet" />
-    <link href="{% static 'css/styles.css' %}?v=saas-2026r1" rel="stylesheet" />
+    <link href="{% static 'css/theme.css' %}?v=ios-2026r31" rel="stylesheet" />
+    <link href="{% static 'css/styles.css' %}?v=saas-2026r3" rel="stylesheet" />
     <link href="{% static 'css/ui-force-productos.css' %}?v=1" rel="stylesheet" />
     <link href="{% static 'css/sirona-calc.css' %}" rel="stylesheet" />
     <style>
@@ -267,9 +267,6 @@
                 {% endif %}
 
                 <div class="sirona-topbar-actions">
-                  <button class="btn app-icon-btn" type="button" id="btnThemeToggle" aria-label="Cambiar modo" title="Modo">
-                    <i data-lucide="moon" class="app-lucide-toolbar"></i>
-                  </button>
                   <button
                     class="btn app-icon-btn"
                     type="button"
@@ -418,9 +415,9 @@
                   <span class="app-sidebar-icon-wrap"><i data-lucide="file-text"></i></span>
                   <span class="app-sidebar-label sidebar-label">Presupuestos</span>
                 </a>
-                <a class="sidebar-link app-sidebar-link" href="{% url 'ventas_historial' %}" title="Ventas">
+                <a class="sidebar-link app-sidebar-link" href="{% url 'venta_nueva' %}" title="Nueva venta">
                   <span class="app-sidebar-icon-wrap"><i data-lucide="receipt"></i></span>
-                  <span class="app-sidebar-label sidebar-label">Ventas</span>
+                  <span class="app-sidebar-label sidebar-label">Nueva venta</span>
                 </a>
                 <a
                   class="sidebar-link app-sidebar-link"
@@ -455,9 +452,9 @@
                 </span>
               </div>
               <div class="sidebar-subnav" aria-label="Submenú Caja">
-                <a class="sidebar-link app-sidebar-link" href="{% url 'caja_list' %}" title="Caja">
-                  <span class="app-sidebar-icon-wrap"><i data-lucide="wallet"></i></span>
-                  <span class="app-sidebar-label sidebar-label">Caja</span>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'caja_create' %}" title="Nuevo movimiento">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="plus"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Nuevo movimiento</span>
                 </a>
                 <a class="sidebar-link app-sidebar-link" href="{% url 'bancos_cuentas' %}" title="Banco">
                   <span class="app-sidebar-icon-wrap"><i data-lucide="landmark"></i></span>
@@ -467,7 +464,7 @@
                   <span class="app-sidebar-icon-wrap"><i data-lucide="arrow-left-right"></i></span>
                   <span class="app-sidebar-label sidebar-label">Movimientos</span>
                 </a>
-                <a class="sidebar-link app-sidebar-link" href="{% url 'ventas_historial' %}" title="Deudas">
+                <a class="sidebar-link app-sidebar-link" href="{% url 'ventas_historial' %}?estado=PEN" title="Pedidos pendientes de pago">
                   <span class="app-sidebar-icon-wrap"><i data-lucide="clock"></i></span>
                   <span class="app-sidebar-label sidebar-label">Deudas</span>
                 </a>
@@ -492,7 +489,7 @@
                   <span class="app-sidebar-icon-wrap"><i data-lucide="truck"></i></span>
                   <span class="app-sidebar-label sidebar-label">Proveedores</span>
                 </a>
-                <a class="sidebar-link app-sidebar-link" href="{% url 'caja_list' %}" title="Pagos">
+                <a class="sidebar-link app-sidebar-link" href="{% url 'compra_registrar' %}" title="Registrar pago / compra">
                   <span class="app-sidebar-icon-wrap"><i data-lucide="credit-card"></i></span>
                   <span class="app-sidebar-label sidebar-label">Pagos</span>
                 </a>
@@ -559,14 +556,6 @@
             </div>
           </nav>
           <div class="sidebar-footer">
-            <div class="sidebar-help">
-              <div class="help-title">¿Necesitás ayuda?</div>
-              <p class="help-sub">Accedé a guías y soporte para usar el sistema.</p>
-              <a href="{% url 'admin_notas_list' %}" aria-label="Abrir ayuda">
-                <i data-lucide="life-buoy" aria-hidden="true"></i>
-                Ver ayuda
-              </a>
-            </div>
             <a class="sidebar-link app-sidebar-link app-sidebar-link-logout" href="{% url 'logout' %}">
               <span class="app-sidebar-icon-wrap"><i data-lucide="log-out"></i></span>
               <span class="app-sidebar-label sidebar-label">Salir</span>
@@ -852,22 +841,6 @@
 
     <script src="{% static 'js/sirona-icons.js' %}?v=4"></script>
     <script>
-      // Modo visual (solo UI): guarda preferencia local.
-      (function () {
-        try {
-          const key = "sirona_theme";
-          const saved = localStorage.getItem(key);
-          if (saved === "dark") document.documentElement.classList.add("theme-dark");
-          const btn = document.getElementById("btnThemeToggle");
-          if (!btn) return;
-          btn.addEventListener("click", function () {
-            const isDark = document.documentElement.classList.toggle("theme-dark");
-            localStorage.setItem(key, isDark ? "dark" : "light");
-          });
-        } catch (e) {}
-      })();
-    </script>
-    <script>
       // Topbar: sombra al hacer scroll + atajo Ctrl+K para enfocar búsqueda (solo UI).
       (function () {
         try {
@@ -953,12 +926,12 @@
       })();
     </script>
     <script>
-      // Sidebar: grupos desplegables + colapsado (UI).
+      // Sidebar: grupos desplegables + mostrar/ocultar (UI).
       (function () {
         try {
-          const key = "sirona_sidebar_collapsed";
+          const key = "sirona_sidebar_hidden";
           const saved = localStorage.getItem(key);
-          if (saved === "1") document.body.classList.add("sidebar-collapsed");
+          if (saved === "1") document.body.classList.add("sidebar-hidden");
 
           function wireGroup(groupEl) {
             const trigger = groupEl.querySelector(".sidebar-group-trigger");
@@ -1018,13 +991,13 @@
             } catch (e) {}
           }
 
-          // Colapsar (desktop) con botones: sidebar y hamburger topbar.
+          // Mostrar/ocultar (desktop) con botones: sidebar y hamburger topbar.
           const btnSidebar = document.getElementById("btnSidebarCollapse");
           const btnHamb = document.getElementById("btnHamburgerMenu");
 
           function syncBtns() {
-            const isCollapsed = document.body.classList.contains("sidebar-collapsed");
-            const title = isCollapsed ? "Expandir sidebar" : "Colapsar sidebar";
+            const isHidden = document.body.classList.contains("sidebar-hidden");
+            const title = isHidden ? "Mostrar sidebar" : "Ocultar sidebar";
             [btnSidebar, btnHamb].forEach((b) => {
               if (!b) return;
               b.title = title;
@@ -1032,26 +1005,26 @@
             });
           }
 
-          function toggleCollapsed() {
-            const isCollapsed = document.body.classList.toggle("sidebar-collapsed");
-            localStorage.setItem(key, isCollapsed ? "1" : "0");
+          function toggleHidden() {
+            const isHidden = document.body.classList.toggle("sidebar-hidden");
+            localStorage.setItem(key, isHidden ? "1" : "0");
             syncBtns();
-            if (!isCollapsed) revealActiveInSidebar();
+            if (!isHidden) revealActiveInSidebar();
           }
 
-          // Desktop: el hamburger colapsa/expande. Mobile: deja el offcanvas (overlay).
+          // Desktop: el hamburger oculta/muestra. Mobile: deja el offcanvas (overlay).
           function onHambClick(e) {
             const isDesktop = window.matchMedia && window.matchMedia("(min-width: 992px)").matches;
             if (!isDesktop) return; // let bootstrap offcanvas handle it
             if (e && typeof e.preventDefault === "function") e.preventDefault();
             if (e && typeof e.stopPropagation === "function") e.stopPropagation();
-            toggleCollapsed();
+            toggleHidden();
           }
 
-          if (btnSidebar) btnSidebar.addEventListener("click", toggleCollapsed);
+          if (btnSidebar) btnSidebar.addEventListener("click", toggleHidden);
           if (btnHamb) btnHamb.addEventListener("click", onHambClick);
           syncBtns();
-          if (!document.body.classList.contains("sidebar-collapsed")) revealActiveInSidebar();
+          if (!document.body.classList.contains("sidebar-hidden")) revealActiveInSidebar();
         } catch (e) {}
       })();
     </script>

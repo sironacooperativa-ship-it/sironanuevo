@@ -6,8 +6,6 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Sum, Value
-from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
@@ -321,6 +319,12 @@ def _filtrar_ventas_queryset(request):
     if pid.isdigit():
         qs = qs.filter(lineas__producto_id=int(pid)).distinct()
 
+    estado_raw = (request.GET.get("estado") or "").strip().upper()
+    estado = estado_raw if estado_raw in {c for c, _ in Venta.Estado.choices} else ""
+
+    if estado:
+        qs = qs.filter(estado=estado)
+
     return qs, {
         "periodo": periodo,
         "fecha_desde": fecha_filtro_value_iso(request.GET.get("fecha_desde")),
@@ -328,6 +332,7 @@ def _filtrar_ventas_queryset(request):
         "vendedor": vid,
         "comprador": cid,
         "producto": pid,
+        "estado": estado,
     }
 
 
@@ -365,12 +370,27 @@ def venta_comisiones(request):
 
     comisiones_por_mes = comisiones_acumuladas_por_mes(ventas_com)
 
-    por_vendedor = (
-        ventas_com.values("vendedor_id", "vendedor__codigo", "vendedor__apellido", "vendedor__nombre")
-        .annotate(total=Coalesce(Sum("monto_comision"), Value(Decimal("0.00"))))
-        .order_by("-total", "vendedor__apellido", "vendedor__nombre")
+    # `monto_comision` es una property (no existe columna en DB), así que agregamos en Python.
+    totales_por_vendedor: dict[int, dict[str, object]] = {}
+    for v in ventas_com.select_related("vendedor").iterator(chunk_size=500):
+        vid = int(v.vendedor_id)
+        cur = totales_por_vendedor.get(vid)
+        if not cur:
+            cur = {
+                "vendedor_id": vid,
+                "vendedor__codigo": v.vendedor.codigo,
+                "vendedor__apellido": v.vendedor.apellido,
+                "vendedor__nombre": v.vendedor.nombre,
+                "total": Decimal("0.00"),
+            }
+            totales_por_vendedor[vid] = cur
+        cur["total"] = q2(cur["total"] + v.monto_comision)  # type: ignore[operator]
+
+    por_vendedor = sorted(
+        (r for r in totales_por_vendedor.values() if (r.get("total") or Decimal("0.00")) > 0),
+        key=lambda r: (r["total"], r["vendedor__apellido"], r["vendedor__nombre"]),
+        reverse=True,
     )
-    por_vendedor = [r for r in por_vendedor if (r.get("total") or Decimal("0.00")) > 0]
 
     # Opciones de meses: meses con comisiones en el conjunto (sin filtro de mes).
     meses_opciones = []

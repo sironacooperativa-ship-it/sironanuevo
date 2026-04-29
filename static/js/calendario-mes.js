@@ -68,19 +68,24 @@
     if (numRows < 6) numRows = 6;
 
     var parts = [];
-    parts.push(
-      '<div class="calen-mes-nav" role="navigation" aria-label="Mes">'
-    );
+    parts.push('<div class="calen-mes-nav" role="navigation" aria-label="Mes">');
+    parts.push('<div class="calen-mes-nav-left">');
     parts.push(
       '<button type="button" class="calen-mes-nav-btn" data-act="prev" aria-label="Mes anterior">'
     );
     parts.push("‹");
     parts.push("</button>");
+    parts.push("</div>");
+
+    parts.push('<div class="calen-mes-nav-center">');
     parts.push(
       '<h3 class="calen-mes-title" id="calen-mes-heading">' +
         esc(monthTitle(y, m)) +
         "</h3>"
     );
+    parts.push("</div>");
+
+    parts.push('<div class="calen-mes-nav-right">');
     parts.push(
       '<button type="button" class="calen-mes-nav-btn" data-act="next" aria-label="Mes siguiente">'
     );
@@ -89,6 +94,7 @@
     parts.push(
       '<button type="button" class="calen-mes-nav-today" data-act="today">Hoy</button>'
     );
+    parts.push("</div>");
     parts.push("</div>");
 
     parts.push('<div class="calen-mes-weekdays" aria-hidden="true">');
@@ -137,8 +143,16 @@
           parts.push('<ul class="calen-mes-evs">');
           for (var k = 0; k < list.length && k < MAX_VISIBLE; k++) {
             var t = trunc(list[k].titulo, MAX_TIT);
-            var tipo = String(list[k].tipo || "MAN").toLowerCase();
-            var dot = " calen-mes-dot--" + esc(tipo);
+            var tipoRaw = String(list[k].tipo || "MAN").toUpperCase();
+            var tipoKey =
+              tipoRaw === "PED"
+                ? "pedido"
+                : tipoRaw === "COM"
+                  ? "compra"
+                  : tipoRaw === "MAN"
+                    ? "manual"
+                    : String(list[k].tipo || "MAN").toLowerCase();
+            var dot = " calen-mes-dot--" + esc(tipoKey);
             parts.push(
               '<li class="calen-mes-ev"><span class="calen-mes-dot' +
                 dot +

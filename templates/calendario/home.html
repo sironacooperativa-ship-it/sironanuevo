@@ -6,68 +6,78 @@
   <div class="calendario-agenda-page">
     <div class="calendario-agenda-header">
       <h1 class="calendario-agenda-h1">Calendario</h1>
-      <p class="calendario-agenda-sub">
-        Ventana de listas: <strong>{{ desde|date:"d/m/y" }}</strong> →
-        <strong>{{ hasta|date:"d/m/y" }}</strong>
-        <span class="text-muted d-none d-sm-inline"> · 90 días</span>
+      <p class="calendario-agenda-sub text-muted">
+        Almanaque de eventos, vencimientos y recordatorios en una ventana de <strong>90 días</strong>.
       </p>
     </div>
 
     <div class="calendar-layout">
-      <aside class="calendario-agenda-col calendario-agenda-col--form">
-        <div class="agenda-card">
-          <h2 class="agenda-card-title">Nuevo evento</h2>
-          <form method="post" novalidate>
-            {% csrf_token %}
-            <div class="agenda-field">
-              <label class="agenda-label" for="id_fecha">Fecha</label>
-              {{ form.fecha }}
-              {% if form.fecha.errors %}<div class="agenda-error">{{ form.fecha.errors }}</div>{% endif %}
-            </div>
-            <div class="agenda-field">
-              <label class="agenda-label" for="id_titulo">Título</label>
-              {{ form.titulo }}
-              {% if form.titulo.errors %}<div class="agenda-error">{{ form.titulo.errors }}</div>{% endif %}
-            </div>
-            <div class="agenda-field">
-              <label class="agenda-label" for="id_tipo">Tipo</label>
-              {{ form.tipo }}
-              {% if form.tipo.errors %}<div class="agenda-error">{{ form.tipo.errors }}</div>{% endif %}
-            </div>
-            <div class="agenda-field">
-              <label class="agenda-label" for="id_descripcion">Descripción</label>
-              {{ form.descripcion }}
-            </div>
-            <button class="agenda-btn-primary" type="submit">Guardar</button>
-          </form>
-        </div>
-      </aside>
-
       <div class="calendario-agenda-col calendario-agenda-col--main">
-        <div class="agenda-card">
-          <form class="search-bar" method="get" action="{% url 'calendario_home' %}">
-            <div class="search-bar-grow">
-              <label class="agenda-label agenda-label--inline" for="calen-q">Buscar en eventos</label>
-              <input
-                class="agenda-input"
-                id="calen-q"
-                name="q"
-                value="{{ q }}"
-                type="search"
-                placeholder="Título o descripción…"
-                autocomplete="off"
-              />
+        <div class="agenda-card calen-top-card">
+          <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
+            <h2 class="agenda-card-title mb-0">Nuevo evento</h2>
+            <span class="text-muted small">Ventana: <strong>{{ desde|date:"d/m/y" }}</strong> → <strong>{{ hasta|date:"d/m/y" }}</strong> · 90 días</span>
+          </div>
+
+          <form method="post" novalidate class="calen-event-form">
+            {% csrf_token %}
+            <div class="row g-2 align-items-end">
+              <div class="col-12 col-lg-2">
+                <label class="agenda-label" for="id_fecha">Fecha</label>
+                {{ form.fecha }}
+                {% if form.fecha.errors %}<div class="agenda-error">{{ form.fecha.errors }}</div>{% endif %}
+              </div>
+              <div class="col-12 col-lg-3">
+                <label class="agenda-label" for="id_titulo">Título</label>
+                {{ form.titulo }}
+                {% if form.titulo.errors %}<div class="agenda-error">{{ form.titulo.errors }}</div>{% endif %}
+              </div>
+              <div class="col-12 col-lg-2">
+                <label class="agenda-label" for="id_tipo">Tipo</label>
+                {{ form.tipo }}
+                {% if form.tipo.errors %}<div class="agenda-error">{{ form.tipo.errors }}</div>{% endif %}
+              </div>
+              <div class="col-12 col-lg">
+                <label class="agenda-label" for="id_descripcion">Descripción</label>
+                {{ form.descripcion }}
+              </div>
+              <div class="col-12 col-lg-auto d-grid">
+                <button class="agenda-btn-primary agenda-btn-pill mt-lg-4" type="submit">Guardar</button>
+              </div>
             </div>
-            <div class="search-bar-actions">
-              <button class="agenda-btn-outline" type="submit">Buscar</button>
-              <a class="agenda-btn-ghost" href="{% url 'calendario_home' %}">Limpiar</a>
+          </form>
+
+          <hr class="calen-top-divider my-3" />
+
+          <form class="calen-search-form" method="get" action="{% url 'calendario_home' %}">
+            <div class="row g-2 align-items-end">
+              <div class="col-12 col-lg">
+                <label class="agenda-label" for="calen-q">Buscar en eventos</label>
+                <input
+                  class="agenda-input"
+                  id="calen-q"
+                  name="q"
+                  value="{{ q }}"
+                  type="search"
+                  placeholder="Título o descripción…"
+                  autocomplete="off"
+                />
+              </div>
+              <div class="col-12 col-sm-auto d-grid d-sm-inline-flex gap-2">
+                <button class="agenda-btn-outline agenda-btn-pill" type="submit">Buscar</button>
+                <a class="agenda-btn-ghost agenda-btn-pill text-center" href="{% url 'calendario_home' %}">Limpiar</a>
+              </div>
             </div>
           </form>
         </div>
 
-        <div class="agenda-card vencimientos-card">
-          <h2 class="agenda-card-title">Calendario</h2>
-          <p class="agenda-card-hint">Eventos de la búsqueda actual (misma ventana de 90 días). Usá el mes arriba para otra vista.</p>
+        <div class="agenda-card vencimientos-card calen-calendar-card">
+          <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
+            <div>
+              <h2 class="agenda-card-title mb-1">Calendario</h2>
+              <p class="agenda-card-hint mb-0">Eventos de la búsqueda actual (misma ventana de 90 días).</p>
+            </div>
+          </div>
           {{ calendario_mes|json_script:"calendario-mes-data" }}
           <div id="calendario-mes-root" class="calendario-mes-wrap calendar-box" aria-live="polite"></div>
         </div>
@@ -171,5 +181,5 @@
   </div>
 {% endblock %}
 {% block page_scripts %}
-  <script src="{% static 'js/calendario-mes.js' %}?v=1" defer></script>
+  <script src="{% static 'js/calendario-mes.js' %}?v=4" defer></script>
 {% endblock %}

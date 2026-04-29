@@ -18,7 +18,7 @@ class EventoForm(forms.ModelForm):
             "titulo": forms.TextInput(attrs={"class": "form-control calen-saas-input", "autocomplete": "off"}),
             "tipo": forms.Select(attrs={"class": "form-select calen-saas-input"}),
             "descripcion": forms.Textarea(
-                attrs={"class": "form-control calen-saas-input calen-saas-textarea", "rows": 3}
+                attrs={"class": "form-control calen-saas-input calen-saas-textarea", "rows": 2}
             ),
         }
 
