@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Count, DecimalField, ExpressionWrapper, F, Q, Sum, Value
-from django.db.models.functions import Coalesce
+from django.db.models.functions import Cast, Coalesce
 from django.core.paginator import Paginator
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -201,16 +201,18 @@ def stock_home(request):
     qcopy.pop("page", None)
     querystring = qcopy.urlencode()
 
-    valor_total_expr = ExpressionWrapper(
-        F("costo") * F("stock"),
-        output_field=DecimalField(max_digits=18, decimal_places=2),
-    )
+    # Django (v5+) exige tipos homogéneos en expresiones: `DecimalField * IntegerField` rompe.
+    # Cast de stock a decimal para poder calcular el valor total.
+    dec18_2 = DecimalField(max_digits=18, decimal_places=2)
+    costo_dec = Coalesce(F("costo"), Value(0), output_field=dec18_2)
+    stock_dec = Cast(Coalesce(F("stock"), Value(0)), dec18_2)
+    valor_total_expr = ExpressionWrapper(costo_dec * stock_dec, output_field=dec18_2)
     kpi = productos_qs.aggregate(
         productos=Count("id"),
         activos=Count("id", filter=Q(habilitado=True)),
         stock_total=Coalesce(Sum("stock"), Value(0)),
         sin_stock=Count("id", filter=Q(stock__lte=0)),
-        valor_total=Coalesce(Sum(valor_total_expr), Value(0)),
+        valor_total=Coalesce(Sum(valor_total_expr), Value(0), output_field=dec18_2),
     )
 
     return render(
