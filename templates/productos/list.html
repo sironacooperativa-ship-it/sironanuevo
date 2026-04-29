@@ -18,14 +18,16 @@
     tr.producto-row-inline.is-editing input.producto-edit[type="number"],
     tr.producto-row-inline.is-editing select.producto-edit {
       width: 100%;
-      min-width: 4.25rem;
+      min-width: 0;
+      max-width: 100%;
     }
     tr.producto-row-inline.is-editing input.producto-edit[type="text"] {
       width: 100%;
-      min-width: 8rem;
+      min-width: 0;
+      max-width: 100%;
     }
     tr.producto-row-inline.is-editing td.col-monto {
-      min-width: 5.25rem;
+      min-width: 0;
     }
     .table-card--productos .app-th-sort {
       color: #64748b;
@@ -39,13 +41,13 @@
     .table-card--productos .table-actions .btn-icon,
     .table-card--productos .table-actions a.btn-icon {
       box-sizing: border-box !important;
-      width: 34px !important;
-      min-width: 34px !important;
-      height: 34px !important;
+      width: 30px !important;
+      min-width: 30px !important;
+      height: 30px !important;
       padding: 0 !important;
       margin: 0 !important;
       border: 1px solid #e2e8f0 !important;
-      border-radius: 10px !important;
+      border-radius: 8px !important;
       background: #ffffff !important;
       -webkit-appearance: none !important;
       appearance: none !important;
@@ -56,9 +58,38 @@
     }
     .table-card--productos .table-actions .btn-icon svg,
     .table-card--productos .table-actions a.btn-icon svg {
-      width: 16px !important;
-      height: 16px !important;
+      width: 15px !important;
+      height: 15px !important;
       stroke: currentColor !important;
+    }
+    .table-card--productos .table-productos.table-productos--inline-editing .table-actions .btn-icon,
+    .table-card--productos .table-productos.table-productos--inline-editing .table-actions a.btn-icon {
+      width: 26px !important;
+      min-width: 26px !important;
+      height: 26px !important;
+      border-radius: 7px !important;
+    }
+    .table-card--productos .table-productos.table-productos--inline-editing .table-actions .btn-icon svg,
+    .table-card--productos .table-productos.table-productos--inline-editing .table-actions a.btn-icon svg {
+      width: 13px !important;
+      height: 13px !important;
+    }
+    @media (max-width: 575.98px) {
+      .table-card--productos .table-actions-cell {
+        min-width: 8.75rem !important;
+      }
+      .table-card--productos .table-actions .btn-icon,
+      .table-card--productos .table-actions a.btn-icon {
+        width: 28px !important;
+        min-width: 28px !important;
+        height: 28px !important;
+        border-radius: 7px !important;
+      }
+      .table-card--productos .table-actions .btn-icon svg,
+      .table-card--productos .table-actions a.btn-icon svg {
+        width: 14px !important;
+        height: 14px !important;
+      }
     }
   </style>
 {% endblock %}
@@ -272,11 +303,13 @@
                 title="Seleccionar / quitar todos"
               />
             </th>
-            <th scope="col" class="text-center col-producto-codigo productos-th-saas">
-              <a class="app-th-sort" href="?{{ sort_links.codigo }}" title="Ordenar por código">Código{% if sort_ord == "codigo" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
-            </th>
-            <th scope="col" class="productos-th-saas">
-              <a class="app-th-sort" href="?{{ sort_links.descripcion }}" title="Ordenar por descripción">Descripción{% if sort_ord == "descripcion" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            <th scope="col" class="productos-th-saas productos-th-desc-col">
+              <div class="productos-th-desc-stack">
+                <a class="app-th-sort" href="?{{ sort_links.descripcion }}" title="Ordenar por descripción">Descripción{% if sort_ord == "descripcion" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+                <div class="productos-th-sort-sub">
+                  <a class="app-th-sort app-th-sort--codigo" href="?{{ sort_links.codigo }}" title="Ordenar por código">Código{% if sort_ord == "codigo" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+                </div>
+              </div>
             </th>
             <th scope="col" class="text-center productos-th-saas col-hide-sm">
               <a class="app-th-sort" href="?{{ sort_links.tipo }}" title="Ordenar por tipo">Tipo{% if sort_ord == "tipo" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
@@ -312,18 +345,25 @@
                   title="Seleccionar {{ p.codigo }}"
                 />
               </td>
-              <td class="col-producto-codigo text-center font-monospace productos-td-saas align-middle">{{ p.codigo }}</td>
-              <td class="productos-td-saas productos-td-desc align-middle" style="min-width: 11rem">
-                <span class="producto-view">{{ p.descripcion }}</span>
-                <input
-                  type="text"
-                  name="descripcion"
-                  class="form-control form-control-sm rounded-3 producto-edit d-none"
-                  form="producto-inline-{{ p.pk }}"
-                  value="{{ p.descripcion }}"
-                  maxlength="255"
-                  autocomplete="off"
-                />
+              <td class="productos-td-saas productos-td-desc align-middle">
+                <div class="productos-desc-stack min-w-0">
+                  <span class="producto-view productos-desc-title" title="{{ p.descripcion }}">{{ p.descripcion }}</span>
+                  <div class="productos-desc-meta">
+                    <span class="productos-desc-code font-monospace">Código: {{ p.codigo }}</span>
+                    {% if p.stock == 0 %}
+                      <span class="productos-desc-stock-hint" aria-hidden="true"> · Sin stock</span>
+                    {% endif %}
+                  </div>
+                  <input
+                    type="text"
+                    name="descripcion"
+                    class="form-control form-control-sm rounded-3 producto-edit d-none mt-1"
+                    form="producto-inline-{{ p.pk }}"
+                    value="{{ p.descripcion }}"
+                    maxlength="255"
+                    autocomplete="off"
+                  />
+                </div>
               </td>
               <td class="text-center productos-td-saas productos-td-muted align-middle col-hide-sm">
                 <span class="producto-view productos-td-tipo">{{ p.get_tipo_display }}</span>
@@ -418,55 +458,53 @@
                   autocomplete="off"
                 />
               </td>
-              <td class="text-end align-middle table-actions-cell productos-table-actions">
-                <div class="table-actions productos-table-actions-row">
-                  <div class="producto-view table-actions productos-table-actions-row">
-                    <button
-                      type="button"
-                      class="btn-icon btn-edit js-producto-editar"
-                      data-row="producto-row-{{ p.pk }}"
-                      title="Editar"
-                      aria-label="Editar"
-                    >
-                      <i data-lucide="pencil" aria-hidden="true"></i>
-                    </button>
-                    {% if user.is_staff %}
-                      <form method="post" action="{% url 'producto_delete' p.id %}" class="d-inline m-0 producto-accion-form" onsubmit="return confirm('¿Eliminar {{ p.codigo }}?');">
-                        {% csrf_token %}
-                        <input type="hidden" name="retorno_query" value="{{ request.GET.urlencode }}" />
-                        <button class="btn-icon btn-delete" type="submit" title="Eliminar" aria-label="Eliminar">
-                          <i data-lucide="trash-2" aria-hidden="true"></i>
-                        </button>
-                      </form>
-                    {% endif %}
-                  </div>
-                  <div class="producto-edit producto-edit-actions d-none table-actions productos-table-actions-row">
-                    <label class="form-check form-switch sirona-switch mb-0 me-1 small">
-                      <input
-                        class="form-check-input"
-                        type="checkbox"
-                        name="habilitado"
-                        form="producto-inline-{{ p.pk }}"
-                        {% if p.habilitado %}checked{% endif %}
-                      />
-                      <span class="form-check-label">Activo</span>
-                    </label>
-                    <button type="submit" class="btn-icon btn-save" form="producto-inline-{{ p.pk }}" title="Aprobar" aria-label="Aprobar">
-                      <i data-lucide="check" aria-hidden="true"></i>
-                    </button>
-                    <button type="button" class="btn-icon btn-disable js-producto-cancelar" title="Eliminar cambios" aria-label="Eliminar cambios">
-                      <i data-lucide="x" aria-hidden="true"></i>
-                    </button>
-                    <a class="btn-icon btn-edit" href="{% url 'producto_update' p.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" title="Editar ficha completa" aria-label="Editar ficha completa">
-                      <i data-lucide="pencil" aria-hidden="true"></i>
-                    </a>
-                  </div>
+              <td class="text-end align-middle table-actions-cell">
+                <div class="producto-view table-actions productos-actions-inline">
+                  <button
+                    type="button"
+                    class="btn-icon btn-edit js-producto-editar"
+                    data-row="producto-row-{{ p.pk }}"
+                    title="Editar"
+                    aria-label="Editar"
+                  >
+                    <i data-lucide="pencil" aria-hidden="true"></i>
+                  </button>
+                  {% if user.is_staff %}
+                    <form method="post" action="{% url 'producto_delete' p.id %}" class="d-inline m-0 producto-accion-form" onsubmit="return confirm('¿Eliminar {{ p.codigo }}?');">
+                      {% csrf_token %}
+                      <input type="hidden" name="retorno_query" value="{{ request.GET.urlencode }}" />
+                      <button class="btn-icon btn-delete" type="submit" title="Eliminar" aria-label="Eliminar">
+                        <i data-lucide="trash-2" aria-hidden="true"></i>
+                      </button>
+                    </form>
+                  {% endif %}
+                </div>
+                <div class="producto-edit producto-edit-actions d-none table-actions productos-actions-inline">
+                  <label class="form-check form-switch sirona-switch mb-0 productos-actions-switch" title="Producto habilitado">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="habilitado"
+                      form="producto-inline-{{ p.pk }}"
+                      {% if p.habilitado %}checked{% endif %}
+                    />
+                    <span class="form-check-label visually-hidden">Activo</span>
+                  </label>
+                  <button type="submit" class="btn-icon btn-save" form="producto-inline-{{ p.pk }}" title="Aprobar" aria-label="Aprobar">
+                    <i data-lucide="check" aria-hidden="true"></i>
+                  </button>
+                  <button type="button" class="btn-icon btn-disable js-producto-cancelar" title="Eliminar cambios" aria-label="Eliminar cambios">
+                    <i data-lucide="x" aria-hidden="true"></i>
+                  </button>
+                  <a class="btn-icon btn-edit" href="{% url 'producto_update' p.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" title="Editar ficha completa" aria-label="Editar ficha completa">
+                    <i data-lucide="pencil" aria-hidden="true"></i>
+                  </a>
                 </div>
               </td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="9" class="table-empty">No hay productos cargados.</td>
+              <td colspan="8" class="table-empty">No hay productos cargados.</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -576,6 +614,16 @@
         });
       }
 
+      function syncProductosInlineEditingTable() {
+        var table = document.querySelector(".table-card--productos table.table-productos");
+        if (!table) return;
+        if (table.querySelector("tr.producto-row-inline.is-editing")) {
+          table.classList.add("table-productos--inline-editing");
+        } else {
+          table.classList.remove("table-productos--inline-editing");
+        }
+      }
+
       document.querySelectorAll(".js-producto-editar").forEach(function (btn) {
         btn.addEventListener("click", function () {
           var id = btn.getAttribute("data-row");
@@ -586,6 +634,7 @@
           var row = document.getElementById(id);
           if (row) {
             row.classList.add("is-editing");
+            syncProductosInlineEditingTable();
             try {
               row.scrollIntoView({ block: "nearest", behavior: "smooth" });
             } catch (e) {}
