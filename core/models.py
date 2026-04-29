@@ -26,7 +26,7 @@ class PerfilAcceso(models.Model):
 
 
 class NotaAdmin(models.Model):
-    """Mensaje corto del usuario para administración (sugerencias, cambios, pedidos)."""
+    """Mensaje del usuario a administración o respuesta en el mismo hilo (estilo chat)."""
 
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -40,9 +40,33 @@ class NotaAdmin(models.Model):
         on_delete=models.SET_NULL,
         related_name="notas_admin",
     )
+    parent = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="respuestas",
+    )
+    es_staff = models.BooleanField(default=False, db_index=True)
+    creado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="notas_admin_enviadas_staff",
+    )
     texto = models.TextField(max_length=2000)
     pagina = models.CharField(max_length=255, blank=True, default="")
-    leida = models.BooleanField(default=False, db_index=True)
+    leida = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="Si es mensaje del usuario: lo leyó administración. Si es staff: siempre True al crear.",
+    )
+    leida_usuario = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="Si es respuesta de staff: el usuario ya abrió/vio el mensaje.",
+    )
     creado_en = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -50,4 +74,8 @@ class NotaAdmin(models.Model):
 
     def __str__(self) -> str:
         return f"NotaAdmin({self.pk}) de {self.usuario_id}"
+
+    @property
+    def raiz(self) -> "NotaAdmin":
+        return self if self.parent_id is None else self.parent
 

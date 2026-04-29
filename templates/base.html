@@ -16,8 +16,8 @@
       rel="stylesheet"
     />
     <!-- theme: ios-2026r29 -->
-    <link href="{% static 'css/theme.css' %}?v=ios-2026r34" rel="stylesheet" />
-    <link href="{% static 'css/styles.css' %}?v=saas-2026r9" rel="stylesheet" />
+    <link href="{% static 'css/theme.css' %}?v=ios-2026r37" rel="stylesheet" />
+    <link href="{% static 'css/styles.css' %}?v=saas-2026r10" rel="stylesheet" />
     <link href="{% static 'css/ui-force-productos.css' %}?v=2" rel="stylesheet" />
     <link href="{% static 'css/sirona-calc.css' %}" rel="stylesheet" />
     <style>
@@ -116,71 +116,64 @@
               </a>
             </div>
 
-            <div class="sirona-topbar-center d-none d-md-flex">
-              <div class="sirona-topbar-search" role="search" aria-label="Buscar en el sistema">
-                <i data-lucide="search" class="sirona-search-ico" aria-hidden="true"></i>
-                <input
-                  id="sironaTopbarSearch"
-                  class="sirona-search-input"
-                  type="search"
-                  autocomplete="off"
-                  placeholder="Buscar en el sistema..."
-                />
-                <span class="sirona-kbd d-none d-lg-inline" aria-hidden="true">Ctrl K</span>
+            <div class="sirona-topbar-trailing">
+              <div class="sirona-topbar-center d-none d-md-flex">
+                <div class="sirona-topbar-search" role="search" aria-label="Buscar en el sistema">
+                  <i data-lucide="search" class="sirona-search-ico" aria-hidden="true"></i>
+                  <input
+                    id="sironaTopbarSearch"
+                    class="sirona-search-input"
+                    type="search"
+                    autocomplete="off"
+                    placeholder="Buscar…"
+                  />
+                </div>
+              </div>
+              <div class="sirona-topbar-actions">
+                <button
+                  class="btn app-icon-btn"
+                  type="button"
+                  data-bs-toggle="offcanvas"
+                  data-bs-target="#sironaCalc"
+                  aria-controls="sironaCalc"
+                  aria-label="Abrir calculadora"
+                  title="Calculadora"
+                >
+                  <i data-lucide="calculator" class="app-lucide-toolbar"></i>
+                </button>
+                {% if recibe_notas_admin %}
+                  <a
+                    class="btn app-icon-btn position-relative"
+                    href="{% url 'admin_notas_list' %}"
+                    aria-label="Mensajes con usuarios{% if notas_admin_no_leidas %}: hay sin leer{% endif %}"
+                    title="Mensajes"
+                  >
+                    <i data-lucide="message-square" class="app-lucide-toolbar"></i>
+                    {% if notas_admin_no_leidas %}
+                      <span class="position-absolute top-0 start-100 translate-middle sirona-notif-dot" aria-hidden="true"></span>
+                    {% endif %}
+                  </a>
+                {% else %}
+                  <button
+                    class="btn app-icon-btn position-relative sirona-msgs-user-btn"
+                    type="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#sironaNotas"
+                    aria-controls="sironaNotas"
+                    aria-label="Mensajes con administración{% if notas_usuario_no_leidas %}: hay respuestas nuevas{% endif %}"
+                    title="Mensajes"
+                  >
+                    <i data-lucide="message-square" class="app-lucide-toolbar"></i>
+                    {% if notas_usuario_no_leidas %}
+                      <span class="position-absolute top-0 start-100 translate-middle sirona-notif-dot" aria-hidden="true"></span>
+                    {% endif %}
+                  </button>
+                {% endif %}
               </div>
             </div>
 
             <div class="sirona-topbar-right">
-              <div class="d-flex align-items-center gap-2">
-                {% if has_vendedor_perfil %}
-                  {% if not request.user.perfil_acceso or not request.user.perfil_acceso.solo_vendedor %}
-                    <a class="btn btn-sm btn-outline-secondary d-none d-lg-inline-flex" href="{% url 'switch_to_full_mode' %}" title="Volver al sistema completo">
-                      Volver al modo completo
-                    </a>
-                  {% endif %}
-                {% endif %}
-
-                <div class="sirona-topbar-actions">
-                  <button
-                    class="btn app-icon-btn"
-                    type="button"
-                    data-bs-toggle="offcanvas"
-                    data-bs-target="#sironaCalc"
-                    aria-controls="sironaCalc"
-                    aria-label="Abrir calculadora"
-                    title="Calculadora"
-                  >
-                    <i data-lucide="calculator" class="app-lucide-toolbar"></i>
-                  </button>
-                  {% if recibe_notas_admin %}
-                    <a
-                      class="btn app-icon-btn position-relative"
-                      href="{% url 'admin_notas_list' %}"
-                      aria-label="Leer mensajes de administración"
-                      title="Mensajes"
-                    >
-                      <i data-lucide="message-square" class="app-lucide-toolbar"></i>
-                      {% if notas_admin_no_leidas %}
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger">
-                          {{ notas_admin_no_leidas }}
-                        </span>
-                      {% endif %}
-                    </a>
-                  {% else %}
-                    <button
-                      class="btn app-icon-btn"
-                      type="button"
-                      data-bs-toggle="modal"
-                      data-bs-target="#sironaNotas"
-                      aria-controls="sironaNotas"
-                      aria-label="Enviar nota a administración"
-                      title="Notas"
-                    >
-                      <i data-lucide="message-square" class="app-lucide-toolbar"></i>
-                    </button>
-                  {% endif %}
-                </div>
-
+              <div class="d-flex align-items-center gap-2 flex-nowrap">
                 <div class="dropdown sirona-profile-dropdown">
                   <button
                     class="btn sirona-profile-btn dropdown-toggle"
@@ -208,6 +201,12 @@
                   <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                     <li><h6 class="dropdown-header">{{ request.user.username }}</h6></li>
                     <li><hr class="dropdown-divider" /></li>
+                    {% if can_switch_to_full_mode %}
+                      <li>
+                        <a class="dropdown-item" href="{% url 'switch_to_full_mode' %}">Modo completo</a>
+                      </li>
+                      <li><hr class="dropdown-divider" /></li>
+                    {% endif %}
                     <li><a class="dropdown-item" href="{% url 'logout' %}">Salir</a></li>
                   </ul>
                 </div>
@@ -242,69 +241,64 @@
               </a>
             </div>
 
-            <div class="sirona-topbar-center">
-              <div class="sirona-topbar-search" role="search" aria-label="Buscar en el sistema">
-                <i data-lucide="search" class="sirona-search-ico" aria-hidden="true"></i>
-                <input
-                  id="sironaTopbarSearch"
-                  class="sirona-search-input"
-                  type="search"
-                  autocomplete="off"
-                  placeholder="Buscar en el sistema..."
-                />
-                <span class="sirona-kbd d-none d-lg-inline" aria-hidden="true">Ctrl K</span>
+            <div class="sirona-topbar-trailing">
+              <div class="sirona-topbar-center">
+                <div class="sirona-topbar-search" role="search" aria-label="Buscar en el sistema">
+                  <i data-lucide="search" class="sirona-search-ico" aria-hidden="true"></i>
+                  <input
+                    id="sironaTopbarSearch"
+                    class="sirona-search-input"
+                    type="search"
+                    autocomplete="off"
+                    placeholder="Buscar…"
+                  />
+                </div>
+              </div>
+              <div class="sirona-topbar-actions">
+                <button
+                  class="btn app-icon-btn"
+                  type="button"
+                  data-bs-toggle="offcanvas"
+                  data-bs-target="#sironaCalc"
+                  aria-controls="sironaCalc"
+                  aria-label="Abrir calculadora"
+                  title="Calculadora"
+                >
+                  <i data-lucide="calculator" class="app-lucide-toolbar"></i>
+                </button>
+                {% if recibe_notas_admin %}
+                  <a
+                    class="btn app-icon-btn position-relative"
+                    href="{% url 'admin_notas_list' %}"
+                    aria-label="Mensajes con usuarios{% if notas_admin_no_leidas %}: hay sin leer{% endif %}"
+                    title="Mensajes"
+                  >
+                    <i data-lucide="message-square" class="app-lucide-toolbar"></i>
+                    {% if notas_admin_no_leidas %}
+                      <span class="position-absolute top-0 start-100 translate-middle sirona-notif-dot" aria-hidden="true"></span>
+                    {% endif %}
+                  </a>
+                {% else %}
+                  <button
+                    class="btn app-icon-btn position-relative sirona-msgs-user-btn"
+                    type="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#sironaNotas"
+                    aria-controls="sironaNotas"
+                    aria-label="Mensajes con administración{% if notas_usuario_no_leidas %}: hay respuestas nuevas{% endif %}"
+                    title="Mensajes"
+                  >
+                    <i data-lucide="message-square" class="app-lucide-toolbar"></i>
+                    {% if notas_usuario_no_leidas %}
+                      <span class="position-absolute top-0 start-100 translate-middle sirona-notif-dot" aria-hidden="true"></span>
+                    {% endif %}
+                  </button>
+                {% endif %}
               </div>
             </div>
 
             <div class="sirona-topbar-right">
-              <div class="d-flex align-items-center gap-2">
-                {% if can_switch_to_vendor_mode %}
-                  <a class="btn btn-sm btn-outline-primary d-none d-lg-inline-flex" href="{% url 'switch_to_vendor_mode' %}" title="Cambiar a modo vendedor">
-                    Cambiar a modo vendedor
-                  </a>
-                {% endif %}
-
-                <div class="sirona-topbar-actions">
-                  <button
-                    class="btn app-icon-btn"
-                    type="button"
-                    data-bs-toggle="offcanvas"
-                    data-bs-target="#sironaCalc"
-                    aria-controls="sironaCalc"
-                    aria-label="Abrir calculadora"
-                    title="Calculadora"
-                  >
-                    <i data-lucide="calculator" class="app-lucide-toolbar"></i>
-                  </button>
-                  {% if recibe_notas_admin %}
-                    <a
-                      class="btn app-icon-btn position-relative"
-                      href="{% url 'admin_notas_list' %}"
-                      aria-label="Leer mensajes de administración"
-                      title="Mensajes"
-                    >
-                      <i data-lucide="message-square" class="app-lucide-toolbar"></i>
-                      {% if notas_admin_no_leidas %}
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger">
-                          {{ notas_admin_no_leidas }}
-                        </span>
-                      {% endif %}
-                    </a>
-                  {% else %}
-                    <button
-                      class="btn app-icon-btn"
-                      type="button"
-                      data-bs-toggle="modal"
-                      data-bs-target="#sironaNotas"
-                      aria-controls="sironaNotas"
-                      aria-label="Enviar nota a administración"
-                      title="Notas"
-                    >
-                      <i data-lucide="message-square" class="app-lucide-toolbar"></i>
-                    </button>
-                  {% endif %}
-                </div>
-
+              <div class="d-flex align-items-center gap-2 flex-nowrap">
                 <div class="dropdown sirona-profile-dropdown">
                   <button
                     class="btn sirona-profile-btn dropdown-toggle"
@@ -334,6 +328,12 @@
                   <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                     <li><h6 class="dropdown-header">{{ request.user.username }}</h6></li>
                     <li><hr class="dropdown-divider" /></li>
+                    {% if can_switch_to_vendor_mode %}
+                      <li>
+                        <a class="dropdown-item" href="{% url 'switch_to_vendor_mode' %}">Modo vendedor</a>
+                      </li>
+                      <li><hr class="dropdown-divider" /></li>
+                    {% endif %}
                     <li><a class="dropdown-item" href="{% url 'cambiar_password' %}">Cambiar contraseña</a></li>
                     <li><a class="dropdown-item" href="{% url 'logout' %}">Salir</a></li>
                   </ul>
@@ -373,6 +373,25 @@
               <span class="app-sidebar-icon-wrap"><i data-lucide="home"></i></span>
               <span class="app-sidebar-label sidebar-label">Inicio</span>
             </a>
+            {% if not recibe_notas_admin %}
+              <button
+                type="button"
+                class="sidebar-link app-sidebar-link border-0 bg-transparent w-100 text-start d-flex align-items-center sirona-sidebar-msgs-user"
+                data-bs-toggle="modal"
+                data-bs-target="#sironaNotas"
+                aria-controls="sironaNotas"
+                title="Mensajes con administración"
+                aria-label="Mensajes con administración{% if notas_usuario_no_leidas %}: hay respuestas nuevas{% endif %}"
+              >
+                <span class="app-sidebar-icon-wrap position-relative">
+                  <i data-lucide="message-square"></i>
+                  {% if notas_usuario_no_leidas %}
+                    <span class="position-absolute top-0 start-100 translate-middle sirona-notif-dot" aria-hidden="true"></span>
+                  {% endif %}
+                </span>
+                <span class="app-sidebar-label sidebar-label">Mensajes</span>
+              </button>
+            {% endif %}
 
             <div class="sidebar-section-title">Productos</div>
             <div class="sidebar-group" data-group="productos">
@@ -535,8 +554,17 @@
                     <span class="app-sidebar-label sidebar-label">Historial</span>
                   </a>
                   {% if recibe_notas_admin %}
-                    <a class="sidebar-link app-sidebar-link" href="{% url 'admin_notas_list' %}" title="Historial">
-                      <span class="app-sidebar-icon-wrap"><i data-lucide="inbox"></i></span>
+                    <a
+                      class="sidebar-link app-sidebar-link position-relative"
+                      href="{% url 'admin_notas_list' %}"
+                      title="Notas de usuarios"
+                    >
+                      <span class="app-sidebar-icon-wrap position-relative">
+                        <i data-lucide="inbox"></i>
+                        {% if notas_admin_no_leidas %}
+                          <span class="position-absolute top-0 start-100 translate-middle sirona-notif-dot" aria-hidden="true"></span>
+                        {% endif %}
+                      </span>
                       <span class="app-sidebar-label sidebar-label">
                         Notas
                         {% if notas_admin_no_leidas %}
@@ -658,6 +686,25 @@
                 <span class="app-sidebar-icon-wrap"><i data-lucide="home"></i></span>
                 <span class="app-sidebar-label">Inicio</span>
               </a>
+              {% if not recibe_notas_admin %}
+                <button
+                  type="button"
+                  class="app-sidebar-link sirona-offcanvas-nav-link border-0 bg-transparent w-100 text-start d-flex align-items-center sirona-offcanvas-msgs-user"
+                  data-bs-toggle="modal"
+                  data-bs-target="#sironaNotas"
+                  aria-controls="sironaNotas"
+                  title="Mensajes con administración"
+                  aria-label="Mensajes con administración{% if notas_usuario_no_leidas %}: hay respuestas nuevas{% endif %}"
+                >
+                  <span class="app-sidebar-icon-wrap position-relative">
+                    <i data-lucide="message-square"></i>
+                    {% if notas_usuario_no_leidas %}
+                      <span class="position-absolute top-0 start-100 translate-middle sirona-notif-dot" aria-hidden="true"></span>
+                    {% endif %}
+                  </span>
+                  <span class="app-sidebar-label">Mensajes</span>
+                </button>
+              {% endif %}
 
               <div class="sidebar-section-title">Productos</div>
               <div class="sidebar-group offcanvas-group" data-group="productos">
@@ -820,8 +867,13 @@
                       <span class="app-sidebar-label">Historial</span>
                     </a>
                     {% if recibe_notas_admin %}
-                      <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'admin_notas_list' %}">
-                        <span class="app-sidebar-icon-wrap"><i data-lucide="inbox"></i></span>
+                      <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link position-relative" href="{% url 'admin_notas_list' %}">
+                        <span class="app-sidebar-icon-wrap position-relative">
+                          <i data-lucide="inbox"></i>
+                          {% if notas_admin_no_leidas %}
+                            <span class="position-absolute top-0 start-100 translate-middle sirona-notif-dot" aria-hidden="true"></span>
+                          {% endif %}
+                        </span>
                         <span class="app-sidebar-label">
                           Notas
                           {% if notas_admin_no_leidas %}
@@ -889,33 +941,57 @@
     </div>
 
     {% if request.user.is_authenticated %}
-      <div class="modal fade" id="sironaNotas" tabindex="-1" aria-labelledby="sironaNotasLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+      <div
+        class="modal fade"
+        id="sironaNotas"
+        tabindex="-1"
+        aria-labelledby="sironaNotasLabel"
+        aria-hidden="true"
+        data-notas-chat-url="{% url 'notas_chat_json' %}"
+        data-notas-mark-url="{% url 'notas_marcar_leidas_usuario' %}"
+        data-notas-send-url="{% url 'nota_admin_enviar' %}"
+      >
+        <div class="modal-dialog modal-dialog-scrollable modal-lg">
           <div class="modal-content border-0 shadow">
-            <form method="post" action="{% url 'nota_admin_enviar' %}">
-              {% csrf_token %}
-              <input type="hidden" name="next" value="{{ request.get_full_path }}" />
-              <input type="hidden" name="pagina" value="{{ request.path }}" />
-              <div class="modal-header">
-                <h5 class="modal-title" id="sironaNotasLabel">Notas</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            <div class="modal-header">
+              <h5 class="modal-title" id="sironaNotasLabel">Mensajes con administración</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body p-0 d-flex flex-column sirona-notas-chat-wrap">
+              <div class="text-muted small px-3 pt-2 pb-1">
+                Podés tener varios hilos con administración. Elegí uno abajo o iniciá uno nuevo; las respuestas del equipo se marcan como leídas al abrir cada conversación.
               </div>
-              <div class="modal-body">
-                <div class="text-muted small mb-2">Dejá un mensaje para administración (sugerencias, cambios, errores, etc.).</div>
-                <textarea
-                  class="form-control"
-                  name="nota_texto"
-                  rows="5"
-                  maxlength="2000"
-                  placeholder="Escribí tu nota…"
-                  required
-                ></textarea>
+              <div class="sirona-notas-hilo-bar d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom">
+                <label class="small text-muted mb-0 text-nowrap" for="sironaNotasHiloSel">Conversación</label>
+                <select id="sironaNotasHiloSel" class="form-select form-select-sm flex-grow-1" style="min-width: 10rem" aria-label="Elegir conversación"></select>
+                <button type="button" class="btn btn-sm btn-outline-primary text-nowrap" id="sironaNotasNuevoHiloBtn">
+                  Nuevo hilo
+                </button>
               </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="submit" class="btn btn-primary">Enviar</button>
+              <div id="sironaNotasMensajes" class="sirona-notas-chat-messages flex-grow-1 overflow-auto px-3 py-2" role="log" aria-live="polite"></div>
+              <div class="border-top bg-light px-3 py-3">
+                <form id="sironaNotasChatForm" method="post" action="{% url 'nota_admin_enviar' %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                  <input type="hidden" name="pagina" value="{{ request.path }}" />
+                  <input type="hidden" name="parent_id" id="sironaNotasParentId" value="" autocomplete="off" />
+                  <label class="form-label small text-muted mb-1" for="sironaNotasTexto">Tu mensaje</label>
+                  <textarea
+                    id="sironaNotasTexto"
+                    class="form-control"
+                    name="nota_texto"
+                    rows="3"
+                    maxlength="2000"
+                    placeholder="Escribí un mensaje…"
+                    required
+                  ></textarea>
+                  <div class="d-flex justify-content-end gap-2 mt-2">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-primary" id="sironaNotasEnviarBtn">Enviar</button>
+                  </div>
+                </form>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       </div>
@@ -927,26 +1003,313 @@
 
     <script src="{% static 'js/sirona-icons.js' %}?v=5"></script>
     <script>
-      // Topbar: sombra al hacer scroll + atajo Ctrl+K para enfocar búsqueda (solo UI).
+      (function () {
+        const modalEl = document.getElementById("sironaNotas");
+        if (!modalEl) return;
+        const urlChat = modalEl.getAttribute("data-notas-chat-url");
+        const urlMark = modalEl.getAttribute("data-notas-mark-url");
+        const urlSend = modalEl.getAttribute("data-notas-send-url");
+        const box = document.getElementById("sironaNotasMensajes");
+        const form = document.getElementById("sironaNotasChatForm");
+        const parentIn = document.getElementById("sironaNotasParentId");
+        const textarea = document.getElementById("sironaNotasTexto");
+        const btnSend = document.getElementById("sironaNotasEnviarBtn");
+        const hiloSel = document.getElementById("sironaNotasHiloSel");
+        const btnNuevoHilo = document.getElementById("sironaNotasNuevoHiloBtn");
+        if (!box || !form || !textarea || !btnSend || !urlSend) return;
+
+        const STORAGE_KEY = "sironaNotasHiloId";
+        let nuevoModo = false;
+
+        function readStoragePreference() {
+          try {
+            return sessionStorage.getItem(STORAGE_KEY) || "";
+          } catch (e) {
+            return "";
+          }
+        }
+
+        function writeStoragePreference(val) {
+          try {
+            if (val === null || val === undefined || val === "") sessionStorage.removeItem(STORAGE_KEY);
+            else sessionStorage.setItem(STORAGE_KEY, val);
+          } catch (e) {}
+        }
+
+        function escapeHtml(s) {
+          const d = document.createElement("div");
+          d.textContent = s;
+          return d.innerHTML;
+        }
+
+        function fmtTime(iso) {
+          try {
+            const d = new Date(iso);
+            return d.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+          } catch (e) {
+            return "";
+          }
+        }
+
+        function currentThreadRootId() {
+          if (nuevoModo || !hiloSel) return null;
+          const v = hiloSel.value;
+          if (!v || v === "__nuevo__") return null;
+          const n = parseInt(v, 10);
+          return isNaN(n) ? null : n;
+        }
+
+        function syncParentInput() {
+          if (!parentIn) return;
+          const id = currentThreadRootId();
+          parentIn.value = id == null ? "" : String(id);
+        }
+
+        function syncBadges(sinLeer) {
+          const n = typeof sinLeer === "number" ? sinLeer : 0;
+          const targets = ".sirona-msgs-user-btn, .sirona-sidebar-msgs-user, .sirona-offcanvas-msgs-user";
+          document.querySelectorAll(targets).forEach(function (btn) {
+            const wrap = btn.querySelector(".app-sidebar-icon-wrap");
+            const host = wrap || btn;
+            let dot = host.querySelector(".sirona-notif-dot");
+            if (n > 0) {
+              if (!dot) {
+                dot = document.createElement("span");
+                dot.className = "position-absolute top-0 start-100 translate-middle sirona-notif-dot";
+                dot.setAttribute("aria-hidden", "true");
+                if (wrap && !wrap.classList.contains("position-relative")) wrap.classList.add("position-relative");
+                host.appendChild(dot);
+              }
+            } else if (dot) {
+              dot.remove();
+            }
+          });
+          try {
+            if (window.lucide && typeof lucide.createIcons === "function") lucide.createIcons();
+          } catch (e) {}
+        }
+
+        function renderMensajes(arr, esNuevo) {
+          if (esNuevo && (!arr || !arr.length)) {
+            box.innerHTML =
+              '<p class="text-muted small mb-0">Nuevo hilo: el primer mensaje que envíes iniciará esta conversación con administración.</p>';
+            return;
+          }
+          if (!arr || !arr.length) {
+            box.innerHTML = '<p class="text-muted small mb-0">Todavía no hay mensajes. Escribí el primero abajo.</p>';
+            return;
+          }
+          box.innerHTML = arr
+            .map(function (m) {
+              const side = m.es_staff ? "sirona-chat-bubble--in" : "sirona-chat-bubble--out";
+              const who = escapeHtml(m.autor || "");
+              const txt = escapeHtml(m.texto || "").replace(/\n/g, "<br>");
+              const when = fmtTime(m.creado_en);
+              return (
+                '<div class="sirona-chat-bubble ' +
+                side +
+                '">' +
+                '<div class="sirona-chat-bubble-meta small text-muted">' +
+                who +
+                " · " +
+                when +
+                "</div>" +
+                '<div class="sirona-chat-bubble-text">' +
+                txt +
+                "</div></div>"
+              );
+            })
+            .join("");
+          box.scrollTop = box.scrollHeight;
+          try {
+            if (window.lucide && typeof lucide.createIcons === "function") lucide.createIcons();
+          } catch (e) {}
+        }
+
+        function fillHiloSelect(hilos, activeHiloId) {
+          if (!hiloSel) return;
+          hiloSel.innerHTML = "";
+          const oNuevo = document.createElement("option");
+          oNuevo.value = "__nuevo__";
+          oNuevo.textContent = "+ Nuevo hilo";
+          hiloSel.appendChild(oNuevo);
+          (hilos || []).forEach(function (h) {
+            const o = document.createElement("option");
+            o.value = String(h.id);
+            let label = (h.preview || "(sin texto)").slice(0, 72);
+            if (h.no_leidas) label += " · sin leer";
+            o.textContent = label;
+            hiloSel.appendChild(o);
+          });
+          if (nuevoModo) {
+            hiloSel.value = "__nuevo__";
+          } else if (activeHiloId != null && (hilos || []).some(function (x) { return Number(x.id) === Number(activeHiloId); })) {
+            hiloSel.value = String(activeHiloId);
+          } else if ((hilos || []).length) {
+            hiloSel.value = String(hilos[0].id);
+            writeStoragePreference(String(hilos[0].id));
+            nuevoModo = false;
+          } else {
+            hiloSel.value = "__nuevo__";
+            nuevoModo = true;
+            writeStoragePreference("nuevo");
+          }
+        }
+
+        function buildChatUrl() {
+          if (!urlChat) return "";
+          const sep = urlChat.indexOf("?") >= 0 ? "&" : "?";
+          if (nuevoModo) return urlChat + sep + "nuevo=1";
+          const raw = readStoragePreference();
+          if (raw && raw !== "nuevo" && /^\d+$/.test(raw)) return urlChat + sep + "hilo=" + encodeURIComponent(raw);
+          return urlChat;
+        }
+
+        function loadChat() {
+          if (!urlChat) return Promise.resolve();
+          return fetch(buildChatUrl(), { credentials: "same-origin" })
+            .then(function (r) {
+              return r.json();
+            })
+            .then(function (data) {
+              renderMensajes(data.mensajes || [], nuevoModo);
+              fillHiloSelect(data.hilos || [], nuevoModo ? null : data.hilo_id);
+              if (!nuevoModo && data.hilo_id != null) writeStoragePreference(String(data.hilo_id));
+              syncParentInput();
+            })
+            .catch(function () {
+              box.innerHTML = '<p class="text-danger small mb-0">No se pudo cargar el chat.</p>';
+            });
+        }
+
+        function markRead() {
+          if (!urlMark) return Promise.resolve();
+          const hid = currentThreadRootId();
+          if (hid == null) return Promise.resolve();
+          const csrfIn = form.querySelector("[name=csrfmiddlewaretoken]");
+          const csrf = csrfIn ? csrfIn.value : "";
+          const params = new URLSearchParams({ csrfmiddlewaretoken: csrf });
+          params.set("hilo_id", String(hid));
+          return fetch(urlMark, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              "X-CSRFToken": csrf,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: params,
+          })
+            .then(function (r) {
+              return r.json().catch(function () {
+                return null;
+              });
+            })
+            .then(function (body) {
+              if (body && typeof body.sin_leer === "number") syncBadges(body.sin_leer);
+            })
+            .catch(function () {});
+        }
+
+        document.querySelectorAll('[data-bs-target="#sironaNotas"]').forEach(function (el) {
+          el.addEventListener("click", function () {
+            const menu = document.getElementById("sironaMenu");
+            if (menu && menu.classList.contains("show") && typeof bootstrap !== "undefined") {
+              const oc = bootstrap.Offcanvas.getInstance(menu);
+              if (oc) oc.hide();
+            }
+          });
+        });
+
+        if (hiloSel) {
+          hiloSel.addEventListener("change", function () {
+            if (hiloSel.value === "__nuevo__") {
+              nuevoModo = true;
+              writeStoragePreference("nuevo");
+            } else {
+              nuevoModo = false;
+              writeStoragePreference(hiloSel.value);
+            }
+            loadChat().then(function () {
+              return markRead();
+            });
+          });
+        }
+
+        if (btnNuevoHilo && hiloSel) {
+          btnNuevoHilo.addEventListener("click", function () {
+            nuevoModo = true;
+            writeStoragePreference("nuevo");
+            hiloSel.value = "__nuevo__";
+            loadChat().then(function () {
+              return markRead();
+            });
+          });
+        }
+
+        modalEl.addEventListener("shown.bs.modal", function () {
+          const raw = readStoragePreference();
+          nuevoModo = raw === "nuevo";
+          loadChat().then(function () {
+            return markRead();
+          });
+        });
+
+        form.addEventListener("submit", function (ev) {
+          ev.preventDefault();
+          const tx = (textarea.value || "").trim();
+          if (!tx) return;
+          const csrf = form.querySelector("[name=csrfmiddlewaretoken]").value;
+          const fd = new FormData(form);
+          btnSend.disabled = true;
+          fetch(urlSend, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              "X-CSRFToken": csrf,
+            },
+            body: fd,
+          })
+            .then(function (r) {
+              return r.json().then(
+                function (body) {
+                  return { ok: r.ok, body: body };
+                },
+                function () {
+                  return { ok: false, body: null };
+                }
+              );
+            })
+            .then(function (res) {
+              if (!res.ok || !res.body || !res.body.ok) {
+                window.alert((res.body && res.body.error) || "No se pudo enviar.");
+                return;
+              }
+              textarea.value = "";
+              if (res.body.nueva_raiz_id) {
+                nuevoModo = false;
+                writeStoragePreference(String(res.body.nueva_raiz_id));
+              }
+              return loadChat().then(function () {
+                return markRead();
+              });
+            })
+            .finally(function () {
+              btnSend.disabled = false;
+            });
+        });
+      })();
+    </script>
+    <script>
+      // Topbar: sombra al hacer scroll (solo UI).
       (function () {
         try {
           const topbar = document.getElementById("sironaTopbar");
-          const search = document.getElementById("sironaTopbarSearch");
           if (topbar) {
             const onScroll = () => topbar.classList.toggle("is-scrolled", (window.scrollY || 0) > 4);
             onScroll();
             window.addEventListener("scroll", onScroll, { passive: true });
-          }
-          if (search) {
-            window.addEventListener("keydown", (e) => {
-              const isK = (e.key || "").toLowerCase() === "k";
-              const isMod = e.ctrlKey || e.metaKey;
-              if (!isK || !isMod) return;
-              if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable)) return;
-              e.preventDefault();
-              search.focus();
-              search.select();
-            });
           }
         } catch (e) {}
       })();

@@ -12,7 +12,7 @@ class PerfilAccesoAdmin(admin.ModelAdmin):
 
 @admin.register(NotaAdmin)
 class NotaAdminAdmin(admin.ModelAdmin):
-    list_display = ("creado_en", "usuario", "vendedor", "leida", "pagina", "texto")
-    list_filter = ("leida", "creado_en")
+    list_display = ("creado_en", "usuario", "vendedor", "es_staff", "leida", "leida_usuario", "pagina", "texto")
+    list_filter = ("leida", "es_staff", "leida_usuario", "creado_en")
     search_fields = ("usuario__username", "usuario__email", "vendedor__codigo", "vendedor__apellido", "texto")
     ordering = ("-creado_en", "-id")

@@ -3,9 +3,9 @@
 {% block content %}
   <div class="app-page-header mb-3 d-flex flex-wrap align-items-center gap-2">
     <div>
-      <h1 class="app-page-title mb-0">Notas</h1>
+      <h1 class="app-page-title mb-0">Mensajes</h1>
       <div class="text-muted small">
-        Mensajes enviados por los usuarios. No leídas: {{ total_no_leidas }}.
+        Conversaciones con usuarios. Mensajes de usuario sin leer: {{ total_no_leidas }}.
       </div>
     </div>
     <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'admin_usuarios_list' %}">Volver a usuarios</a>
@@ -18,9 +18,9 @@
         <div class="col-12 col-md-4 col-lg-3">
           <label class="form-label small text-muted mb-0">Estado</label>
           <select name="estado" class="form-select form-select-sm">
-            <option value="no_leidas" {% if filtros.estado == "no_leidas" %}selected{% endif %}>No leídas</option>
+            <option value="no_leidas" {% if filtros.estado == "no_leidas" %}selected{% endif %}>Con pendientes</option>
             <option value="todas" {% if filtros.estado == "todas" %}selected{% endif %}>Todas</option>
-            <option value="leidas" {% if filtros.estado == "leidas" %}selected{% endif %}>Leídas</option>
+            <option value="leidas" {% if filtros.estado == "leidas" %}selected{% endif %}>Sin pendientes</option>
           </select>
         </div>
         <div class="col-12 col-md-6 col-lg-5">
@@ -41,101 +41,92 @@
     </div>
   </div>
 
-  <div class="table-card presu-lista-modern admin-notas-lista mb-3">
-    <div class="table-card-header">
-      <h2 class="table-card-title">Mensajes</h2>
-      <span class="table-card-count">{{ page_obj.paginator.count }} nota(s)</span>
-    </div>
-    <div class="table-responsive presu-lista-table-wrap">
-      <table class="modern-table admin-notas-tabla" id="admin-notas-tabla">
-        <thead>
-          <tr>
-            <th scope="col" class="th-fecha">Fecha</th>
-            <th scope="col" class="th-user-col">Usuario</th>
-            <th scope="col" class="th-msg">Mensaje</th>
-            <th scope="col" class="th-pag">Página</th>
-            <th scope="col" class="text-center col-center th-estado">Estado</th>
-            <th scope="col" class="text-end presu-th-acciones col-presu-acciones">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for nota in page_obj %}
-            <tr class="{% if not nota.leida %}admin-nota-sin-leer{% endif %}">
-              <td class="col-muted nota-cel-fecha">{{ nota.creado_en|date:"d/m/Y H:i" }}</td>
-              <td class="col-muted nota-cel-user small">
-                <div class="fw-semibold">{{ nota.usuario.username }}</div>
-                {% if nota.vendedor %}
-                  <div class="text-muted">{{ nota.vendedor }}</div>
-                {% elif nota.usuario.email %}
-                  <div class="text-muted">{{ nota.usuario.email }}</div>
-                {% endif %}
-              </td>
-              <td class="nota-cel-msg text-break">{{ nota.texto|linebreaksbr }}</td>
-              <td class="col-muted small nota-cel-pagina">
-                {% if nota.pagina %}
-                  <code class="text-break nota-cod-pagina">{{ nota.pagina }}</code>
-                {% else %}
-                  <span class="text-muted">—</span>
-                {% endif %}
-              </td>
-              <td class="text-center col-center">
-                {% if nota.leida %}
-                  <span class="status-pill status-approved" title="Leída" role="img" aria-label="Leída">
-                    <i data-lucide="circle-check" class="status-pill-ico" aria-hidden="true"></i> Leída
-                  </span>
-                {% else %}
-                  <span class="status-pill status-pending" title="No leída" role="img" aria-label="No leída">
-                    <i data-lucide="mail" class="status-pill-ico" aria-hidden="true"></i> No leída
-                  </span>
-                {% endif %}
-              </td>
-              <td class="col-presu-acciones text-end table-actions-cell">
-                <div class="table-actions presu-row-actions d-flex">
-                  <form class="d-inline m-0 presu-accion-form" method="post">
-                    {% csrf_token %}
-                    <input type="hidden" name="nota_id" value="{{ nota.pk }}" />
-                    {% if nota.leida %}
-                      <button
-                        class="btn-icon btn-refresh"
-                        type="submit"
-                        name="accion"
-                        value="marcar_no_leida"
-                        title="Marcar como no leída"
-                        aria-label="Marcar como no leída"
-                      >
-                        <i data-lucide="refresh-cw" aria-hidden="true"></i>
-                      </button>
-                    {% else %}
-                      <button
-                        class="btn-icon btn-approve"
-                        type="submit"
-                        name="accion"
-                        value="marcar_leida"
-                        title="Marcar como leída"
-                        aria-label="Marcar como leída"
-                      >
-                        <i data-lucide="check" aria-hidden="true"></i>
-                      </button>
-                    {% endif %}
-                  </form>
-                  <form class="d-inline m-0 presu-accion-form" method="post" onsubmit="return confirm('¿Eliminar esta nota?');">
-                    {% csrf_token %}
-                    <input type="hidden" name="nota_id" value="{{ nota.pk }}" />
-                    <button class="btn-icon btn-delete" type="submit" name="accion" value="eliminar" title="Eliminar" aria-label="Eliminar">
-                      <i data-lucide="trash-2" aria-hidden="true"></i>
-                    </button>
-                  </form>
+  <div class="admin-notas-hilos d-flex flex-column gap-3 mb-4">
+    {% for root in page_obj %}
+      <article class="card border-0 shadow-sm admin-nota-hilo overflow-hidden {% if not root.leida or root._unread_child %}admin-nota-hilo--pendiente{% endif %}">
+        <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 bg-light border-bottom">
+          <div class="small">
+            <span class="fw-semibold">{{ root.usuario.username }}</span>
+            <span class="text-muted">· {{ root.creado_en|date:"d/m/Y H:i" }}</span>
+            {% if root.vendedor %}
+              <span class="text-muted">· {{ root.vendedor }}</span>
+            {% endif %}
+          </div>
+          <div class="d-flex align-items-center gap-1 flex-wrap">
+            {% if root.leida and not root._unread_child %}
+              <span class="badge text-bg-secondary rounded-pill">Al día</span>
+            {% else %}
+              <span class="badge text-bg-warning text-dark rounded-pill">Pendiente</span>
+            {% endif %}
+            <form class="d-inline m-0" method="post">
+              {% csrf_token %}
+              <input type="hidden" name="nota_id" value="{{ root.pk }}" />
+              {% if root.leida and not root._unread_child %}
+                <button class="btn btn-sm btn-outline-secondary" type="submit" name="accion" value="marcar_no_leida" title="Marcar como pendiente">
+                  Marcar pendiente
+                </button>
+              {% else %}
+                <button class="btn btn-sm btn-outline-success" type="submit" name="accion" value="marcar_leida" title="Marcar mensajes del usuario como leídos">
+                  Marcar leído
+                </button>
+              {% endif %}
+            </form>
+            <form class="d-inline m-0" method="post" onsubmit="return confirm('¿Eliminar toda la conversación?');">
+              {% csrf_token %}
+              <input type="hidden" name="nota_id" value="{{ root.pk }}" />
+              <button class="btn btn-sm btn-outline-danger" type="submit" name="accion" value="eliminar" title="Eliminar hilo">Eliminar</button>
+            </form>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="admin-nota-chat px-3 py-2">
+            {% for m in root._hilo_mensajes %}
+              <div class="admin-nota-bubble {% if m.es_staff %}admin-nota-bubble--staff{% else %}admin-nota-bubble--user{% endif %}">
+                <div class="admin-nota-bubble-meta small text-muted">
+                  {% if m.es_staff %}
+                    {% if m.creado_por %}{{ m.creado_por.username }}{% else %}Administración{% endif %}
+                  {% else %}
+                    {{ m.usuario.username }}
+                  {% endif %}
+                  · {{ m.creado_en|date:"d/m H:i" }}
+                  {% if not m.es_staff and not m.leida %}
+                    <span class="badge bg-danger ms-1">Nuevo</span>
+                  {% endif %}
                 </div>
-              </td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="6" class="table-empty">No hay notas con los filtros actuales.</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% include "includes/pagination_footer.html" %}
+                <div class="admin-nota-bubble-text">{{ m.texto|linebreaksbr }}</div>
+              </div>
+            {% endfor %}
+          </div>
+          <div class="border-top bg-white p-3">
+            <form method="post" class="row g-2 align-items-end">
+              {% csrf_token %}
+              <input type="hidden" name="accion" value="responder" />
+              <input type="hidden" name="root_id" value="{{ root.pk }}" />
+              <div class="col-12">
+                <label class="form-label small text-muted mb-0" for="resp-{{ root.pk }}">Responder al usuario</label>
+                <textarea
+                  id="resp-{{ root.pk }}"
+                  class="form-control form-control-sm"
+                  name="texto_respuesta"
+                  rows="2"
+                  maxlength="2000"
+                  placeholder="Escribí tu respuesta…"
+                  required
+                ></textarea>
+              </div>
+              <div class="col-12 text-end">
+                <button type="submit" class="btn btn-primary btn-sm rounded-pill">Enviar respuesta</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </article>
+    {% empty %}
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-muted">No hay conversaciones con los filtros actuales.</div>
+      </div>
+    {% endfor %}
   </div>
+
+  {% include "includes/pagination_footer.html" %}
 {% endblock %}

@@ -8,7 +8,7 @@ from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connections, transaction
 from django.db.utils import OperationalError
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.db.models import Case, Count, DecimalField, ExpressionWrapper, F, Q, Sum, Value, When
 from django.db.models.functions import Coalesce
 from django.shortcuts import redirect, render
@@ -406,22 +406,175 @@ def cambiar_password(request):
     return render(request, "core/cambiar_password.html", {"form": form})
 
 
+def _notas_es_ajax(request) -> bool:
+    return (request.headers.get("X-Requested-With") or "").strip().lower() == "xmlhttprequest"
+
+
 @login_required
 @require_http_methods(["POST"])
 def nota_admin_enviar(request):
     texto = (request.POST.get("nota_texto") or "").strip()
     if not texto:
+        if _notas_es_ajax(request):
+            return JsonResponse({"ok": False, "error": "Escribí un mensaje antes de enviar."}, status=400)
         messages.error(request, "Escribí una nota antes de enviar.")
         return redirect(safe_internal_path(request.POST.get("next") or "") or "home")
 
     v = _safe_get_vendedor_perfil(request.user)
     pagina = (request.POST.get("pagina") or "").strip()
-    NotaAdmin.objects.create(
+    parent = None
+    parent_raw = (request.POST.get("parent_id") or "").strip()
+    if parent_raw.isdigit():
+        parent = (
+            NotaAdmin.objects.filter(
+                pk=int(parent_raw),
+                parent__isnull=True,
+                usuario=request.user,
+                es_staff=False,
+            )
+            .select_related("vendedor")
+            .first()
+        )
+        if parent is None:
+            if _notas_es_ajax(request):
+                return JsonResponse({"ok": False, "error": "Hilo no válido."}, status=400)
+            messages.error(request, "No se pudo responder en ese hilo.")
+            return redirect(safe_internal_path(request.POST.get("next") or "") or "home")
+
+    nota = NotaAdmin.objects.create(
         usuario=request.user,
-        vendedor=v if v is not None else None,
+        vendedor=parent.vendedor if parent is not None else (v if v is not None else None),
         texto=texto[:2000],
-        pagina=pagina[:255],
+        pagina=pagina[:255] if parent is None else "",
+        parent=parent,
+        es_staff=False,
+        leida=False,
+        leida_usuario=True,
+        creado_por=None,
     )
+
+    if _notas_es_ajax(request):
+        return JsonResponse(
+            {
+                "ok": True,
+                "nueva_raiz_id": nota.pk if parent is None else None,
+                "mensaje": {
+                    "id": nota.pk,
+                    "texto": nota.texto,
+                    "creado_en": nota.creado_en.isoformat(),
+                    "es_staff": False,
+                    "autor": request.user.get_username(),
+                },
+            }
+        )
+
     messages.success(request, "Nota enviada a administración.")
     return redirect(safe_internal_path(request.POST.get("next") or "") or "home")
+
+
+@login_required
+@require_http_methods(["GET"])
+def notas_chat_json(request):
+    user = request.user
+    roots = list(
+        NotaAdmin.objects.filter(usuario=user, parent__isnull=True, es_staff=False)
+        .order_by("-creado_en", "-id")
+    )
+    hilos = []
+    for r in roots:
+        raw = (r.texto or "").replace("\n", " ").strip()
+        preview = (raw[:72] + "…") if len(raw) > 72 else (raw or "(sin texto)")
+        no_leidas = NotaAdmin.objects.filter(
+            parent=r, es_staff=True, leida_usuario=False
+        ).count()
+        hilos.append(
+            {
+                "id": r.pk,
+                "preview": preview,
+                "creado_en": r.creado_en.isoformat(),
+                "no_leidas": no_leidas,
+            }
+        )
+
+    if (request.GET.get("nuevo") or "").strip() == "1":
+        return JsonResponse(
+            {
+                "hilos": hilos,
+                "hilo_id": None,
+                "mensajes": [],
+                "ultima_raiz_id": roots[0].pk if roots else None,
+            }
+        )
+
+    hilo_raw = (request.GET.get("hilo") or "").strip()
+    hilo_id = None
+    if hilo_raw.isdigit():
+        cand = next((r.pk for r in roots if r.pk == int(hilo_raw)), None)
+        if cand is not None:
+            hilo_id = cand
+    if hilo_id is None and roots:
+        hilo_id = roots[0].pk
+
+    mensajes = []
+    if hilo_id is not None:
+        msg_qs = (
+            NotaAdmin.objects.filter(usuario=user)
+            .filter(Q(pk=hilo_id) | Q(parent_id=hilo_id))
+            .select_related("creado_por", "usuario")
+            .order_by("creado_en", "id")
+        )
+        for m in msg_qs:
+            autor = "Administración"
+            if not m.es_staff:
+                autor = m.usuario.get_username()
+            elif m.creado_por_id:
+                autor = m.creado_por.get_username()
+            mensajes.append(
+                {
+                    "id": m.pk,
+                    "texto": m.texto,
+                    "creado_en": m.creado_en.isoformat(),
+                    "es_staff": m.es_staff,
+                    "autor": autor,
+                    "parent_id": m.parent_id,
+                }
+            )
+
+    return JsonResponse(
+        {
+            "hilos": hilos,
+            "hilo_id": hilo_id,
+            "mensajes": mensajes,
+            "ultima_raiz_id": roots[0].pk if roots else None,
+        }
+    )
+
+
+@login_required
+@require_http_methods(["POST"])
+def notas_marcar_leidas_usuario(request):
+    if not _notas_es_ajax(request):
+        return JsonResponse({"ok": False}, status=400)
+    user = request.user
+    hilo_raw = (request.POST.get("hilo_id") or "").strip()
+    if hilo_raw.isdigit():
+        raiz = NotaAdmin.objects.filter(
+            pk=int(hilo_raw), usuario=user, parent__isnull=True, es_staff=False
+        ).first()
+        if raiz is None:
+            return JsonResponse({"ok": False, "error": "Hilo no válido."}, status=400)
+        NotaAdmin.objects.filter(
+            usuario=user,
+            parent=raiz,
+            es_staff=True,
+            leida_usuario=False,
+        ).update(leida_usuario=True)
+    else:
+        NotaAdmin.objects.filter(usuario=user, es_staff=True, leida_usuario=False).update(
+            leida_usuario=True
+        )
+    sin_leer = NotaAdmin.objects.filter(
+        usuario=user, es_staff=True, leida_usuario=False
+    ).count()
+    return JsonResponse({"ok": True, "sin_leer": sin_leer})
 

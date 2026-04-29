@@ -13,5 +13,7 @@ urlpatterns = [
     path("modo-completo/", views.switch_to_full_mode, name="switch_to_full_mode"),
     path("cuenta/contrasena/", views.cambiar_password, name="cambiar_password"),
     path("notas/enviar/", views.nota_admin_enviar, name="nota_admin_enviar"),
+    path("notas/chat.json", views.notas_chat_json, name="notas_chat_json"),
+    path("notas/marcar-leidas-usuario/", views.notas_marcar_leidas_usuario, name="notas_marcar_leidas_usuario"),
 ]
 

@@ -25,8 +25,10 @@ def vendor_mode(request):
     in_portal = path.startswith("/vendedor/")
     has_vendedor_perfil = False
     can_switch_to_vendor_mode = False
+    can_switch_to_full_mode = False
     vendedor_perfil_pk = None
     notas_admin_no_leidas = 0
+    notas_usuario_no_leidas = 0
     recibe_notas_admin = False
     user = getattr(request, "user", None)
     if user is not None and getattr(user, "is_authenticated", False):
@@ -43,14 +45,27 @@ def vendor_mode(request):
             or (getattr(user, "username", "") or "").strip().lower() == "admin"
         )
         if recibe_notas_admin:
-            notas_admin_no_leidas = NotaAdmin.objects.filter(leida=False).count()
+            notas_admin_no_leidas = NotaAdmin.objects.filter(es_staff=False, leida=False).count()
+        else:
+            notas_usuario_no_leidas = NotaAdmin.objects.filter(
+                usuario=user, es_staff=True, leida_usuario=False
+            ).count()
+
+    pa = getattr(user, "perfil_acceso", None) if user is not None and getattr(user, "is_authenticated", False) else None
+    solo_vendedor_profile = bool(getattr(pa, "solo_vendedor", False)) if pa is not None else False
+    if user is not None and getattr(user, "is_authenticated", False):
+        can_switch_to_full_mode = bool(
+            has_vendedor_perfil and (pa is None or not solo_vendedor_profile)
+        )
 
     return {
         "vendor_mode": bool(solo_vendedor or session_flag or in_portal),
         "has_vendedor_perfil": has_vendedor_perfil,
         "can_switch_to_vendor_mode": can_switch_to_vendor_mode,
+        "can_switch_to_full_mode": can_switch_to_full_mode,
         "vendedor_perfil_pk": vendedor_perfil_pk,
         "notas_admin_no_leidas": notas_admin_no_leidas,
+        "notas_usuario_no_leidas": notas_usuario_no_leidas,
         "recibe_notas_admin": recibe_notas_admin,
     }
 

@@ -14,7 +14,7 @@ from django.conf import settings
 from django.core.management import call_command
 from django.core.paginator import Paginator
 from django.db import connections, transaction
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from django.http import FileResponse, HttpResponseBadRequest
 from django.utils import timezone
 from django.shortcuts import get_object_or_404, redirect, render
@@ -101,20 +101,45 @@ def usuarios_list(request):
 @require_http_methods(["GET", "POST"])
 def notas_list(request):
     if request.method == "POST":
+        accion = (request.POST.get("accion") or "").strip()
+        if accion == "responder":
+            root_id = (request.POST.get("root_id") or "").strip()
+            texto_resp = (request.POST.get("texto_respuesta") or "").strip()
+            if not root_id.isdigit() or not texto_resp:
+                messages.error(request, "Completá el mensaje de respuesta.")
+                return redirect("admin_notas_list")
+            root = get_object_or_404(NotaAdmin, pk=int(root_id), parent__isnull=True)
+            NotaAdmin.objects.create(
+                usuario=root.usuario,
+                vendedor=root.vendedor,
+                texto=texto_resp[:2000],
+                pagina="",
+                parent=root,
+                es_staff=True,
+                leida=True,
+                leida_usuario=False,
+                creado_por=request.user,
+            )
+            messages.success(request, "Respuesta enviada.")
+            return redirect("admin_notas_list")
+
         nota_id = (request.POST.get("nota_id") or "").strip()
         if not nota_id.isdigit():
             messages.error(request, "Nota no válida.")
             return redirect("admin_notas_list")
 
         nota = get_object_or_404(NotaAdmin, pk=int(nota_id))
-        accion = (request.POST.get("accion") or "").strip()
         if accion == "marcar_leida":
             nota.leida = True
             nota.save(update_fields=["leida"])
+            if nota.parent_id is None:
+                NotaAdmin.objects.filter(parent=nota, es_staff=False).update(leida=True)
             messages.success(request, "Nota marcada como leída.")
         elif accion == "marcar_no_leida":
             nota.leida = False
             nota.save(update_fields=["leida"])
+            if nota.parent_id is None:
+                NotaAdmin.objects.filter(parent=nota, es_staff=False).update(leida=False)
             messages.success(request, "Nota marcada como no leída.")
         elif accion == "eliminar":
             nota.delete()
@@ -125,25 +150,57 @@ def notas_list(request):
 
     estado = (request.GET.get("estado") or "no_leidas").strip()
     q = (request.GET.get("q") or "").strip()
-    qs = NotaAdmin.objects.select_related("usuario", "vendedor").all()
+
+    unread_child = NotaAdmin.objects.filter(
+        parent_id=OuterRef("pk"),
+        es_staff=False,
+        leida=False,
+    )
+    qs = (
+        NotaAdmin.objects.filter(parent__isnull=True)
+        .select_related("usuario", "vendedor")
+        .annotate(_unread_child=Exists(unread_child))
+    )
     if estado == "no_leidas":
-        qs = qs.filter(leida=False)
+        qs = qs.filter(Q(leida=False) | Q(_unread_child=True))
     elif estado == "leidas":
-        qs = qs.filter(leida=True)
+        qs = qs.filter(leida=True, _unread_child=False)
     else:
         estado = "todas"
 
     if q:
+        reply_match = NotaAdmin.objects.filter(
+            parent__isnull=False,
+        ).filter(
+            Q(texto__icontains=q)
+            | Q(usuario__username__icontains=q)
+            | Q(usuario__email__icontains=q)
+        ).values_list("parent_id", flat=True)
         qs = qs.filter(
             Q(texto__icontains=q)
             | Q(usuario__username__icontains=q)
             | Q(usuario__email__icontains=q)
             | Q(vendedor__codigo__icontains=q)
             | Q(vendedor__apellido__icontains=q)
-        )
+            | Q(pk__in=reply_match)
+        ).distinct()
 
     paginator = Paginator(qs, 25)
     page = paginator.get_page(request.GET.get("page") or 1)
+
+    root_ids = [r.pk for r in page.object_list]
+    hilos_por_raiz: dict[int, list[NotaAdmin]] = {}
+    if root_ids:
+        for m in (
+            NotaAdmin.objects.filter(Q(pk__in=root_ids) | Q(parent_id__in=root_ids))
+            .select_related("usuario", "vendedor", "creado_por")
+            .order_by("creado_en", "id")
+        ):
+            rid = m.parent_id or m.pk
+            hilos_por_raiz.setdefault(rid, []).append(m)
+    for r in page.object_list:
+        r._hilo_mensajes = hilos_por_raiz.get(r.pk, [r])
+
     qcopy = request.GET.copy()
     qcopy.pop("page", None)
     return render(
@@ -153,7 +210,7 @@ def notas_list(request):
             "page_obj": page,
             "filtros": {"estado": estado, "q": q},
             "querystring": qcopy.urlencode(),
-            "total_no_leidas": NotaAdmin.objects.filter(leida=False).count(),
+            "total_no_leidas": NotaAdmin.objects.filter(es_staff=False, leida=False).count(),
         },
     )
 
