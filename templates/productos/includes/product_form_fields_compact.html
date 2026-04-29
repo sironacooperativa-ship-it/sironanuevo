@@ -12,71 +12,75 @@
     {% if form.descripcion.errors %}<div class="text-danger small mt-1">{{ form.descripcion.errors }}</div>{% endif %}
   </div>
 
-  <div class="producto-modal-field">
+  <div class="producto-modal-field producto-modal-field--tipo">
     <label class="form-label small text-muted mb-1">Tipo</label>
     {{ form.tipo }}
     {% if form.tipo.errors %}<div class="text-danger small mt-1">{{ form.tipo.errors }}</div>{% endif %}
   </div>
 
-  <div class="producto-modal-field">
+  <div class="producto-modal-field producto-modal-field--costo">
     <label class="form-label small text-muted mb-1">Costo</label>
     {{ form.costo }}
     {% if form.costo.errors %}<div class="text-danger small mt-1">{{ form.costo.errors }}</div>{% endif %}
   </div>
 
-  <div class="producto-modal-field">
+  <div class="producto-modal-field producto-modal-field--stock">
     <label class="form-label small text-muted mb-1">Stock</label>
     {{ form.stock }}
     {% if form.stock.errors %}<div class="text-danger small mt-1">{{ form.stock.errors }}</div>{% endif %}
   </div>
 
-  <div class="producto-modal-field">
+  <div class="producto-modal-field producto-modal-field--pct">
     <label class="form-label small text-muted mb-1">% Ganancia</label>
     {{ form.porcentaje_ganancia }}
     {% if form.porcentaje_ganancia.errors %}<div class="text-danger small mt-1">{{ form.porcentaje_ganancia.errors }}</div>{% endif %}
   </div>
 
-  <div class="producto-modal-field">
+  <div class="producto-modal-field producto-modal-field--precio">
     <label class="form-label small text-muted mb-1">Precio de venta</label>
     {{ form.precio_venta }}
     {% if form.precio_venta.errors %}<div class="text-danger small mt-1">{{ form.precio_venta.errors }}</div>{% endif %}
   </div>
 
-  <div class="producto-modal-field">
+  <div class="producto-modal-field producto-modal-field--venc">
     <label class="form-label small text-muted mb-1">Vencimiento</label>
     {{ form.fecha_vencimiento }}
     {% if form.fecha_vencimiento.errors %}<div class="text-danger small mt-1">{{ form.fecha_vencimiento.errors }}</div>{% endif %}
   </div>
 
-  <div class="producto-modal-field producto-modal-field--estado">
-    <label class="form-label small text-muted mb-1">Estado</label>
-    <label class="form-check form-switch sirona-switch producto-modal-switch producto-modal-switch--inline">
-      {{ form.habilitado }}
-      <span class="form-check-label small">Producto habilitado</span>
-    </label>
-    {% if form.habilitado.errors %}<div class="text-danger small mt-1">{{ form.habilitado.errors }}</div>{% endif %}
-  </div>
-
-  {% if listas_extra_opciones %}
-    <div class="producto-modal-field producto-modal-field--listas">
-      <label class="form-label small text-muted mb-1">Listas de precio</label>
-      <div class="producto-modal-switches producto-modal-switches--wrap">
-        {% for l in listas_extra_opciones %}
-          <label class="form-check form-switch sirona-switch producto-modal-switch-item">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              role="switch"
-              name="listas_extra"
-              value="{{ l.pk }}"
-              id="lista_extra_{{ l.pk }}"
-              {% if l.pk in listas_extra_marcados %}checked{% endif %}
-            />
-            <span class="form-check-label small">{{ l.nombre }}</span>
-          </label>
-        {% endfor %}
+  <div class="producto-modal-field producto-modal-field--bottom">
+    <div class="producto-modal-bottom">
+      <div class="producto-modal-bottom-state">
+        <label class="form-label small text-muted mb-1">Estado</label>
+        <label class="form-check form-switch sirona-switch producto-modal-switch producto-modal-switch--inline">
+          {{ form.habilitado }}
+          <span class="form-check-label small">Producto habilitado</span>
+        </label>
+        {% if form.habilitado.errors %}<div class="text-danger small mt-1">{{ form.habilitado.errors }}</div>{% endif %}
       </div>
+
+      {% if listas_extra_opciones %}
+        <div class="producto-modal-bottom-lists">
+          <label class="form-label small text-muted mb-1">Listas de precio</label>
+          <div class="producto-modal-switches producto-modal-switches--wrap">
+            {% for l in listas_extra_opciones %}
+              <label class="form-check form-switch sirona-switch producto-modal-switch-item">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  role="switch"
+                  name="listas_extra"
+                  value="{{ l.pk }}"
+                  id="lista_extra_{{ l.pk }}"
+                  {% if l.pk in listas_extra_marcados %}checked{% endif %}
+                />
+                <span class="form-check-label small">{{ l.nombre }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
     </div>
-  {% endif %}
+  </div>
 </div>
 

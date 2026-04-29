@@ -1233,6 +1233,63 @@ body.offcanvas-open #btnHamburgerMenu .sirona-hamb-ico--close {
   transform: scale(1) rotate(0deg);
 }
 
+/* ===== Modal: Nuevo movimiento (Fondos/Caja) — tipografía y alineación ===== */
+.sirona-modal-dialog--caja-mov {
+  max-width: 860px;
+}
+.sirona-modal-dialog--caja-mov .modal-content {
+  border-radius: 16px;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.18);
+}
+.sirona-modal-dialog--caja-mov .modal-header {
+  padding: 14px 16px 8px;
+}
+.sirona-modal-dialog--caja-mov .modal-title {
+  font-size: 1rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+.sirona-modal-dialog--caja-mov .sirona-form-label {
+  font-size: 0.78rem;
+  font-weight: 750;
+  color: rgba(100, 116, 139, 0.95);
+  letter-spacing: 0.01em;
+  margin-bottom: 4px !important;
+}
+.sirona-modal-dialog--caja-mov .sirona-form-text {
+  font-size: 0.74rem;
+  color: rgba(100, 116, 139, 0.92);
+  margin-top: 4px;
+}
+.sirona-modal-dialog--caja-mov .form-control,
+.sirona-modal-dialog--caja-mov .form-select {
+  border-radius: 14px;
+  border-color: rgba(148, 163, 184, 0.35);
+}
+.sirona-modal-dialog--caja-mov .form-control,
+.sirona-modal-dialog--caja-mov .form-select {
+  height: 42px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+  font-size: 0.95rem;
+}
+.sirona-modal-dialog--caja-mov textarea.form-control {
+  height: auto;
+}
+.sirona-modal-dialog--caja-mov .sirona-caja-mov-box {
+  border-radius: 14px;
+  border-color: rgba(226, 232, 240, 0.95) !important;
+  background: rgba(248, 250, 252, 0.75) !important;
+  padding: 12px 12px;
+}
+.sirona-modal-dialog--caja-mov .sirona-caja-mov-box-title {
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+  color: rgba(15, 23, 42, 0.92);
+  margin-bottom: 8px;
+}
+
 /* Modal agenda diaria */
 .sirona-modal-dialog--agenda {
   max-width: 920px;
@@ -1519,6 +1576,49 @@ nav.navbar.sirona-topbar.bg-white.topbar {
   border-radius: 14px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   overflow: hidden;
+  padding: 8px;
+  min-width: 240px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.16);
+  z-index: 2000; /* asegurar clickeable sobre topbar */
+}
+
+.sirona-profile-dropdown .dropdown-header {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: rgba(100, 116, 139, 0.95);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  margin: 0;
+}
+
+.sirona-profile-dropdown .dropdown-divider {
+  margin: 8px 0;
+  border-top-color: rgba(15, 23, 42, 0.08);
+}
+
+.sirona-profile-dropdown .dropdown-item {
+  border-radius: 12px;
+  padding: 10px 10px;
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: rgba(15, 23, 42, 0.92);
+  line-height: 1.15;
+  min-height: 40px; /* evita items “pegados” */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sirona-profile-dropdown .dropdown-item:hover,
+.sirona-profile-dropdown .dropdown-item:focus {
+  background: rgba(37, 99, 235, 0.08);
+  color: rgba(15, 23, 42, 0.95);
+}
+
+.sirona-profile-dropdown .dropdown-item:active {
+  background: rgba(37, 99, 235, 0.12);
 }
 
 .sirona-profile-btn {
@@ -3412,12 +3512,21 @@ button.btn-icon.btn-delete,
 }
 
 /* Acciones rápidas: evitar compresión + texto fuera */
+.reports-page .rep-quick-actions .quick-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
 .reports-page .rep-quick-actions .quick-actions a.quick-action {
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
   min-width: 0;
+  padding: 12px 12px 11px;
 }
 .reports-page .rep-quick-actions .qa-txt {
   min-width: 0;
+  align-items: center;
 }
 .reports-page .rep-quick-actions .qa-title,
 .reports-page .rep-quick-actions .qa-sub {
@@ -3432,6 +3541,15 @@ button.btn-icon.btn-delete,
 }
 .reports-page .rep-quick-actions .qa-sub {
   -webkit-line-clamp: 2;
+}
+.reports-page .rep-quick-actions .qa-ico {
+  width: 40px;
+  height: 40px;
+}
+@media (max-width: 479.98px) {
+  .reports-page .rep-quick-actions .quick-actions {
+    grid-template-columns: 1fr;
+  }
 }
 
 .report-table {
@@ -4147,6 +4265,60 @@ button.btn-icon.btn-delete,
 .pricing-page table.report-table td {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ===== Inicio: Recordatorios / Cheques (compactar filas) ===== */
+.home-rec7-tabla thead th,
+.home-rec7-tabla tbody td,
+.home-ch7-tabla thead th,
+.home-ch7-tabla tbody td {
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+.home-rec7-tabla thead th,
+.home-ch7-tabla thead th {
+  font-size: 0.70rem;
+}
+.home-rec7-tabla tbody td,
+.home-ch7-tabla tbody td {
+  font-size: 0.82rem;
+  line-height: 1.15;
+}
+
+/* ===== Listas de precio: acciones horizontales + columnas compactas ===== */
+.listas-precios-index--saas .table-actions-cell {
+  width: 152px !important;
+  min-width: 152px !important;
+  max-width: 152px !important;
+}
+.listas-precios-index--saas .table-actions {
+  display: inline-flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+}
+.listas-precios-index--saas .table-actions > * {
+  flex: 0 0 auto;
+}
+.listas-precios-index--saas .modern-table td {
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+
+/* Tabla “Ver lista”: estado/acciones más chicos y sin aire */
+.lista-precio-ver .report-table th,
+.lista-precio-ver .report-table td {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.lista-precio-ver .status-badge {
+  height: 20px;
+  padding: 0 8px;
+  font-size: 0.70rem;
+}
+.lista-precio-ver td:last-child {
+  white-space: nowrap;
 }
 
 /* Price list view: two-zone layout (main + PDF preview) */
@@ -5146,6 +5318,7 @@ button.btn-icon.btn-delete,
 .comisiones-page .table-card.comisiones-resumen .table-card-header {
   padding: 10px 14px;
   background: #fff;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
 }
 
 .comisiones-page .table-card.comisiones-resumen .table-card-title {
@@ -5161,6 +5334,7 @@ button.btn-icon.btn-delete,
 
 .comisiones-page .table-card.comisiones-resumen .table-responsive {
   padding: 0;
+  padding-top: 4px; /* evita que la línea superior se “meta” sobre la 1ra fila */
 }
 
 .comisiones-page .table-card.comisiones-resumen table.modern-table tbody td {
@@ -5341,7 +5515,7 @@ button.btn-icon.btn-delete,
 }
 
 .sirona-modal-dialog--product .producto-modal-head {
-  padding: 14px 16px 8px;
+  padding: 12px 16px 8px;
 }
 
 .sirona-modal-dialog--product .producto-modal-title {
@@ -5363,6 +5537,12 @@ button.btn-icon.btn-delete,
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px 12px;
+  grid-template-areas:
+    "desc desc"
+    "tipo costo"
+    "stock pct"
+    "precio venc"
+    "bottom bottom";
 }
 
 .sirona-modal-dialog--product .producto-modal-field--full {
@@ -5371,6 +5551,29 @@ button.btn-icon.btn-delete,
 
 .sirona-modal-dialog--product .producto-modal-field--desc {
   grid-column: 1 / -1; /* descripción a todo el ancho para evitar scroll */
+  grid-area: desc;
+}
+
+.sirona-modal-dialog--product .producto-modal-field--tipo {
+  grid-area: tipo;
+}
+.sirona-modal-dialog--product .producto-modal-field--costo {
+  grid-area: costo;
+}
+.sirona-modal-dialog--product .producto-modal-field--stock {
+  grid-area: stock;
+}
+.sirona-modal-dialog--product .producto-modal-field--pct {
+  grid-area: pct;
+}
+.sirona-modal-dialog--product .producto-modal-field--precio {
+  grid-area: precio;
+}
+.sirona-modal-dialog--product .producto-modal-field--venc {
+  grid-area: venc;
+}
+.sirona-modal-dialog--product .producto-modal-field--bottom {
+  grid-area: bottom;
 }
 
 /* jerarquía y sizing tipo “modal aprobado” */
@@ -5381,7 +5584,7 @@ button.btn-icon.btn-delete,
   font-size: 0.95rem;
 }
 .sirona-modal-dialog--product .producto-modal-body .form-control {
-  height: 44px;
+  height: 42px;
 }
 .sirona-modal-dialog--product .producto-modal-body textarea.form-control {
   height: auto;
@@ -5401,34 +5604,19 @@ button.btn-icon.btn-delete,
 .sirona-modal-dialog--product .producto-modal-switch {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding-top: 6px;
+  gap: 8px;
+  padding-top: 2px;
   margin: 0;
 }
 
-.sirona-modal-dialog--product .producto-modal-switches {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px 10px;
-}
-
-/* fila inferior: Estado + Listas de precio como en el mock */
-.sirona-modal-dialog--product .producto-modal-field--estado {
-  grid-column: 1 / 2;
-  align-self: start;
-}
-.sirona-modal-dialog--product .producto-modal-field--listas {
-  grid-column: 2 / 3;
-  align-self: start;
-}
 .sirona-modal-dialog--product .producto-modal-switches--wrap {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 14px;
+  gap: 6px 12px;
 }
 .sirona-modal-dialog--product .producto-modal-switch-item {
   margin: 0;
-  min-height: 1.5rem;
+  min-height: 1.35rem;
   align-items: center;
   display: inline-flex;
   flex-wrap: nowrap;
@@ -5441,13 +5629,51 @@ button.btn-icon.btn-delete,
   margin: 0;
 }
 
+/* Switches más “premium” y chicos, como el mock */
+.sirona-modal-dialog--product .sirona-switch.form-switch .form-check-input {
+  width: 2.45em;
+  height: 1.28em;
+}
+.sirona-modal-dialog--product .sirona-switch.form-switch .form-check-label {
+  margin-left: 0;
+  line-height: 1.1;
+}
+
+/* Fila inferior: Estado + Listas en una sola franja horizontal */
+.sirona-modal-dialog--product .producto-modal-bottom {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px 18px;
+  flex-wrap: wrap;
+  padding-top: 2px;
+}
+.sirona-modal-dialog--product .producto-modal-bottom-state {
+  flex: 0 0 auto;
+  min-width: 240px;
+}
+.sirona-modal-dialog--product .producto-modal-bottom-lists {
+  flex: 1 1 320px;
+  min-width: 280px;
+}
+
 @media (max-width: 575.98px) {
   .sirona-modal-dialog--product .producto-modal-grid {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "desc"
+      "tipo"
+      "costo"
+      "stock"
+      "pct"
+      "precio"
+      "venc"
+      "bottom";
   }
-  .sirona-modal-dialog--product .producto-modal-field--estado,
-  .sirona-modal-dialog--product .producto-modal-field--listas {
-    grid-column: 1 / -1;
+  .sirona-modal-dialog--product .producto-modal-bottom-state,
+  .sirona-modal-dialog--product .producto-modal-bottom-lists {
+    min-width: 0;
+    flex: 1 1 auto;
   }
 }
 

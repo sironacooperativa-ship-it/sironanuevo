@@ -211,9 +211,7 @@
                   </ul>
                 </div>
 
-                <a class="btn app-icon-btn d-none d-md-inline-flex" href="{% url 'logout' %}" title="Salir" aria-label="Salir">
-                  <i data-lucide="log-out" class="app-lucide-toolbar"></i>
-                </a>
+                {# Logout queda solo en el dropdown de perfil #}
               </div>
             </div>
           </div>
@@ -342,9 +340,7 @@
                   </ul>
                 </div>
 
-                <a class="btn app-icon-btn d-none d-md-inline-flex" href="{% url 'logout' %}" title="Salir" aria-label="Salir">
-                  <i data-lucide="log-out" class="app-lucide-toolbar"></i>
-                </a>
+                {# Logout queda solo en el dropdown de perfil #}
               </div>
             </div>
           </div>
@@ -561,12 +557,7 @@
               </div>
             </div>
           </nav>
-          <div class="sidebar-footer">
-            <a class="sidebar-link app-sidebar-link app-sidebar-link-logout" href="{% url 'logout' %}">
-              <span class="app-sidebar-icon-wrap"><i data-lucide="log-out"></i></span>
-              <span class="app-sidebar-label sidebar-label">Salir</span>
-            </a>
-          </div>
+          {# Logout queda solo en el dropdown de perfil #}
         </aside>
       {% endif %}
 
@@ -847,10 +838,7 @@
                 </div>
               </div>
 
-              <a class="app-sidebar-link app-sidebar-link-logout sirona-offcanvas-nav-link" href="{% url 'logout' %}">
-                <span class="app-sidebar-icon-wrap"><i data-lucide="log-out"></i></span>
-                <span class="app-sidebar-label">Salir</span>
-              </a>
+              {# Logout queda solo en el dropdown de perfil #}
             </nav>
           </div>
         </div>
@@ -1501,6 +1489,26 @@
               candidates.sort((x, y) => y.score - x.score);
               candidates[0].a.classList.add("is-active");
             }
+
+            // Hard fallback for sections with nested URLs where the parent is the list page.
+            // Keeps the sidebar highlight stable even if a page forgets to provide #sidebarCurrentNode.
+            try {
+              if (herePath.startsWith("/presupuestos")) {
+                links.forEach((x) => x.classList.remove("is-active"));
+                links.forEach((a) => {
+                  const rawHref = (a.getAttribute("href") || "").trim();
+                  if (!rawHref || rawHref === "#") return;
+                  let u;
+                  try {
+                    u = new URL(rawHref, window.location.origin);
+                  } catch (e) {
+                    return;
+                  }
+                  const hrefPath = (u.pathname || "").replace(/\/+$/, "") || "/";
+                  if (hrefPath === "/presupuestos") a.classList.add("is-active");
+                });
+              }
+            } catch (e) {}
 
             // Optional: show a tree "current node" under the active sidebar item.
             // Pages can provide:
