@@ -1256,6 +1256,36 @@ body.app-sidebar-collapsed .app-sidebar-fixed {
   white-space: nowrap;
 }
 
+/* Presupuestos (lista): ajuste fino de columnas para compactar + dar aire a Neto */
+.presu-lista-modern #presu-tabla-lista .presu-col-fecha {
+  width: 128px;
+  white-space: nowrap;
+}
+
+.presu-lista-modern #presu-tabla-lista td.presu-col-fecha {
+  font-size: 0.8rem;
+}
+
+.presu-lista-modern #presu-tabla-lista .presu-col-cliente {
+  max-width: 12rem;
+}
+
+.presu-lista-modern #presu-tabla-lista .presu-col-neto,
+.presu-lista-modern #presu-tabla-lista td.col-presu-neto {
+  width: 170px;
+  white-space: nowrap;
+}
+
+.presu-lista-modern #presu-tabla-lista .presu-col-estado,
+.presu-lista-modern #presu-tabla-lista td.col-presu-estado {
+  width: 44px;
+  text-align: center;
+}
+
+.presu-lista-modern #presu-tabla-lista td.col-presu-estado .estado-ico {
+  margin: 0 auto;
+}
+
 .presu-lista .presu-col-ellipsis {
   overflow: hidden;
   text-overflow: ellipsis;

@@ -138,11 +138,11 @@
             {% else %}
             <th class="text-center col-center"></th>
             {% endif %}
-            <th scope="col">Fecha</th>
+            <th scope="col" class="presu-col-fecha">Fecha</th>
             <th scope="col" class="presu-col-ellipsis">Vendedor</th>
-            <th scope="col" class="presu-col-ellipsis">Cliente</th>
-            <th scope="col" class="text-end col-money">Neto</th>
-            <th scope="col" class="text-center col-center" title="Estado">Estado</th>
+            <th scope="col" class="presu-col-ellipsis presu-col-cliente">Cliente</th>
+            <th scope="col" class="text-end col-money presu-col-neto">Neto</th>
+            <th scope="col" class="text-center col-center presu-col-estado" title="Estado">Estado</th>
             <th scope="col" class="text-end presu-th-acciones col-presu-acciones presu-actions-sticky">Acciones</th>
           </tr>
         </thead>
@@ -168,9 +168,9 @@
                   <span class="d-inline-block" style="width:1rem" aria-hidden="true"> </span>
                 {% endif %}
               </td>
-              <td class="col-muted">{{ p.creado_en|date:"d/m/Y H:i" }}</td>
+              <td class="col-muted presu-col-fecha">{{ p.creado_en|date:"d/m/Y H:i" }}</td>
               <td class="col-muted presu-col-ellipsis" title="{{ p.vendedor.apellido }}, {{ p.vendedor.nombre }}">{{ p.vendedor.apellido }}, {{ p.vendedor.nombre }}</td>
-              <td class="col-muted presu-col-ellipsis" title="{% if p.comprador_id %}{{ p.comprador.apellido }}, {{ p.comprador.nombre }}{% endif %}">
+              <td class="col-muted presu-col-ellipsis presu-col-cliente" title="{% if p.comprador_id %}{{ p.comprador.apellido }}, {{ p.comprador.nombre }}{% endif %}">
                 <div class="presu-cell-main">
                   {% if p.comprador_id %}
                     <span class="presu-cell-title">{{ p.comprador.apellido }}, {{ p.comprador.nombre }}</span>
@@ -196,8 +196,8 @@
                   {% endif %}
                 </div>
               </td>
-              <td class="text-end col-money col-presu-neto">{{ p.neto|ars }}</td>
-              <td class="col-center col-presu-estado">
+              <td class="text-end col-money col-presu-neto presu-col-neto">{{ p.neto|ars }}</td>
+              <td class="col-center col-presu-estado text-center presu-col-estado">
                 {% if p.estado == "ACT" %}
                   <span class="estado-ico estado-ico--pending" title="Pendiente" aria-label="Pendiente">
                     <i data-lucide="clock" aria-hidden="true"></i>
