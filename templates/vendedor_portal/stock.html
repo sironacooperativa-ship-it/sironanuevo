@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Stock{% endblock %}
 {% block content %}
-  <div class="app-page-header mb-3 d-flex flex-wrap align-items-center gap-2">
+  <div class="vendedor-portal-page">
+  <div class="app-page-header mb-3 d-flex flex-wrap align-items-center gap-2 vendedor-portal-toolbar">
     <div class="me-auto">
       <h1 class="app-page-title mb-0">Stock</h1>
       <div class="text-muted small">Solo lectura: productos habilitados y cantidades disponibles</div>
@@ -9,19 +10,17 @@
     <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'vendedor_home' %}">Volver</a>
   </div>
 
-  <div class="card app-card border-0 shadow-sm app-list-filters mb-3">
-    <div class="card-body">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-12 col-md-8">
-          <label class="form-label small text-muted mb-1">Buscar</label>
-          <input name="q" class="form-control form-control-sm rounded-3" value="{{ q }}" placeholder="Descripción o código…" />
-        </div>
-        <div class="col-12 col-md-4 d-flex gap-2">
-          <button class="btn btn-outline-dark btn-sm rounded-pill flex-grow-1" type="submit">Buscar</button>
-          <a class="btn btn-outline-secondary btn-sm rounded-pill flex-grow-1" href="{% url 'vendedor_stock' %}">Limpiar</a>
-        </div>
-      </form>
-    </div>
+  <div class="modern-filter-card vendedor-portal-filter-wrap mb-3">
+    <form method="get" class="vportal-filters-row">
+      <div class="vportal-filter-field vportal-filter-field--grow">
+        <label class="form-label vportal-filter-label" for="vportal-vend-stock-q">Buscar</label>
+        <input id="vportal-vend-stock-q" name="q" class="form-control vportal-filter-control" value="{{ q }}" placeholder="Descripción o código…" autocomplete="off" />
+      </div>
+      <div class="vportal-filter-actions">
+        <button class="btn btn-primary vportal-filter-btn" type="submit">Buscar</button>
+        <a class="btn btn-outline-secondary vportal-filter-btn" href="{% url 'vendedor_stock' %}">Limpiar</a>
+      </div>
+    </form>
   </div>
 
   <div class="table-card presu-lista-modern vendedor-stock-lista">
@@ -50,6 +49,7 @@
         </tbody>
       </table>
     </div>
+  </div>
   </div>
 {% endblock %}
 

@@ -2,7 +2,8 @@
 {% load money %}
 {% block title %}Cuenta corriente{% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+  <div class="vendedor-portal-page">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 vendedor-portal-toolbar">
     <div>
       <h1 class="h4 mb-1">Cuenta corriente</h1>
       <div class="text-muted small">Pedidos y pagos asociados a tu usuario.</div>
@@ -15,10 +16,10 @@
 
   <div class="row g-3 mb-3">
     <div class="col-md-6">
-      <div class="card shadow-sm border-0 h-100">
+      <div class="card app-card border-0 shadow-sm h-100 vendedor-portal-kpi-card">
         <div class="card-body">
           <div class="text-muted small text-uppercase">Saldo pendiente</div>
-          <p class="h4 mb-1">{{ saldo_pendiente|ars }}</p>
+          <p class="h4 mb-1 vendedor-portal-kpi-value">{{ saldo_pendiente|ars }}</p>
           <p class="text-muted small mb-0">
             Pedidos impagos ya imputados: sin fecha de vencimiento o con vencimiento hasta hoy ({{ hoy|date:"d/m/Y" }}).
           </p>
@@ -26,10 +27,10 @@
       </div>
     </div>
     <div class="col-md-6">
-      <div class="card shadow-sm border-0 h-100">
+      <div class="card app-card border-0 shadow-sm h-100 vendedor-portal-kpi-card">
         <div class="card-body">
           <div class="text-muted small text-uppercase">A pagar (vencimiento futuro)</div>
-          <p class="h4 mb-1 text-secondary">{{ total_a_pagar_futuro|ars }}</p>
+          <p class="h4 mb-1 text-secondary vendedor-portal-kpi-value">{{ total_a_pagar_futuro|ars }}</p>
           <p class="text-muted small mb-0">
             Suma de pedidos con fecha de cobro posterior: al llegar la fecha pasan a integrar el saldo pendiente.
           </p>
@@ -38,7 +39,7 @@
     </div>
   </div>
 
-  <div class="card shadow-sm mb-3">
+  <div class="card app-card border-0 shadow-sm mb-3">
     <div class="card-body">
       <h2 class="h6 mb-2">Pedidos (últimos 250)</h2>
       {% if ventas %}
@@ -86,7 +87,7 @@
     </div>
   </div>
 
-  <div class="card shadow-sm">
+  <div class="card app-card border-0 shadow-sm">
     <div class="card-body">
       <h2 class="h6 mb-2">Pagos / movimientos (últimos 250)</h2>
       {% if movimientos %}
@@ -114,6 +115,7 @@
         <div class="text-muted small">No hay movimientos para mostrar.</div>
       {% endif %}
     </div>
+  </div>
   </div>
 {% endblock %}
 

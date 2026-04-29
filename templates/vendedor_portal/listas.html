@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Listas de precio{% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+  <div class="vendedor-portal-page">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 vendedor-portal-toolbar">
     <div>
       <h1 class="h4 mb-1">Listas de precio</h1>
       <div class="text-muted small">Descargá PDF o PNG para compartir.</div>
@@ -15,7 +16,7 @@
   <div class="row g-3">
     {% for L in listas %}
       <div class="col-12 col-md-6">
-        <div class="card shadow-sm h-100">
+        <div class="card app-card border-0 shadow-sm h-100">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-start gap-2">
               <div>
@@ -70,5 +71,6 @@
       });
     })();
   </script>
+  </div>
 {% endblock %}
 

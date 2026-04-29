@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}{{ titulo }}{% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+  <div class="vendedor-portal-page">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 vendedor-portal-toolbar">
     <div>
       <h1 class="h5 mb-1">{{ titulo }}</h1>
       <div class="text-muted small">Generá un PNG para compartir desde el celular.</div>
@@ -14,31 +15,32 @@
 
   {{ productos|json_script:"lp-productos" }}
 
-  <div class="card shadow-sm mb-3">
+  <div class="card app-card border-0 shadow-sm mb-3">
     <div class="card-body">
       <div class="row g-2 align-items-end">
         <div class="col-12 col-md-4">
-          <label class="form-label">Página</label>
-          <input type="number" class="form-control" id="inpPage" min="1" value="1" />
+          <label class="form-label small text-muted mb-1" for="inpPage">Página</label>
+          <input type="number" class="form-control vportal-filter-control" id="inpPage" min="1" value="1" />
         </div>
         <div class="col-12 col-md-4">
-          <label class="form-label">Filas por página</label>
-          <input type="number" class="form-control" id="inpPageSize" min="10" max="60" value="35" />
+          <label class="form-label small text-muted mb-1" for="inpPageSize">Filas por página</label>
+          <input type="number" class="form-control vportal-filter-control" id="inpPageSize" min="10" max="60" value="35" />
         </div>
         <div class="col-12 col-md-4 d-grid">
-          <button class="btn btn-primary" type="button" id="btnRender">Generar</button>
+          <label class="form-label small text-muted mb-1 d-none d-md-block">&nbsp;</label>
+          <button class="btn btn-primary vportal-filter-btn" type="button" id="btnRender">Generar</button>
         </div>
       </div>
 
       <div class="d-flex flex-wrap gap-2 mt-3">
-        <button class="btn btn-outline-primary" type="button" id="btnDownload" disabled>Descargar PNG</button>
-        <button class="btn btn-outline-secondary" type="button" id="btnShare" disabled>Compartir</button>
+        <button class="btn btn-outline-primary btn-sm rounded-pill" type="button" id="btnDownload" disabled>Descargar PNG</button>
+        <button class="btn btn-outline-secondary btn-sm rounded-pill" type="button" id="btnShare" disabled>Compartir</button>
       </div>
       <div class="text-muted small mt-2" id="meta"></div>
     </div>
   </div>
 
-  <div class="card shadow-sm">
+  <div class="card app-card border-0 shadow-sm">
     <div class="card-body">
       <div class="text-muted small mb-2">Vista previa</div>
       <canvas id="cnv" style="max-width: 100%; height: auto; border: 1px solid #eee;"></canvas>
@@ -180,5 +182,6 @@
       render();
     })();
   </script>
+  </div>
 {% endblock %}
 

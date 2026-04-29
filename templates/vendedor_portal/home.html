@@ -2,7 +2,8 @@
 {% load money %}
 {% block title %}Portal Vendedor{% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+  <div class="vendedor-portal-page">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 vendedor-portal-toolbar">
     <div>
       <h1 class="h4 mb-1">Portal Vendedor</h1>
       <div class="text-muted small">{{ vendedor.codigo }} — {{ vendedor.apellido }}, {{ vendedor.nombre }}</div>
@@ -16,7 +17,7 @@
     </div>
   </div>
 
-  <div class="card shadow-sm mb-3">
+  <div class="card app-card border-0 shadow-sm mb-3">
     <div class="card-body">
       <h2 class="h6 mb-3">Mis clientes</h2>
       <form method="get" class="row g-2 align-items-end" novalidate>
@@ -502,5 +503,6 @@
   {% else %}
     <div class="text-muted small">Buscá un cliente para ver impagos y armar un presupuesto.</div>
   {% endif %}
+  </div>
 {% endblock %}
 

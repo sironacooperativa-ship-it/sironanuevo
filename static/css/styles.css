@@ -3350,6 +3350,200 @@ a.btn-icon.btn-approve {
   }
 }
 
+/* ----- Portal vendedor: coherente con Stock (compacto, cards, filtros) ----- */
+.vendedor-portal-page .vendedor-portal-toolbar {
+  margin-bottom: 0.65rem !important;
+}
+
+.vendedor-portal-page .vendedor-portal-toolbar .h4,
+.vendedor-portal-page .vendedor-portal-toolbar .h5,
+.vendedor-portal-page .vendedor-portal-toolbar h1 {
+  font-size: 1.05rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.15rem;
+}
+
+.vendedor-portal-page .app-page-title {
+  font-size: 1.08rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+}
+
+.vendedor-portal-page .card.shadow-sm,
+.vendedor-portal-page .card.app-card {
+  border-radius: var(--s-r-lg);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: var(--s-shadow-1) !important;
+}
+
+.vendedor-portal-page .card .card-body {
+  padding: 12px 14px;
+}
+
+.vendedor-portal-page .card-header {
+  padding: 9px 12px;
+  font-size: 0.875rem;
+}
+
+.vendedor-portal-page .vendedor-portal-kpi-card .card-body {
+  padding: 10px 12px;
+}
+
+.vendedor-portal-page .vendedor-portal-kpi-value {
+  font-size: 1.2rem !important;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.25rem !important;
+}
+
+.vendedor-portal-page .list-group-item {
+  padding: 0.55rem 0.85rem;
+}
+
+.vendedor-portal-page .modern-filter-card.vendedor-portal-filter-wrap {
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.vendedor-portal-page .vportal-filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 10px;
+}
+
+@media (min-width: 768px) {
+  .vendedor-portal-page .vportal-filters-row {
+    flex-wrap: nowrap;
+  }
+
+  .vendedor-portal-page .vportal-filter-actions {
+    margin-left: auto;
+  }
+}
+
+.vendedor-portal-page .vportal-filter-field {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.vendedor-portal-page .vportal-filter-field--grow {
+  flex: 1.25 1 200px;
+}
+
+.vendedor-portal-page .vportal-filter-label {
+  display: block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--s-muted);
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.vendedor-portal-page .vportal-filter-control {
+  min-height: 34px;
+  padding: 5px 10px;
+  font-size: 0.8125rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #fbfcfe;
+  font-weight: 500;
+}
+
+.vendedor-portal-page .vportal-filter-control:focus {
+  border-color: rgba(37, 99, 235, 0.45);
+  background: #fff;
+  box-shadow: var(--s-ring);
+  outline: none;
+}
+
+.vendedor-portal-page .vportal-filter-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 767.98px) {
+  .vendedor-portal-page .vportal-filter-actions {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+  }
+}
+
+.vendedor-portal-page .vportal-filter-btn {
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+}
+
+.vendedor-portal-page .vendedor-stock-tabla thead th,
+.vendedor-portal-page .vendedor-stock-tabla tbody td {
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+  vertical-align: middle;
+}
+
+.vendedor-portal-page .vendedor-ranking-tabla thead th,
+.vendedor-portal-page .vendedor-ranking-tabla tbody td {
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+  vertical-align: middle;
+}
+
+.vendedor-portal-page .table-card-header {
+  padding: 9px 12px;
+}
+
+.vendedor-portal-page .table-card-title {
+  font-size: 0.875rem;
+}
+
+.vendedor-portal-page .vendedor-reportes .vendedor-kpi-row {
+  font-size: 0.8125rem;
+}
+
+.vendedor-portal-page .vendedor-reportes .vendedor-chart-wrap {
+  height: 220px;
+  min-height: 180px;
+}
+
+.vendedor-portal-page .vendedor-reportes .vendedor-chart-wrap--line {
+  height: 240px;
+  min-height: 200px;
+}
+
+.vendedor-portal-page .vendedor-reportes .vendedor-chart-wrap--bar {
+  height: 220px;
+  min-height: 190px;
+}
+
+.vendedor-portal-page .form-label {
+  font-size: 0.8125rem;
+}
+
+.vendedor-portal-page .form-lineas-tabla thead th,
+.vendedor-portal-page .form-lineas-tabla tbody td {
+  padding: 7px 10px;
+  font-size: 0.8125rem;
+  vertical-align: middle;
+}
+
+.theme-dark .vendedor-portal-page .vportal-filter-control {
+  background: rgba(15, 23, 42, 0.45);
+  border-color: var(--s-border);
+  color: var(--s-ink);
+}
+
 /* ==========================================================================
    Pricing Lists (Listas de precio) — premium SaaS
    ========================================================================== */

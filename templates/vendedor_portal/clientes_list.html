@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Clientes{% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+  <div class="vendedor-portal-page">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 vendedor-portal-toolbar">
     <div>
       <h1 class="h4 mb-1">Clientes</h1>
       <div class="text-muted small">Listado simplificado para vendedores.</div>
@@ -12,21 +13,19 @@
     </div>
   </div>
 
-  <div class="card shadow-sm mb-3">
-    <div class="card-body">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-12 col-md-8">
-          <label class="form-label">Buscar</label>
-          <input name="q" class="form-control" value="{{ q }}" placeholder="Apellido, nombre o código…" />
-        </div>
-        <div class="col-12 col-md-4 d-grid">
-          <button class="btn btn-outline-primary" type="submit">Buscar</button>
-        </div>
-      </form>
-    </div>
+  <div class="modern-filter-card vendedor-portal-filter-wrap mb-3">
+    <form method="get" class="vportal-filters-row">
+      <div class="vportal-filter-field vportal-filter-field--grow">
+        <label class="form-label vportal-filter-label" for="vportal-clientes-q">Buscar</label>
+        <input id="vportal-clientes-q" name="q" class="form-control vportal-filter-control" value="{{ q }}" placeholder="Apellido, nombre o código…" autocomplete="off" />
+      </div>
+      <div class="vportal-filter-actions">
+        <button class="btn btn-primary vportal-filter-btn" type="submit">Buscar</button>
+      </div>
+    </form>
   </div>
 
-  <div class="card shadow-sm">
+  <div class="card app-card border-0 shadow-sm">
     <div class="list-group list-group-flush">
       {% for c in clientes %}
         <a class="list-group-item list-group-item-action" href="{% url 'vendedor_cliente_update' c.pk %}">
@@ -46,6 +45,7 @@
         <div class="p-4 text-center text-muted small">No hay clientes.</div>
       {% endfor %}
     </div>
+  </div>
   </div>
 {% endblock %}
 
