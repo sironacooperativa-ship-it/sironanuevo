@@ -121,10 +121,14 @@
       <div class="card-body p-0">
         <div class="table-responsive">
           <table class="report-table">
+          <colgroup>
+            <col style="width: auto;" />
+            <col style="width: 11rem;" />
+            <col style="width: 5.5rem;" />
+          </colgroup>
           <thead>
             <tr>
               <th scope="col">Producto</th>
-              <th scope="col">Tipo</th>
               <th scope="col" class="text-end" style="width: 11rem">Precio en {{ lista.nombre }}</th>
               <th scope="col" class="text-end" style="width: 5.5rem">Acciones</th>
             </tr>
@@ -137,11 +141,10 @@
                     <span class="prod-thumb" aria-hidden="true"><i data-lucide="tag"></i></span>
                     <span class="prod-meta">
                       <span class="prod-desc">{{ it.producto.descripcion }}</span>
-                      <span class="prod-sub"><span class="prod-code">{{ it.producto.codigo }}</span> · Stock {{ it.producto.stock }}</span>
+                      <span class="prod-sub">Código: <span class="prod-code">{{ it.producto.codigo }}</span>{% if it.producto.proveedor_marca %} • Proveedor: {{ it.producto.proveedor_marca }}{% endif %}</span>
                     </span>
                   </div>
                 </td>
-                <td class="muted">{{ it.producto.get_tipo_display }}</td>
                 <td class="num">
                   <input
                     type="text"
@@ -165,7 +168,7 @@
                 </td>
               </tr>
             {% empty %}
-              <tr><td colspan="4" class="table-empty">Todavía no hay productos en esta lista.</td></tr>
+              <tr><td colspan="3" class="table-empty">Todavía no hay productos en esta lista.</td></tr>
             {% endfor %}
           </tbody>
         </table>

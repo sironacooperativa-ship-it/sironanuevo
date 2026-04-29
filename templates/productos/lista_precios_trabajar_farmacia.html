@@ -2,7 +2,7 @@
 {% load money %}
 {% block title %}Lista {{ lista.nombre }}{% endblock %}
 {% block content %}
-  <span id="sidebarCurrentNode" class="d-none" data-parent-url="{% url 'productos_listas_precios' %}">{{ lista.nombre }}</span>
+  <span id="sidebarCurrentNode" class="d-none" data-parent-url="{% url 'productos_listas_precios' %}">Farmacias</span>
   <div class="pricing-page">
     <section class="hero-card mb-3" aria-label="Encabezado lista de precios">
       <div class="hero-top">
@@ -69,10 +69,13 @@
         <div class="card-body p-0">
           <div class="table-responsive">
             <table class="report-table">
+              <colgroup>
+                <col style="width: auto;" />
+                <col style="width: 11rem;" />
+              </colgroup>
               <thead>
                 <tr>
                   <th scope="col">Producto</th>
-                  <th scope="col">Tipo</th>
                   <th scope="col" class="text-end" style="width: 11rem">Precio venta</th>
                 </tr>
               </thead>
@@ -84,11 +87,10 @@
                         <span class="prod-thumb" aria-hidden="true"><i data-lucide="package"></i></span>
                         <span class="prod-meta">
                           <span class="prod-desc">{{ p.descripcion }}</span>
-                          <span class="prod-sub"><span class="prod-code">{{ p.codigo }}</span> · Stock {{ p.stock }}</span>
+                          <span class="prod-sub">Código: <span class="prod-code">{{ p.codigo }}</span>{% if p.proveedor_marca %} • Proveedor: {{ p.proveedor_marca }}{% endif %}</span>
                         </span>
                       </div>
                     </td>
-                    <td class="muted">{{ p.get_tipo_display }}</td>
                     <td class="num">
                       <input
                         type="text"
@@ -101,7 +103,7 @@
                   </tr>
                 {% empty %}
                   <tr>
-                    <td colspan="3" class="table-empty">
+                    <td colspan="2" class="table-empty">
                       Ningún producto está en esta lista todavía. Marcá <strong>En lista Farmacia (PDF)</strong> en la ficha de cada producto
                       o usá acciones en masa en el listado de productos.
                     </td>

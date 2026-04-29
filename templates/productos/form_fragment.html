@@ -4,7 +4,7 @@
   <input type="hidden" name="retorno_query" value="{{ retorno_query|default:'' }}" />
   <input type="hidden" name="listas_extra_present" value="1" />
   <div class="modal-header producto-modal-head border-0 pb-2 align-items-center">
-    <h5 class="modal-title producto-modal-title mb-0">Editar producto</h5>
+    <h5 class="modal-title producto-modal-title mb-0">{{ modal_title }}</h5>
     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
   </div>
   <div class="modal-body producto-modal-body pt-0 px-3 px-md-4">
@@ -12,7 +12,10 @@
   </div>
   <div class="modal-footer producto-modal-foot border-0 bg-transparent pt-2 px-3 px-md-4 pb-3">
     <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4">Guardar cambios</button>
+    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4">
+      <i data-lucide="save" aria-hidden="true"></i>
+      {% if modo == "nuevo" %}Guardar producto{% else %}Guardar cambios{% endif %}
+    </button>
   </div>
 </form>
 

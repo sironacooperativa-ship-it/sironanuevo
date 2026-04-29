@@ -3392,6 +3392,48 @@ button.btn-icon.btn-delete,
   line-height: 1.25;
 }
 
+/* ===== Reportes: afinado visual (top productos + acciones rápidas) ===== */
+.reports-page .rep-top-productos .report-table th,
+.reports-page .rep-top-productos .report-table td {
+  padding: 9px 12px;
+}
+.reports-page .rep-top-productos .report-table .name {
+  font-weight: 560; /* sin negrita “gruesa” */
+  font-size: 0.84rem;
+  line-height: 1.15;
+}
+.reports-page .rep-top-productos .report-table .who {
+  gap: 9px;
+}
+.reports-page .rep-top-productos .report-table .avatar {
+  width: 24px;
+  height: 24px;
+  font-size: 0.72rem;
+}
+
+/* Acciones rápidas: evitar compresión + texto fuera */
+.reports-page .rep-quick-actions .quick-actions a.quick-action {
+  align-items: flex-start;
+  min-width: 0;
+}
+.reports-page .rep-quick-actions .qa-txt {
+  min-width: 0;
+}
+.reports-page .rep-quick-actions .qa-title,
+.reports-page .rep-quick-actions .qa-sub {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+}
+.reports-page .rep-quick-actions .qa-title {
+  -webkit-line-clamp: 2;
+}
+.reports-page .rep-quick-actions .qa-sub {
+  -webkit-line-clamp: 2;
+}
+
 .report-table {
   width: 100%;
   border-collapse: collapse;
@@ -3770,9 +3812,9 @@ button.btn-icon.btn-delete,
 }
 
 .stock-page .stock-qty-input {
-  width: 4.35rem;
-  min-width: 3.25rem;
-  max-width: 5.75rem;
+  width: 5.4rem;
+  min-width: 4.25rem;
+  max-width: 7.25rem;
   height: 30px;
   padding: 0 6px;
   font-size: 0.8125rem;
@@ -3829,6 +3871,11 @@ button.btn-icon.btn-delete,
   justify-content: flex-end;
   align-items: center;
   gap: 6px;
+}
+
+/* Acciones: evitar “columna vacía” antes del lápiz */
+.stock-page .stock-actions-td {
+  padding-right: 10px;
 }
 
 .stock-page .stock-ult-movs .table-card-header {
@@ -4086,6 +4133,20 @@ button.btn-icon.btn-delete,
   background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.22), transparent 62%);
   transform: rotate(18deg);
   pointer-events: none;
+}
+
+/* Evitar scroll horizontal en grillas de listas (antes de exportar) */
+.pricing-page .table-responsive {
+  overflow-x: hidden !important;
+}
+.pricing-page table.report-table {
+  width: 100%;
+  table-layout: fixed;
+}
+.pricing-page table.report-table th,
+.pricing-page table.report-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Price list view: two-zone layout (main + PDF preview) */
@@ -5259,6 +5320,21 @@ button.btn-icon.btn-delete,
   max-width: 850px;
 }
 
+/* Página (no modal): usar el mismo “sheet” visual aprobado */
+.sirona-product-sheet {
+  max-width: 850px;
+}
+.sirona-product-sheet .producto-sheet-card {
+  border-radius: 16px;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.10);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  overflow: hidden;
+}
+.sirona-product-sheet .producto-modal-head {
+  padding: 16px 18px 10px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+}
+
 .sirona-modal-dialog--product .modal-content {
   border-radius: 16px;
   box-shadow: 0 30px 80px rgba(15, 23, 42, 0.18);
@@ -5297,6 +5373,21 @@ button.btn-icon.btn-delete,
   grid-column: 1 / -1; /* descripción a todo el ancho para evitar scroll */
 }
 
+/* jerarquía y sizing tipo “modal aprobado” */
+.sirona-modal-dialog--product .producto-modal-body .form-control,
+.sirona-modal-dialog--product .producto-modal-body .form-select {
+  border-radius: 14px;
+  border-color: rgba(148, 163, 184, 0.35);
+  font-size: 0.95rem;
+}
+.sirona-modal-dialog--product .producto-modal-body .form-control {
+  height: 44px;
+}
+.sirona-modal-dialog--product .producto-modal-body textarea.form-control {
+  height: auto;
+  min-height: 44px;
+}
+
 .sirona-modal-dialog--product .form-label {
   margin-bottom: 4px !important;
 }
@@ -5308,26 +5399,42 @@ button.btn-icon.btn-delete,
 }
 
 .sirona-modal-dialog--product .producto-modal-switch {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
   padding-top: 6px;
-}
-
-.sirona-modal-dialog--product .producto-modal-section-title {
-  margin-top: 2px;
-  margin-bottom: 6px;
-  font-size: 0.72rem;
-  font-weight: 750;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(100, 116, 139, 0.92);
+  margin: 0;
 }
 
 .sirona-modal-dialog--product .producto-modal-switches {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px 10px;
+}
+
+/* fila inferior: Estado + Listas de precio como en el mock */
+.sirona-modal-dialog--product .producto-modal-field--estado {
+  grid-column: 1 / 2;
+  align-self: start;
+}
+.sirona-modal-dialog--product .producto-modal-field--listas {
+  grid-column: 2 / 3;
+  align-self: start;
+}
+.sirona-modal-dialog--product .producto-modal-switches--wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+.sirona-modal-dialog--product .producto-modal-switch-item {
+  margin: 0;
+  min-height: 1.5rem;
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: nowrap;
+}
+.sirona-modal-dialog--product .producto-modal-switch-item .form-check-input {
+  margin-top: 0.1em;
 }
 
 .sirona-modal-dialog--product .producto-modal-switch-item {
@@ -5338,8 +5445,9 @@ button.btn-icon.btn-delete,
   .sirona-modal-dialog--product .producto-modal-grid {
     grid-template-columns: 1fr;
   }
-  .sirona-modal-dialog--product .producto-modal-switches {
-    grid-template-columns: 1fr;
+  .sirona-modal-dialog--product .producto-modal-field--estado,
+  .sirona-modal-dialog--product .producto-modal-field--listas {
+    grid-column: 1 / -1;
   }
 }
 

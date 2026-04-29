@@ -1509,24 +1509,26 @@
             if (node) {
               const label = (node.textContent || "").trim();
               const parentUrl = (node.getAttribute("data-parent-url") || "").replace(/\/+$/, "");
-              if (label && parentUrl) {
+              if (parentUrl) {
                 const targets = document.querySelectorAll('.sidebar a.sidebar-link[href], #sironaMenu a.app-sidebar-link[href]');
                 targets.forEach((a) => {
                   const href = (a.getAttribute("href") || "").replace(/\/+$/, "");
                   if (href !== parentUrl) return;
                   links.forEach((x) => x.classList.remove("is-active"));
                   a.classList.add("is-active");
-                  if (
-                    a.nextElementSibling &&
-                    a.nextElementSibling.classList &&
-                    a.nextElementSibling.classList.contains("sidebar-tree-current")
-                  )
-                    return;
-                  const d = document.createElement("div");
-                  d.className = "sidebar-tree-current";
-                  d.setAttribute("title", label);
-                  d.textContent = label;
-                  a.insertAdjacentElement("afterend", d);
+                  if (label) {
+                    if (
+                      a.nextElementSibling &&
+                      a.nextElementSibling.classList &&
+                      a.nextElementSibling.classList.contains("sidebar-tree-current")
+                    )
+                      return;
+                    const d = document.createElement("div");
+                    d.className = "sidebar-tree-current";
+                    d.setAttribute("title", label);
+                    d.textContent = label;
+                    a.insertAdjacentElement("afterend", d);
+                  }
                 });
               }
             }
