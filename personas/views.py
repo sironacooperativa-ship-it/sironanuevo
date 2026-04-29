@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
+from django.db import models
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
@@ -360,9 +361,17 @@ def proveedor_toggle(request, pk: int):
 @login_required
 def compradores_list(request):
     vid = (request.GET.get("vendedor") or "").strip()
+    q = (request.GET.get("q") or "").strip()
     compradores = Comprador.objects.select_related("vendedor_asignado").order_by("apellido", "nombre")
     if vid.isdigit():
         compradores = compradores.filter(vendedor_asignado_id=int(vid))
+    if q:
+        compradores = compradores.filter(
+            models.Q(apellido__icontains=q)
+            | models.Q(nombre__icontains=q)
+            | models.Q(codigo__icontains=q)
+            | models.Q(direccion__icontains=q)
+        )
     exp = parse_export(request)
     if exp in ("xlsx", "pdf"):
         headers = ["Código", "Apellido", "Nombre", "Vendedor asignado", "Dirección"]
@@ -383,7 +392,7 @@ def compradores_list(request):
     return render(
         request,
         "personas/compradores_list.html",
-        {"compradores": compradores, "vendedores_filtro": vendedores_filtro, "f": {"vendedor": vid}},
+        {"compradores": compradores, "vendedores_filtro": vendedores_filtro, "f": {"vendedor": vid, "q": q}},
     )
 
 

@@ -13,11 +13,16 @@
     </div>
     <div class="table-responsive presu-lista-table-wrap">
       <table class="modern-table personas-vendedores-tabla" id="vendedores-tabla">
+        <colgroup>
+          <col style="width: 26%" />   {# Vendedor (nombre + código) #}
+          <col style="width: 64px" /> {# Estado (ícono) #}
+          <col style="width: 96px" /> {# Comisión #}
+          <col style="width: auto" /> {# Grupo (flexible) #}
+          <col style="width: 210px" /> {# Acciones (compactas, sin wrap) #}
+        </colgroup>
         <thead>
           <tr>
-            <th scope="col" class="th-cod">Código</th>
-            <th scope="col" class="presu-col-ellipsis th-apellido">Apellido</th>
-            <th scope="col" class="presu-col-ellipsis th-nombre">Nombre</th>
+            <th scope="col" class="presu-col-ellipsis th-vend">Vendedor</th>
             <th scope="col" class="text-center th-estado col-center">Estado</th>
             <th scope="col" class="text-end th-comis col-money">Comisión</th>
             <th scope="col" class="th-grupo">Grupo</th>
@@ -27,21 +32,24 @@
         <tbody>
           {% for v in vendedores %}
             <tr>
-              <td class="col-muted persona-cod-cel"><span class="persona-cod">{{ v.codigo }}</span></td>
-              <td class="col-muted presu-col-ellipsis" title="{{ v.apellido }}">{{ v.apellido }}</td>
-              <td class="col-muted presu-col-ellipsis" title="{{ v.nombre }}">{{ v.nombre }}</td>
+              <td class="col-muted presu-col-ellipsis" title="{{ v.apellido }}, {{ v.nombre }}">
+                <div class="cli-cell-title">{{ v.apellido }}, {{ v.nombre }}</div>
+                <div class="cli-cell-sub small">Código: {{ v.codigo }}</div>
+              </td>
               <td class="text-center col-center">
                 {% if v.habilitado %}
-                  <span class="status-pill status-approved" title="Habilitado" role="img" aria-label="Habilitado">
-                    <i data-lucide="circle-check" class="status-pill-ico" aria-hidden="true"></i> Habilitado
+                  <span class="cli-state-ico cli-state-ico--on" title="Habilitado" aria-label="Habilitado" role="img">
+                    <i data-lucide="check" aria-hidden="true"></i>
                   </span>
                 {% else %}
-                  <span class="status-pill status-inactive" title="Inhabilitado" role="img" aria-label="Inhabilitado">
-                    <i data-lucide="ban" class="status-pill-ico" aria-hidden="true"></i> Inhabilitado
+                  <span class="cli-state-ico cli-state-ico--off" title="Inhabilitado" aria-label="Inhabilitado" role="img">
+                    <i data-lucide="x" aria-hidden="true"></i>
                   </span>
                 {% endif %}
               </td>
-              <td class="text-end col-money">{{ v.comision_porcentaje }}%</td>
+              <td class="text-end col-money">
+                <div class="cli-cell-title">{{ v.comision_porcentaje }}%</div>
+              </td>
               <td class="col-muted th-grupo-cel small">
                 {% if v.es_jefe_grupo %}
                   <span class="persona-badge-grupo">A cargo · {{ v.comision_grupo_porcentaje }}%</span>
@@ -130,7 +138,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="7" class="table-empty">No hay vendedores.</td></tr>
+            <tr><td colspan="5" class="table-empty">No hay vendedores.</td></tr>
           {% endfor %}
         </tbody>
       </table>

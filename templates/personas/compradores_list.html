@@ -8,9 +8,12 @@
 
   <div class="card app-card border-0 shadow-sm app-list-filters mb-3">
     <div class="card-body">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-12 col-md-6 col-lg-4">
-          <label class="form-label small text-muted mb-0">Vendedor asignado</label>
+      <div class="text-muted small mb-2">
+        Filtrá por <strong>vendedor asignado</strong> o buscá por <strong>cliente</strong> (apellido, nombre, código o dirección).
+      </div>
+      <form method="get" class="clientes-filtros-row d-flex flex-wrap gap-2 align-items-end">
+        <div class="clientes-filtro">
+          <label class="form-label small text-muted mb-0">Vendedor</label>
           <select name="vendedor" class="form-select form-select-sm">
             <option value="">Todos</option>
             {% for v in vendedores_filtro %}
@@ -20,9 +23,20 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-12 col-md-6 col-lg-3 d-flex gap-2">
-          <button type="submit" class="btn btn-sm btn-outline-dark rounded-pill flex-grow-1">Filtrar</button>
-          <a class="btn btn-sm btn-outline-secondary rounded-pill flex-grow-1" href="{% url 'compradores_list' %}">Limpiar</a>
+        <div class="clientes-filtro clientes-filtro--q">
+          <label class="form-label small text-muted mb-0">Cliente</label>
+          <input
+            type="text"
+            name="q"
+            class="form-control form-control-sm"
+            value="{{ f.q }}"
+            placeholder="Buscar…"
+            autocomplete="off"
+          />
+        </div>
+        <div class="clientes-filtro clientes-filtro--actions d-flex gap-2">
+          <button type="submit" class="btn btn-sm btn-outline-dark rounded-pill">Filtrar</button>
+          <a class="btn btn-sm btn-outline-secondary rounded-pill" href="{% url 'compradores_list' %}">Limpiar</a>
         </div>
       </form>
     </div>
@@ -35,11 +49,16 @@
     </div>
     <div class="table-responsive presu-lista-table-wrap">
       <table class="modern-table personas-compradores-tabla" id="compradores-tabla">
+        <colgroup>
+          <col style="width: 26%" />  {# Cliente (nombre + código) #}
+          <col style="width: 18%" />  {# Vendedor #}
+          <col style="width: 64px" /> {# Estado (ícono) #}
+          <col style="width: auto" /> {# Dirección (flexible, clamp 2 líneas) #}
+          <col style="width: 170px" /> {# Acciones (compactas) #}
+        </colgroup>
         <thead>
           <tr>
-            <th scope="col" class="th-cod">Código</th>
-            <th scope="col" class="presu-col-ellipsis th-apellido">Apellido</th>
-            <th scope="col" class="presu-col-ellipsis th-nombre">Nombre</th>
+            <th scope="col" class="presu-col-ellipsis th-cli">Cliente</th>
             <th scope="col" class="presu-col-ellipsis">Vendedor</th>
             <th scope="col" class="text-center th-estado col-center">Estado</th>
             <th scope="col" class="th-dir">Dirección</th>
@@ -49,28 +68,30 @@
         <tbody>
           {% for c in compradores %}
             <tr>
-              <td class="col-muted persona-cod-cel"><span class="persona-cod">{{ c.codigo }}</span></td>
-              <td class="col-muted presu-col-ellipsis" title="{{ c.apellido }}">{{ c.apellido }}</td>
-              <td class="col-muted presu-col-ellipsis" title="{{ c.nombre }}">{{ c.nombre }}</td>
+              <td class="col-muted presu-col-ellipsis" title="{{ c.apellido }}, {{ c.nombre }}">
+                <div class="cli-cell-title">{{ c.apellido }}, {{ c.nombre }}</div>
+                <div class="cli-cell-sub small">Código: {{ c.codigo }}</div>
+              </td>
               <td class="col-muted small presu-col-ellipsis" title="{% if c.vendedor_asignado %}{{ c.vendedor_asignado.apellido }}, {{ c.vendedor_asignado.nombre }}{% endif %}">
                 {% if c.vendedor_asignado %}
-                  {{ c.vendedor_asignado.apellido }}, {{ c.vendedor_asignado.nombre }}
+                  <div class="cli-cell-title">{{ c.vendedor_asignado.apellido }}, {{ c.vendedor_asignado.nombre }}</div>
+                  <div class="cli-cell-sub small">Código: {{ c.vendedor_asignado.codigo }}</div>
                 {% else %}
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
               <td class="text-center col-center">
                 {% if c.habilitado %}
-                  <span class="status-pill status-approved" title="Habilitado" role="img" aria-label="Habilitado">
-                    <i data-lucide="circle-check" class="status-pill-ico" aria-hidden="true"></i> Habilitado
+                  <span class="cli-state-ico cli-state-ico--on" title="Habilitado" aria-label="Habilitado" role="img">
+                    <i data-lucide="check" aria-hidden="true"></i>
                   </span>
                 {% else %}
-                  <span class="status-pill status-inactive" title="Inhabilitado" role="img" aria-label="Inhabilitado">
-                    <i data-lucide="ban" class="status-pill-ico" aria-hidden="true"></i> Inhabilitado
+                  <span class="cli-state-ico cli-state-ico--off" title="Inhabilitado" aria-label="Inhabilitado" role="img">
+                    <i data-lucide="x" aria-hidden="true"></i>
                   </span>
                 {% endif %}
               </td>
-              <td class="col-muted th-dir-cel small">{{ c.direccion|default:"—" }}</td>
+              <td class="col-muted th-dir-cel small cli-dir-cell" title="{{ c.direccion|default:'' }}">{{ c.direccion|default:"—" }}</td>
               <td class="col-presu-acciones text-end table-actions-cell">
                 <div class="table-actions presu-row-actions d-flex">
                   <button
@@ -120,7 +141,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="7" class="table-empty">No hay clientes.</td></tr>
+            <tr><td colspan="5" class="table-empty">No hay clientes.</td></tr>
           {% endfor %}
         </tbody>
       </table>

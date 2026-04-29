@@ -566,6 +566,17 @@
 
       const ctx2 = document.getElementById("chartComprasDia");
       if (ctx2) {
+        const comprasData = toNums(payload.compras_dia_monto);
+        const comprasMax = comprasData.reduce(function (m, x) { return x > m ? x : m; }, 0);
+        if (!comprasData.length || !(comprasMax > 0)) {
+          try {
+            const wrap = ctx2.closest(".chart-wrap");
+            if (wrap) {
+              wrap.innerHTML =
+                '<div class="p-3 text-muted small" style="text-align:center">Sin compras para el período seleccionado.</div>';
+            }
+          } catch (e) {}
+        } else {
         new Chart(ctx2, {
           type: "bar",
           data: {
@@ -573,7 +584,7 @@
             datasets: [
               {
                 label: "Monto",
-                data: toNums(payload.compras_dia_monto),
+                data: comprasData,
                 backgroundColor: "rgba(249, 115, 22, 0.16)",
                 borderColor: ORANGE,
                 borderWidth: 1,
@@ -593,6 +604,7 @@
             },
           },
         });
+        }
       }
 
       const ctxEstado = document.getElementById("chartEstadoPedidos");

@@ -1,0 +1,82 @@
+{# Campos compactos para modal de producto (sin <form> ni botones) #}
+{% if form.non_field_errors %}
+  <div class="alert alert-warning py-2 px-3 small mb-2">
+    {{ form.non_field_errors }}
+  </div>
+{% endif %}
+
+<div class="producto-modal-grid">
+  <div class="producto-modal-field producto-modal-field--desc">
+    <label class="form-label small text-muted mb-1">Descripción</label>
+    {{ form.descripcion }}
+    {% if form.descripcion.errors %}<div class="text-danger small mt-1">{{ form.descripcion.errors }}</div>{% endif %}
+  </div>
+
+  <div class="producto-modal-field">
+    <label class="form-label small text-muted mb-1">Tipo</label>
+    {{ form.tipo }}
+    {% if form.tipo.errors %}<div class="text-danger small mt-1">{{ form.tipo.errors }}</div>{% endif %}
+  </div>
+
+  <div class="producto-modal-field">
+    <label class="form-label small text-muted mb-1">Costo</label>
+    {{ form.costo }}
+    {% if form.costo.errors %}<div class="text-danger small mt-1">{{ form.costo.errors }}</div>{% endif %}
+  </div>
+
+  <div class="producto-modal-field">
+    <label class="form-label small text-muted mb-1">Stock</label>
+    {{ form.stock }}
+    {% if form.stock.errors %}<div class="text-danger small mt-1">{{ form.stock.errors }}</div>{% endif %}
+  </div>
+
+  <div class="producto-modal-field">
+    <label class="form-label small text-muted mb-1">% Ganancia</label>
+    {{ form.porcentaje_ganancia }}
+    {% if form.porcentaje_ganancia.errors %}<div class="text-danger small mt-1">{{ form.porcentaje_ganancia.errors }}</div>{% endif %}
+  </div>
+
+  <div class="producto-modal-field">
+    <label class="form-label small text-muted mb-1">Precio de venta</label>
+    {{ form.precio_venta }}
+    {% if form.precio_venta.errors %}<div class="text-danger small mt-1">{{ form.precio_venta.errors }}</div>{% endif %}
+  </div>
+
+  <div class="producto-modal-field">
+    <label class="form-label small text-muted mb-1">Vencimiento</label>
+    {{ form.fecha_vencimiento }}
+    {% if form.fecha_vencimiento.errors %}<div class="text-danger small mt-1">{{ form.fecha_vencimiento.errors }}</div>{% endif %}
+  </div>
+
+  <div class="producto-modal-field producto-modal-field--switch">
+    <label class="form-label small text-muted mb-1">Estado</label>
+    <div class="producto-modal-switch">
+      {{ form.habilitado }}
+      <label class="form-check-label small" for="{{ form.habilitado.id_for_label }}">Producto habilitado</label>
+    </div>
+    {% if form.habilitado.errors %}<div class="text-danger small mt-1">{{ form.habilitado.errors }}</div>{% endif %}
+  </div>
+
+  {% if listas_extra_opciones %}
+    <div class="producto-modal-field producto-modal-field--full">
+      <div class="producto-modal-section-title">Listas de precio</div>
+      <div class="producto-modal-switches">
+        {% for l in listas_extra_opciones %}
+          <label class="form-check form-switch sirona-switch producto-modal-switch-item">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              role="switch"
+              name="listas_extra"
+              value="{{ l.pk }}"
+              id="lista_extra_{{ l.pk }}"
+              {% if l.pk in listas_extra_marcados %}checked{% endif %}
+            />
+            <span class="form-check-label small">{{ l.nombre }}</span>
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+

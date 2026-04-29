@@ -87,8 +87,14 @@
               <td>Descuento</td>
               <td class="text-end">{{ presupuesto.descuento_monto|ars }}</td>
             </tr>
+            {% if presupuesto.envio and presupuesto.envio > 0 %}
+              <tr>
+                <td>Envío</td>
+                <td class="text-end">{{ presupuesto.envio|ars }}</td>
+              </tr>
+            {% endif %}
             <tr class="fw-semibold table-light">
-              <td>Neto</td>
+              <td>Total</td>
               <td class="text-end">{{ presupuesto.neto|ars }}</td>
             </tr>
             <tr>

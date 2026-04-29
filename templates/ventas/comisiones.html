@@ -2,56 +2,48 @@
 {% load money %}
 {% block title %}Comisiones{% endblock %}
 {% block content %}
-  <div class="app-page-header mb-3">
-    <h1 class="app-page-title mb-1">Comisiones</h1>
-    <p class="text-muted small mb-2">Según fecha de registro del pedido</p>
-    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'ventas_historial' %}">Volver al historial</a>
-  </div>
-
-  <div class="card app-card border-0 shadow-sm app-list-filters mb-3">
-    <div class="card-body">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-12 col-md-4">
-          <label class="form-label small text-muted mb-0">Mes</label>
-          <select name="mes" class="form-select form-select-sm">
-            <option value="" {% if not f.mes %}selected{% endif %}>— Todos —</option>
-            {% for m in meses_opciones %}
-              <option value="{{ m.key }}" {% if f.mes == m.key %}selected{% endif %}>{{ m.label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-6 col-md-3">
-          <label class="form-label small text-muted mb-0">Desde</label>
-          <input type="date" name="fecha_desde" class="form-control form-control-sm" value="{{ f.fecha_desde }}" />
-        </div>
-        <div class="col-6 col-md-3">
-          <label class="form-label small text-muted mb-0">Hasta</label>
-          <input type="date" name="fecha_hasta" class="form-control form-control-sm" value="{{ f.fecha_hasta }}" />
-        </div>
-        <div class="col-12 col-md-3 d-flex gap-2 flex-wrap">
-          <button type="submit" class="btn btn-sm btn-outline-dark rounded-pill">Filtrar</button>
-          <a class="btn btn-sm btn-outline-secondary rounded-pill" href="{% url 'ventas_comisiones' %}">Limpiar</a>
-        </div>
-      </form>
-      <p class="small text-muted mb-0 mt-2">
-        Si elegís <strong>Mes</strong>, se aplica ese mes. Si lo dejás vacío, usa desde/hasta (si están).
-      </p>
+  <div class="comisiones-page">
+    <div class="app-page-header mb-2">
+      <h1 class="app-page-title mb-1">Comisiones</h1>
+      <p class="text-muted small mb-2">Según fecha de registro del pedido</p>
+      <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'ventas_historial' %}">Volver al historial</a>
     </div>
-  </div>
+
+    <div class="card app-card border-0 shadow-sm app-list-filters mb-2">
+      <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+          <div class="col-12 col-md-4">
+            <label class="form-label small text-muted mb-0">Mes</label>
+            <select name="mes" class="form-select form-select-sm">
+              <option value="" {% if not f.mes %}selected{% endif %}>— Todos —</option>
+              {% for m in meses_opciones %}
+                <option value="{{ m.key }}" {% if f.mes == m.key %}selected{% endif %}>{{ m.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label small text-muted mb-0">Desde</label>
+            <input type="date" name="fecha_desde" class="form-control form-control-sm" value="{{ f.fecha_desde }}" />
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label small text-muted mb-0">Hasta</label>
+            <input type="date" name="fecha_hasta" class="form-control form-control-sm" value="{{ f.fecha_hasta }}" />
+          </div>
+          <div class="col-12 col-md-3 d-flex gap-2 flex-wrap">
+            <button type="submit" class="btn btn-sm btn-outline-dark rounded-pill">Filtrar</button>
+            <a class="btn btn-sm btn-outline-secondary rounded-pill" href="{% url 'ventas_comisiones' %}">Limpiar</a>
+          </div>
+        </form>
+      </div>
+    </div>
 
   {% if comisiones_por_mes %}
-    <div class="table-card presu-lista-modern comisiones-resumen mb-3">
+    <div class="table-card presu-lista-modern comisiones-resumen mb-2">
       <div class="table-card-header">
         <h2 class="table-card-title">Comisiones mensuales acumuladas</h2>
       </div>
       <div class="table-responsive presu-lista-table-wrap">
         <table class="modern-table comisiones-mes-tabla">
-          <thead>
-            <tr>
-              <th scope="col">Mes</th>
-              <th scope="col" class="text-end col-money">Total comisiones</th>
-            </tr>
-          </thead>
           <tbody>
             {% for r in comisiones_por_mes %}
               <tr>
@@ -64,7 +56,7 @@
       </div>
     </div>
   {% else %}
-    <div class="alert alert-light border text-muted small mb-3">No hay comisiones con los filtros actuales.</div>
+    <div class="alert alert-light border text-muted small mb-2">No hay comisiones con los filtros actuales.</div>
   {% endif %}
 
   {% if comisiones_por_vendedor %}
@@ -75,12 +67,6 @@
       </div>
       <div class="table-responsive presu-lista-table-wrap">
         <table class="modern-table comisiones-vend-tabla">
-          <thead>
-            <tr>
-              <th scope="col" class="presu-col-ellipsis">Vendedor</th>
-              <th scope="col" class="text-end col-money">Total</th>
-            </tr>
-          </thead>
           <tbody>
             {% for r in comisiones_por_vendedor %}
               <tr>
@@ -95,5 +81,6 @@
       </div>
     </div>
   {% endif %}
+  </div>
 {% endblock %}
 

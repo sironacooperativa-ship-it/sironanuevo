@@ -138,10 +138,22 @@
           />
         </div>
         <div class="col-12 col-md-6">
+          <label class="form-label">Envío ($)</label>
+          <input
+            type="text"
+            name="envio"
+            class="form-control"
+            value="{% if repoblar %}{{ repoblar.envio }}{% elif presupuesto %}{{ presupuesto.envio }}{% else %}0{% endif %}"
+            inputmode="decimal"
+            id="id_envio"
+          />
+        </div>
+        <div class="col-12 col-md-6">
           <div class="border rounded p-3 bg-light small">
             <div class="d-flex justify-content-between"><span>Subtotal líneas</span><span id="sumSubtotal">$ 0,00</span></div>
             <div class="d-flex justify-content-between"><span>Descuento</span><span id="sumDesc">$ 0,00</span></div>
-            <div class="d-flex justify-content-between fw-semibold"><span>Neto</span><span id="sumNeto">$ 0,00</span></div>
+            <div class="d-flex justify-content-between"><span>Envío</span><span id="sumEnvio">$ 0,00</span></div>
+            <div class="d-flex justify-content-between fw-semibold"><span>Total</span><span id="sumNeto">$ 0,00</span></div>
             <p class="text-muted mb-0 mt-2 small">
               Al <strong>aprobar</strong> el presupuesto se genera un pedido; el desglose de importes al cobrar figura en <strong>Pedidos</strong> y en la ficha del <a href="{% url 'vendedores_list' %}">vendedor</a>.
             </p>
@@ -170,8 +182,10 @@
       const tbody = document.getElementById("lineasBody");
       const btnAdd = document.getElementById("btnAddLinea");
       const inpDesc = document.getElementById("id_descuento_monto");
+      const inpEnvio = document.getElementById("id_envio");
       const sumSubtotal = document.getElementById("sumSubtotal");
       const sumDesc = document.getElementById("sumDesc");
+      const sumEnvio = document.getElementById("sumEnvio");
       const sumNeto = document.getElementById("sumNeto");
       const listaPreciosSel = document.getElementById("id_lista_precios");
 
@@ -264,9 +278,11 @@
           sub += rowSubtotal(tr);
         });
         const desc = Math.max(0, parseMontoArsInput(inpDesc.value));
-        const neto = Math.max(0, sub - desc);
+        const env = Math.max(0, parseMontoArsInput(inpEnvio ? inpEnvio.value : "0"));
+        const neto = Math.max(0, sub - desc + env);
         sumSubtotal.textContent = fmtMoney(sub);
         sumDesc.textContent = fmtMoney(desc);
+        if (sumEnvio) sumEnvio.textContent = fmtMoney(env);
         sumNeto.textContent = fmtMoney(neto);
       }
 
@@ -339,6 +355,7 @@
 
       btnAdd.addEventListener("click", addRow);
       inpDesc.addEventListener("input", totals);
+      if (inpEnvio) inpEnvio.addEventListener("input", totals);
 
       function setEnabled(enabled) {
         btnAdd.disabled = !enabled;

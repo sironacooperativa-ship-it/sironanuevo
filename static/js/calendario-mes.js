@@ -143,18 +143,43 @@
           parts.push('<ul class="calen-mes-evs">');
           for (var k = 0; k < list.length && k < MAX_VISIBLE; k++) {
             var t = trunc(list[k].titulo, MAX_TIT);
+            var fullTit = String(list[k].titulo || "");
+            var fullDesc = String(list[k].descripcion || "");
+            var fullHora = String(list[k].hora || "");
+            var fullTipo = String(list[k].tipo || "MAN");
+            var fullReal = list[k].realizado ? "1" : "0";
             var tipoRaw = String(list[k].tipo || "MAN").toUpperCase();
             var tipoKey =
               tipoRaw === "PED"
                 ? "pedido"
                 : tipoRaw === "COM"
                   ? "compra"
-                  : tipoRaw === "MAN"
-                    ? "manual"
-                    : String(list[k].tipo || "MAN").toLowerCase();
+                  : tipoRaw === "COB"
+                    ? "cobro"
+                    : tipoRaw === "PAG"
+                      ? "pago"
+                      : tipoRaw === "ENT"
+                        ? "entrega"
+                        : tipoRaw === "VEN"
+                          ? "vencimiento"
+                          : tipoRaw === "MAN"
+                            ? "manual"
+                            : String(list[k].tipo || "MAN").toLowerCase();
             var dot = " calen-mes-dot--" + esc(tipoKey);
             parts.push(
-              '<li class="calen-mes-ev"><span class="calen-mes-dot' +
+              '<li class="calen-mes-ev" role="button" tabindex="0" data-date="' +
+                esc(iso) +
+                '" data-hora="' +
+                esc(fullHora) +
+                '" data-tipo="' +
+                esc(fullTipo) +
+                '" data-realizado="' +
+                esc(fullReal) +
+                '" data-titulo="' +
+                esc(fullTit) +
+                '" data-desc="' +
+                esc(fullDesc) +
+                '"><span class="calen-mes-dot' +
                 dot +
                 '" aria-hidden="true"></span><span class="calen-mes-ev-txt">' +
                 esc(t) +
@@ -163,7 +188,11 @@
           }
           if (list.length > MAX_VISIBLE) {
             parts.push(
-              '<li class="calen-mes-more" aria-label="Más eventos">…</li>'
+              '<li class="calen-mes-more" role="button" tabindex="0" data-date="' +
+                esc(iso) +
+                '" aria-label="Más eventos">+ ' +
+                String(list.length - MAX_VISIBLE) +
+                " más</li>"
             );
           }
           parts.push("</ul>");
@@ -175,6 +204,91 @@
     parts.push("</div>");
 
     root.innerHTML = parts.join("");
+
+    // Tooltip premium (hover) para ver detalles completos sin cortar texto.
+    try {
+      var tip = document.getElementById("sironaCalTip");
+      if (!tip) {
+        tip = document.createElement("div");
+        tip.id = "sironaCalTip";
+        tip.className = "sirona-cal-tooltip d-none";
+        document.body.appendChild(tip);
+      }
+
+      function showTip(anchor) {
+        if (!anchor) return;
+        var titulo = anchor.getAttribute("data-titulo") || "";
+        var desc = anchor.getAttribute("data-desc") || "";
+        var fecha = anchor.getAttribute("data-date") || "";
+        var hora = anchor.getAttribute("data-hora") || "";
+        var tipo = anchor.getAttribute("data-tipo") || "";
+        var tipoLabel =
+          tipo === "PED"
+            ? "Pedido"
+            : tipo === "COM"
+            ? "Compra"
+            : tipo === "VEN"
+            ? "Vencimiento"
+            : tipo === "COB"
+            ? "Cobro"
+            : tipo === "PAG"
+            ? "Pago"
+            : tipo === "ENT"
+            ? "Entrega"
+            : "Manual";
+        var realizado = anchor.getAttribute("data-realizado") === "1";
+
+        var when = fecha ? fecha.split("-").reverse().join("/") : "—";
+        if (hora) when = when + " " + hora;
+        var estado = realizado ? "Realizado" : "Pendiente";
+
+        tip.innerHTML =
+          '<div class="sirona-cal-tip-title">' +
+          esc(titulo) +
+          '</div><div class="sirona-cal-tip-meta">' +
+          esc(when) +
+          " · " +
+          esc(tipoLabel) +
+          '</div>' +
+          (desc ? '<div class="sirona-cal-tip-desc">' + esc(desc) + "</div>" : "") +
+          '<div class="sirona-cal-tip-foot"><span class="sirona-cal-tip-badge ' +
+          (realizado ? "is-ok" : "is-pend") +
+          '">' +
+          estado +
+          "</span></div>";
+
+        tip.classList.remove("d-none");
+        // position near anchor, clamp to viewport
+        var r = anchor.getBoundingClientRect();
+        var pad = 10;
+        var top = r.bottom + 8;
+        var left = r.left;
+        // measure after content
+        tip.style.left = "0px";
+        tip.style.top = "0px";
+        tip.style.maxWidth = "360px";
+        var tw = tip.offsetWidth || 320;
+        var th = tip.offsetHeight || 120;
+        if (left + tw + pad > window.innerWidth) left = window.innerWidth - tw - pad;
+        if (left < pad) left = pad;
+        if (top + th + pad > window.innerHeight) top = r.top - th - 8;
+        if (top < pad) top = pad;
+        tip.style.left = left + "px";
+        tip.style.top = top + "px";
+      }
+
+      function hideTip() {
+        tip.classList.add("d-none");
+      }
+
+      root.querySelectorAll(".calen-mes-ev[data-date]").forEach(function (evEl) {
+        evEl.addEventListener("mouseenter", function () { showTip(evEl); });
+        evEl.addEventListener("mousemove", function () { showTip(evEl); });
+        evEl.addEventListener("mouseleave", hideTip);
+        evEl.addEventListener("focus", function () { showTip(evEl); });
+        evEl.addEventListener("blur", hideTip);
+      });
+    } catch (e) {}
 
     var btns = root.querySelectorAll("[data-act]");
     for (var b = 0; b < btns.length; b++) {
@@ -200,6 +314,88 @@
         render();
       });
     }
+
+    // Click en número de día: prellenar fecha del "Nuevo evento" (sin abrir agenda)
+    try {
+      var fechaIn = document.getElementById("id_fecha");
+      var tituloIn = document.getElementById("id_titulo");
+      if (fechaIn) {
+        root.querySelectorAll(".calen-mes-cell--in[data-date] .calen-mes-daynum").forEach(function (dayEl) {
+          dayEl.addEventListener("click", function (ev) {
+            if (ev) ev.stopPropagation();
+            var cellEl = dayEl.closest(".calen-mes-cell--in[data-date]");
+            var iso = cellEl ? cellEl.getAttribute("data-date") : "";
+            if (!iso) return;
+            fechaIn.value = iso;
+            try {
+              fechaIn.dispatchEvent(new Event("change", { bubbles: true }));
+            } catch (e) {}
+            try {
+              fechaIn.scrollIntoView({ block: "center", behavior: "smooth" });
+            } catch (e) {}
+            if (tituloIn) {
+              try {
+                tituloIn.focus({ preventScroll: true });
+              } catch (e) {
+                tituloIn.focus();
+              }
+            }
+          });
+        });
+      }
+    } catch (e) {}
+
+    // Click en celda o "+X más": abrir agenda diaria en modal
+    try {
+      function openAgenda(iso) {
+        if (!iso) return;
+        var u = new URL(window.location.href);
+        var qs = u.searchParams.toString();
+        var url = "/calendario/dia/" + String(iso) + "/?modal=1" + (qs ? "&" + qs : "");
+        // Disparar el loader global de sirona-modal.js sin duplicar lógica.
+        var a = document.createElement("a");
+        a.setAttribute("href", url);
+        a.setAttribute("data-sirona-modal-url", url);
+        document.body.appendChild(a);
+        try {
+          a.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
+        } finally {
+          a.remove();
+        }
+      }
+
+      root.querySelectorAll(".calen-mes-cell--in[data-date]").forEach(function (cellEl) {
+        cellEl.addEventListener("click", function (ev) {
+          // Si click fue en un evento (tooltip/acciones), no duplicar.
+          if (ev && ev.target && ev.target.closest && ev.target.closest(".calen-mes-ev, .calen-mes-more, .calen-mes-nav")) return;
+          var iso = cellEl.getAttribute("data-date");
+          if (iso) openAgenda(iso);
+        });
+      });
+      root.querySelectorAll(".calen-mes-more[data-date]").forEach(function (moreEl) {
+        moreEl.addEventListener("click", function (ev) {
+          if (ev) ev.stopPropagation();
+          var iso = moreEl.getAttribute("data-date");
+          if (iso) openAgenda(iso);
+        });
+      });
+
+      // Click sobre evento: abre agenda del día (y deja tooltip para hover)
+      root.querySelectorAll(".calen-mes-ev[data-date]").forEach(function (evEl) {
+        evEl.addEventListener("click", function (ev) {
+          if (ev) ev.stopPropagation();
+          var iso = evEl.getAttribute("data-date");
+          if (iso) openAgenda(iso);
+        });
+        evEl.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            var iso = evEl.getAttribute("data-date");
+            if (iso) openAgenda(iso);
+          }
+        });
+      });
+    } catch (e) {}
   }
 
   render();

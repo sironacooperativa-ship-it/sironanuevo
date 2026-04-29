@@ -144,7 +144,8 @@ body.app-body {
 .sidebar .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  /* Un poco más de "aire" entre items (sin agrandar tipografía/íconos). */
+  gap: 8px;
   padding: 3px 2px 8px;
   overflow: auto;
   min-height: 0;
@@ -167,7 +168,9 @@ body.app-body {
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 8px 9px;
+  /* Más respiración vertical; mantiene estética compacta. */
+  padding: 9px 10px;
+  min-height: 38px;
   border-radius: 12px;
   color: #64748b !important;
   text-decoration: none !important;
@@ -254,7 +257,8 @@ body.app-body {
 
 /* Sidebar section titles */
 .sidebar-section-title {
-  margin: 8px 8px 5px;
+  /* Un poco más de separación entre secciones (móvil/offcanvas). */
+  margin: 12px 8px 6px;
   font-size: 0.625rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -765,7 +769,8 @@ body.app-body {
 
 /* Calendario: toolbar superior + calendario full-width */
 .calendario-agenda-page .calen-top-card {
-  padding: 12px 12px;
+  /* ahora usa table-card + header; el padding vive en el body */
+  padding: 0;
 }
 
 .calendario-agenda-page .calen-top-divider {
@@ -774,65 +779,16 @@ body.app-body {
 }
 
 .calendario-agenda-page .calen-calendar-card {
-  padding: 12px 12px;
+  padding: 0;
 }
 
-.calendario-agenda-page .agenda-btn-pill {
-  border-radius: 999px;
-  height: 34px;
-  padding: 0 14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 650;
-  font-size: 0.82rem;
-  letter-spacing: -0.01em;
-  box-shadow: var(--s-shadow-1);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease,
-    color 0.18s ease;
-  white-space: nowrap;
+/* Inputs del calendario: asegurar altura uniforme y textarea integrado */
+.calendario-agenda-page .input-modern {
+  min-height: 34px;
 }
-
-.calendario-agenda-page .agenda-btn-pill:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--s-shadow-2);
-}
-
-.calendario-agenda-page .agenda-btn-primary.agenda-btn-pill {
-  width: auto;
-  margin-top: 0;
-  background: linear-gradient(180deg, rgba(37, 99, 235, 1), rgba(29, 78, 216, 1));
-  border: 1px solid rgba(37, 99, 235, 0.35);
-}
-
-.calendario-agenda-page .agenda-btn-primary.agenda-btn-pill:hover {
-  background: linear-gradient(180deg, rgba(29, 78, 216, 1), rgba(30, 64, 175, 1));
-  color: #fff !important;
-}
-
-.calendario-agenda-page .agenda-btn-outline.agenda-btn-pill {
-  border-radius: 999px;
-  border-color: rgba(226, 232, 240, 0.95);
-  background: #fff;
-}
-
-.calendario-agenda-page .agenda-btn-ghost.agenda-btn-pill {
-  border-radius: 999px;
-  border: 1px solid rgba(226, 232, 240, 0.85);
-  background: #fff;
-  color: var(--s-muted) !important;
-}
-
-.calendario-agenda-page .agenda-btn-ghost.agenda-btn-pill:hover {
-  background: #f8fafc;
-  color: var(--s-ink) !important;
-  border-color: #cbd5e1;
-}
-
-@media (max-width: 991.98px) {
-  .calendario-agenda-page .agenda-btn-primary.agenda-btn-pill {
-    width: 100%;
-  }
+.calendario-agenda-page .calen-saas-textarea {
+  resize: vertical;
+  min-height: 34px;
 }
 
 /* Re-skin del calendario mensual renderizado por `calendario-mes.js` */
@@ -1014,6 +970,133 @@ body.app-body {
   text-overflow: ellipsis;
 }
 
+/* ===== Calendario: cards inferiores (Cheques / Vencimientos / Eventos) ===== */
+.calendario-agenda-page .agenda-card {
+  margin-top: 12px;
+  padding: 14px 14px 12px;
+  border: 1px solid var(--s-border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: var(--s-shadow-1);
+}
+.calendario-agenda-page .agenda-card:first-of-type {
+  margin-top: 0;
+}
+.calendario-agenda-page .agenda-card-title {
+  font-size: 1.02rem;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+  margin: 0 0 4px;
+}
+.calendario-agenda-page .agenda-table-meta {
+  font-size: 0.82rem;
+  margin: 0 0 10px;
+  color: rgba(100, 116, 139, 0.92) !important;
+}
+
+/* Tablas compactas, misma lógica que Stock/Productos */
+.calendario-agenda-page .agenda-card .table-responsive {
+  margin: 0;
+  border-radius: 14px;
+}
+.calendario-agenda-page .agenda-card .modern-table {
+  margin-bottom: 0;
+}
+.calendario-agenda-page .agenda-card .modern-table thead th {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 8px 10px;
+}
+.calendario-agenda-page .agenda-card .modern-table tbody td {
+  padding: 7px 10px;
+  font-size: 0.86rem;
+  line-height: 1.15;
+  vertical-align: middle;
+}
+.calendario-agenda-page .agenda-card .modern-table tbody tr:hover td {
+  background: rgba(37, 99, 235, 0.04);
+}
+.calendario-agenda-page .agenda-card .persona-cod {
+  font-size: 0.80rem;
+}
+
+/* Ajuste fino por tabla */
+.calendario-agenda-page .calen-ch-tabla td,
+.calendario-agenda-page .calen-meds-tabla td,
+.calendario-agenda-page .calen-ev-tabla td {
+  white-space: nowrap;
+}
+.calendario-agenda-page .calen-meds-tabla td:nth-child(3),
+.calendario-agenda-page .calen-ev-title {
+  white-space: normal;
+}
+
+/* Badge moderno para tipo (Eventos/Pedidos) */
+.calen-ev-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(148, 163, 184, 0.12);
+  color: rgba(71, 85, 105, 0.95);
+}
+.calen-ev-badge--pedido {
+  border-color: rgba(37, 99, 235, 0.22);
+  background: rgba(37, 99, 235, 0.10);
+  color: #1d4ed8;
+}
+.calen-ev-badge--compra {
+  border-color: rgba(249, 115, 22, 0.22);
+  background: rgba(249, 115, 22, 0.10);
+  color: #c2410c;
+}
+.calen-ev-badge--vencimiento {
+  border-color: rgba(239, 68, 68, 0.22);
+  background: rgba(239, 68, 68, 0.10);
+  color: #b91c1c;
+}
+.calen-ev-badge--cobro {
+  border-color: rgba(34, 197, 94, 0.22);
+  background: rgba(34, 197, 94, 0.10);
+  color: #15803d;
+}
+.calen-ev-badge--pago {
+  border-color: rgba(168, 85, 247, 0.22);
+  background: rgba(168, 85, 247, 0.10);
+  color: #7e22ce;
+}
+.calen-ev-badge--entrega {
+  border-color: rgba(20, 184, 166, 0.22);
+  background: rgba(20, 184, 166, 0.10);
+  color: #0f766e;
+}
+.calen-ev-badge--manual {
+  border-color: rgba(148, 163, 184, 0.35);
+  background: rgba(148, 163, 184, 0.12);
+  color: rgba(71, 85, 105, 0.95);
+}
+
+/* Export block más integrado */
+.calendario-agenda-page .agenda-export {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(226, 232, 240, 0.9);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.calendario-agenda-page .agenda-export-label {
+  font-size: 0.80rem;
+}
+
 .calen-mes-dot {
   width: 7px;
   height: 7px;
@@ -1031,11 +1114,228 @@ body.app-body {
 .calen-mes-dot--evento {
   background: var(--s-violet);
 }
+.calen-mes-dot--cobro {
+  background: var(--s-success);
+}
+.calen-mes-dot--pago {
+  background: var(--s-orange);
+}
+.calen-mes-dot--entrega {
+  background: var(--s-primary);
+}
+.calen-mes-dot--vencimiento {
+  background: var(--s-violet);
+}
 .calen-mes-dot--manual {
   background: #64748b;
 }
 .calen-mes-dot--man {
   background: #94a3b8;
+}
+
+/* Tooltip premium para eventos del calendario */
+.sirona-cal-tooltip {
+  position: fixed;
+  z-index: 9999;
+  width: max-content;
+  max-width: 360px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 14px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
+  padding: 10px 12px;
+  color: var(--s-ink);
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+}
+.sirona-cal-tip-title {
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+.sirona-cal-tip-meta {
+  font-size: 0.78rem;
+  color: rgba(100, 116, 139, 0.95);
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sirona-cal-tip-desc {
+  font-size: 0.82rem;
+  color: rgba(30, 41, 59, 0.95);
+  line-height: 1.25;
+  margin-bottom: 8px;
+  white-space: normal;
+}
+.sirona-cal-tip-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.sirona-cal-tip-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 750;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(148, 163, 184, 0.12);
+  color: rgba(71, 85, 105, 0.95);
+}
+.sirona-cal-tip-badge.is-ok {
+  border-color: rgba(34, 197, 94, 0.22);
+  background: rgba(34, 197, 94, 0.10);
+  color: #15803d;
+}
+.sirona-cal-tip-badge.is-pend {
+  border-color: rgba(249, 115, 22, 0.22);
+  background: rgba(249, 115, 22, 0.10);
+  color: #c2410c;
+}
+
+/* ===== Responsive hamburger: menu <-> X (visual only) ===== */
+#btnHamburgerMenu .sirona-hamb-ico {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+}
+#btnHamburgerMenu .sirona-hamb-ico svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+#btnHamburgerMenu .sirona-hamb-ico--menu,
+#btnHamburgerMenu .sirona-hamb-ico--close {
+  position: absolute;
+  inset: 0;
+  transition: opacity 160ms ease, transform 200ms ease;
+}
+#btnHamburgerMenu .sirona-hamb-ico--menu {
+  opacity: 1;
+  transform: scale(1);
+}
+#btnHamburgerMenu .sirona-hamb-ico--close {
+  opacity: 0;
+  transform: scale(0.92) rotate(-6deg);
+}
+/* Bootstrap agrega esta clase al body cuando el offcanvas está abierto. */
+body.offcanvas-open #btnHamburgerMenu .sirona-hamb-ico--menu {
+  opacity: 0;
+  transform: scale(0.92) rotate(6deg);
+}
+body.offcanvas-open #btnHamburgerMenu .sirona-hamb-ico--close {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+/* Modal agenda diaria */
+.sirona-modal-dialog--agenda {
+  max-width: 920px;
+}
+.sirona-modal-dialog--agenda .modal-content {
+  border-radius: 16px;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.18);
+}
+.agenda-day-section-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(100, 116, 139, 0.92);
+}
+.agenda-day-item {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px 10px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  margin-top: 8px;
+}
+.agenda-day-item.is-done {
+  opacity: 0.85;
+}
+.agenda-day-time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+  color: rgba(30, 41, 59, 0.92);
+}
+.agenda-day-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.agenda-day-title {
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agenda-day-item.is-done .agenda-day-title {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: rgba(148, 163, 184, 0.8);
+}
+.agenda-day-badges {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+.agenda-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 750;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(148, 163, 184, 0.12);
+  color: rgba(71, 85, 105, 0.95);
+}
+.agenda-badge--tipo {
+  border-color: rgba(37, 99, 235, 0.22);
+  background: rgba(37, 99, 235, 0.10);
+  color: #1d4ed8;
+}
+.agenda-badge--ok {
+  border-color: rgba(34, 197, 94, 0.22);
+  background: rgba(34, 197, 94, 0.10);
+  color: #15803d;
+}
+.agenda-badge--muted {
+  border-color: rgba(249, 115, 22, 0.22);
+  background: rgba(249, 115, 22, 0.10);
+  color: #c2410c;
+}
+.agenda-day-desc {
+  margin-top: 4px;
+  font-size: 0.82rem;
+  color: rgba(100, 116, 139, 0.95);
+  line-height: 1.25;
+  white-space: pre-wrap;
+}
+.agenda-day-actions {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.agenda-day-edit {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(226, 232, 240, 0.95);
 }
 
 /* Mobile offcanvas: cleaner drawer feel */
@@ -1591,29 +1891,95 @@ nav.navbar.sirona-topbar.bg-white.topbar {
   border-color: rgba(37, 99, 235, 0.22);
 }
 
-.icon-button {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  border-radius: 12px;
-  border: 1px solid var(--s-border);
-  background: #fff;
-  color: var(--s-muted);
+/* ==========================================================================
+   Icon buttons — estilo premium unificado (SaaS/ERP moderno)
+   ========================================================================== */
+.icon-button,
+.btn-icon,
+a.btn-icon,
+button.btn-icon {
+  --ib-size: 34px;
+  --ib-radius: 12px;
+  --ib-border: rgba(148, 163, 184, 0.35);
+  --ib-bg: rgba(15, 23, 42, 0.02);
+  --ib-fg: rgba(71, 85, 105, 0.95);
+  --ib-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --ib-shadow-hover: 0 8px 18px rgba(15, 23, 42, 0.10);
+
+  width: var(--ib-size);
+  height: var(--ib-size);
+  min-width: var(--ib-size);
+  border-radius: var(--ib-radius);
+  border: 1px solid var(--ib-border);
+  background: var(--ib-bg);
+  color: var(--ib-fg);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  box-shadow: var(--s-shadow-1);
+  line-height: 0;
+  box-shadow: var(--ib-shadow);
   transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  text-decoration: none;
 }
 
-.icon-button:hover {
-  transform: translateY(-1px);
-  background: #f8fafc;
-  border-color: #cbd5e1;
+.icon-button:hover,
+.btn-icon:hover,
+a.btn-icon:hover,
+button.btn-icon:hover {
+  transform: translateY(-0.5px);
+  background: rgba(248, 250, 252, 0.92);
+  border-color: rgba(148, 163, 184, 0.55);
   color: var(--s-ink);
-  box-shadow: var(--s-shadow-2);
+  box-shadow: var(--ib-shadow-hover);
   text-decoration: none;
+}
+
+.icon-button:focus-visible,
+.btn-icon:focus-visible,
+a.btn-icon:focus-visible,
+button.btn-icon:focus-visible {
+  outline: none;
+  box-shadow: var(--s-ring);
+}
+
+/* Semantic tints (reutiliza clases existentes: btn-edit/delete/approve/save/disable/view) */
+.btn-icon.btn-edit,
+a.btn-icon.btn-edit,
+.icon-button.btn-edit,
+.btn-icon.btn-view,
+a.btn-icon.btn-view,
+.icon-button.btn-view {
+  --ib-fg: #1d4ed8;
+  --ib-bg: rgba(37, 99, 235, 0.10);
+  --ib-border: rgba(37, 99, 235, 0.22);
+}
+
+.btn-icon.btn-approve,
+a.btn-icon.btn-approve,
+.icon-button.btn-approve,
+.btn-icon.btn-save,
+a.btn-icon.btn-save,
+.icon-button.btn-save {
+  --ib-fg: #15803d;
+  --ib-bg: rgba(34, 197, 94, 0.10);
+  --ib-border: rgba(34, 197, 94, 0.22);
+}
+
+.btn-icon.btn-disable,
+a.btn-icon.btn-disable,
+.icon-button.btn-disable {
+  --ib-fg: rgba(71, 85, 105, 0.95);
+  --ib-bg: rgba(148, 163, 184, 0.12);
+  --ib-border: rgba(148, 163, 184, 0.30);
+}
+
+.btn-icon.btn-delete,
+button.btn-icon.btn-delete,
+.icon-button.btn-delete {
+  --ib-fg: #b91c1c;
+  --ib-bg: rgba(239, 68, 68, 0.10);
+  --ib-border: rgba(239, 68, 68, 0.22);
 }
 
 .page-title {
@@ -2056,52 +2422,7 @@ nav.navbar.sirona-topbar.bg-white.topbar {
   color: rgba(226, 232, 240, 0.92);
 }
 
-/* Keep icon buttons consistent (tables/actions already use .btn-icon in many screens) */
-.btn-icon,
-a.btn-icon,
-button.btn-icon {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  border-radius: 12px;
-  border: 1px solid var(--s-border);
-  background: #fff;
-  color: var(--s-muted);
-  box-shadow: var(--s-shadow-1);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  line-height: 0;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
-}
-
-.btn-icon:hover,
-a.btn-icon:hover,
-button.btn-icon:hover {
-  transform: translateY(-1px);
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: var(--s-ink);
-  box-shadow: var(--s-shadow-2);
-  text-decoration: none;
-}
-
-/* Simple “primary” variants by existing semantic classnames in templates */
-.btn-icon.btn-edit,
-a.btn-icon.btn-edit,
-.btn-icon.btn-view,
-a.btn-icon.btn-view {
-  color: var(--s-primary);
-}
-.btn-icon.btn-delete,
-button.btn-icon.btn-delete {
-  color: var(--s-danger);
-}
-.btn-icon.btn-approve,
-a.btn-icon.btn-approve {
-  color: var(--s-success);
-}
+/* Keep icon buttons consistent: base now defined above (Icon buttons — estilo premium unificado). */
 
 /* ===== Productos: acciones por selección múltiple (pill buttons) ===== */
 .productos-bulk-btn {
@@ -2309,11 +2630,18 @@ a.btn-icon.btn-approve {
 /* ===== Ventas > Historial: estado + acciones + leyenda sticky ===== */
 .venta-hist-table-wrap {
   position: relative;
-  overflow: auto;
+  /* Objetivo: evitar scroll horizontal. Mantener solo scroll vertical si hiciera falta. */
+  overflow-x: hidden;
+  overflow-y: visible;
   max-height: 68vh;
   scrollbar-gutter: stable both-edges;
   scrollbar-width: auto;
   scrollbar-color: rgba(100, 116, 139, 0.55) rgba(148, 163, 184, 0.18);
+}
+
+/* Bootstrap .table-responsive fuerza overflow-x:auto; lo anulamos aquí */
+.table-responsive.venta-hist-table-wrap {
+  overflow-x: hidden !important;
 }
 
 .venta-hist-table-wrap::-webkit-scrollbar {
@@ -2331,12 +2659,24 @@ a.btn-icon.btn-approve {
 }
 
 .ventas-historial-tabla {
-  min-width: 980px;
+  /* Sin min-width: debe entrar en el viewport sin scroll horizontal. */
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed;
+}
+
+/* theme.css trae reglas más específicas para esta tabla; las pisamos */
+.ventas-historial-modern.presu-lista-modern .ventas-historial-tabla {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
 }
 
 .ventas-historial-modern .modern-table th,
 .ventas-historial-modern .modern-table td {
-  padding: 10px 12px !important;
+  padding: 8px 10px !important;
   font-size: 0.9rem;
 }
 
@@ -2349,13 +2689,13 @@ a.btn-icon.btn-approve {
 
 .ventas-historial-tabla .th-comision,
 .ventas-historial-tabla .comision-cel {
-  width: 120px;
+  width: 86px;
   white-space: nowrap;
 }
 
 .ventas-historial-tabla .th-caja,
 .ventas-historial-tabla .ventas-hist-caja {
-  width: 150px;
+  width: 156px;
 }
 
 .ventas-historial-tabla .th-estado,
@@ -2365,13 +2705,13 @@ a.btn-icon.btn-approve {
 
 .ventas-historial-tabla .th-pedido,
 .ventas-historial-tabla .col-ped {
-  width: 86px;
+  width: 138px;
   white-space: nowrap;
 }
 
 .ventas-hist-actions {
   justify-content: flex-end;
-  gap: 8px;
+  gap: 4px;
   flex-wrap: nowrap;
 }
 
@@ -2407,14 +2747,69 @@ a.btn-icon.btn-approve {
 }
 
 .ventas-historial-tabla .table-actions-cell {
-  position: sticky;
-  right: 0;
-  background: linear-gradient(90deg, rgba(248, 250, 252, 0), rgba(255, 255, 255, 0.9) 28%);
-  backdrop-filter: blur(6px);
+  /* Sticky/right gradients tienden a forzar overflow horizontal. */
+  position: static;
+  right: auto;
+  background: transparent;
+  backdrop-filter: none;
 }
 
 .ventas-historial-tabla .table-actions-cell .table-actions {
-  padding-left: 10px;
+  padding-left: 0;
+}
+
+/* --- Ajuste fino: truncamiento elegante + 2 líneas compactas --- */
+.ventas-historial-modern .ventas-hist-cell-title {
+  font-weight: 650;
+  color: var(--s-ink);
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ventas-historial-modern .ventas-hist-cell-sub {
+  margin-top: 2px;
+  line-height: 1.05;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ventas-historial-modern .ventas-hist-vto {
+  white-space: nowrap;
+  font-weight: 650;
+  color: rgba(100, 116, 139, 0.95);
+}
+
+/* Acciones: más chicas y sin wrap */
+.ventas-historial-modern .ventas-hist-actions .btn-icon,
+.ventas-historial-modern .ventas-hist-actions a.btn-icon,
+.ventas-historial-modern .ventas-hist-actions button.btn-icon {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 10px;
+}
+
+.ventas-historial-modern .ventas-hist-actions i[data-lucide],
+.ventas-historial-modern .ventas-hist-actions svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Evitar que "Neto" agrande el alto y el ancho */
+.ventas-historial-modern .ventas-hist-caja-sub {
+  font-size: 0.75rem;
+  line-height: 1.05;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* En esta tabla, no forzar min-width 100% heredado a la tabla (dejar que fixed + colgroup manden) */
+.app-body .app-main .ventas-historial-tabla {
+  min-width: 0 !important;
 }
 
 .estado-ico {
@@ -3092,9 +3487,11 @@ a.btn-icon.btn-approve {
   margin-bottom: 10px !important;
 }
 
-@media (min-width: 1400px) {
+/* Desktop: 5 KPIs en una sola fila (evitar "una colgada" abajo) */
+@media (min-width: 992px) {
   .stock-page .stats-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: stretch;
   }
 }
 
@@ -3103,6 +3500,72 @@ a.btn-icon.btn-approve {
   gap: 4px;
   border-radius: var(--s-r);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  height: 100%;
+}
+
+/* Stock: tabla alineada al lenguaje visual de Listas de precios */
+.stock-page .dashboard-card .table-responsive {
+  overflow-x: hidden; /* sin scroll horizontal */
+  overflow-y: visible; /* sin scroll vertical interno */
+}
+
+.stock-page .stock-products-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.stock-page .stock-products-table thead th,
+.stock-page .stock-products-table tbody td {
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+.stock-page .stock-products-table thead th {
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(100, 116, 139, 0.92);
+}
+
+.stock-page .stock-products-table .name {
+  font-weight: 650;
+}
+
+.stock-page .stock-prod-sub {
+  margin-top: 2px;
+  font-size: 0.78rem;
+  line-height: 1.1;
+  color: rgba(100, 116, 139, 0.95);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stock-page .stock-prod-sub .prod-code {
+  font-variant-numeric: tabular-nums;
+}
+
+.stock-page .stock-actions-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.stock-page .stock-icon-btn {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.stock-page .stock-icon-btn i[data-lucide],
+.stock-page .stock-icon-btn svg {
+  width: 14px;
+  height: 14px;
 }
 
 .stock-page .metric-card .metric-top {
@@ -4207,7 +4670,7 @@ a.btn-icon.btn-approve {
   margin: 4px 0 6px 18px;
   padding: 2px 0 2px 8px;
   border-left: 1px solid rgba(226, 232, 240, 0.65);
-  gap: 4px;
+  gap: 5px;
   display: none;
 }
 
@@ -4264,7 +4727,8 @@ a.btn-icon.btn-approve {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 9px 10px;
+  padding: 10px 11px;
+  min-height: 40px;
   border-radius: 14px;
   color: #64748b !important;
   text-decoration: none !important;
@@ -4301,12 +4765,13 @@ a.btn-icon.btn-approve {
   }
 
   .sidebar .sidebar-nav {
-    gap: 5px;
+    gap: 6px;
     padding: 2px 1px 6px;
   }
 
   .sidebar-link {
-    padding: 7px 8px;
+    padding: 8px 9px;
+    min-height: 36px;
     border-radius: 11px;
     gap: 6px;
   }
@@ -4315,12 +4780,12 @@ a.btn-icon.btn-approve {
   .offcanvas-subnav {
     margin: 3px 0 5px 16px;
     padding: 2px 0 2px 7px;
-    gap: 3px;
+    gap: 4px;
   }
 
   .sidebar-subnav .sidebar-link,
   .offcanvas-subnav .sirona-offcanvas-nav-link {
-    padding: 6px 8px;
+    padding: 7px 9px;
     border-radius: 10px;
   }
 
@@ -4423,6 +4888,459 @@ a.btn-icon.btn-approve {
 .theme-dark #sironaMenu .sidebar-section-title,
 .theme-dark #sironaMenuDemo .sidebar-section-title {
   color: rgba(226, 232, 240, 0.72);
+}
+
+/* ==========================================================================
+   Clientes (Compradores) — tabla moderna, compacta, sin scroll horizontal
+   ========================================================================== */
+.personas-lista-modern .personas-compradores-tabla {
+  min-width: 0 !important; /* theme.css fija min-width grande */
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed;
+}
+
+/* Pisar el selector específico de theme.css para Personas */
+.presu-lista-modern.personas-lista-modern .personas-compradores-tabla {
+  min-width: 0 !important;
+  table-layout: fixed !important;
+}
+
+/* Vendedores: mismo criterio que Clientes */
+.personas-lista-modern .personas-vendedores-tabla {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed;
+}
+
+.presu-lista-modern.personas-lista-modern .personas-vendedores-tabla {
+  min-width: 0 !important;
+  table-layout: fixed !important;
+}
+
+/* No forzar overflow horizontal en el wrapper de esta tabla */
+.personas-lista-modern .table-responsive.presu-lista-table-wrap {
+  overflow-x: hidden;
+}
+
+.personas-lista-modern .personas-compradores-tabla th,
+.personas-lista-modern .personas-compradores-tabla td {
+  padding: 8px 10px !important;
+  font-size: 0.88rem;
+  vertical-align: middle !important;
+}
+
+.personas-lista-modern .personas-vendedores-tabla th,
+.personas-lista-modern .personas-vendedores-tabla td {
+  padding: 8px 10px !important;
+  font-size: 0.88rem;
+  vertical-align: middle !important;
+}
+
+.personas-lista-modern .personas-compradores-tabla thead th {
+  font-size: 0.7rem !important;
+  letter-spacing: 0.06em !important;
+}
+
+.personas-lista-modern .personas-vendedores-tabla thead th {
+  font-size: 0.7rem !important;
+  letter-spacing: 0.06em !important;
+}
+
+.personas-lista-modern .cli-cell-title {
+  font-weight: 600;
+  color: var(--s-ink);
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.personas-lista-modern .cli-cell-sub {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  line-height: 1.1;
+  color: rgba(37, 99, 235, 0.85); /* gris/azulado sutil */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.personas-lista-modern .cli-state-ico {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: #fff;
+  line-height: 0;
+}
+
+.personas-lista-modern .cli-state-ico i[data-lucide],
+.personas-lista-modern .cli-state-ico svg {
+  width: 16px;
+  height: 16px;
+}
+
+.personas-lista-modern .cli-state-ico--on {
+  color: #15803d;
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.22);
+}
+
+.personas-lista-modern .cli-state-ico--off {
+  color: rgba(100, 116, 139, 0.95);
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+.personas-lista-modern .cli-dir-cell {
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  line-height: 1.25;
+}
+
+/* Acciones más compactas y sin wrap */
+.personas-lista-modern .personas-compradores-tabla .table-actions {
+  gap: 4px !important;
+  flex-wrap: nowrap !important;
+}
+
+.personas-lista-modern .personas-vendedores-tabla .table-actions {
+  gap: 4px !important;
+  flex-wrap: nowrap !important;
+}
+
+.personas-lista-modern .personas-compradores-tabla .btn-icon,
+.personas-lista-modern .personas-compradores-tabla a.btn-icon,
+.personas-lista-modern .personas-compradores-tabla button.btn-icon {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.personas-lista-modern .personas-vendedores-tabla .btn-icon,
+.personas-lista-modern .personas-vendedores-tabla a.btn-icon,
+.personas-lista-modern .personas-vendedores-tabla button.btn-icon {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.personas-lista-modern .personas-compradores-tabla .btn-icon i[data-lucide],
+.personas-lista-modern .personas-compradores-tabla .btn-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Clientes: filtros compactos en una sola línea */
+.personas-lista-modern .clientes-filtros-row .clientes-filtro {
+  min-width: 0;
+}
+
+.personas-lista-modern .clientes-filtros-row .clientes-filtro select,
+.personas-lista-modern .clientes-filtros-row .clientes-filtro input {
+  min-width: 0;
+}
+
+.personas-lista-modern .clientes-filtros-row .clientes-filtro--q {
+  flex: 1 1 260px;
+  min-width: min(100%, 340px);
+}
+
+.personas-lista-modern .clientes-filtros-row .clientes-filtro--actions {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+@media (max-width: 767.98px) {
+  .personas-lista-modern .clientes-filtros-row .clientes-filtro--actions {
+    margin-left: 0;
+  }
+  .personas-lista-modern .clientes-filtros-row .clientes-filtro--q {
+    flex: 1 1 100%;
+  }
+}
+
+/* ==========================================================================
+   Comisiones — UI más limpia y compacta (sin tocar lógica)
+   ========================================================================== */
+.comisiones-page .app-list-filters .card-body {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.comisiones-page .table-card.comisiones-resumen .table-card-header {
+  padding: 10px 14px;
+  background: #fff;
+}
+
+.comisiones-page .table-card.comisiones-resumen .table-card-title {
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.comisiones-page .table-card.comisiones-resumen .table-card-count {
+  font-size: 0.78rem;
+  color: rgba(100, 116, 139, 0.9);
+}
+
+.comisiones-page .table-card.comisiones-resumen .table-responsive {
+  padding: 0;
+}
+
+.comisiones-page .table-card.comisiones-resumen table.modern-table tbody td {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.comisiones-page .table-card.comisiones-resumen .col-money {
+  font-variant-numeric: tabular-nums;
+  color: var(--s-primary);
+  font-weight: 650;
+}
+
+/* ==========================================================================
+   Productos (grilla) — estética premium compacta (Linear/Stripe-like)
+   ========================================================================== */
+.table-card--productos .table-responsive::after,
+.table-card--productos .table-responsive::before {
+  content: none !important; /* desactivar el tip global debajo de la tabla */
+}
+
+.table-card--productos table.table-productos {
+  table-layout: fixed;
+}
+
+.table-card--productos .modern-table thead th a.app-th-sort {
+  padding: 7px 8px;
+  gap: 8px;
+  border-radius: 10px;
+}
+
+.table-card--productos .modern-table thead th {
+  font-size: 10.5px;
+}
+
+.table-card--productos .modern-table tbody td {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.table-card--productos .productos-th-cb,
+.table-card--productos .productos-td-cb {
+  padding-left: 10px !important;
+  padding-right: 6px !important;
+}
+
+.table-card--productos .productos-td-desc {
+  padding-left: 6px !important; /* acercar descripción al checkbox */
+}
+
+/* Checkbox: más visible pero minimal */
+.table-card--productos input.form-check-input.productos-bulk-cb {
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid rgba(100, 116, 139, 0.85);
+  background-color: #fff;
+  box-shadow: none;
+}
+.table-card--productos input.form-check-input.productos-bulk-cb:focus {
+  box-shadow: var(--s-ring);
+}
+.table-card--productos input.form-check-input.productos-bulk-cb:checked {
+  background-color: var(--s-primary);
+  border-color: rgba(37, 99, 235, 0.9);
+}
+
+/* Descripción + código: stack compacto, un renglón para descripción */
+.table-card--productos .productos-desc-stack {
+  line-height: 1.15;
+}
+
+.table-card--productos .productos-desc-title {
+  display: block;
+  font-weight: 650;
+  color: var(--s-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-card--productos .productos-desc-meta {
+  margin-top: 1px; /* ~30% menos que antes */
+  font-size: 0.74rem;
+  line-height: 1.1;
+  color: rgba(100, 116, 139, 0.95); /* gris azulado */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-card--productos .productos-desc-code {
+  font-weight: 520;
+}
+
+/* Numéricas: más juntas (menos padding lateral) */
+.table-card--productos .productos-td-saas,
+.table-card--productos .productos-th-saas {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+/* Precio pegado a acciones */
+.table-card--productos .productos-td-precio {
+  padding-right: 6px !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-card--productos .productos-th-actions,
+.table-card--productos .table-actions-cell {
+  padding-left: 4px !important;
+  padding-right: 8px !important;
+}
+
+/* Acciones: siempre en fila, compactas, sin wrap */
+.table-card--productos .productos-actions-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+/* Badges (estado) estilo pastel verde, compactos y en una línea */
+.table-card--productos .productos-estado-badges {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.table-card--productos .productos-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 0.74rem;
+  line-height: 1;
+  font-weight: 650;
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  background: rgba(34, 197, 94, 0.10);
+  color: #15803d;
+}
+
+.table-card--productos .productos-badge--muted {
+  border-color: rgba(148, 163, 184, 0.35);
+  background: rgba(148, 163, 184, 0.12);
+  color: rgba(71, 85, 105, 0.95);
+}
+
+/* ==========================================================================
+   Modal: Editar producto (compacto, 2 columnas, sin scroll interno)
+   ========================================================================== */
+.sirona-modal-dialog--product {
+  max-width: 850px;
+}
+
+.sirona-modal-dialog--product .modal-content {
+  border-radius: 16px;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.18);
+}
+
+.sirona-modal-dialog--product .producto-modal-head {
+  padding: 14px 16px 8px;
+}
+
+.sirona-modal-dialog--product .producto-modal-title {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--s-ink);
+}
+
+.sirona-modal-dialog--product .producto-modal-body {
+  padding-top: 0;
+}
+
+.sirona-modal-dialog--product .producto-modal-foot {
+  padding-top: 8px;
+}
+
+.sirona-modal-dialog--product .producto-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+}
+
+.sirona-modal-dialog--product .producto-modal-field--full {
+  grid-column: 1 / -1;
+}
+
+.sirona-modal-dialog--product .producto-modal-field--desc {
+  grid-column: 1 / -1; /* descripción a todo el ancho para evitar scroll */
+}
+
+.sirona-modal-dialog--product .form-label {
+  margin-bottom: 4px !important;
+}
+
+.sirona-modal-dialog--product .form-control,
+.sirona-modal-dialog--product .form-select {
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+.sirona-modal-dialog--product .producto-modal-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.sirona-modal-dialog--product .producto-modal-section-title {
+  margin-top: 2px;
+  margin-bottom: 6px;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(100, 116, 139, 0.92);
+}
+
+.sirona-modal-dialog--product .producto-modal-switches {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 10px;
+}
+
+.sirona-modal-dialog--product .producto-modal-switch-item {
+  margin: 0;
+}
+
+@media (max-width: 575.98px) {
+  .sirona-modal-dialog--product .producto-modal-grid {
+    grid-template-columns: 1fr;
+  }
+  .sirona-modal-dialog--product .producto-modal-switches {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 991.98px) {

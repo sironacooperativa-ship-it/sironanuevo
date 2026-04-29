@@ -1,0 +1,287 @@
+{# Fragmento para modal: agenda diaria (fetch ?modal=1). Sin extends. #}
+<div class="modal-header border-0 pb-2 align-items-center">
+  <h5 class="modal-title fw-semibold mb-0">Agenda · {{ dia|date:"d/m/Y" }}</h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+</div>
+
+<div class="modal-body pt-0 px-3 px-md-4">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+    <div class="text-muted small">
+      {% if q %}Búsqueda: <strong>{{ q }}</strong>{% else %}Eventos del día{% endif %}
+      {% if tipo %} · Tipo: <strong>{{ tipo_label }}</strong>{% endif %}
+    </div>
+    <span class="text-muted small">{{ eventos|length }} evento(s)</span>
+  </div>
+
+  <div class="agenda-day-list">
+    {% if eventos_hora %}
+      <div class="agenda-day-section-title">Con horario</div>
+      <div class="agenda-day-items">
+        {% for e in eventos_hora %}
+          <div class="agenda-day-item {% if e.realizado %}is-done{% endif %}">
+            <div class="agenda-day-time">{{ e.hora|time:"H:i" }}</div>
+            <div class="agenda-day-main">
+              <div class="agenda-day-row">
+                <div class="agenda-day-title" title="{{ e.titulo }}">{{ e.titulo }}</div>
+                <div class="agenda-day-badges">
+                  <span class="agenda-badge agenda-badge--tipo">{{ e.get_tipo_display }}</span>
+                  {% if e.realizado %}
+                    <span class="agenda-badge agenda-badge--ok">Realizado</span>
+                  {% else %}
+                    <span class="agenda-badge agenda-badge--muted">Pendiente</span>
+                  {% endif %}
+                </div>
+              </div>
+              {% if e.descripcion %}
+                <div class="agenda-day-desc">{{ e.descripcion }}</div>
+              {% endif %}
+              <div class="agenda-day-actions">
+                <form method="post" class="sirona-ajax-form d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="accion" value="toggle" />
+                  <input type="hidden" name="id" value="{{ e.id }}" />
+                  <button type="submit" class="btn-icon {% if e.realizado %}btn-disable{% else %}btn-save{% endif %}" title="Marcar realizado/pendiente" aria-label="Toggle realizado">
+                    <i data-lucide="{% if e.realizado %}rotate-ccw{% else %}check{% endif %}" aria-hidden="true"></i>
+                  </button>
+                </form>
+                <button type="button" class="btn-icon btn-edit js-agenda-edit" data-id="{{ e.id }}" title="Editar" aria-label="Editar">
+                  <i data-lucide="pencil" aria-hidden="true"></i>
+                </button>
+                <form method="post" class="sirona-ajax-form d-inline" onsubmit="return confirm('¿Eliminar este evento?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="accion" value="delete" />
+                  <input type="hidden" name="id" value="{{ e.id }}" />
+                  <button type="submit" class="btn-icon btn-delete" title="Eliminar" aria-label="Eliminar">
+                    <i data-lucide="trash-2" aria-hidden="true"></i>
+                  </button>
+                </form>
+              </div>
+
+              <div class="agenda-day-edit d-none" id="edit-{{ e.id }}">
+                <form method="post" class="sirona-ajax-form">
+                  {% csrf_token %}
+                  <input type="hidden" name="accion" value="update" />
+                  <input type="hidden" name="id" value="{{ e.id }}" />
+                  <div class="row g-2 align-items-end">
+                    <div class="col-12 col-md-3">
+                      <label class="form-label small text-muted mb-1">Hora</label>
+                      <input type="time" name="hora" class="form-control input-modern" value="{% if e.hora %}{{ e.hora|time:'H:i' }}{% endif %}" />
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <label class="form-label small text-muted mb-1">Título</label>
+                      <input type="text" name="titulo" class="form-control input-modern" value="{{ e.titulo }}" maxlength="255" />
+                    </div>
+                    <div class="col-12 col-md-3">
+                      <label class="form-label small text-muted mb-1">Tipo</label>
+                      <select name="tipo" class="form-select input-modern">
+                        {% for k, label in tipos %}
+                          <option value="{{ k }}" {% if e.tipo == k %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label small text-muted mb-1">Descripción</label>
+                      <textarea name="descripcion" class="form-control input-modern" rows="2">{{ e.descripcion }}</textarea>
+                    </div>
+                    <div class="col-12 d-flex justify-content-end gap-2">
+                      <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-4 js-agenda-cancel" data-id="{{ e.id }}">Cancelar</button>
+                      <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4">Guardar</button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if eventos_sin_hora %}
+      <div class="agenda-day-section-title mt-3">Sin horario definido</div>
+      <div class="agenda-day-items">
+        {% for e in eventos_sin_hora %}
+          <div class="agenda-day-item {% if e.realizado %}is-done{% endif %}">
+            <div class="agenda-day-time">—</div>
+            <div class="agenda-day-main">
+              <div class="agenda-day-row">
+                <div class="agenda-day-title" title="{{ e.titulo }}">{{ e.titulo }}</div>
+                <div class="agenda-day-badges">
+                  <span class="agenda-badge agenda-badge--tipo">{{ e.get_tipo_display }}</span>
+                  {% if e.realizado %}
+                    <span class="agenda-badge agenda-badge--ok">Realizado</span>
+                  {% else %}
+                    <span class="agenda-badge agenda-badge--muted">Pendiente</span>
+                  {% endif %}
+                </div>
+              </div>
+              {% if e.descripcion %}
+                <div class="agenda-day-desc">{{ e.descripcion }}</div>
+              {% endif %}
+              <div class="agenda-day-actions">
+                <form method="post" class="sirona-ajax-form d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="accion" value="toggle" />
+                  <input type="hidden" name="id" value="{{ e.id }}" />
+                  <button type="submit" class="btn-icon {% if e.realizado %}btn-disable{% else %}btn-save{% endif %}" title="Marcar realizado/pendiente" aria-label="Toggle realizado">
+                    <i data-lucide="{% if e.realizado %}rotate-ccw{% else %}check{% endif %}" aria-hidden="true"></i>
+                  </button>
+                </form>
+                <button type="button" class="btn-icon btn-edit js-agenda-edit" data-id="{{ e.id }}" title="Editar" aria-label="Editar">
+                  <i data-lucide="pencil" aria-hidden="true"></i>
+                </button>
+                <form method="post" class="sirona-ajax-form d-inline" onsubmit="return confirm('¿Eliminar este evento?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="accion" value="delete" />
+                  <input type="hidden" name="id" value="{{ e.id }}" />
+                  <button type="submit" class="btn-icon btn-delete" title="Eliminar" aria-label="Eliminar">
+                    <i data-lucide="trash-2" aria-hidden="true"></i>
+                  </button>
+                </form>
+              </div>
+
+              <div class="agenda-day-edit d-none" id="edit-{{ e.id }}">
+                <form method="post" class="sirona-ajax-form">
+                  {% csrf_token %}
+                  <input type="hidden" name="accion" value="update" />
+                  <input type="hidden" name="id" value="{{ e.id }}" />
+                  <div class="row g-2 align-items-end">
+                    <div class="col-12 col-md-3">
+                      <label class="form-label small text-muted mb-1">Hora</label>
+                      <input type="time" name="hora" class="form-control input-modern" value="" />
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <label class="form-label small text-muted mb-1">Título</label>
+                      <input type="text" name="titulo" class="form-control input-modern" value="{{ e.titulo }}" maxlength="255" />
+                    </div>
+                    <div class="col-12 col-md-3">
+                      <label class="form-label small text-muted mb-1">Tipo</label>
+                      <select name="tipo" class="form-select input-modern">
+                        {% for k, label in tipos %}
+                          <option value="{{ k }}" {% if e.tipo == k %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label small text-muted mb-1">Descripción</label>
+                      <textarea name="descripcion" class="form-control input-modern" rows="2">{{ e.descripcion }}</textarea>
+                    </div>
+                    <div class="col-12 d-flex justify-content-end gap-2">
+                      <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-4 js-agenda-cancel" data-id="{{ e.id }}">Cancelar</button>
+                      <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4">Guardar</button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if not eventos_hora and not eventos_sin_hora %}
+      <div class="text-muted small py-3 text-center">No hay eventos para este día.</div>
+    {% endif %}
+  </div>
+
+  <hr class="my-3" />
+
+  <div class="agenda-add">
+    <div class="agenda-day-section-title mb-2">Agregar evento</div>
+    <form method="post" class="sirona-ajax-form">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="create" />
+      <input type="hidden" name="fecha" value="{{ dia|date:'Y-m-d' }}" />
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-3">
+          <label class="form-label small text-muted mb-1">Hora</label>
+          <input type="time" name="hora" class="form-control input-modern" />
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label small text-muted mb-1">Título</label>
+          <input type="text" name="titulo" class="form-control input-modern" maxlength="255" required />
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label small text-muted mb-1">Tipo</label>
+          <select name="tipo" class="form-select input-modern">
+            {% for k, label in tipos %}
+              <option value="{{ k }}" {% if k == default_tipo %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label small text-muted mb-1">Descripción</label>
+          <textarea name="descripcion" class="form-control input-modern" rows="2"></textarea>
+        </div>
+        <div class="col-12 d-flex justify-content-end gap-2">
+          <label class="form-check form-switch sirona-switch mb-0 me-auto">
+            <input class="form-check-input" type="checkbox" name="realizado" value="1" />
+            <span class="form-check-label small">Realizado</span>
+          </label>
+          <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4">Guardar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-footer border-0 bg-transparent pt-2 px-3 px-md-4 pb-3">
+  <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+</div>
+
+<script>
+  (function () {
+    // Dialog size + centered
+    try {
+      const root = document.getElementById("sironaModal");
+      const dlg = root ? root.querySelector(".modal-dialog") : null;
+      if (dlg) {
+        dlg.classList.remove("modal-dialog-scrollable");
+        dlg.classList.add("modal-dialog-centered", "sirona-modal-dialog--agenda");
+      }
+    } catch (e) {}
+
+    // AJAX forms inside modal: submit -> replace modal content
+    function postForm(form) {
+      const url = window.location.href;
+      const fd = new FormData(form);
+      return fetch(url, {
+        method: "POST",
+        body: fd,
+        headers: { "X-Requested-With": "XMLHttpRequest", Accept: "text/html" },
+        credentials: "same-origin",
+      }).then((r) => r.text());
+    }
+
+    document.querySelectorAll(".sirona-ajax-form").forEach(function (form) {
+      form.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        postForm(form)
+          .then(function (html) {
+            const box = document.getElementById("sironaModalContent");
+            if (box) box.innerHTML = html;
+          })
+          .catch(function () {});
+      });
+    });
+
+    document.querySelectorAll(".js-agenda-edit").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const id = btn.getAttribute("data-id");
+        const box = id ? document.getElementById("edit-" + id) : null;
+        if (box) box.classList.toggle("d-none");
+      });
+    });
+    document.querySelectorAll(".js-agenda-cancel").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const id = btn.getAttribute("data-id");
+        const box = id ? document.getElementById("edit-" + id) : null;
+        if (box) box.classList.add("d-none");
+      });
+    });
+
+    if (typeof lucide !== "undefined") {
+      try { lucide.createIcons(); } catch (e) {}
+    }
+  })();
+</script>
+

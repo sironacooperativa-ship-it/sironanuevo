@@ -103,6 +103,7 @@ def _ejecutar_aprobar_presupuesto_core(request, pr: Presupuesto, resolver: str) 
         comprador_id=pr.comprador_id,
         creado_por_id=request.user.id,
         aplica_comision=pr.aplica_comision,
+        envio=pr.envio,
     )
     pr.estado = Presupuesto.Estado.APROBADO
     pr.venta = venta
@@ -246,12 +247,17 @@ def _validar_lineas_post(request):
     vid = request.POST.get("vendedor")
     fecha_v = parse_fecha_param(request.POST.get("fecha_vencimiento_pago") or "")
     raw_desc = (request.POST.get("descuento_monto") or "").strip()
+    raw_envio = (request.POST.get("envio") or "").strip()
     try:
         descuento = (
             parse_decimal_from_input(raw_desc) if raw_desc else Decimal("0")
         )
     except InvalidOperation:
         descuento = None
+    try:
+        envio = parse_decimal_from_input(raw_envio) if raw_envio else Decimal("0")
+    except InvalidOperation:
+        envio = None
 
     pids = request.POST.getlist("linea_producto")
     qtys = request.POST.getlist("linea_cantidad")
@@ -271,6 +277,8 @@ def _validar_lineas_post(request):
         return "Elegí un vendedor.", None, None, None
     if descuento is None or descuento < 0:
         return "El descuento no es válido.", None, None, None
+    if envio is None or envio < 0:
+        return "El envío no es válido.", None, None, None
 
     try:
         Vendedor.objects.get(pk=int(vid), habilitado=True)
@@ -351,6 +359,7 @@ def _validar_lineas_post(request):
         int(vid),
         fecha_v,
         descuento,
+        envio,
         comision_pct,
         comprador_id,
         aplica_comision,
@@ -364,6 +373,7 @@ def _guardar_presupuesto_desde_lineas(
     vid,
     fecha_v,
     descuento,
+    envio,
     comision_pct,
     comprador_id=None,
     aplica_comision: bool = True,
@@ -373,6 +383,7 @@ def _guardar_presupuesto_desde_lineas(
     presupuesto.fecha_vencimiento_pago = fecha_v
     presupuesto.subtotal_lineas = subtotal
     presupuesto.descuento_monto = descuento
+    presupuesto.envio = envio
     presupuesto.comision_porcentaje = comision_pct
     presupuesto.aplica_comision = aplica_comision
     presupuesto.save()
@@ -524,7 +535,7 @@ def presupuesto_nuevo(request):
     if request.method == "POST":
         err, line_specs, subtotal, meta = _validar_lineas_post(request)
         if err is None:
-            vid, fecha_v, descuento, comision_pct, comprador_id, aplica_comision = meta
+            vid, fecha_v, descuento, envio, comision_pct, comprador_id, aplica_comision = meta
             with transaction.atomic():
                 pr = Presupuesto.objects.create(
                     vendedor_id=vid,
@@ -532,6 +543,7 @@ def presupuesto_nuevo(request):
                     fecha_vencimiento_pago=fecha_v,
                     subtotal_lineas=subtotal,
                     descuento_monto=descuento,
+                    envio=envio,
                     comision_porcentaje=comision_pct,
                     aplica_comision=aplica_comision,
                     creado_por=request.user,
@@ -631,10 +643,11 @@ def presupuesto_editar(request, pk: int):
                             or int(comprador_id or 0) != int(presupuesto.comprador_id or 0)
                             or (fecha_v or None) != (presupuesto.fecha_vencimiento_pago or None)
                             or str(descuento) != str(presupuesto.descuento_monto)
+                            or str(envio) != str(presupuesto.envio)
                             or _norm_line_specs(line_specs) != sorted(actuales)
                         ):
                             raise ValueError(
-                                "El pedido generado ya está pagado. En este caso solo se puede editar la comisión del presupuesto (no líneas, vendedor, comprador, vencimiento ni descuento)."
+                                "El pedido generado ya está pagado. En este caso solo se puede editar la comisión del presupuesto (no líneas, vendedor, comprador, vencimiento, descuento ni envío)."
                             )
                         presupuesto.comision_porcentaje = comision_pct
                         presupuesto.aplica_comision = aplica_comision
@@ -651,6 +664,7 @@ def presupuesto_editar(request, pk: int):
                         vid,
                         fecha_v,
                         descuento,
+                        envio,
                         comision_pct,
                         comprador_id,
                         aplica_comision,
@@ -682,6 +696,7 @@ def presupuesto_editar(request, pk: int):
                     venta.fecha_vencimiento_pago = fecha_v
                     venta.subtotal_lineas = subtotal
                     venta.descuento_monto = descuento
+                    venta.envio = envio
                     venta.comision_porcentaje = comision_pct
                     venta.aplica_comision = aplica_comision
                     venta.actualizado_por = request.user
@@ -692,6 +707,7 @@ def presupuesto_editar(request, pk: int):
                             "fecha_vencimiento_pago",
                             "subtotal_lineas",
                             "descuento_monto",
+                            "envio",
                             "comision_porcentaje",
                             "aplica_comision",
                             "actualizado_por",
@@ -730,6 +746,7 @@ def presupuesto_editar(request, pk: int):
                         vid,
                         fecha_v,
                         descuento,
+                        envio,
                         comision_pct,
                         comprador_id,
                         aplica_comision,
@@ -870,6 +887,7 @@ def presupuesto_duplicar(request, pk: int):
                 fecha_vencimiento_pago=orig.fecha_vencimiento_pago,
                 subtotal_lineas=orig.subtotal_lineas,
                 descuento_monto=orig.descuento_monto,
+                envio=orig.envio,
                 comision_porcentaje=orig.comision_porcentaje,
                 aplica_comision=orig.aplica_comision,
                 creado_por=request.user,

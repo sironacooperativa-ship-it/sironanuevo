@@ -101,6 +101,15 @@
     </div>
     <div class="table-responsive presu-lista-table-wrap venta-hist-table-wrap">
       <table class="modern-table ventas-historial-tabla" id="venta-hist-tabla">
+        <colgroup>
+          <col style="width: 138px" />  {# Pedido/fecha #}
+          <col style="width: 22%" />    {# Vendedor (ancha) #}
+          <col style="width: 25%" />    {# Comprador (más ancha) #}
+          <col style="width: 86px" />   {# Comisión (muy angosta) #}
+          <col style="width: 156px" />  {# Ingreso caja (mediana) #}
+          <col style="width: 56px" />   {# Estado (muy angosta) #}
+          <col style="width: 170px" />  {# Acciones (angosta, sin wrap) #}
+        </colgroup>
         <thead>
           <tr>
             <th scope="col" class="col-ped th-pedido">Pedido / fecha</th>
@@ -129,7 +138,10 @@
                   <div class="ventas-hist-cell-sub text-muted small">
                     Código: {{ v.comprador.codigo }}
                     {% if v.fecha_vencimiento_pago %}
-                      <span class="ventas-hist-cell-sep">·</span> Vence: {{ v.fecha_vencimiento_pago|date:"d/m/Y" }}
+                      <span class="ventas-hist-cell-sep">·</span>
+                      <span class="ventas-hist-vto" title="Vence: {{ v.fecha_vencimiento_pago|date:'d/m/Y' }}">
+                        Vto {{ v.fecha_vencimiento_pago|date:"d/m" }}
+                      </span>
                     {% endif %}
                   </div>
                 {% else %}

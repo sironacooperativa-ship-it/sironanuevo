@@ -1,24 +1,33 @@
-"""PDF de presupuesto (ReportLab): dos hojas — Remito y Duplicado."""
+"""PDF de presupuesto (ReportLab): plantilla única Sirona, copias Remito y Duplicado."""
 from __future__ import annotations
 
 from io import BytesIO
+from typing import Any
 from xml.sax.saxutils import escape
 
 from django.http import HttpResponse
-from django.utils import timezone as dj_tz
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import PageBreak, SimpleDocTemplate
 
 from core.money_decimal import format_monto_ars
-from core.pdf_membrete import platypus_membrete
+from core.pdf_membrete import emission_datetime_str
+from core.sirona_docs_pdf import (
+    DocMeta,
+    LineItem,
+    PartyInfo,
+    Totals,
+    build_story_for_commercial_doc,
+    money,
+)
 
 from .models import Presupuesto
 
 
 def _money(v) -> str:
+    # Back-compat: mantiene firma local usada en otros lugares.
     return format_monto_ars(v)
 
 
@@ -33,157 +42,62 @@ def _titulo_membrete(presupuesto, copia_label: str) -> str:
     return f"Presupuesto N.º {ndoc} — Copia {copia_label}"
 
 
-def _append_copia_presupuesto_pdf(story, presupuesto, doc, styles, copia_label: str) -> None:
+def _append_copia_presupuesto_pdf(story, presupuesto, doc, styles, copia_label: str):
     """Una hoja completa (mismo contenido; copia Remito / Duplicado)."""
-    story.extend(platypus_membrete(_titulo_membrete(presupuesto, copia_label), doc.width, styles))
-    story.append(Spacer(1, 2 * mm))
-    story.append(
-        Paragraph(
-            f"Emitido: {presupuesto.creado_en.strftime('%d/%m/%Y %H:%M')}",
-            styles["Normal"],
-        )
-    )
-    story.append(Spacer(1, 6 * mm))
-
+    ndoc = _numero_doc(presupuesto)
+    doc_type = "ORDEN DE COMPRA" if presupuesto.estado == Presupuesto.Estado.APROBADO else "PRESUPUESTO"
     vend = presupuesto.vendedor
-    v_block = (
-        f"<b>Vendedor</b><br/>"
-        f"Código: {escape(str(vend.codigo))}<br/>"
-        f"{escape(vend.apellido)}, {escape(vend.nombre)}<br/>"
-    )
-    if vend.telefono:
-        v_block += f"Tel.: {escape(vend.telefono)}<br/>"
-    if vend.mail:
-        v_block += f"Email: {escape(vend.mail)}<br/>"
-    if vend.direccion:
-        v_block += f"Dir.: {escape(vend.direccion)}<br/>"
-    story.append(Paragraph(v_block, styles["Normal"]))
-    story.append(Spacer(1, 4 * mm))
-
+    cliente = None
     if presupuesto.comprador_id:
         c = presupuesto.comprador
-        c_block = (
-            f"<b>Cliente / Comprador</b><br/>"
-            f"Código: {escape(str(c.codigo))}<br/>"
-            f"{escape(c.apellido)}, {escape(c.nombre)}<br/>"
+        cliente = PartyInfo(
+            codigo=str(c.codigo),
+            nombre=f"{c.apellido}, {c.nombre}",
+            direccion=(c.direccion or "").strip(),
         )
-        if c.telefono:
-            c_block += f"Tel.: {escape(c.telefono)}<br/>"
-        if c.mail:
-            c_block += f"Email: {escape(c.mail)}<br/>"
-        if c.direccion:
-            c_block += f"Dir.: {escape(c.direccion)}<br/>"
-        story.append(Paragraph(c_block, styles["Normal"]))
-    else:
-        story.append(Paragraph("<b>Cliente / Comprador:</b> — sin asignar", styles["Normal"]))
-    story.append(Spacer(1, 6 * mm))
+    meta = DocMeta(
+        doc_type=doc_type,
+        doc_number=ndoc,
+        copy_label=copia_label,
+        fecha_emision=presupuesto.creado_en.strftime("%d/%m/%Y %H:%M"),
+        estado=presupuesto.get_estado_display(),
+        vendedor=PartyInfo(codigo=str(vend.codigo), nombre=f"{vend.apellido}, {vend.nombre}"),
+        cliente=cliente,
+    )
 
     lineas = list(presupuesto.lineas.all())
-    data = [["N.º", "Código", "Descripción", "Cant.", "P. unit.", "Subtotal"]]
+    items: list[LineItem] = []
     for n_item, ln in enumerate(lineas, start=1):
-        desc = ln.texto_descripcion
-        if len(desc) > 72:
-            desc = desc[:69] + "…"
-        data.append(
-            [
-                str(n_item),
-                escape(str(ln.texto_codigo)),
-                escape(desc),
-                str(ln.cantidad),
-                _money(ln.precio_unitario),
-                _money(ln.subtotal),
-            ]
-        )
-    if len(data) == 1:
-        data.append(["—", "—", "Sin líneas", "", "", ""])
-
-    tw = doc.width
-    col_w = [tw * 0.06, tw * 0.11, tw * 0.33, tw * 0.08, tw * 0.18, tw * 0.24]
-    t = Table(data, colWidths=col_w, repeatRows=1)
-    t.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0097B2")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cccccc")),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("ALIGN", (0, 1), (0, -1), "CENTER"),
-                ("ALIGN", (3, 1), (-1, -1), "RIGHT"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 4),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-            ]
-        )
-    )
-    story.append(t)
-    story.append(Spacer(1, 6 * mm))
-
-    tot_data = [
-        ["Subtotal líneas", _money(presupuesto.subtotal_lineas)],
-        ["Descuento", _money(presupuesto.descuento_monto)],
-        ["Neto", _money(presupuesto.neto)],
-        [
-            "Vencimiento pago"
-            + (
-                ""
-                if presupuesto.estado == Presupuesto.Estado.APROBADO
-                else " (si se confirma como pedido)"
-            ),
-            presupuesto.fecha_vencimiento_pago.strftime("%d/%m/%Y")
-            if presupuesto.fecha_vencimiento_pago
-            else "Sin indicar",
-        ],
-        ["Estado", escape(presupuesto.get_estado_display())],
-    ]
-    tw_tot = doc.width
-    tt = Table(tot_data, colWidths=[tw_tot * 0.55, tw_tot * 0.45])
-    tt.setStyle(
-        TableStyle(
-            [
-                ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
-                ("FONTNAME", (0, 2), (1, 2), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#dddddd")),
-                ("BACKGROUND", (0, 2), (-1, 2), colors.HexColor("#f0f9fb")),
-            ]
-        )
-    )
-    story.append(tt)
-
-    venta = getattr(presupuesto, "venta", None)
-    pagado = (
-        venta is not None
-        and venta.estado == "PAG"
-        and getattr(venta, "pago_movimiento", None) is not None
-    )
-
-    if presupuesto.venta_id:
-        story.append(Spacer(1, 4 * mm))
-        story.append(
-            Paragraph(
-                f"<b>Pedido generado:</b> #{presupuesto.venta_id}",
-                styles["Normal"],
+        items.append(
+            LineItem(
+                numero=n_item,
+                codigo=str(ln.texto_codigo),
+                descripcion=str(ln.texto_descripcion or ""),
+                cantidad=str(ln.cantidad),
+                precio_unitario=money(ln.precio_unitario),
+                subtotal=money(ln.subtotal),
             )
         )
 
-    if pagado:
-        mov = venta.pago_movimiento
-        pago_dt = (
-            dj_tz.localtime(mov.creado_en).strftime("%d/%m/%Y %H:%M")
-            if mov.creado_en
-            else "—"
-        )
-        usr = mov.creado_por.get_username() if mov.creado_por_id else "—"
-        story.append(Spacer(1, 3 * mm))
-        story.append(
-            Paragraph(
-                f"<b><font color=\"#198754\">PAGADO</font></b><br/>"
-                f"<font size=\"9\">Fecha imputación: {escape(pago_dt)}<br/>"
-                f"Usuario: {escape(usr)}</font>",
-                styles["Normal"],
-            )
-        )
+    totals = Totals(
+        subtotal_lineas=money(presupuesto.subtotal_lineas),
+        descuento=(money(presupuesto.descuento_monto) if presupuesto.descuento_monto and presupuesto.descuento_monto > 0 else None),
+        envio=(money(presupuesto.envio) if getattr(presupuesto, "envio", None) and presupuesto.envio > 0 else None),
+        total_neto=money(presupuesto.neto),
+    )
+    venc = presupuesto.fecha_vencimiento_pago.strftime("%d/%m/%Y") if presupuesto.fecha_vencimiento_pago else None
+    copy_story, copy_pages_meta = build_story_for_commercial_doc(
+        doc=doc,
+        styles=styles,
+        meta=meta,
+        items=items,
+        totals=totals,
+        vencimiento_pago=venc,
+        observaciones=None,
+    )
+
+    story.extend(copy_story)
+    return copy_pages_meta
 
 
 def presupuesto_pdf_response(presupuesto) -> HttpResponse:
@@ -198,12 +112,35 @@ def presupuesto_pdf_response(presupuesto) -> HttpResponse:
         bottomMargin=14 * mm,
     )
     styles = getSampleStyleSheet()
-    story: list = []
-    _append_copia_presupuesto_pdf(story, presupuesto, doc, styles, "Remito")
+    story: list[Any] = []
+    pages_meta: list[Any] = []
+    pages_meta.extend(_append_copia_presupuesto_pdf(story, presupuesto, doc, styles, "Remito"))
     story.append(PageBreak())
-    _append_copia_presupuesto_pdf(story, presupuesto, doc, styles, "Duplicado")
+    pages_meta.extend(_append_copia_presupuesto_pdf(story, presupuesto, doc, styles, "Duplicado"))
 
-    doc.build(story)
+    generated = emission_datetime_str()
+
+    def on_page(canvas, _doc):
+        # Pie en 1 línea, con paginación por copia.
+        pnum = canvas.getPageNumber()
+        meta = pages_meta[pnum - 1] if 1 <= pnum <= len(pages_meta) else None
+        pages_str = (
+            f"Página {meta.page_in_copy} de {meta.pages_in_copy}"  # type: ignore[union-attr]
+            if meta is not None
+            else f"Página {pnum}"
+        )
+        canvas.saveState()
+        canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
+        canvas.setLineWidth(0.6)
+        y = doc.bottomMargin - 2.5 * mm
+        canvas.line(doc.leftMargin, y, doc.leftMargin + doc.width, y)
+        canvas.setFillColor(colors.HexColor("#64748b"))
+        canvas.setFont("Helvetica", 8)
+        footer = f"Documento no válido como factura. | Generado: {generated} | {pages_str}"
+        canvas.drawString(doc.leftMargin, y - 8, footer)
+        canvas.restoreState()
+
+    doc.build(story, onFirstPage=on_page, onLaterPages=on_page)
     buf.seek(0)
     ndoc = _numero_doc(presupuesto)
     pref = "Orden_compra" if presupuesto.estado == Presupuesto.Estado.APROBADO else "Presupuesto"

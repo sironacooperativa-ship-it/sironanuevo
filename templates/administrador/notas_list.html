@@ -42,90 +42,126 @@
   </div>
 
   <div class="admin-notas-hilos d-flex flex-column gap-3 mb-4">
-    {% for root in page_obj %}
-      <article class="card border-0 shadow-sm admin-nota-hilo overflow-hidden {% if not root.leida or root._unread_child %}admin-nota-hilo--pendiente{% endif %}">
-        <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 bg-light border-bottom">
-          <div class="small">
-            <span class="fw-semibold">{{ root.usuario.username }}</span>
-            <span class="text-muted">· {{ root.creado_en|date:"d/m/Y H:i" }}</span>
-            {% if root.vendedor %}
-              <span class="text-muted">· {{ root.vendedor }}</span>
-            {% endif %}
-          </div>
-          <div class="d-flex align-items-center gap-1 flex-wrap">
-            {% if root.leida and not root._unread_child %}
-              <span class="badge text-bg-secondary rounded-pill">Al día</span>
-            {% else %}
-              <span class="badge text-bg-warning text-dark rounded-pill">Pendiente</span>
-            {% endif %}
-            <form class="d-inline m-0" method="post">
-              {% csrf_token %}
-              <input type="hidden" name="nota_id" value="{{ root.pk }}" />
-              {% if root.leida and not root._unread_child %}
-                <button class="btn btn-sm btn-outline-secondary" type="submit" name="accion" value="marcar_no_leida" title="Marcar como pendiente">
-                  Marcar pendiente
-                </button>
-              {% else %}
-                <button class="btn btn-sm btn-outline-success" type="submit" name="accion" value="marcar_leida" title="Marcar mensajes del usuario como leídos">
-                  Marcar leído
-                </button>
-              {% endif %}
-            </form>
-            <form class="d-inline m-0" method="post" onsubmit="return confirm('¿Eliminar toda la conversación?');">
-              {% csrf_token %}
-              <input type="hidden" name="nota_id" value="{{ root.pk }}" />
-              <button class="btn btn-sm btn-outline-danger" type="submit" name="accion" value="eliminar" title="Eliminar hilo">Eliminar</button>
-            </form>
-          </div>
-        </div>
-        <div class="card-body p-0">
-          <div class="admin-nota-chat px-3 py-2">
-            {% for m in root._hilo_mensajes %}
-              <div class="admin-nota-bubble {% if m.es_staff %}admin-nota-bubble--staff{% else %}admin-nota-bubble--user{% endif %}">
-                <div class="admin-nota-bubble-meta small text-muted">
-                  {% if m.es_staff %}
-                    {% if m.creado_por %}{{ m.creado_por.username }}{% else %}Administración{% endif %}
-                  {% else %}
-                    {{ m.usuario.username }}
+    {% if page_obj and page_obj.object_list %}
+      <div class="card border-0 shadow-sm overflow-hidden">
+        <div class="card-header bg-white border-bottom">
+          <ul class="nav nav-tabs card-header-tabs flex-nowrap overflow-auto" role="tablist">
+            {% for root in page_obj %}
+              <li class="nav-item" role="presentation">
+                <button
+                  class="nav-link {% if forloop.first %}active{% endif %}"
+                  id="tab-hilo-{{ root.pk }}"
+                  data-bs-toggle="tab"
+                  data-bs-target="#hilo-{{ root.pk }}"
+                  type="button"
+                  role="tab"
+                  aria-controls="hilo-{{ root.pk }}"
+                  aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+                >
+                  {{ root.usuario.username }}
+                  {% if not root.leida or root._unread_child %}
+                    <span class="badge text-bg-warning text-dark ms-1">!</span>
                   {% endif %}
-                  · {{ m.creado_en|date:"d/m H:i" }}
-                  {% if not m.es_staff and not m.leida %}
-                    <span class="badge bg-danger ms-1">Nuevo</span>
+                </button>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <div class="tab-content">
+          {% for root in page_obj %}
+            <div
+              class="tab-pane fade {% if forloop.first %}show active{% endif %}"
+              id="hilo-{{ root.pk }}"
+              role="tabpanel"
+              aria-labelledby="tab-hilo-{{ root.pk }}"
+              tabindex="0"
+            >
+              <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-2 bg-light border-bottom">
+                <div class="small">
+                  <span class="fw-semibold">{{ root.usuario.username }}</span>
+                  <span class="text-muted">· {{ root.creado_en|date:"d/m/Y H:i" }}</span>
+                  {% if root.vendedor %}
+                    <span class="text-muted">· {{ root.vendedor }}</span>
                   {% endif %}
                 </div>
-                <div class="admin-nota-bubble-text">{{ m.texto|linebreaksbr }}</div>
+                <div class="d-flex align-items-center gap-1 flex-wrap">
+                  {% if root.leida and not root._unread_child %}
+                    <span class="badge text-bg-secondary rounded-pill">Al día</span>
+                  {% else %}
+                    <span class="badge text-bg-warning text-dark rounded-pill">Pendiente</span>
+                  {% endif %}
+                  <form class="d-inline m-0" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="nota_id" value="{{ root.pk }}" />
+                    {% if root.leida and not root._unread_child %}
+                      <button class="btn btn-sm btn-outline-secondary" type="submit" name="accion" value="marcar_no_leida" title="Marcar como pendiente">
+                        Marcar pendiente
+                      </button>
+                    {% else %}
+                      <button class="btn btn-sm btn-outline-success" type="submit" name="accion" value="marcar_leida" title="Marcar mensajes del usuario como leídos">
+                        Marcar leído
+                      </button>
+                    {% endif %}
+                  </form>
+                  <form class="d-inline m-0" method="post" onsubmit="return confirm('¿Eliminar toda la conversación?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="nota_id" value="{{ root.pk }}" />
+                    <button class="btn btn-sm btn-outline-danger" type="submit" name="accion" value="eliminar" title="Eliminar hilo">Eliminar</button>
+                  </form>
+                </div>
               </div>
-            {% endfor %}
-          </div>
-          <div class="border-top bg-white p-3">
-            <form method="post" class="row g-2 align-items-end">
-              {% csrf_token %}
-              <input type="hidden" name="accion" value="responder" />
-              <input type="hidden" name="root_id" value="{{ root.pk }}" />
-              <div class="col-12">
-                <label class="form-label small text-muted mb-0" for="resp-{{ root.pk }}">Responder al usuario</label>
-                <textarea
-                  id="resp-{{ root.pk }}"
-                  class="form-control form-control-sm"
-                  name="texto_respuesta"
-                  rows="2"
-                  maxlength="2000"
-                  placeholder="Escribí tu respuesta…"
-                  required
-                ></textarea>
+
+              <div class="admin-nota-chat px-3 py-2">
+                {% for m in root._hilo_mensajes %}
+                  <div class="admin-nota-bubble {% if m.es_staff %}admin-nota-bubble--staff{% else %}admin-nota-bubble--user{% endif %}">
+                    <div class="admin-nota-bubble-meta small text-muted">
+                      {% if m.es_staff %}
+                        {% if m.creado_por %}{{ m.creado_por.username }}{% else %}Administración{% endif %}
+                      {% else %}
+                        {{ m.usuario.username }}
+                      {% endif %}
+                      · {{ m.creado_en|date:"d/m H:i" }}
+                      {% if not m.es_staff and not m.leida %}
+                        <span class="badge bg-danger ms-1">Nuevo</span>
+                      {% endif %}
+                    </div>
+                    <div class="admin-nota-bubble-text">{{ m.texto|linebreaksbr }}</div>
+                  </div>
+                {% endfor %}
               </div>
-              <div class="col-12 text-end">
-                <button type="submit" class="btn btn-primary btn-sm rounded-pill">Enviar respuesta</button>
+
+              <div class="border-top bg-white p-3">
+                <form method="post" class="row g-2 align-items-end">
+                  {% csrf_token %}
+                  <input type="hidden" name="accion" value="responder" />
+                  <input type="hidden" name="root_id" value="{{ root.pk }}" />
+                  <div class="col-12">
+                    <label class="form-label small text-muted mb-0" for="resp-{{ root.pk }}">Responder al usuario</label>
+                    <textarea
+                      id="resp-{{ root.pk }}"
+                      class="form-control form-control-sm"
+                      name="texto_respuesta"
+                      rows="2"
+                      maxlength="2000"
+                      placeholder="Escribí tu respuesta…"
+                      required
+                    ></textarea>
+                  </div>
+                  <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-primary btn-sm rounded-pill">Enviar respuesta</button>
+                  </div>
+                </form>
               </div>
-            </form>
-          </div>
+            </div>
+          {% endfor %}
         </div>
-      </article>
-    {% empty %}
+      </div>
+    {% else %}
       <div class="card border-0 shadow-sm">
         <div class="card-body text-muted">No hay conversaciones con los filtros actuales.</div>
       </div>
-    {% endfor %}
+    {% endif %}
   </div>
 
   {% include "includes/pagination_footer.html" %}

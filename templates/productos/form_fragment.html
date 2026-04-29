@@ -3,20 +3,30 @@
   {% csrf_token %}
   <input type="hidden" name="retorno_query" value="{{ retorno_query|default:'' }}" />
   <input type="hidden" name="listas_extra_present" value="1" />
-  <div class="modal-header border-0 pb-2 align-items-center">
-    <div>
-      <h5 class="modal-title fw-semibold mb-0">{{ modal_title }}</h5>
-      {% if producto %}
-        <div class="text-muted small mt-1">Código <code>{{ producto.codigo }}</code></div>
-      {% endif %}
-    </div>
+  <div class="modal-header producto-modal-head border-0 pb-2 align-items-center">
+    <h5 class="modal-title producto-modal-title mb-0">Editar producto</h5>
     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
   </div>
-  <div class="modal-body pt-0 px-3 px-md-4">
-    {% include "productos/includes/product_form_fields.html" %}
+  <div class="modal-body producto-modal-body pt-0 px-3 px-md-4">
+    {% include "productos/includes/product_form_fields_compact.html" %}
   </div>
-  <div class="modal-footer border-0 bg-transparent pt-0 px-3 px-md-4 pb-3">
-    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
-    <button type="submit" class="btn btn-primary rounded-pill px-4">Guardar</button>
+  <div class="modal-footer producto-modal-foot border-0 bg-transparent pt-2 px-3 px-md-4 pb-3">
+    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4">Guardar cambios</button>
   </div>
 </form>
+
+<script>
+  (function () {
+    try {
+      const root = document.getElementById("sironaModal");
+      const dlg = root ? root.querySelector(".modal-dialog") : null;
+      if (!dlg) return;
+      dlg.classList.remove("modal-dialog-scrollable");
+      dlg.classList.add("modal-dialog-centered", "sirona-modal-dialog--product");
+      if (typeof lucide !== "undefined") {
+        try { lucide.createIcons(); } catch (e) {}
+      }
+    } catch (e) {}
+  })();
+</script>

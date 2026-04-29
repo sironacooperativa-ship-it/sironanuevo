@@ -584,6 +584,11 @@ def productos_list(request):
 
     proveedores_filtro = Proveedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
     listas_precios_filtro = ListaPrecios.objects.all().order_by("-es_farmacia", "nombre")
+    proveedor_sel_label = ""
+    if proveedor.isdigit():
+        pr = Proveedor.objects.filter(pk=int(proveedor)).values_list("apellido", "nombre").first()
+        if pr:
+            proveedor_sel_label = f"{pr[0]}, {pr[1]}".strip().strip(",")
 
     return render(
         request,
@@ -603,6 +608,7 @@ def productos_list(request):
             "tipos": Producto.Tipo.choices,
             "proveedores_filtro": proveedores_filtro,
             "listas_precios_filtro": listas_precios_filtro,
+            "proveedor_sel_label": proveedor_sel_label,
             "page_obj": page_obj,
             "querystring": querystring,
             "kpi": kpi,

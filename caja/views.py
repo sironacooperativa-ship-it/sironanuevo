@@ -300,16 +300,24 @@ def caja_cheques(request):
 @login_required
 @require_http_methods(["GET", "POST"])
 def caja_create(request):
+    modal = (request.GET.get("modal") or "").strip() == "1" or request.headers.get("X-Requested-With") == "XMLHttpRequest"
     if request.method == "POST":
         form = MovimientoCajaForm(request.POST)
         if form.is_valid():
             mov = form.save()
             messages.success(request, f"Movimiento cargado: {mov.id}")
+            if modal:
+                return render(
+                    request,
+                    "caja/form_fragment.html",
+                    {"form": MovimientoCajaForm(initial={"fecha": date.today().strftime("%Y-%m-%d")}), "modo": "nuevo", "guardado": True},
+                )
             return redirect("caja_list")
     else:
         form = MovimientoCajaForm(initial={"fecha": date.today().strftime("%Y-%m-%d")})
 
-    return render(request, "caja/form.html", {"form": form, "modo": "nuevo"})
+    tpl = "caja/form_fragment.html" if modal else "caja/form.html"
+    return render(request, tpl, {"form": form, "modo": "nuevo"})
 
 
 @login_required

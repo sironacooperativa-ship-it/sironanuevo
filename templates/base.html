@@ -158,8 +158,8 @@
                     class="btn app-icon-btn position-relative sirona-msgs-user-btn"
                     type="button"
                     data-bs-toggle="modal"
-                    data-bs-target="#sironaNotas"
-                    aria-controls="sironaNotas"
+                    data-bs-target="#sironaQuickMsg"
+                    aria-controls="sironaQuickMsg"
                     aria-label="Mensajes con administración{% if notas_usuario_no_leidas %}: hay respuestas nuevas{% endif %}"
                     title="Mensajes"
                   >
@@ -230,7 +230,10 @@
                 aria-label="Abrir menú"
                 title="Menú"
               >
-                <i data-lucide="menu" class="app-lucide-toolbar"></i>
+                <span class="sirona-hamb-ico" aria-hidden="true">
+                  <i data-lucide="menu" class="app-lucide-toolbar sirona-hamb-ico--menu"></i>
+                  <i data-lucide="x" class="app-lucide-toolbar sirona-hamb-ico--close"></i>
+                </span>
               </button>
               <a class="navbar-brand d-flex align-items-center py-1 m-0 min-w-0" href="{% url 'home' %}">
                 <img class="brand-logo brand-logo-sm" src="{% static 'img/sirona-logo.png' %}" alt="Cooperativa Sirona" />
@@ -283,8 +286,8 @@
                     class="btn app-icon-btn position-relative sirona-msgs-user-btn"
                     type="button"
                     data-bs-toggle="modal"
-                    data-bs-target="#sironaNotas"
-                    aria-controls="sironaNotas"
+                    data-bs-target="#sironaQuickMsg"
+                    aria-controls="sironaQuickMsg"
                     aria-label="Mensajes con administración{% if notas_usuario_no_leidas %}: hay respuestas nuevas{% endif %}"
                     title="Mensajes"
                   >
@@ -373,25 +376,6 @@
               <span class="app-sidebar-icon-wrap"><i data-lucide="home"></i></span>
               <span class="app-sidebar-label sidebar-label">Inicio</span>
             </a>
-            {% if not recibe_notas_admin %}
-              <button
-                type="button"
-                class="sidebar-link app-sidebar-link border-0 bg-transparent w-100 text-start d-flex align-items-center sirona-sidebar-msgs-user"
-                data-bs-toggle="modal"
-                data-bs-target="#sironaNotas"
-                aria-controls="sironaNotas"
-                title="Mensajes con administración"
-                aria-label="Mensajes con administración{% if notas_usuario_no_leidas %}: hay respuestas nuevas{% endif %}"
-              >
-                <span class="app-sidebar-icon-wrap position-relative">
-                  <i data-lucide="message-square"></i>
-                  {% if notas_usuario_no_leidas %}
-                    <span class="position-absolute top-0 start-100 translate-middle sirona-notif-dot" aria-hidden="true"></span>
-                  {% endif %}
-                </span>
-                <span class="app-sidebar-label sidebar-label">Mensajes</span>
-              </button>
-            {% endif %}
 
             <div class="sidebar-section-title">Productos</div>
             <div class="sidebar-group" data-group="productos">
@@ -459,29 +443,25 @@
               </div>
             </div>
 
-            <div class="sidebar-section-title">Caja</div>
-            <div class="sidebar-group" data-group="caja">
+            <div class="sidebar-section-title">Fondos</div>
+            <div class="sidebar-group" data-group="fondos">
               <div class="sidebar-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
                 <span class="app-sidebar-icon-wrap"><i data-lucide="wallet"></i></span>
-                <span class="app-sidebar-label sidebar-label">Caja</span>
+                <span class="app-sidebar-label sidebar-label">Fondos</span>
                 <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
                   <i data-lucide="chevron-down"></i>
                 </span>
               </div>
-              <div class="sidebar-subnav" aria-label="Submenú Caja">
-                <a class="sidebar-link app-sidebar-link" href="{% url 'caja_create' %}" title="Nuevo movimiento">
-                  <span class="app-sidebar-icon-wrap"><i data-lucide="plus"></i></span>
-                  <span class="app-sidebar-label sidebar-label">Nuevo movimiento</span>
-                </a>
-                <a class="sidebar-link app-sidebar-link" href="{% url 'bancos_cuentas' %}" title="Banco">
-                  <span class="app-sidebar-icon-wrap"><i data-lucide="landmark"></i></span>
-                  <span class="app-sidebar-label sidebar-label">Banco</span>
-                </a>
-                <a class="sidebar-link app-sidebar-link" href="{% url 'caja_list' %}" title="Movimientos">
+              <div class="sidebar-subnav" aria-label="Submenú Fondos">
+                <a class="sidebar-link app-sidebar-link" href="{% url 'caja_list' %}" title="Caja">
                   <span class="app-sidebar-icon-wrap"><i data-lucide="arrow-left-right"></i></span>
-                  <span class="app-sidebar-label sidebar-label">Movimientos</span>
+                  <span class="app-sidebar-label sidebar-label">Caja</span>
                 </a>
-                <a class="sidebar-link app-sidebar-link" href="{% url 'ventas_historial' %}?estado=PEN" title="Pedidos pendientes de pago">
+                <a class="sidebar-link app-sidebar-link" href="{% url 'bancos_cuentas' %}" title="Bancos">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="landmark"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Bancos</span>
+                </a>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'ventas_historial' %}?estado=PEN" title="Deudas (pedidos pendientes de pago)">
                   <span class="app-sidebar-icon-wrap"><i data-lucide="clock"></i></span>
                   <span class="app-sidebar-label sidebar-label">Deudas</span>
                 </a>
@@ -686,25 +666,6 @@
                 <span class="app-sidebar-icon-wrap"><i data-lucide="home"></i></span>
                 <span class="app-sidebar-label">Inicio</span>
               </a>
-              {% if not recibe_notas_admin %}
-                <button
-                  type="button"
-                  class="app-sidebar-link sirona-offcanvas-nav-link border-0 bg-transparent w-100 text-start d-flex align-items-center sirona-offcanvas-msgs-user"
-                  data-bs-toggle="modal"
-                  data-bs-target="#sironaNotas"
-                  aria-controls="sironaNotas"
-                  title="Mensajes con administración"
-                  aria-label="Mensajes con administración{% if notas_usuario_no_leidas %}: hay respuestas nuevas{% endif %}"
-                >
-                  <span class="app-sidebar-icon-wrap position-relative">
-                    <i data-lucide="message-square"></i>
-                    {% if notas_usuario_no_leidas %}
-                      <span class="position-absolute top-0 start-100 translate-middle sirona-notif-dot" aria-hidden="true"></span>
-                    {% endif %}
-                  </span>
-                  <span class="app-sidebar-label">Mensajes</span>
-                </button>
-              {% endif %}
 
               <div class="sidebar-section-title">Productos</div>
               <div class="sidebar-group offcanvas-group" data-group="productos">
@@ -772,29 +733,25 @@
                 </div>
               </div>
 
-              <div class="sidebar-section-title">Caja</div>
-              <div class="sidebar-group offcanvas-group" data-group="caja">
+              <div class="sidebar-section-title">Fondos</div>
+              <div class="sidebar-group offcanvas-group" data-group="fondos">
                 <div class="app-sidebar-link sirona-offcanvas-nav-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
                   <span class="app-sidebar-icon-wrap"><i data-lucide="wallet"></i></span>
-                  <span class="app-sidebar-label">Caja</span>
+                  <span class="app-sidebar-label">Fondos</span>
                   <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
                     <i data-lucide="chevron-down"></i>
                   </span>
                 </div>
-                <div class="sidebar-subnav offcanvas-subnav" aria-label="Submenú Caja">
-                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'caja_create' %}">
-                    <span class="app-sidebar-icon-wrap"><i data-lucide="plus"></i></span>
-                    <span class="app-sidebar-label">Nuevo movimiento</span>
+                <div class="sidebar-subnav offcanvas-subnav" aria-label="Submenú Fondos">
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'caja_list' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="arrow-left-right"></i></span>
+                    <span class="app-sidebar-label">Caja</span>
                   </a>
                   <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'bancos_cuentas' %}">
                     <span class="app-sidebar-icon-wrap"><i data-lucide="landmark"></i></span>
-                    <span class="app-sidebar-label">Banco</span>
+                    <span class="app-sidebar-label">Bancos</span>
                   </a>
-                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'caja_list' %}">
-                    <span class="app-sidebar-icon-wrap"><i data-lucide="arrow-left-right"></i></span>
-                    <span class="app-sidebar-label">Movimientos</span>
-                  </a>
-                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'ventas_historial' %}?estado=PEN" title="Pedidos pendientes de pago">
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'ventas_historial' %}?estado=PEN" title="Deudas (pedidos pendientes de pago)">
                     <span class="app-sidebar-icon-wrap"><i data-lucide="clock"></i></span>
                     <span class="app-sidebar-label">Deudas</span>
                   </a>
@@ -941,6 +898,55 @@
     </div>
 
     {% if request.user.is_authenticated %}
+      {% if not recibe_notas_admin %}
+        <div
+          class="modal fade"
+          id="sironaQuickMsg"
+          tabindex="-1"
+          aria-labelledby="sironaQuickMsgLabel"
+          aria-hidden="true"
+          data-send-url="{% url 'nota_admin_enviar' %}"
+        >
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+              <div class="modal-header">
+                <h5 class="modal-title" id="sironaQuickMsgLabel">Mensaje rápido</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+              </div>
+              <div class="modal-body">
+                <div class="small text-muted mb-2">
+                  Enviá un mensaje rápido a administración. Podés ver el hilo completo desde “Ver chat”.
+                </div>
+                <form id="sironaQuickMsgForm" method="post" action="{% url 'nota_admin_enviar' %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                  <input type="hidden" name="pagina" value="{{ request.path }}" />
+                  <input type="hidden" name="parent_id" id="sironaQuickMsgParentId" value="" autocomplete="off" />
+                  <label class="form-label small text-muted mb-1" for="sironaQuickMsgTexto">Tu mensaje</label>
+                  <textarea
+                    id="sironaQuickMsgTexto"
+                    class="form-control"
+                    name="nota_texto"
+                    rows="3"
+                    maxlength="2000"
+                    placeholder="Escribí un mensaje…"
+                    required
+                  ></textarea>
+                  <div class="form-check form-switch mt-2">
+                    <input class="form-check-input" type="checkbox" role="switch" id="sironaQuickMsgNuevoHilo" />
+                    <label class="form-check-label small text-muted" for="sironaQuickMsgNuevoHilo">Enviar como nuevo hilo</label>
+                  </div>
+                  <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button type="button" class="btn btn-outline-secondary" id="sironaQuickMsgVerChatBtn">Ver chat</button>
+                    <button type="submit" class="btn btn-primary" id="sironaQuickMsgEnviarBtn">Enviar</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
       <div
         class="modal fade"
         id="sironaNotas"
@@ -1302,6 +1308,113 @@
       })();
     </script>
     <script>
+      // Mensaje rápido (topbar) → enviar sin abrir el chat completo.
+      (function () {
+        try {
+          const qm = document.getElementById("sironaQuickMsg");
+          if (!qm) return;
+          const form = document.getElementById("sironaQuickMsgForm");
+          const textarea = document.getElementById("sironaQuickMsgTexto");
+          const parentIn = document.getElementById("sironaQuickMsgParentId");
+          const btnSend = document.getElementById("sironaQuickMsgEnviarBtn");
+          const chkNuevo = document.getElementById("sironaQuickMsgNuevoHilo");
+          const btnVerChat = document.getElementById("sironaQuickMsgVerChatBtn");
+          const sendUrl = qm.getAttribute("data-send-url");
+          if (!form || !textarea || !parentIn || !btnSend || !sendUrl) return;
+
+          const STORAGE_KEY = "sironaNotasHiloId";
+
+          function readThreadPref() {
+            try {
+              return sessionStorage.getItem(STORAGE_KEY) || "";
+            } catch (e) {
+              return "";
+            }
+          }
+
+          function syncParentId() {
+            if (!parentIn) return;
+            const raw = readThreadPref();
+            const forceNew = chkNuevo && chkNuevo.checked;
+            if (!forceNew && raw && raw !== "nuevo" && /^\d+$/.test(raw)) parentIn.value = raw;
+            else parentIn.value = "";
+          }
+
+          qm.addEventListener("shown.bs.modal", function () {
+            syncParentId();
+            try {
+              textarea.focus();
+            } catch (e) {}
+          });
+
+          if (chkNuevo) chkNuevo.addEventListener("change", syncParentId);
+
+          if (btnVerChat) {
+            btnVerChat.addEventListener("click", function () {
+              try {
+                const inst = bootstrap.Modal.getInstance(qm) || bootstrap.Modal.getOrCreateInstance(qm);
+                inst.hide();
+              } catch (e) {}
+              const full = document.getElementById("sironaNotas");
+              if (full && typeof bootstrap !== "undefined") {
+                try {
+                  bootstrap.Modal.getOrCreateInstance(full).show();
+                } catch (e) {}
+              }
+            });
+          }
+
+          form.addEventListener("submit", function (ev) {
+            ev.preventDefault();
+            const tx = (textarea.value || "").trim();
+            if (!tx) return;
+            const csrfIn = form.querySelector("[name=csrfmiddlewaretoken]");
+            const csrf = csrfIn ? csrfIn.value : "";
+            const fd = new FormData(form);
+            btnSend.disabled = true;
+            fetch(sendUrl, {
+              method: "POST",
+              credentials: "same-origin",
+              headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": csrf },
+              body: fd,
+            })
+              .then(function (r) {
+                return r.json().then(
+                  function (body) {
+                    return { ok: r.ok, body: body };
+                  },
+                  function () {
+                    return { ok: false, body: null };
+                  }
+                );
+              })
+              .then(function (res) {
+                if (!res.ok || !res.body || !res.body.ok) {
+                  window.alert((res.body && res.body.error) || "No se pudo enviar.");
+                  return;
+                }
+                // Si fue nuevo hilo, guardamos la raíz para que el chat completo abra ahí.
+                if (res.body.nueva_raiz_id) {
+                  try {
+                    sessionStorage.setItem(STORAGE_KEY, String(res.body.nueva_raiz_id));
+                  } catch (e) {}
+                }
+                textarea.value = "";
+                if (chkNuevo) chkNuevo.checked = false;
+                syncParentId();
+                try {
+                  const inst = bootstrap.Modal.getInstance(qm);
+                  if (inst) inst.hide();
+                } catch (e) {}
+              })
+              .finally(function () {
+                btnSend.disabled = false;
+              });
+          });
+        } catch (e) {}
+      })();
+    </script>
+    <script>
       // Topbar: sombra al hacer scroll (solo UI).
       (function () {
         try {
@@ -1316,79 +1429,127 @@
     </script>
     <script>
       // Estado activo de navegación (solo UI): marca el link cuya URL coincide.
+      // Importante: re-sincroniza al volver a la pestaña (bfcache/visibilitychange).
       (function () {
-        try {
-          const herePath = window.location.pathname.replace(/\/+$/, "") || "/";
-          const hereSearch = window.location.search || "";
-          const links = document.querySelectorAll(".sidebar a.sidebar-link, #sironaMenu a.app-sidebar-link");
-          // Choose ONE best match (most specific) so we don't highlight multiple items at once.
-          const candidates = [];
-          links.forEach((a) => {
-            const rawHref = (a.getAttribute("href") || "").trim();
-            if (!rawHref || rawHref === "#") return;
-            let u;
-            try {
-              u = new URL(rawHref, window.location.origin);
-            } catch (e) {
-              return;
-            }
-            const hrefPath = (u.pathname || "").replace(/\/+$/, "") || "/";
-            const hrefSearch = u.search || "";
-
-            // Best match: exact path + exact query (e.g. /ventas/?estado=PEN => "Deudas").
-            if (hrefPath === herePath && hrefSearch === hereSearch) {
-              candidates.push({ a, hrefPath, score: 20000 + hrefPath.length + hrefSearch.length });
-              return;
-            }
-            // Fallback: exact path without considering query.
-            if (hrefPath === herePath) {
-              candidates.push({ a, hrefPath, score: 10000 + hrefPath.length });
-              return;
-            }
-            // Section fallback: parent path.
-            if (hrefPath !== "/" && herePath.startsWith(hrefPath + "/")) {
-              candidates.push({ a, hrefPath, score: hrefPath.length });
-            }
-          });
-          if (candidates.length) {
-            candidates.sort((x, y) => y.score - x.score);
-            candidates[0].a.classList.add("is-active");
-          }
-          // If subnav items are active, also highlight the parent trigger.
-          document.querySelectorAll(".sidebar-group").forEach((g) => {
-            if (g.querySelector(".sidebar-subnav a.is-active")) {
+        function syncSidebarOpen(containerSel) {
+          try {
+            const root = document.querySelector(containerSel);
+            if (!root) return;
+            // Cerrar todo; abrir solo el grupo que contiene un link activo.
+            root.querySelectorAll(".sidebar-group.is-open").forEach((g) => {
+              g.classList.remove("is-open");
+              const t = g.querySelector(".sidebar-group-trigger");
+              if (t) t.setAttribute("aria-expanded", "false");
+            });
+            root.querySelectorAll(".sidebar-group").forEach((g) => {
+              const sub = g.querySelector(".sidebar-subnav");
               const trig = g.querySelector(".sidebar-group-trigger");
-              if (trig) trig.classList.add("is-active");
-            }
-          });
+              const hasActive = sub && sub.querySelector("a.is-active");
+              if (hasActive) {
+                g.classList.add("is-open");
+                if (trig) {
+                  trig.classList.add("is-active");
+                  trig.setAttribute("aria-expanded", "true");
+                }
+              }
+            });
+          } catch (e) {}
+        }
 
-          // Optional: show a tree "current node" under the active sidebar item.
-          // Pages can provide:
-          // <span id="sidebarCurrentNode" data-parent-url="/productos/listas-precio/" class="d-none">Farmacias</span>
-          const node = document.getElementById("sidebarCurrentNode");
-          if (node) {
-            const label = (node.textContent || "").trim();
-            const parentUrl = (node.getAttribute("data-parent-url") || "").replace(/\/+$/, "");
-            if (label && parentUrl) {
-              const targets = document.querySelectorAll(
-                '.sidebar a.sidebar-link[href], #sironaMenu a.app-sidebar-link[href]'
-              );
-              targets.forEach((a) => {
-                const href = (a.getAttribute("href") || "").replace(/\/+$/, "");
-                if (href !== parentUrl) return;
-                // Force the parent as the single active item (avoid multi-highlight).
-                links.forEach((x) => x.classList.remove("is-active"));
-                a.classList.add("is-active");
-                if (a.nextElementSibling && a.nextElementSibling.classList && a.nextElementSibling.classList.contains("sidebar-tree-current")) return;
-                const d = document.createElement("div");
-                d.className = "sidebar-tree-current";
-                d.setAttribute("title", label);
-                d.textContent = label;
-                a.insertAdjacentElement("afterend", d);
-              });
+        function syncNavActive() {
+          try {
+            const herePath = window.location.pathname.replace(/\/+$/, "") || "/";
+            const hereSearch = window.location.search || "";
+            const links = document.querySelectorAll(".sidebar a.sidebar-link, #sironaMenu a.app-sidebar-link");
+
+            // Reset state first (important when returning from tab / bfcache).
+            links.forEach((a) => a.classList.remove("is-active"));
+            document.querySelectorAll(".sidebar-group-trigger.is-active").forEach((t) => t.classList.remove("is-active"));
+            document.querySelectorAll(".sidebar-tree-current").forEach((n) => n.remove());
+
+            // Choose ONE best match (most specific) so we don't highlight multiple items at once.
+            const candidates = [];
+            links.forEach((a) => {
+              const rawHref = (a.getAttribute("href") || "").trim();
+              if (!rawHref || rawHref === "#") return;
+              let u;
+              try {
+                u = new URL(rawHref, window.location.origin);
+              } catch (e) {
+                return;
+              }
+              const hrefPath = (u.pathname || "").replace(/\/+$/, "") || "/";
+              const hrefSearch = u.search || "";
+
+              // Best match: exact path + exact query (e.g. /ventas/?estado=PEN => "Deudas").
+              if (hrefPath === herePath && hrefSearch === hereSearch) {
+                candidates.push({ a, hrefPath, score: 20000 + hrefPath.length + hrefSearch.length });
+                return;
+              }
+              // Fallback: exact path without considering query.
+              if (hrefPath === herePath) {
+                candidates.push({ a, hrefPath, score: 10000 + hrefPath.length });
+                return;
+              }
+              // Section fallback: parent path.
+              if (hrefPath !== "/" && herePath.startsWith(hrefPath + "/")) {
+                candidates.push({ a, hrefPath, score: hrefPath.length });
+              }
+            });
+
+            if (candidates.length) {
+              candidates.sort((x, y) => y.score - x.score);
+              candidates[0].a.classList.add("is-active");
             }
-          }
-        } catch (e) {}
+
+            // Optional: show a tree "current node" under the active sidebar item.
+            // Pages can provide:
+            // <span id="sidebarCurrentNode" data-parent-url="/productos/listas-precio/" class="d-none">Farmacias</span>
+            const node = document.getElementById("sidebarCurrentNode");
+            if (node) {
+              const label = (node.textContent || "").trim();
+              const parentUrl = (node.getAttribute("data-parent-url") || "").replace(/\/+$/, "");
+              if (label && parentUrl) {
+                const targets = document.querySelectorAll('.sidebar a.sidebar-link[href], #sironaMenu a.app-sidebar-link[href]');
+                targets.forEach((a) => {
+                  const href = (a.getAttribute("href") || "").replace(/\/+$/, "");
+                  if (href !== parentUrl) return;
+                  links.forEach((x) => x.classList.remove("is-active"));
+                  a.classList.add("is-active");
+                  if (
+                    a.nextElementSibling &&
+                    a.nextElementSibling.classList &&
+                    a.nextElementSibling.classList.contains("sidebar-tree-current")
+                  )
+                    return;
+                  const d = document.createElement("div");
+                  d.className = "sidebar-tree-current";
+                  d.setAttribute("title", label);
+                  d.textContent = label;
+                  a.insertAdjacentElement("afterend", d);
+                });
+              }
+            }
+
+            // Abrir el grupo correcto en desktop sidebar y en offcanvas.
+            syncSidebarOpen(".sidebar");
+            syncSidebarOpen("#sironaMenu");
+          } catch (e) {}
+        }
+
+        // Exponer para otros scripts si hiciera falta.
+        window.sironaSyncNavActive = syncNavActive;
+
+        // Run now.
+        syncNavActive();
+
+        // Volver a aplicar cuando el navegador restaura la pestaña/página.
+        window.addEventListener("pageshow", function () {
+          syncNavActive();
+        });
+        document.addEventListener("visibilitychange", function () {
+          if (document.visibilityState === "visible") syncNavActive();
+        });
       })();
     </script>
     <script>

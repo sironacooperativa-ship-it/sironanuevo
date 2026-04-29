@@ -27,6 +27,7 @@ class Venta(models.Model):
     fecha_vencimiento_pago = models.DateField(null=True, blank=True)
     subtotal_lineas = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     descuento_monto = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    envio = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     comision_porcentaje = models.DecimalField(
         max_digits=6, decimal_places=2, default=Decimal("4.00")
     )
@@ -66,7 +67,7 @@ class Venta(models.Model):
 
     @property
     def neto(self) -> Decimal:
-        n = self.subtotal_lineas - self.descuento_monto
+        n = self.subtotal_lineas - self.descuento_monto + (self.envio or Decimal("0.00"))
         return n if n > 0 else Decimal("0.00")
 
     @property
@@ -84,6 +85,8 @@ class Venta(models.Model):
         super().clean()
         if self.descuento_monto is not None and self.descuento_monto < 0:
             raise ValidationError({"descuento_monto": "El descuento no puede ser negativo."})
+        if self.envio is not None and self.envio < 0:
+            raise ValidationError({"envio": "El envío no puede ser negativo."})
         if self.comision_porcentaje is not None and self.comision_porcentaje < 0:
             raise ValidationError({"comision_porcentaje": "La comisión no puede ser negativa."})
 

@@ -71,6 +71,7 @@ def crear_venta_confirmada(
     creado_por_id: int | None = None,
     *,
     aplica_comision: bool = True,
+    envio: Decimal = Decimal("0.00"),
 ) -> Venta:
     """
     Crea Venta + líneas, descuenta stock y genera evento en calendario.
@@ -85,6 +86,7 @@ def crear_venta_confirmada(
             fecha_vencimiento_pago=fecha_vencimiento_pago,
             subtotal_lineas=subtotal,
             descuento_monto=descuento_monto,
+            envio=envio,
             comision_porcentaje=comision_porcentaje,
             aplica_comision=aplica_comision,
             creado_por_id=creado_por_id,

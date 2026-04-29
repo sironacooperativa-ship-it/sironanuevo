@@ -192,18 +192,23 @@
 
   <div class="dashboard-card mb-3">
     <div class="card-head">
-      <h2 class="card-title"><i data-lucide="table" aria-hidden="true"></i> Productos</h2>
+      <h2 class="card-title"><i data-lucide="table" aria-hidden="true"></i> Stock de productos</h2>
       <div class="card-subtle">Stock, costo, valor total y estado</div>
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="report-table stock-products-table">
+          <colgroup>
+            <col style="width: auto" />  {# Producto (desc + meta) #}
+            <col style="width: 96px" />  {# Stock disp. #}
+            <col style="width: 120px" /> {# Costo #}
+            <col style="width: 140px" /> {# Valor total #}
+            <col style="width: 190px" /> {# Estado #}
+            <col style="width: 70px" />  {# Acciones #}
+          </colgroup>
           <thead>
             <tr>
-              <th>Código</th>
               <th>Producto</th>
-              <th class="col-hide-sm">Tipo</th>
-              <th class="col-hide-sm">Marca</th>
               <th class="text-end">Stock disp.</th>
               <th class="text-end col-hide-xs">Costo</th>
               <th class="text-end col-hide-xs">Valor total</th>
@@ -214,12 +219,16 @@
           <tbody>
             {% for p in productos %}
               <tr>
-                <td><span class="prod-code">{{ p.codigo }}</span></td>
                 <td>
                   <div class="name">{{ p.descripcion }}</div>
+                  <div class="stock-prod-sub">
+                    <span class="prod-code">{{ p.codigo }}</span>
+                    {% if p.proveedor_marca %}
+                      <span class="stock-prod-dot" aria-hidden="true"> · </span>
+                      <span class="stock-prod-prov">Proveedor: {{ p.proveedor_marca }}</span>
+                    {% endif %}
+                  </div>
                 </td>
-                <td class="muted col-hide-sm">{{ p.get_tipo_display }}</td>
-                <td class="muted col-hide-sm">{% if p.proveedor_marca %}{{ p.proveedor_marca }}{% else %}—{% endif %}</td>
                 <td class="num stock-stock-cell">
                   {% if user.is_staff %}
                     <form method="post" action="{% url 'stock_ajuste_inline' %}" class="stock-inline-ajuste">
@@ -227,7 +236,7 @@
                       <input type="hidden" name="producto_id" value="{{ p.pk }}" />
                       <input type="hidden" name="retorno_q" value="{{ q|default:'' }}" />
                       <input type="number" name="stock" class="stock-qty-input" min="0" step="1" value="{{ p.stock }}" title="Stock disponible" />
-                      <button type="submit" class="icon-button stock-icon-btn" title="Aplicar" aria-label="Aplicar">
+                      <button type="submit" class="btn-icon stock-icon-btn" title="Aplicar" aria-label="Aplicar">
                         <i data-lucide="check" aria-hidden="true"></i>
                       </button>
                     </form>
@@ -253,7 +262,13 @@
                 </td>
                 <td class="text-end stock-actions-td">
                   <div class="stock-actions-cell">
-                    <a class="icon-button stock-icon-btn" href="{% url 'producto_update' p.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" title="Editar" aria-label="Editar">
+                    <a
+                      class="btn-icon stock-icon-btn"
+                      href="{% url 'producto_update' p.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
+                      data-sirona-modal-url="{% url 'producto_update' p.pk %}?modal=1{% if request.GET %}&amp;{{ request.GET.urlencode }}{% endif %}"
+                      title="Editar"
+                      aria-label="Editar"
+                    >
                       <i data-lucide="pencil" aria-hidden="true"></i>
                     </a>
                   </div>
@@ -261,7 +276,7 @@
               </tr>
             {% empty %}
               <tr>
-                <td colspan="9" class="table-empty">{% if q %}No hay productos que coincidan con la búsqueda.{% else %}No hay productos cargados.{% endif %}</td>
+                <td colspan="6" class="table-empty">{% if q %}No hay productos que coincidan con la búsqueda.{% else %}No hay productos cargados.{% endif %}</td>
               </tr>
             {% endfor %}
           </tbody>
