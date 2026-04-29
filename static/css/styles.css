@@ -29,7 +29,8 @@
 
   /* Layout (sidebar más angosta → más ancho útil para tablas) */
   --sidebar-w: 248px;
-  --topbar-h: 60px;
+  /* Alineado con .sirona-topbar { min-height: 64px } (theme + styles) para shell, sticky y offset del sidebar */
+  --topbar-h: 64px;
 }
 
 /* Bootstrap variables — keep behavior, modernize visuals */
@@ -78,7 +79,7 @@ body.app-body {
     display: flex;
     position: fixed;
     left: 0;
-    top: 0;
+    top: var(--topbar-h);
     bottom: 0;
     width: var(--sidebar-w);
     background: #ffffff;
@@ -137,8 +138,8 @@ body.app-body {
 .sidebar .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 2px 2px 6px;
+  gap: 6px;
+  padding: 3px 2px 8px;
   overflow: auto;
   min-height: 0;
 }
@@ -160,7 +161,7 @@ body.app-body {
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 7px 8px;
+  padding: 8px 9px;
   border-radius: 12px;
   color: #64748b !important;
   text-decoration: none !important;
@@ -268,8 +269,8 @@ body.app-body {
 
 /* Submenu visual like reference: vertical line + active dot */
 .sidebar-subnav {
-  margin: 3px 0 5px 18px;
-  padding: 1px 0 1px 8px;
+  margin: 4px 0 6px 18px;
+  padding: 2px 0 2px 8px;
   border-left: 1px solid rgba(226, 232, 240, 0.65);
   display: none;
 }
@@ -279,9 +280,9 @@ body.app-body {
 }
 
 .sidebar-subnav .sidebar-link {
-  padding: 6px 8px;
+  padding: 7px 9px;
   border-radius: 11px;
-  gap: 6px;
+  gap: 7px;
 }
 
 .sidebar-subnav .sidebar-link .app-sidebar-icon-wrap {
@@ -3615,10 +3616,10 @@ a.btn-icon.btn-approve {
 /* Submenu visual (desktop + offcanvas): vertical line + active dot */
 .sidebar-subnav,
 .offcanvas-subnav {
-  margin: 3px 0 5px 18px;
-  padding: 1px 0 1px 8px;
+  margin: 4px 0 6px 18px;
+  padding: 2px 0 2px 8px;
   border-left: 1px solid rgba(226, 232, 240, 0.65);
-  gap: 3px;
+  gap: 4px;
   display: none;
 }
 
@@ -3629,8 +3630,9 @@ a.btn-icon.btn-approve {
 
 .sidebar-subnav .sidebar-link,
 .offcanvas-subnav .sirona-offcanvas-nav-link {
-  padding: 6px 8px;
+  padding: 7px 9px;
   border-radius: 11px;
+  gap: 7px;
   position: relative;
 }
 
@@ -3703,34 +3705,34 @@ a.btn-icon.btn-approve {
 /* Sidebar: compactación extra en pantallas “normales” (menos scroll vertical) */
 @media (min-width: 992px) and (max-width: 1399.98px) {
   .sidebar {
-    padding: 8px 7px;
+    padding: 9px 7px;
   }
 
   .sidebar .sidebar-brand {
-    padding: 3px 5px 6px;
+    padding: 4px 5px 7px;
   }
 
   .sidebar .sidebar-nav {
-    gap: 3px;
-    padding: 1px 1px 5px;
+    gap: 5px;
+    padding: 2px 1px 6px;
   }
 
   .sidebar-link {
-    padding: 6px 7px;
+    padding: 7px 8px;
     border-radius: 11px;
     gap: 6px;
   }
 
   .sidebar-subnav,
   .offcanvas-subnav {
-    margin: 2px 0 4px 16px;
-    padding: 1px 0 1px 7px;
-    gap: 2px;
+    margin: 3px 0 5px 16px;
+    padding: 2px 0 2px 7px;
+    gap: 3px;
   }
 
   .sidebar-subnav .sidebar-link,
   .offcanvas-subnav .sirona-offcanvas-nav-link {
-    padding: 5px 7px;
+    padding: 6px 8px;
     border-radius: 10px;
   }
 
