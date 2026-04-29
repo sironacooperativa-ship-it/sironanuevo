@@ -1,149 +1,194 @@
 {% extends "base.html" %}
 {% block title %}Nueva venta{% endblock %}
 {% block content %}
-  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-    <h1 class="h3 mb-0">Nueva venta</h1>
-    <div class="d-flex flex-wrap gap-2">
-      <a class="btn btn-outline-secondary btn-sm" href="{% url 'ventas_historial' %}">Historial</a>
-      <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedores_list' %}">Vendedores</a>
-    </div>
+  <div class="venta-nueva-page">
+    <header class="venta-nueva-head">
+      <div class="venta-nueva-head-text">
+        <h1 class="venta-nueva-title">Nueva venta</h1>
+        <p class="venta-nueva-lead text-muted">Armá el pedido con lista de precios, líneas y totales. El stock se descuenta al confirmar.</p>
+      </div>
+      <div class="venta-nueva-head-actions">
+        <a class="action-button" href="{% url 'ventas_historial' %}">Historial</a>
+        <a class="action-button" href="{% url 'vendedores_list' %}">Vendedores</a>
+      </div>
+    </header>
+
+    {{ productos_catalogo|json_script:"ventas-productos" }}
+    {{ lineas_iniciales|json_script:"ventas-lineas-iniciales" }}
+
+    <form method="post" novalidate id="ventaForm" class="venta-nueva-form">
+      {% csrf_token %}
+
+      <div class="row g-3 venta-nueva-grid">
+        <div class="col-12 col-xl-8 venta-nueva-col-main">
+          <section class="venta-nueva-card venta-nueva-card--datos">
+            <div class="venta-nueva-card-head">
+              <h2 class="venta-nueva-card-title">Datos del pedido</h2>
+              <span class="venta-nueva-card-hint text-muted">Vendedor obligatorio · comprador opcional</span>
+            </div>
+            <div class="venta-nueva-card-body">
+              <div class="row g-2 g-lg-3 align-items-end">
+                <div class="col-12 col-md-4">
+                  <label class="venta-nueva-label" for="id_vendedor">Vendedor</label>
+                  <select name="vendedor" class="form-select venta-nueva-input" required id="id_vendedor">
+                    <option value="">— Elegir —</option>
+                    {% for v in vendedores %}
+                      <option value="{{ v.pk }}" {% if repoblar and repoblar.vendedor_id == v.pk %}selected{% endif %}>{{ v.codigo }} — {{ v.apellido }}, {{ v.nombre }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="venta-nueva-label" for="id_comprador">Comprador <span class="text-muted fw-normal">(opcional)</span></label>
+                  <select name="comprador" class="form-select venta-nueva-input" id="id_comprador">
+                    <option value="">— Sin asignar —</option>
+                    {% for c in compradores %}
+                      <option value="{{ c.pk }}" {% if repoblar and repoblar.comprador_id == c.pk %}selected{% endif %}>{{ c.codigo }} — {{ c.apellido }}, {{ c.nombre }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="venta-nueva-label" for="id_fecha_vencimiento_pago">Fecha límite de pago</label>
+                  <input
+                    type="date"
+                    name="fecha_vencimiento_pago"
+                    class="form-control venta-nueva-input"
+                    required
+                    id="id_fecha_vencimiento_pago"
+                    value="{% if repoblar %}{{ repoblar.fecha_vencimiento_pago }}{% endif %}"
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="venta-nueva-card venta-nueva-card--productos presu-lista-modern">
+            <div class="venta-nueva-card-head venta-nueva-card-head--toolbar">
+              <h2 class="venta-nueva-card-title mb-0">Productos</h2>
+              <div class="venta-nueva-toolbar">
+                <div class="venta-nueva-toolbar-lista">
+                  <label class="venta-nueva-label venta-nueva-label--inline mb-0" for="id_lista_precios">Lista de precios</label>
+                  {% if listas_precio %}
+                    <select name="lista_precios" class="form-select venta-nueva-input venta-nueva-select-lista" id="id_lista_precios" required>
+                      {% for l in listas_precio %}
+                        <option
+                          value="{{ l.pk }}"
+                          {% if repoblar %}
+                            {% if repoblar.lista_precios_id %}
+                              {% if repoblar.lista_precios_id == l.pk %}selected{% endif %}
+                            {% elif l.es_farmacia %}selected{% endif %}
+                          {% elif l.es_farmacia %}selected{% endif %}
+                        >
+                          {{ l.nombre }}{% if l.es_farmacia %} — base (producto){% endif %}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  {% else %}
+                    <span class="badge text-bg-warning">Sin listas</span>
+                  {% endif %}
+                </div>
+                <button type="button" class="action-button primary venta-nueva-btn-add" id="btnAddLinea" title="Agregar línea">
+                  + Agregar producto
+                </button>
+              </div>
+            </div>
+            <div class="venta-nueva-table-wrap table-responsive presu-lista-table-wrap">
+              <table class="modern-table form-lineas-tabla venta-nueva-lineas" id="tablaLineas">
+                <thead>
+                  <tr>
+                    <th scope="col" class="venta-nueva-th-prod">Producto</th>
+                    <th scope="col" class="text-end venta-nueva-th-qty">Cant.</th>
+                    <th scope="col" class="text-end venta-nueva-th-pu">P. unit.</th>
+                    <th scope="col" class="text-end venta-nueva-th-sub">Subtotal</th>
+                    <th scope="col" class="venta-nueva-th-del" aria-label="Quitar"></th>
+                  </tr>
+                </thead>
+                <tbody id="lineasBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="venta-nueva-card venta-nueva-card--condiciones">
+            <div class="venta-nueva-card-head">
+              <h2 class="venta-nueva-card-title">Descuento y comisión</h2>
+            </div>
+            <div class="venta-nueva-card-body">
+              <div class="row g-2 g-md-3 align-items-start">
+                <div class="col-12 col-md-6">
+                  <label class="venta-nueva-label" for="id_descuento_monto">Descuento ($)</label>
+                  <input
+                    type="text"
+                    name="descuento_monto"
+                    class="form-control venta-nueva-input"
+                    value="{% if repoblar %}{{ repoblar.descuento_monto }}{% else %}0{% endif %}"
+                    inputmode="decimal"
+                    id="id_descuento_monto"
+                  />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="venta-nueva-label" for="id_comision_porcentaje">Comisión (%)</label>
+                  <input
+                    type="text"
+                    name="comision_porcentaje"
+                    class="form-control venta-nueva-input"
+                    value="{% if repoblar %}{{ repoblar.comision_porcentaje }}{% else %}4{% endif %}"
+                    inputmode="decimal"
+                    id="id_comision_porcentaje"
+                  />
+                  <div class="form-check venta-nueva-check mt-2 mb-0">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="aplica_comision"
+                      value="1"
+                      id="id_aplica_comision"
+                      {% if not repoblar %}checked{% elif repoblar.aplica_comision %}checked{% endif %}
+                    />
+                    <label class="form-check-label venta-nueva-check-label" for="id_aplica_comision">Aplicar comisión (descuenta del ingreso en caja)</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <aside class="col-12 col-xl-4 venta-nueva-col-aside">
+          <div class="venta-nueva-kpi">
+            <div class="venta-nueva-kpi-head">
+              <span class="venta-nueva-kpi-title">Resumen</span>
+              <span class="venta-nueva-kpi-sub text-muted">Vista previa</span>
+            </div>
+            <div class="venta-nueva-kpi-list" role="list">
+              <div class="venta-nueva-kpi-row" role="listitem">
+                <span class="venta-nueva-kpi-lbl">Subtotal</span>
+                <span class="venta-nueva-kpi-val" id="sumSubtotal">$ 0,00</span>
+              </div>
+              <div class="venta-nueva-kpi-row" role="listitem">
+                <span class="venta-nueva-kpi-lbl">Descuento</span>
+                <span class="venta-nueva-kpi-val" id="sumDesc">$ 0,00</span>
+              </div>
+              <div class="venta-nueva-kpi-row venta-nueva-kpi-row--neto" role="listitem">
+                <span class="venta-nueva-kpi-lbl">Neto</span>
+                <span class="venta-nueva-kpi-val" id="sumNeto">$ 0,00</span>
+              </div>
+              <div class="venta-nueva-kpi-row" role="listitem">
+                <span class="venta-nueva-kpi-lbl">Comisión</span>
+                <span class="venta-nueva-kpi-val" id="sumComision">$ 0,00</span>
+              </div>
+            </div>
+            <div class="venta-nueva-kpi-total">
+              <span class="venta-nueva-kpi-total-label">Ingreso caja</span>
+              <span class="venta-nueva-kpi-total-value" id="sumIngreso">$ 0,00</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <footer class="venta-nueva-footer">
+        <a class="action-button" href="{% url 'ventas_historial' %}">Cancelar</a>
+        <button type="submit" class="action-button primary venta-nueva-submit">Confirmar venta</button>
+      </footer>
+    </form>
   </div>
-
-  {{ productos_catalogo|json_script:"ventas-productos" }}
-  {{ lineas_iniciales|json_script:"ventas-lineas-iniciales" }}
-
-  <form method="post" novalidate id="ventaForm">
-    {% csrf_token %}
-    <div class="card shadow-sm mb-3">
-      <div class="card-body row g-3">
-        <div class="col-12 col-md-6 col-lg-4">
-          <label class="form-label">Vendedor</label>
-          <select name="vendedor" class="form-select" required id="id_vendedor">
-            <option value="">— Elegir —</option>
-            {% for v in vendedores %}
-              <option value="{{ v.pk }}" {% if repoblar and repoblar.vendedor_id == v.pk %}selected{% endif %}>{{ v.codigo }} — {{ v.apellido }}, {{ v.nombre }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-12 col-md-6 col-lg-4">
-          <label class="form-label">Comprador <span class="text-muted fw-normal">(opcional)</span></label>
-          <select name="comprador" class="form-select" id="id_comprador">
-            <option value="">— Sin asignar —</option>
-            {% for c in compradores %}
-              <option value="{{ c.pk }}" {% if repoblar and repoblar.comprador_id == c.pk %}selected{% endif %}>{{ c.codigo }} — {{ c.apellido }}, {{ c.nombre }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-12 col-md-6 col-lg-4">
-          <label class="form-label">Fecha límite de pago (orden de pago)</label>
-          <input
-            type="date"
-            name="fecha_vencimiento_pago"
-            class="form-control"
-            required
-            id="id_fecha_vencimiento_pago"
-            value="{% if repoblar %}{{ repoblar.fecha_vencimiento_pago }}{% endif %}"
-          />
-        </div>
-      </div>
-    </div>
-
-    <div class="card shadow-sm presu-lista-modern mb-3">
-      <div class="card-body">
-        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-          <h2 class="h6 mb-0">Productos</h2>
-          <div class="ms-auto d-flex flex-wrap align-items-center gap-2">
-            <label class="small text-muted mb-0" for="id_lista_precios">Listas de precio</label>
-            {% if listas_precio %}
-              <select name="lista_precios" class="form-select form-select-sm" id="id_lista_precios" required>
-                {% for l in listas_precio %}
-                  <option
-                    value="{{ l.pk }}"
-                    {% if repoblar %}
-                      {% if repoblar.lista_precios_id %}
-                        {% if repoblar.lista_precios_id == l.pk %}selected{% endif %}
-                      {% elif l.es_farmacia %}selected{% endif %}
-                    {% elif l.es_farmacia %}selected{% endif %}
-                  >
-                    {{ l.nombre }}{% if l.es_farmacia %} — base (producto){% endif %}
-                  </option>
-                {% endfor %}
-              </select>
-            {% else %}
-              <span class="badge text-bg-warning">Sin listas</span>
-            {% endif %}
-          </div>
-          <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddLinea" title="Agregar línea">+ Agregar producto</button>
-        </div>
-        <div class="table-responsive presu-lista-table-wrap">
-          <table class="modern-table form-lineas-tabla" id="tablaLineas">
-            <thead>
-              <tr>
-                <th scope="col">Producto</th>
-                <th scope="col" class="text-end" style="width: 7rem">Cantidad</th>
-                <th scope="col" class="text-end" style="width: 8rem">Precio unit.</th>
-                <th scope="col" class="text-end" style="width: 8rem">Subtotal</th>
-                <th scope="col" style="width: 3rem"></th>
-              </tr>
-            </thead>
-            <tbody id="lineasBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="card shadow-sm mb-3">
-      <div class="card-body row g-3">
-        <div class="col-12 col-md-4">
-          <label class="form-label">Aplicar descuento ($)</label>
-          <input
-            type="text"
-            name="descuento_monto"
-            class="form-control"
-            value="{% if repoblar %}{{ repoblar.descuento_monto }}{% else %}0{% endif %}"
-            inputmode="decimal"
-            id="id_descuento_monto"
-          />
-        </div>
-        <div class="col-12 col-md-4">
-          <label class="form-label">Comisión (%)</label>
-          <input
-            type="text"
-            name="comision_porcentaje"
-            class="form-control"
-            value="{% if repoblar %}{{ repoblar.comision_porcentaje }}{% else %}4{% endif %}"
-            inputmode="decimal"
-            id="id_comision_porcentaje"
-          />
-          <div class="form-check mt-2">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              name="aplica_comision"
-              value="1"
-              id="id_aplica_comision"
-              {% if not repoblar %}checked{% elif repoblar.aplica_comision %}checked{% endif %}
-            />
-            <label class="form-check-label small" for="id_aplica_comision">Aplicar comisión (descuenta del ingreso en caja)</label>
-          </div>
-        </div>
-        <div class="col-12 col-md-4">
-          <div class="border rounded p-3 bg-light small">
-            <div class="d-flex justify-content-between"><span>Subtotal líneas</span><span id="sumSubtotal">$ 0,00</span></div>
-            <div class="d-flex justify-content-between"><span>Descuento</span><span id="sumDesc">$ 0,00</span></div>
-            <div class="d-flex justify-content-between fw-semibold"><span>Neto (orden de pago)</span><span id="sumNeto">$ 0,00</span></div>
-            <div class="d-flex justify-content-between text-muted"><span>Comisión estimada</span><span id="sumComision">$ 0,00</span></div>
-            <div class="d-flex justify-content-between fw-semibold border-top pt-2 mt-2"><span>Ingreso en caja (estim.)</span><span id="sumIngreso">$ 0,00</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="d-flex justify-content-end gap-2">
-      <a class="btn btn-outline-secondary" href="{% url 'ventas_historial' %}">Cancelar</a>
-      <button type="submit" class="btn btn-primary">Confirmar venta</button>
-    </div>
-  </form>
 
   <script>
     (function () {
@@ -241,7 +286,7 @@
       function buildSelect(tr) {
         const sel = document.createElement("select");
         sel.name = "linea_producto";
-        sel.className = "form-select form-select-sm";
+        sel.className = "form-select form-select-sm venta-nueva-line-product";
         sel.innerHTML = optionsHtml();
         sel.dataset.prevEmpty = sel.value ? "0" : "1";
         sel.addEventListener("change", () => {
@@ -259,12 +304,13 @@
 
       function addRow() {
         const tr = document.createElement("tr");
+        tr.className = "venta-nueva-line";
         tr.innerHTML =
-          '<td></td>' +
-          '<td class="text-end"><input type="number" name="linea_cantidad" class="form-control form-control-sm text-end" min="1" step="1" value="1" /></td>' +
-          '<td class="text-end js-precio-unit">—</td>' +
-          '<td class="text-end fw-semibold js-subtotal">—</td>' +
-          '<td><div class="table-actions presu-row-actions d-flex"><button type="button" class="btn-icon btn-delete js-remove" title="Quitar" aria-label="Quitar"><i data-lucide="x"></i></button></div></td>';
+          '<td class="venta-nueva-td-prod"></td>' +
+          '<td class="text-end venta-nueva-td-qty"><input type="number" name="linea_cantidad" class="form-control form-control-sm text-end venta-nueva-line-qty" min="1" step="1" value="1" /></td>' +
+          '<td class="text-end venta-nueva-td-num js-precio-unit">—</td>' +
+          '<td class="text-end venta-nueva-td-num js-subtotal">—</td>' +
+          '<td class="venta-nueva-td-del"><div class="table-actions presu-row-actions d-flex justify-content-end"><button type="button" class="btn-icon btn-delete js-remove venta-nueva-line-remove" title="Quitar" aria-label="Quitar"><i data-lucide="x"></i></button></div></td>';
         tr.children[0].appendChild(buildSelect(tr));
         tr.querySelector('input[name="linea_cantidad"]').addEventListener("input", () => {
           refreshRow(tr);

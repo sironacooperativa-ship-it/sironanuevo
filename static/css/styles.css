@@ -335,6 +335,415 @@ body.app-body {
 
 /* When hidden, the sidebar isn't visible anyway; no special-case needed. */
 
+/* ===== Ventas: nueva venta (layout compacto tipo dashboard) ===== */
+.venta-nueva-page {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.venta-nueva-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-bottom: 14px;
+}
+
+.venta-nueva-title {
+  font-size: 1.35rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--s-ink);
+  margin: 0 0 4px;
+}
+
+.venta-nueva-lead {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  max-width: 42rem;
+}
+
+.venta-nueva-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.venta-nueva-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.venta-nueva-grid {
+  align-items: flex-start;
+}
+
+.venta-nueva-col-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.venta-nueva-col-aside {
+  min-width: 0;
+}
+
+@media (min-width: 1200px) {
+  .venta-nueva-kpi {
+    position: sticky;
+    top: calc(var(--topbar-h) + 12px);
+  }
+}
+
+.venta-nueva-card {
+  background: var(--s-card);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: var(--s-r-lg);
+  box-shadow: var(--s-shadow-1);
+  overflow: hidden;
+}
+
+.venta-nueva-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.92), rgba(255, 255, 255, 1));
+}
+
+.venta-nueva-card-head--toolbar {
+  align-items: flex-end;
+}
+
+.venta-nueva-card-title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--s-ink);
+}
+
+.venta-nueva-card-hint {
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.venta-nueva-card-body {
+  padding: 12px 12px 14px;
+}
+
+.venta-nueva-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(100, 116, 139, 0.95);
+  margin-bottom: 4px;
+}
+
+.venta-nueva-label--inline {
+  margin-bottom: 6px;
+}
+
+.venta-nueva-input,
+.venta-nueva-page .venta-nueva-input.form-select,
+.venta-nueva-page .venta-nueva-input.form-control {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 0.86rem;
+  border-radius: 12px;
+  border: 1px solid var(--s-border);
+  background: #f8fafc;
+  font-weight: 500;
+}
+
+.venta-nueva-input:focus {
+  border-color: rgba(37, 99, 235, 0.45);
+  background: #fff;
+  box-shadow: var(--s-ring);
+  outline: none;
+}
+
+.venta-nueva-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.venta-nueva-toolbar-lista {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: min(100%, 220px);
+  flex: 1 1 220px;
+}
+
+.venta-nueva-select-lista {
+  min-width: 0;
+}
+
+.venta-nueva-btn-add {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  height: 34px;
+  padding: 0 14px;
+  font-size: 0.82rem;
+}
+
+.venta-nueva-table-wrap {
+  border-top: 1px solid rgba(226, 232, 240, 0.85);
+}
+
+.venta-nueva-page .venta-nueva-lineas.modern-table thead th {
+  padding: 8px 10px !important;
+  font-size: 0.65rem !important;
+  letter-spacing: 0.07em !important;
+  font-weight: 850 !important;
+  background: #f8fafc !important;
+}
+
+.venta-nueva-page .venta-nueva-lineas.modern-table tbody td {
+  padding: 6px 10px !important;
+  vertical-align: middle;
+  font-size: 0.86rem;
+}
+
+.venta-nueva-th-prod {
+  width: 52%;
+}
+
+.venta-nueva-th-qty {
+  width: 6.5rem;
+}
+
+.venta-nueva-th-pu,
+.venta-nueva-th-sub {
+  width: 7.5rem;
+}
+
+.venta-nueva-th-del {
+  width: 3rem;
+}
+
+.venta-nueva-line-product {
+  width: 100%;
+  max-width: 100%;
+}
+
+.venta-nueva-line-qty {
+  max-width: 5.5rem;
+  margin-left: auto;
+  min-height: 30px;
+  padding: 4px 8px;
+  font-size: 0.84rem;
+}
+
+.venta-nueva-td-num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  color: var(--s-ink);
+  white-space: nowrap;
+}
+
+.venta-nueva-page .venta-nueva-line-remove.btn-icon {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 10px;
+}
+
+.venta-nueva-page .venta-nueva-line-remove.btn-icon svg,
+.venta-nueva-page .venta-nueva-line-remove.btn-icon i[data-lucide] {
+  width: 15px;
+  height: 15px;
+}
+
+.venta-nueva-check-label {
+  font-size: 0.8rem;
+  line-height: 1.25;
+  color: var(--s-muted);
+}
+
+.venta-nueva-kpi {
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: var(--s-r-lg);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  box-shadow: var(--s-shadow-1);
+  padding: 12px 12px 10px;
+}
+
+.venta-nueva-kpi-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.venta-nueva-kpi-title {
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(100, 116, 139, 0.92);
+}
+
+.venta-nueva-kpi-sub {
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.venta-nueva-kpi-list {
+  margin: 0;
+  padding: 0;
+}
+
+.venta-nueva-kpi-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(226, 232, 240, 0.85);
+}
+
+.venta-nueva-kpi-row:last-of-type {
+  border-bottom: 0;
+}
+
+.venta-nueva-kpi-lbl {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: rgba(100, 116, 139, 0.95);
+}
+
+.venta-nueva-kpi-val {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--s-ink);
+  white-space: nowrap;
+}
+
+.venta-nueva-kpi-row--neto .venta-nueva-kpi-lbl {
+  color: var(--s-ink);
+  font-weight: 800;
+}
+
+.venta-nueva-kpi-row--neto .venta-nueva-kpi-val {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--s-primary);
+}
+
+.venta-nueva-kpi-total {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(226, 232, 240, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.venta-nueva-kpi-total-label {
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(51, 65, 85, 0.92);
+}
+
+.venta-nueva-kpi-total-value {
+  font-size: 1.05rem;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+  color: var(--s-ink);
+  white-space: nowrap;
+}
+
+.venta-nueva-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.venta-nueva-submit {
+  min-width: 11rem;
+}
+
+@media (max-width: 1199.98px) {
+  .venta-nueva-kpi {
+    margin-top: 2px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .venta-nueva-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .venta-nueva-btn-add {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .venta-nueva-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .venta-nueva-footer .action-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+.theme-dark .venta-nueva-card,
+.theme-dark .venta-nueva-kpi {
+  background: rgba(11, 18, 32, 0.78);
+  border-color: var(--s-border);
+}
+
+.theme-dark .venta-nueva-input,
+.theme-dark .venta-nueva-page .venta-nueva-input.form-select,
+.theme-dark .venta-nueva-page .venta-nueva-input.form-control {
+  background: rgba(15, 26, 51, 0.85);
+  border-color: var(--s-border);
+  color: var(--s-ink);
+}
+
+.theme-dark .venta-nueva-page .venta-nueva-lineas.modern-table thead th {
+  background: rgba(15, 23, 42, 0.55) !important;
+}
+
+.theme-dark .venta-nueva-page .venta-nueva-lineas.modern-table tbody td {
+  background: transparent !important;
+}
+
 /* ===== Calendario (vista real): recuperar look tipo demo (almanaque) ===== */
 .calendario-agenda-page {
   display: grid;

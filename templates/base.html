@@ -17,7 +17,7 @@
     />
     <!-- theme: ios-2026r29 -->
     <link href="{% static 'css/theme.css' %}?v=ios-2026r32" rel="stylesheet" />
-    <link href="{% static 'css/styles.css' %}?v=saas-2026r3" rel="stylesheet" />
+    <link href="{% static 'css/styles.css' %}?v=saas-2026r4" rel="stylesheet" />
     <link href="{% static 'css/ui-force-productos.css' %}?v=1" rel="stylesheet" />
     <link href="{% static 'css/sirona-calc.css' %}" rel="stylesheet" />
     <style>
@@ -869,19 +869,36 @@
       // Estado activo de navegación (solo UI): marca el link cuya URL coincide.
       (function () {
         try {
-          const here = window.location.pathname.replace(/\/+$/, "") || "/";
+          const herePath = window.location.pathname.replace(/\/+$/, "") || "/";
+          const hereSearch = window.location.search || "";
           const links = document.querySelectorAll(".sidebar a.sidebar-link, #sironaMenu a.app-sidebar-link");
           // Choose ONE best match (most specific) so we don't highlight multiple items at once.
           const candidates = [];
           links.forEach((a) => {
-            const href = (a.getAttribute("href") || "").replace(/\/+$/, "");
-            if (!href || href === "#") return;
-            if (href === here) {
-              candidates.push({ a, href, score: 10000 + href.length });
+            const rawHref = (a.getAttribute("href") || "").trim();
+            if (!rawHref || rawHref === "#") return;
+            let u;
+            try {
+              u = new URL(rawHref, window.location.origin);
+            } catch (e) {
               return;
             }
-            if (href !== "/" && here.startsWith(href + "/")) {
-              candidates.push({ a, href, score: href.length });
+            const hrefPath = (u.pathname || "").replace(/\/+$/, "") || "/";
+            const hrefSearch = u.search || "";
+
+            // Best match: exact path + exact query (e.g. /ventas/?estado=PEN => "Deudas").
+            if (hrefPath === herePath && hrefSearch === hereSearch) {
+              candidates.push({ a, hrefPath, score: 20000 + hrefPath.length + hrefSearch.length });
+              return;
+            }
+            // Fallback: exact path without considering query.
+            if (hrefPath === herePath) {
+              candidates.push({ a, hrefPath, score: 10000 + hrefPath.length });
+              return;
+            }
+            // Section fallback: parent path.
+            if (hrefPath !== "/" && herePath.startsWith(hrefPath + "/")) {
+              candidates.push({ a, hrefPath, score: hrefPath.length });
             }
           });
           if (candidates.length) {
