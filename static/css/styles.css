@@ -4137,10 +4137,28 @@ a.btn-icon.btn-approve {
   transform: rotate(180deg);
 }
 
-/* Hide the section headers above groups (PRODUCTOS / VENTAS / …).
-   Keep the group row that has the icon + label. */
-.sidebar-section-title {
-  display: none;
+/* Escritorio: sin título de sección encima de cada grupo (solo fila con ícono + chevron). */
+@media (min-width: 992px) {
+  .sidebar .sidebar-section-title {
+    display: none;
+  }
+}
+
+/* Móvil / drawer: sí mostramos rubros para orientar (solo #sironaMenu; no afecta sidebar desktop) */
+#sironaMenu .sidebar-section-title,
+#sironaMenuDemo .sidebar-section-title {
+  display: block;
+  margin: 14px 10px 6px;
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 900;
+  color: rgba(100, 116, 139, 0.75);
+}
+
+#sironaMenu .sidebar-section-title:first-child,
+#sironaMenuDemo .sidebar-section-title:first-child {
+  margin-top: 4px;
 }
 
 /* Submenu visual (desktop + offcanvas): vertical line + active dot */
@@ -4340,6 +4358,38 @@ a.btn-icon.btn-approve {
 .app-body .app-main .page-header-card .header-ico svg {
   width: 18px;
   height: 18px;
+}
+
+/* Móvil / tablet: barra sticky + notch; texto no queda “bajo” el vidrio ilegible */
+@media (max-width: 991.98px) {
+  html:has(body.app-authenticated) {
+    scroll-padding-top: calc(var(--topbar-h) + 10px + env(safe-area-inset-top, 0px));
+  }
+
+  body.app-authenticated nav#sironaTopbar.sirona-topbar {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  body.app-authenticated nav.navbar.sirona-topbar.bg-white.topbar {
+    background: rgba(255, 255, 255, 0.94) !important;
+    background-color: rgba(255, 255, 255, 0.94) !important;
+  }
+
+  body.app-authenticated main.app-main.page-shell {
+    padding-top: max(1.35rem, calc(0.5rem + env(safe-area-inset-top, 0px))) !important;
+  }
+}
+
+.theme-dark #sironaMenu .sidebar-section-title,
+.theme-dark #sironaMenuDemo .sidebar-section-title {
+  color: rgba(226, 232, 240, 0.72);
+}
+
+@media (max-width: 991.98px) {
+  .theme-dark body.app-authenticated nav.navbar.sirona-topbar.bg-white.topbar {
+    background: rgba(11, 18, 32, 0.94) !important;
+    background-color: rgba(11, 18, 32, 0.94) !important;
+  }
 }
 
 @media print {

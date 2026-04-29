@@ -17,7 +17,7 @@
     />
     <!-- theme: ios-2026r29 -->
     <link href="{% static 'css/theme.css' %}?v=ios-2026r32" rel="stylesheet" />
-    <link href="{% static 'css/styles.css' %}?v=saas-2026r8" rel="stylesheet" />
+    <link href="{% static 'css/styles.css' %}?v=saas-2026r9" rel="stylesheet" />
     <link href="{% static 'css/ui-force-productos.css' %}?v=2" rel="stylesheet" />
     <link href="{% static 'css/sirona-calc.css' %}" rel="stylesheet" />
     <style>
@@ -658,6 +658,8 @@
                 <span class="app-sidebar-icon-wrap"><i data-lucide="home"></i></span>
                 <span class="app-sidebar-label">Inicio</span>
               </a>
+
+              <div class="sidebar-section-title">Productos</div>
               <div class="sidebar-group offcanvas-group" data-group="productos">
                 <div class="app-sidebar-link sirona-offcanvas-nav-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
                   <span class="app-sidebar-icon-wrap"><i data-lucide="package"></i></span>
@@ -669,7 +671,7 @@
                 <div class="sidebar-subnav offcanvas-subnav" aria-label="Submenú Productos">
                   <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'productos_list' %}">
                     <span class="app-sidebar-icon-wrap"><i data-lucide="list"></i></span>
-                    <span class="app-sidebar-label">Productos</span>
+                    <span class="app-sidebar-label">Lista de productos</span>
                   </a>
                   <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'productos_listas_precios' %}">
                     <span class="app-sidebar-icon-wrap"><i data-lucide="tags"></i></span>
@@ -681,75 +683,161 @@
                   </a>
                 </div>
               </div>
-              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'caja_list' %}">
-                <span class="app-sidebar-icon-wrap"><i data-lucide="wallet"></i></span>
-                <span class="app-sidebar-label">Caja</span>
-              </a>
-              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'presupuesto_lista' %}">
-                <span class="app-sidebar-icon-wrap"><i data-lucide="file-text"></i></span>
-                <span class="app-sidebar-label">Presupuestos</span>
-              </a>
-              <a
-                class="app-sidebar-link sirona-offcanvas-nav-link"
-                href="{% url 'ventas_historial' %}"
-                title="Listado de pedidos: ver, editar, cobrar o eliminar según permisos"
-              >
-                <span class="app-sidebar-icon-wrap"><i data-lucide="clipboard-list"></i></span>
-                <span class="app-sidebar-label">Historial de pedidos</span>
-              </a>
-              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'vendedores_list' %}">
-                <span class="app-sidebar-icon-wrap"><i data-lucide="user-check"></i></span>
-                <span class="app-sidebar-label">Vendedores</span>
-              </a>
-              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'compradores_list' %}">
-                <span class="app-sidebar-icon-wrap"><i data-lucide="users"></i></span>
-                <span class="app-sidebar-label">Clientes</span>
-              </a>
-              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'compra_historial' %}">
-                <span class="app-sidebar-icon-wrap"><i data-lucide="shopping-cart"></i></span>
-                <span class="app-sidebar-label">Compras</span>
-              </a>
-              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'proveedores_list' %}">
-                <span class="app-sidebar-icon-wrap"><i data-lucide="truck"></i></span>
-                <span class="app-sidebar-label">Proveedores</span>
-              </a>
-              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'calendario_home' %}">
-                <span class="app-sidebar-icon-wrap"><i data-lucide="calendar-days"></i></span>
-                <span class="app-sidebar-label">Calendario</span>
-              </a>
-              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'bancos_cuentas' %}">
-                <span class="app-sidebar-icon-wrap"><i data-lucide="landmark"></i></span>
-                <span class="app-sidebar-label">Bancos</span>
-              </a>
-              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'reportes_dashboard' %}">
-                <span class="app-sidebar-icon-wrap"><i data-lucide="chart-column"></i></span>
-                <span class="app-sidebar-label">Reportes</span>
-              </a>
-              <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'cambiar_password' %}">
-                <span class="app-sidebar-icon-wrap"><i data-lucide="key"></i></span>
-                <span class="app-sidebar-label">Cambiar contraseña</span>
-              </a>
-              {% if request.user.is_staff %}
-                <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'admin_actividad_list' %}">
-                  <span class="app-sidebar-icon-wrap"><i data-lucide="history"></i></span>
-                  <span class="app-sidebar-label">Historial</span>
-                </a>
-                {% if recibe_notas_admin %}
-                  <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'admin_notas_list' %}">
-                    <span class="app-sidebar-icon-wrap"><i data-lucide="inbox"></i></span>
-                    <span class="app-sidebar-label">
-                      Notas
-                      {% if notas_admin_no_leidas %}
-                        <span class="badge text-bg-warning text-dark ms-1">{{ notas_admin_no_leidas }}</span>
-                      {% endif %}
-                    </span>
+
+              <div class="sidebar-section-title">Ventas</div>
+              <div class="sidebar-group offcanvas-group" data-group="ventas">
+                <div class="app-sidebar-link sirona-offcanvas-nav-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="shopping-bag"></i></span>
+                  <span class="app-sidebar-label">Ventas</span>
+                  <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                    <i data-lucide="chevron-down"></i>
+                  </span>
+                </div>
+                <div class="sidebar-subnav offcanvas-subnav" aria-label="Submenú Ventas">
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'presupuesto_lista' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="file-text"></i></span>
+                    <span class="app-sidebar-label">Presupuestos</span>
                   </a>
-                {% endif %}
-                <a class="app-sidebar-link sirona-offcanvas-nav-link" href="{% url 'admin_usuarios_list' %}">
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'venta_nueva' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="receipt"></i></span>
+                    <span class="app-sidebar-label">Nueva venta</span>
+                  </a>
+                  <a
+                    class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link"
+                    href="{% url 'ventas_historial' %}"
+                    title="Listado de pedidos: ver, editar, cobrar o eliminar según permisos"
+                  >
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="clipboard-list"></i></span>
+                    <span class="app-sidebar-label">Historial de pedidos</span>
+                  </a>
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'compradores_list' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="users"></i></span>
+                    <span class="app-sidebar-label">Clientes</span>
+                  </a>
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'vendedores_list' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="user-check"></i></span>
+                    <span class="app-sidebar-label">Vendedores</span>
+                  </a>
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'ventas_comisiones' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="badge-percent"></i></span>
+                    <span class="app-sidebar-label">Comisiones</span>
+                  </a>
+                </div>
+              </div>
+
+              <div class="sidebar-section-title">Caja</div>
+              <div class="sidebar-group offcanvas-group" data-group="caja">
+                <div class="app-sidebar-link sirona-offcanvas-nav-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="wallet"></i></span>
+                  <span class="app-sidebar-label">Caja</span>
+                  <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                    <i data-lucide="chevron-down"></i>
+                  </span>
+                </div>
+                <div class="sidebar-subnav offcanvas-subnav" aria-label="Submenú Caja">
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'caja_create' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="plus"></i></span>
+                    <span class="app-sidebar-label">Nuevo movimiento</span>
+                  </a>
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'bancos_cuentas' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="landmark"></i></span>
+                    <span class="app-sidebar-label">Banco</span>
+                  </a>
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'caja_list' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="arrow-left-right"></i></span>
+                    <span class="app-sidebar-label">Movimientos</span>
+                  </a>
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'ventas_historial' %}?estado=PEN" title="Pedidos pendientes de pago">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="clock"></i></span>
+                    <span class="app-sidebar-label">Deudas</span>
+                  </a>
+                </div>
+              </div>
+
+              <div class="sidebar-section-title">Compras</div>
+              <div class="sidebar-group offcanvas-group" data-group="compras">
+                <div class="app-sidebar-link sirona-offcanvas-nav-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="shopping-cart"></i></span>
+                  <span class="app-sidebar-label">Compras</span>
+                  <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                    <i data-lucide="chevron-down"></i>
+                  </span>
+                </div>
+                <div class="sidebar-subnav offcanvas-subnav" aria-label="Submenú Compras">
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'compra_historial' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="shopping-cart"></i></span>
+                    <span class="app-sidebar-label">Compras</span>
+                  </a>
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'proveedores_list' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="truck"></i></span>
+                    <span class="app-sidebar-label">Proveedores</span>
+                  </a>
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'compra_registrar' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="credit-card"></i></span>
+                    <span class="app-sidebar-label">Pagos</span>
+                  </a>
+                </div>
+              </div>
+
+              <div class="sidebar-section-title">Gestión</div>
+              <div class="sidebar-group offcanvas-group" data-group="gestion">
+                <div class="app-sidebar-link sirona-offcanvas-nav-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="sparkles"></i></span>
+                  <span class="app-sidebar-label">Gestión</span>
+                  <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                    <i data-lucide="chevron-down"></i>
+                  </span>
+                </div>
+                <div class="sidebar-subnav offcanvas-subnav" aria-label="Submenú Gestión">
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'reportes_dashboard' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="chart-column"></i></span>
+                    <span class="app-sidebar-label">Reportes</span>
+                  </a>
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'calendario_home' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="calendar-days"></i></span>
+                    <span class="app-sidebar-label">Calendario</span>
+                  </a>
+                </div>
+              </div>
+
+              <div class="sidebar-section-title">Administración</div>
+              <div class="sidebar-group offcanvas-group" data-group="admin">
+                <div class="app-sidebar-link sirona-offcanvas-nav-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
                   <span class="app-sidebar-icon-wrap"><i data-lucide="shield"></i></span>
-                  <span class="app-sidebar-label">Administrador</span>
-                </a>
-              {% endif %}
+                  <span class="app-sidebar-label">Administración</span>
+                  <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                    <i data-lucide="chevron-down"></i>
+                  </span>
+                </div>
+                <div class="sidebar-subnav offcanvas-subnav" aria-label="Submenú Administración">
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'admin_usuarios_list' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="shield"></i></span>
+                    <span class="app-sidebar-label">Administración</span>
+                  </a>
+                  {% if request.user.is_staff %}
+                    <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'admin_actividad_list' %}">
+                      <span class="app-sidebar-icon-wrap"><i data-lucide="history"></i></span>
+                      <span class="app-sidebar-label">Historial</span>
+                    </a>
+                    {% if recibe_notas_admin %}
+                      <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'admin_notas_list' %}">
+                        <span class="app-sidebar-icon-wrap"><i data-lucide="inbox"></i></span>
+                        <span class="app-sidebar-label">
+                          Notas
+                          {% if notas_admin_no_leidas %}
+                            <span class="badge text-bg-warning text-dark ms-1">{{ notas_admin_no_leidas }}</span>
+                          {% endif %}
+                        </span>
+                      </a>
+                    {% endif %}
+                  {% endif %}
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'cambiar_password' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="key"></i></span>
+                    <span class="app-sidebar-label">Cambio de contraseña</span>
+                  </a>
+                </div>
+              </div>
+
               <a class="app-sidebar-link app-sidebar-link-logout sirona-offcanvas-nav-link" href="{% url 'logout' %}">
                 <span class="app-sidebar-icon-wrap"><i data-lucide="log-out"></i></span>
                 <span class="app-sidebar-label">Salir</span>
