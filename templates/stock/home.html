@@ -2,6 +2,7 @@
 {% load money %}
 {% block title %}Stock{% endblock %}
 {% block content %}
+  <div class="stock-page">
   <section class="page-header-card inventory-header">
     <div class="header-left">
       <span class="header-ico" aria-hidden="true"><i data-lucide="boxes"></i></span>
@@ -132,51 +133,61 @@
     </article>
   </section>
 
-  <section class="modern-filter-card" aria-label="Filtros">
-    <form method="get" class="row g-2 align-items-end">
-      <div class="col-12 col-md-6 col-lg-3">
-        <label class="form-label small text-muted mb-1">Buscar producto</label>
-        <input type="search" name="q" class="form-control input-modern" value="{{ q|default:'' }}" placeholder="Código o descripción" autocomplete="off" />
+  <section class="modern-filter-card stock-page-filters" aria-label="Filtros">
+    <form method="get" class="stock-filters-form">
+      <div class="stock-filters-grid">
+        <div class="stock-filter-group stock-filter-group--q">
+          <label class="form-label stock-filter-label" for="stock-filter-q">Buscar producto</label>
+          <input
+            id="stock-filter-q"
+            type="search"
+            name="q"
+            class="form-control stock-filter-control"
+            value="{{ q|default:'' }}"
+            placeholder="Código o descripción"
+            autocomplete="off"
+          />
+        </div>
+        <div class="stock-filter-group">
+          <label class="form-label stock-filter-label" for="stock-filter-tipo">Tipo</label>
+          <select id="stock-filter-tipo" class="form-select stock-filter-control" name="tipo">
+            <option value="">Todos</option>
+            {% for v, label in tipos %}
+              <option value="{{ v }}" {% if tipo == v %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="stock-filter-group stock-filter-group--proveedor">
+          <label class="form-label stock-filter-label" for="stock-filter-proveedor">Proveedor</label>
+          <select id="stock-filter-proveedor" class="form-select stock-filter-control" name="proveedor">
+            <option value="">Todos</option>
+            {% for pr in proveedores_filtro %}
+              <option value="{{ pr.pk }}" {% if proveedor == pr.pk|stringformat:"s" %}selected{% endif %}>
+                {{ pr.codigo }} — {{ pr.apellido }}, {{ pr.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="stock-filter-group">
+          <label class="form-label stock-filter-label" for="stock-filter-estado">Estado</label>
+          <select id="stock-filter-estado" class="form-select stock-filter-control" name="estado">
+            <option value="" {% if not estado %}selected{% endif %}>Todos</option>
+            <option value="1" {% if estado == "1" %}selected{% endif %}>Activos</option>
+            <option value="0" {% if estado == "0" %}selected{% endif %}>Inactivos</option>
+          </select>
+        </div>
+        <div class="stock-filter-actions">
+          <button type="submit" class="btn btn-primary stock-filter-btn stock-filter-btn--primary">
+            <i data-lucide="filter" aria-hidden="true"></i>
+            Filtrar
+          </button>
+          <a class="btn btn-outline-secondary stock-filter-btn" href="{% url 'stock_home' %}">Limpiar</a>
+        </div>
       </div>
-      <div class="col-12 col-md-6 col-lg-2">
-        <label class="form-label small text-muted mb-1">Tipo</label>
-        <select class="form-select input-modern" name="tipo">
-          <option value="">Todos</option>
-          {% for v, label in tipos %}
-            <option value="{{ v }}" {% if tipo == v %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-12 col-md-6 col-lg-3">
-        <label class="form-label small text-muted mb-1">Proveedor</label>
-        <select class="form-select input-modern" name="proveedor">
-          <option value="">Todos</option>
-          {% for pr in proveedores_filtro %}
-            <option value="{{ pr.pk }}" {% if proveedor == pr.pk|stringformat:"s" %}selected{% endif %}>
-              {{ pr.codigo }} — {{ pr.apellido }}, {{ pr.nombre }}
-            </option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-12 col-md-6 col-lg-2">
-        <label class="form-label small text-muted mb-1">Estado</label>
-        <select class="form-select input-modern" name="estado">
-          <option value="" {% if not estado %}selected{% endif %}>Todos</option>
-          <option value="1" {% if estado == "1" %}selected{% endif %}>Activos</option>
-          <option value="0" {% if estado == "0" %}selected{% endif %}>Inactivos</option>
-        </select>
-      </div>
-      <div class="col-12 col-md-12 col-lg-2 d-flex gap-2">
-        <button type="submit" class="action-button primary btn btn-primary flex-grow-1">
-          <i data-lucide="filter" aria-hidden="true"></i>
-          Filtrar
-        </button>
-        <a class="action-button btn btn-outline-secondary flex-grow-1" href="{% url 'stock_home' %}">Limpiar</a>
-      </div>
+      <p class="stock-filter-hint text-muted mb-0">
+        En <strong>Stock disponible</strong> podés corregir el saldo a mano; se guarda en el producto y se refleja en Productos, presupuestos y ventas.
+      </p>
     </form>
-    <p class="text-muted small mb-0 mt-2">
-      En <strong>Stock disponible</strong> podés corregir el saldo a mano; se guarda en el producto y se refleja en Productos, presupuestos y ventas.
-    </p>
   </section>
 
   <div class="dashboard-card mb-3">
@@ -186,7 +197,7 @@
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="report-table">
+        <table class="report-table stock-products-table">
           <thead>
             <tr>
               <th>Código</th>
@@ -209,14 +220,14 @@
                 </td>
                 <td class="muted col-hide-sm">{{ p.get_tipo_display }}</td>
                 <td class="muted col-hide-sm">{% if p.proveedor_marca %}{{ p.proveedor_marca }}{% else %}—{% endif %}</td>
-                <td class="num">
+                <td class="num stock-stock-cell">
                   {% if user.is_staff %}
-                    <form method="post" action="{% url 'stock_ajuste_inline' %}" class="d-inline-flex align-items-center gap-2 justify-content-end flex-wrap">
+                    <form method="post" action="{% url 'stock_ajuste_inline' %}" class="stock-inline-ajuste">
                       {% csrf_token %}
                       <input type="hidden" name="producto_id" value="{{ p.pk }}" />
                       <input type="hidden" name="retorno_q" value="{{ q|default:'' }}" />
-                      <input type="number" name="stock" class="pricing-edit-input text-end" style="width: 7rem" min="0" step="1" value="{{ p.stock }}" />
-                      <button type="submit" class="icon-button" title="Aplicar" aria-label="Aplicar">
+                      <input type="number" name="stock" class="stock-qty-input" min="0" step="1" value="{{ p.stock }}" title="Stock disponible" />
+                      <button type="submit" class="icon-button stock-icon-btn" title="Aplicar" aria-label="Aplicar">
                         <i data-lucide="check" aria-hidden="true"></i>
                       </button>
                     </form>
@@ -226,22 +237,26 @@
                 </td>
                 <td class="num col-hide-xs">{{ p.costo|ars }}</td>
                 <td class="num col-hide-xs">{{ p.valor_total_stock|ars }}</td>
-                <td>
-                  {% if p.stock <= 0 %}
-                    <span class="status-badge status-badge--danger">Sin stock</span>
-                  {% elif p.stock <= 5 %}
-                    <span class="status-badge status-badge--warning">Bajo</span>
-                  {% else %}
-                    <span class="status-badge status-badge--success">En stock</span>
-                  {% endif %}
-                  {% if p.habilitado %}
-                    <span class="status-badge status-badge--primary ms-1">Activo</span>
-                  {% endif %}
+                <td class="stock-status-td">
+                  <div class="stock-status-row">
+                    {% if p.stock <= 0 %}
+                      <span class="status-badge status-badge--danger">Sin stock</span>
+                    {% elif p.stock <= 5 %}
+                      <span class="status-badge status-badge--warning">Bajo</span>
+                    {% else %}
+                      <span class="status-badge status-badge--success">En stock</span>
+                    {% endif %}
+                    {% if p.habilitado %}
+                      <span class="status-badge status-badge--primary">Activo</span>
+                    {% endif %}
+                  </div>
                 </td>
-                <td class="text-end">
-                  <a class="icon-button" href="{% url 'producto_update' p.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" title="Editar" aria-label="Editar">
-                    <i data-lucide="pencil" aria-hidden="true"></i>
-                  </a>
+                <td class="text-end stock-actions-td">
+                  <div class="stock-actions-cell">
+                    <a class="icon-button stock-icon-btn" href="{% url 'producto_update' p.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" title="Editar" aria-label="Editar">
+                      <i data-lucide="pencil" aria-hidden="true"></i>
+                    </a>
+                  </div>
                 </td>
               </tr>
             {% empty %}
@@ -320,5 +335,6 @@
       }
     })();
   </script>
+  </div>
 {% endblock %}
 

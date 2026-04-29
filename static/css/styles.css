@@ -3014,6 +3014,342 @@ a.btn-icon.btn-approve {
   font-weight: 650;
 }
 
+/* ----- Stock (home): layout compacto, filtros en fila, tabla densa ----- */
+.stock-page .inventory-header {
+  min-height: 0;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+
+.stock-page .page-header-card .header-ico {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+}
+
+.stock-page .page-header-card .header-title {
+  font-size: 1.08rem;
+}
+
+.stock-page .page-header-card .header-subtitle {
+  font-size: 0.84rem;
+  margin-top: 2px;
+}
+
+.stock-page .stats-grid {
+  gap: 8px;
+  margin-bottom: 10px !important;
+}
+
+@media (min-width: 1400px) {
+  .stock-page .stats-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.stock-page .metric-card {
+  padding: 9px 11px;
+  gap: 4px;
+  border-radius: var(--s-r);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.stock-page .metric-card .metric-top {
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.stock-page .metric-card .metric-title {
+  font-size: 0.7rem;
+  line-height: 1.25;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.stock-page .metric-card .metric-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+}
+
+.stock-page .metric-card .metric-icon svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.stock-page .metric-card .metric-value {
+  font-size: 1.18rem;
+  line-height: 1.12;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+}
+
+.stock-page .metric-card .metric-sub {
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.stock-page .stock-page-filters.modern-filter-card {
+  padding: 10px 12px 10px;
+  margin-bottom: 10px;
+}
+
+.stock-page .stock-filters-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 10px;
+}
+
+.stock-page .stock-filter-group {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.stock-page .stock-filter-group--q {
+  flex: 1.15 1 160px;
+}
+
+.stock-page .stock-filter-group--proveedor {
+  flex: 1.25 1 180px;
+}
+
+@media (min-width: 1200px) {
+  .stock-page .stock-filters-grid {
+    flex-wrap: nowrap;
+  }
+
+  .stock-page .stock-filter-actions {
+    margin-left: auto;
+  }
+}
+
+.stock-page .stock-filter-label {
+  display: block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--s-muted);
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.stock-page .stock-filter-control {
+  min-height: 34px;
+  padding: 5px 10px;
+  font-size: 0.8125rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #fbfcfe;
+  font-weight: 500;
+}
+
+.stock-page .stock-filter-control:focus {
+  border-color: rgba(37, 99, 235, 0.45);
+  background: #fff;
+  box-shadow: var(--s-ring);
+  outline: none;
+}
+
+.stock-page .stock-filter-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 991.98px) {
+  .stock-page .stock-filter-actions {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+  }
+}
+
+.stock-page .stock-filter-btn {
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: none;
+}
+
+.stock-page .stock-filter-btn--primary {
+  border: 0;
+}
+
+.stock-page .stock-filter-hint {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.stock-page .dashboard-card {
+  margin-bottom: 10px !important;
+}
+
+.stock-page .dashboard-card .card-head {
+  padding: 9px 12px;
+}
+
+.stock-page .dashboard-card .card-title {
+  font-size: 0.875rem;
+  gap: 8px;
+}
+
+.stock-page .dashboard-card .card-title svg {
+  width: 16px;
+  height: 16px;
+}
+
+.stock-page .dashboard-card .card-subtle {
+  font-size: 0.76rem;
+}
+
+.stock-page .stock-products-table th,
+.stock-page .stock-products-table td {
+  padding: 6px 10px;
+  vertical-align: middle;
+}
+
+.stock-page .stock-products-table th {
+  font-size: 0.65rem;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+.stock-page .stock-products-table tbody td {
+  font-size: 0.8125rem;
+}
+
+.stock-page .stock-products-table .name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.stock-page .stock-products-table .muted {
+  font-size: 0.78rem;
+}
+
+.stock-page .stock-products-table tr:hover td {
+  background: rgba(241, 245, 249, 0.85);
+}
+
+.stock-page .stock-stock-cell {
+  white-space: nowrap;
+}
+
+.stock-page .stock-inline-ajuste {
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  width: auto;
+  max-width: 100%;
+  margin-left: auto;
+}
+
+.stock-page .stock-qty-input {
+  width: 4.35rem;
+  min-width: 3.25rem;
+  max-width: 5.75rem;
+  height: 30px;
+  padding: 0 6px;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.42);
+  background: #fff;
+  box-shadow: inset 0 1px 0 rgba(15, 23, 42, 0.03);
+}
+
+.stock-page .stock-qty-input:focus {
+  outline: none;
+  border-color: rgba(37, 99, 235, 0.5);
+  box-shadow: var(--s-ring);
+}
+
+.stock-page .stock-icon-btn {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.stock-page .stock-icon-btn svg {
+  width: 15px !important;
+  height: 15px !important;
+}
+
+.stock-page .stock-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.stock-page .stock-status-row .status-badge {
+  height: 22px;
+  padding: 0 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.stock-page .stock-actions-td,
+.stock-page .stock-actions-cell {
+  white-space: nowrap;
+}
+
+.stock-page .stock-actions-cell {
+  display: inline-flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+
+.stock-page .stock-ult-movs .table-card-header {
+  padding: 9px 12px;
+}
+
+.stock-page .stock-ult-movs .table-card-title {
+  font-size: 0.875rem;
+}
+
+.stock-page .stock-ult-movs-tabla thead th,
+.stock-page .stock-ult-movs-tabla tbody td {
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+}
+
+.theme-dark .stock-page .stock-filter-control {
+  background: rgba(15, 23, 42, 0.45);
+  border-color: var(--s-border);
+  color: var(--s-ink);
+}
+
+.theme-dark .stock-page .stock-qty-input {
+  background: rgba(15, 23, 42, 0.55);
+  border-color: var(--s-border);
+  color: var(--s-ink);
+}
+
+@media (max-width: 767.98px) {
+  .stock-page .stock-products-table th,
+  .stock-page .stock-products-table td {
+    padding: 6px 8px;
+  }
+}
+
 /* ==========================================================================
    Pricing Lists (Listas de precio) — premium SaaS
    ========================================================================== */
