@@ -1500,7 +1500,26 @@
 
             if (candidates.length) {
               candidates.sort((x, y) => y.score - x.score);
-              candidates[0].a.classList.add("is-active");
+              const best = candidates[0];
+              best.a.classList.add("is-active");
+              // Marcar también el mismo link en el otro menú (sidebar/offcanvas).
+              try {
+                links.forEach((a) => {
+                  const rawHref = (a.getAttribute("href") || "").trim();
+                  if (!rawHref || rawHref === "#") return;
+                  let u;
+                  try {
+                    u = new URL(rawHref, window.location.origin);
+                  } catch (e) {
+                    return;
+                  }
+                  const hrefPath = (u.pathname || "").replace(/\/+$/, "") || "/";
+                  const hrefSearch = u.search || "";
+                  if (hrefPath === best.hrefPath && hrefSearch === (best.hrefSearch || "")) {
+                    a.classList.add("is-active");
+                  }
+                });
+              } catch (e) {}
             }
 
             // Hard fallback for sections with nested URLs where the parent is the list page.
@@ -1508,6 +1527,7 @@
             try {
               if (herePath.startsWith("/presupuestos")) {
                 links.forEach((x) => x.classList.remove("is-active"));
+                const matches = [];
                 links.forEach((a) => {
                   const rawHref = (a.getAttribute("href") || "").trim();
                   if (!rawHref || rawHref === "#") return;
@@ -1518,11 +1538,13 @@
                     return;
                   }
                   const hrefPath = (u.pathname || "").replace(/\/+$/, "") || "/";
-                  if (hrefPath === "/presupuestos") a.classList.add("is-active");
+                  if (hrefPath === "/presupuestos") matches.push(a);
                 });
+                matches.forEach((a) => a.classList.add("is-active"));
               }
               if (herePath.startsWith("/productos/listas-precio")) {
                 links.forEach((x) => x.classList.remove("is-active"));
+                const matches = [];
                 links.forEach((a) => {
                   const rawHref = (a.getAttribute("href") || "").trim();
                   if (!rawHref || rawHref === "#") return;
@@ -1533,8 +1555,9 @@
                     return;
                   }
                   const hrefPath = (u.pathname || "").replace(/\/+$/, "") || "/";
-                  if (hrefPath === "/productos/listas-precio") a.classList.add("is-active");
+                  if (hrefPath === "/productos/listas-precio") matches.push(a);
                 });
+                matches.forEach((a) => a.classList.add("is-active"));
               }
             } catch (e) {}
 
@@ -1547,25 +1570,32 @@
               const parentUrl = (node.getAttribute("data-parent-url") || "").replace(/\/+$/, "");
               if (parentUrl) {
                 const targets = document.querySelectorAll('.sidebar a.sidebar-link[href], #sironaMenu a.app-sidebar-link[href]');
+                const matches = [];
                 targets.forEach((a) => {
                   const href = (a.getAttribute("href") || "").replace(/\/+$/, "");
-                  if (href !== parentUrl) return;
-                  links.forEach((x) => x.classList.remove("is-active"));
-                  a.classList.add("is-active");
-                  if (label) {
-                    if (
-                      a.nextElementSibling &&
-                      a.nextElementSibling.classList &&
-                      a.nextElementSibling.classList.contains("sidebar-tree-current")
-                    )
-                      return;
-                    const d = document.createElement("div");
-                    d.className = "sidebar-tree-current";
-                    d.setAttribute("title", label);
-                    d.textContent = label;
-                    a.insertAdjacentElement("afterend", d);
-                  }
+                  if (href === parentUrl) matches.push(a);
                 });
+                if (matches.length) {
+                  links.forEach((x) => x.classList.remove("is-active"));
+                  matches.forEach((a) => a.classList.add("is-active"));
+                  // Mostrar "current node" solo en el sidebar desktop (no en offcanvas).
+                  const desktopA = matches.find((a) => a.closest && a.closest(".sidebar"));
+                  if (desktopA && label) {
+                    if (
+                      desktopA.nextElementSibling &&
+                      desktopA.nextElementSibling.classList &&
+                      desktopA.nextElementSibling.classList.contains("sidebar-tree-current")
+                    ) {
+                      // noop
+                    } else {
+                      const d = document.createElement("div");
+                      d.className = "sidebar-tree-current";
+                      d.setAttribute("title", label);
+                      d.textContent = label;
+                      desktopA.insertAdjacentElement("afterend", d);
+                    }
+                  }
+                }
               }
             }
 

@@ -83,10 +83,12 @@
               <td>Subtotal líneas</td>
               <td class="text-end">{{ presupuesto.subtotal_lineas|ars }}</td>
             </tr>
-            <tr>
-              <td>Descuento</td>
-              <td class="text-end">{{ presupuesto.descuento_monto|ars }}</td>
-            </tr>
+            {% if presupuesto.descuento_monto and presupuesto.descuento_monto > 0 %}
+              <tr>
+                <td>Descuento</td>
+                <td class="text-end">{{ presupuesto.descuento_monto|ars }}</td>
+              </tr>
+            {% endif %}
             {% if presupuesto.envio and presupuesto.envio > 0 %}
               <tr>
                 <td>Envío</td>

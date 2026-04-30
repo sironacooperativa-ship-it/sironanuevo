@@ -54,16 +54,19 @@
     </div>
 
     <div id="trfFields" class="border rounded p-3 mt-3 bg-light sirona-caja-mov-box">
-      <div class="sirona-caja-mov-box-title">Transferencia / MP</div>
-      <div class="mb-2">
-        <label class="form-label sirona-form-label">Cuenta bancaria</label>
-        {{ form.cuenta_bancaria }}
-        {% if form.cuenta_bancaria.errors %}<div class="text-danger small">{{ form.cuenta_bancaria.errors }}</div>{% endif %}
-        <div class="form-text sirona-form-text">Impacta el saldo en Bancos.</div>
+      <div class="sirona-caja-mov-box-title">Transferencia / MercadoPago</div>
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label sirona-form-label">Cuenta bancaria</label>
+          {{ form.cuenta_bancaria }}
+          {% if form.cuenta_bancaria.errors %}<div class="text-danger small">{{ form.cuenta_bancaria.errors }}</div>{% endif %}
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label sirona-form-label">Banco / MercadoPago</label>
+          {{ form.banco }}
+          {% if form.banco.errors %}<div class="text-danger small">{{ form.banco.errors }}</div>{% endif %}
+        </div>
       </div>
-      <label class="form-label sirona-form-label">Banco / MP</label>
-      {{ form.banco }}
-      {% if form.banco.errors %}<div class="text-danger small">{{ form.banco.errors }}</div>{% endif %}
     </div>
 
     <div id="chqFields" class="border rounded p-3 mt-3 bg-light sirona-caja-mov-box">

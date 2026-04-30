@@ -363,30 +363,22 @@
                 <td>Subtotal líneas</td>
                 <td class="text-end">{{ venta.subtotal_lineas|ars }}</td>
               </tr>
-              <tr>
-                <td>Descuento</td>
-                <td class="text-end">{{ venta.descuento_monto|ars }}</td>
-              </tr>
+              {% if venta.descuento_monto and venta.descuento_monto > 0 %}
+                <tr>
+                  <td>Descuento</td>
+                  <td class="text-end">{{ venta.descuento_monto|ars }}</td>
+                </tr>
+              {% endif %}
               <tr class="fw-semibold table-light">
                 <td>Neto (orden de pago)</td>
                 <td class="text-end">{{ venta.neto|ars }}</td>
               </tr>
-              <tr>
-                <td>
-                  {% if venta.aplica_comision %}
-                    Comisión vendedor ({{ venta.comision_porcentaje }}%)
-                  {% else %}
-                    Comisión vendedor
-                  {% endif %}
-                </td>
-                <td class="text-end">
-                  {% if venta.aplica_comision %}
-                    {{ venta.monto_comision|ars }}
-                  {% else %}
-                    <span class="text-muted">No aplica</span>
-                  {% endif %}
-                </td>
-              </tr>
+              {% if venta.aplica_comision and venta.monto_comision and venta.monto_comision > 0 %}
+                <tr>
+                  <td>Comisión vendedor ({{ venta.comision_porcentaje }}%)</td>
+                  <td class="text-end">{{ venta.monto_comision|ars }}</td>
+                </tr>
+              {% endif %}
               <tr class="fw-semibold">
                 <td>Ingreso en caja al cobrar</td>
                 <td class="text-end">{{ venta.monto_ingreso_caja|ars }}</td>

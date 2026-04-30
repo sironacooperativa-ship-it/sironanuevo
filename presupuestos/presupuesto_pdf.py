@@ -143,8 +143,7 @@ def presupuesto_pdf_response(presupuesto) -> HttpResponse:
     doc.build(story, onFirstPage=on_page, onLaterPages=on_page)
     buf.seek(0)
     ndoc = _numero_doc(presupuesto)
-    pref = "Orden_compra" if presupuesto.estado == Presupuesto.Estado.APROBADO else "Presupuesto"
-    safe = f"{pref}_{ndoc}"
+    safe = f"presupuesto ({ndoc})"
     resp = HttpResponse(buf.getvalue(), content_type="application/pdf")
     resp["Content-Disposition"] = f'attachment; filename="{safe}.pdf"'
     return resp

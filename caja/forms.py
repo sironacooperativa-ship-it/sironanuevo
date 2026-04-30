@@ -51,10 +51,24 @@ class MovimientoCajaForm(forms.ModelForm):
             "apellido", "nombre", "codigo"
         )
         self.fields["vendedor"].required = False
+        # En selects opcionales, evitar el placeholder "---------" (queremos vacío).
+        try:
+            self.fields["vendedor"].empty_label = ""
+        except Exception:
+            pass
         self.fields["cuenta_bancaria"].queryset = CuentaBancaria.objects.filter(activa=True).order_by(
             "banco", "cuenta"
         )
         self.fields["cuenta_bancaria"].required = False
+        try:
+            self.fields["cuenta_bancaria"].empty_label = ""
+        except Exception:
+            pass
+        # ChoiceField con blank: poner etiqueta vacía (en vez de "---------").
+        try:
+            self.fields["tipo"].choices = [(v, ("" if v == "" else lbl)) for (v, lbl) in self.fields["tipo"].choices]
+        except Exception:
+            pass
 
     def clean_monto(self):
         monto = self.cleaned_data.get("monto")

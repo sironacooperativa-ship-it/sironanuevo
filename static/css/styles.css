@@ -155,6 +155,10 @@ body.app-body {
   border: 1px solid #e2e8f0;
   background: #ffffff;
   border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
 }
 
 .sidebar-collapse-btn:hover {
@@ -180,6 +184,12 @@ body.app-body {
   align-items: center;
   justify-content: center;
   transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.sidebar-collapse-btn .sirona-side-ico i[data-lucide] svg {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  display: block;
 }
 .sidebar-collapse-btn .sirona-side-ico--menu {
   opacity: 0;
