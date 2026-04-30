@@ -50,17 +50,19 @@
 
   <div class="producto-modal-field producto-modal-field--bottom">
     <div class="producto-modal-bottom">
-      <div class="producto-modal-bottom-state">
+      <div class="producto-modal-bottom-panel producto-modal-bottom-state">
         <label class="form-label small text-muted mb-1">Estado</label>
-        <label class="form-check form-switch sirona-switch producto-modal-switch producto-modal-switch--inline">
-          {{ form.habilitado }}
-          <span class="form-check-label small">Producto habilitado</span>
-        </label>
+        <div class="producto-modal-switches producto-modal-switches--wrap">
+          <label class="form-check form-switch sirona-switch producto-modal-switch-item">
+            {{ form.habilitado }}
+            <span class="form-check-label small">Producto habilitado</span>
+          </label>
+        </div>
         {% if form.habilitado.errors %}<div class="text-danger small mt-1">{{ form.habilitado.errors }}</div>{% endif %}
       </div>
 
       {% if listas_extra_opciones %}
-        <div class="producto-modal-bottom-lists">
+        <div class="producto-modal-bottom-panel producto-modal-bottom-lists">
           <label class="form-label small text-muted mb-1">Listas de precio</label>
           <div class="producto-modal-switches producto-modal-switches--wrap">
             {% for l in listas_extra_opciones %}

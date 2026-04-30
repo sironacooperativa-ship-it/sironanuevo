@@ -5601,32 +5601,36 @@ button.btn-icon.btn-delete,
   padding-bottom: 7px;
 }
 
-.sirona-modal-dialog--product .producto-modal-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding-top: 2px;
-  margin: 0;
-}
-
 .sirona-modal-dialog--product .producto-modal-switches--wrap {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 12px;
-}
-.sirona-modal-dialog--product .producto-modal-switch-item {
-  margin: 0;
-  min-height: 1.35rem;
   align-items: center;
-  display: inline-flex;
-  flex-wrap: nowrap;
-}
-.sirona-modal-dialog--product .producto-modal-switch-item .form-check-input {
-  margin-top: 0.1em;
+  gap: 8px 14px;
+  row-gap: 8px;
 }
 
+.sirona-modal-dialog--product .producto-modal-switch-item.form-switch {
+  padding-left: 0;
+}
 .sirona-modal-dialog--product .producto-modal-switch-item {
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
   margin: 0;
+  min-height: 0;
+}
+.sirona-modal-dialog--product .producto-modal-switch-item .form-check-input {
+  flex: 0 0 auto;
+  margin: 0;
+}
+.sirona-modal-dialog--product .producto-modal-switch-item .form-check-label {
+  flex: 0 1 auto;
+  margin: 0;
+  padding: 0;
+  line-height: 1.25;
 }
 
 /* Switches más “premium” y chicos, como el mock */
@@ -5639,22 +5643,25 @@ button.btn-icon.btn-delete,
   line-height: 1.1;
 }
 
-/* Fila inferior: Estado + Listas en una sola franja horizontal */
+/* Fila inferior: Estado + Listas — mismo sistema visual (título + fila de switches) */
 .sirona-modal-dialog--product .producto-modal-bottom {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px 18px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+  align-items: start;
   padding-top: 2px;
 }
-.sirona-modal-dialog--product .producto-modal-bottom-state {
-  flex: 0 0 auto;
-  min-width: 240px;
+.sirona-modal-dialog--product .producto-modal-bottom > .producto-modal-bottom-state:only-child {
+  grid-column: 1 / -1;
 }
-.sirona-modal-dialog--product .producto-modal-bottom-lists {
-  flex: 1 1 320px;
-  min-width: 280px;
+.sirona-modal-dialog--product .producto-modal-bottom-panel {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sirona-modal-dialog--product .producto-modal-bottom-panel > .form-label {
+  margin-bottom: 0 !important;
 }
 
 @media (max-width: 575.98px) {
@@ -5670,10 +5677,8 @@ button.btn-icon.btn-delete,
       "venc"
       "bottom";
   }
-  .sirona-modal-dialog--product .producto-modal-bottom-state,
-  .sirona-modal-dialog--product .producto-modal-bottom-lists {
-    min-width: 0;
-    flex: 1 1 auto;
+  .sirona-modal-dialog--product .producto-modal-bottom {
+    grid-template-columns: 1fr;
   }
 }
 
