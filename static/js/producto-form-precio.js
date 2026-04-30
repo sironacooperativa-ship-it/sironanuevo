@@ -11,6 +11,21 @@
     return Number.isFinite(n) ? n : NaN;
   }
 
+  function calcPct(costo, precio) {
+    if (!Number.isFinite(costo) || costo <= 0) return null;
+    if (!Number.isFinite(precio)) return null;
+    return ((precio - costo) / costo) * 100;
+  }
+
+  function fmtPct(n) {
+    if (!Number.isFinite(n)) return "—";
+    try {
+      return n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%";
+    } catch (e) {
+      return String(Math.round(n * 100) / 100) + "%";
+    }
+  }
+
   function redondearPrecioMostradorArs(raw) {
     var n = Number(raw);
     if (!Number.isFinite(n) || n < 0) return 0;
@@ -30,6 +45,16 @@
     var precioEl = root.querySelector("#id_precio_venta");
     if (!costoEl || !pctEl || !precioEl) return;
 
+    var implicaEl = root.querySelector("[data-implica-pct]");
+
+    function actualizarImplica() {
+      if (!implicaEl) return;
+      var costo = parseNum(costoEl);
+      var precio = parseNum(precioEl);
+      var pctImp = calcPct(costo, precio);
+      implicaEl.textContent = "Implica " + (pctImp === null ? "—" : fmtPct(pctImp));
+    }
+
     function actualizar() {
       var costo = parseNum(costoEl);
       var pct = parseNum(pctEl);
@@ -37,12 +62,20 @@
       var raw = costo * (1 + pct / 100);
       var red = redondearPrecioMostradorArs(raw);
       precioEl.value = red.toFixed(2);
+      actualizarImplica();
     }
 
     costoEl.addEventListener("input", actualizar);
     costoEl.addEventListener("change", actualizar);
     pctEl.addEventListener("input", actualizar);
     pctEl.addEventListener("change", actualizar);
+
+    // Si el usuario edita precio manualmente, recalcular “implica”.
+    precioEl.addEventListener("input", actualizarImplica);
+    precioEl.addEventListener("change", actualizarImplica);
+
+    // Inicial
+    actualizarImplica();
   }
 
   w.sironaInitProductoFormPrecio = bind;

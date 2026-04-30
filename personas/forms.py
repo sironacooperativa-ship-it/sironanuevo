@@ -34,7 +34,9 @@ class VendedorForm(_BasePersonaForm):
             "comision_grupo_porcentaje": forms.NumberInput(
                 attrs={"class": "form-control", "step": "0.01", "min": "0"}
             ),
-            "vendedores_a_cargo": forms.SelectMultiple(attrs={"class": "form-select", "size": "8"}),
+            "vendedores_a_cargo": forms.CheckboxSelectMultiple(
+                attrs={"class": "sirona-checklist"}
+            ),
         }
 
     def __init__(self, *args, **kwargs):

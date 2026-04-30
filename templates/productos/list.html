@@ -43,6 +43,25 @@
     .table-card--productos .app-th-sort:focus {
       color: #0f172a;
     }
+    .table-card--productos .table-actions-cell {
+      padding-left: 8px;
+      padding-right: 10px;
+    }
+    .table-card--productos .productos-actions-inline {
+      justify-content: flex-start;
+    }
+    .table-card--productos .table-actions-cell {
+      white-space: nowrap;
+    }
+    .table-card--productos .producto-edit-actions {
+      justify-content: flex-start !important;
+    }
+    .table-card--productos .producto-edit-actions .form-switch {
+      margin-right: 4px !important;
+    }
+    .table-card--productos .producto-edit-inline-fields .d-flex > .form-control {
+      min-width: 0;
+    }
     /* Último en <head>: fuerza el aspecto de icon buttons (vence Bootstrap / caché) */
     .table-card--productos .table-actions .btn-icon,
     .table-card--productos .table-actions a.btn-icon {
@@ -303,8 +322,11 @@
           <col style="width: auto" />  {# descripción + subtítulo #}
           <col style="width: 92px" />  {# stock #}
           <col style="width: 122px" /> {# precio #}
-          <col style="width: 160px" /> {# estado (badges) #}
-          <col style="width: 70px" />  {# acciones #}
+          {% if user.is_staff %}
+            <col style="width: 152px" />  {# acciones (4 botones) #}
+          {% else %}
+            <col style="width: 88px" />  {# acciones (2 botones) #}
+          {% endif %}
         </colgroup>
         <thead class="productos-thead-saas">
           <tr>
@@ -337,7 +359,6 @@
             <th scope="col" class="text-center col-monto productos-th-saas">
               <a class="app-th-sort" href="?{{ sort_links.precio }}" title="Ordenar por precio de venta">Precio{% if sort_ord == "precio" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
             </th>
-            <th scope="col" class="text-center productos-th-saas">Estado</th>
             <th scope="col" class="text-end productos-th-saas productos-th-actions" aria-label="Acciones"></th>
           </tr>
         </thead>
@@ -412,26 +433,27 @@
                       </div>
                       <div class="col-6 col-sm-4">
                         <label class="form-label small text-muted mb-0">% Ganancia</label>
-                        <input
-                          type="number"
-                          name="porcentaje_ganancia"
-                          class="form-control form-control-sm text-end rounded-3"
-                          form="producto-inline-{{ p.pk }}"
-                          value="{{ p.porcentaje_ganancia|unlocalize }}"
-                          min="0"
-                          step="0.01"
-                          inputmode="decimal"
-                          autocomplete="off"
-                        />
-                        <div class="small text-muted mt-1">
-                          Implica:
-                          <span class="js-impl-pct" data-producto-id="{{ p.pk }}">
-                            {% if p.porcentaje_ganancia_calculado is not None %}
-                              {{ p.porcentaje_ganancia_calculado }}%
-                            {% else %}
-                              —
-                            {% endif %}
-                          </span>
+                        <div class="d-flex align-items-center gap-2">
+                          <input
+                            type="number"
+                            name="porcentaje_ganancia"
+                            class="form-control form-control-sm text-end rounded-3"
+                            form="producto-inline-{{ p.pk }}"
+                            value="{{ p.porcentaje_ganancia|unlocalize }}"
+                            min="0"
+                            step="0.01"
+                            inputmode="decimal"
+                            autocomplete="off"
+                          />
+                          <div class="small text-muted text-nowrap">
+                            Implica&nbsp;<span class="js-impl-pct" data-producto-id="{{ p.pk }}">
+                              {% if p.porcentaje_ganancia_calculado is not None %}
+                                {{ p.porcentaje_ganancia_calculado }}%
+                              {% else %}
+                                —
+                              {% endif %}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -470,21 +492,6 @@
                   autocomplete="off"
                 />
               </td>
-              <td class="text-center productos-td-saas align-middle">
-                <div class="producto-view productos-estado-badges">
-                  {% if p.stock > 0 %}
-                    <span class="productos-badge productos-badge--ok">En stock</span>
-                  {% else %}
-                    <span class="productos-badge productos-badge--muted">Sin stock</span>
-                  {% endif %}
-                  {% if p.habilitado %}
-                    <span class="productos-badge productos-badge--ok">Activo</span>
-                  {% else %}
-                    <span class="productos-badge productos-badge--muted">Inactivo</span>
-                  {% endif %}
-                </div>
-                <span class="producto-edit d-none text-muted small">—</span>
-              </td>
               <td class="text-end align-middle table-actions-cell">
                 <div class="producto-view table-actions productos-actions-inline">
                   <button
@@ -498,7 +505,7 @@
                   </button>
                   <button
                     type="button"
-                    class="btn-icon btn-edit"
+                    class="btn-icon btn-ink"
                     data-sirona-modal-url="{% url 'producto_update' p.pk %}?modal=1{% if request.GET %}&amp;{{ request.GET.urlencode }}{% endif %}"
                     title="Editar ficha (modal)"
                     aria-label="Editar ficha (modal)"
@@ -549,7 +556,7 @@
                     <i data-lucide="x" aria-hidden="true"></i>
                   </button>
                   <a
-                    class="btn-icon btn-edit"
+                    class="btn-icon btn-ink"
                     href="{% url 'producto_update' p.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
                     data-sirona-modal-url="{% url 'producto_update' p.pk %}?modal=1{% if request.GET %}&amp;{{ request.GET.urlencode }}{% endif %}"
                     title="Editar ficha completa (modal)"

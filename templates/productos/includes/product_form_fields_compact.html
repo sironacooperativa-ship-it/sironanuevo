@@ -31,7 +31,10 @@
   </div>
 
   <div class="producto-modal-field producto-modal-field--pct">
-    <label class="form-label small text-muted mb-1">% Ganancia</label>
+    <div class="d-flex align-items-center justify-content-between gap-2">
+      <label class="form-label small text-muted mb-1">% Ganancia</label>
+      <span class="small text-muted text-nowrap producto-implica-inline" data-implica-pct>Implica —</span>
+    </div>
     {{ form.porcentaje_ganancia }}
     {% if form.porcentaje_ganancia.errors %}<div class="text-danger small mt-1">{{ form.porcentaje_ganancia.errors }}</div>{% endif %}
   </div>

@@ -31,6 +31,16 @@
         grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
         gap: 0.4rem;
       }
+      /* Calculadora: ocultar leyenda teclado + reducir escala global ~5% */
+      #sironaCalc #sironaCalcHint {
+        display: none !important;
+      }
+      #sironaCalc .sirona-calc {
+        font-size: 0.95rem;
+      }
+      #sironaCalc .sirona-calc-keys {
+        gap: 0.36rem;
+      }
 
       /*
         Modal Nuevo/Editar producto (HTML inline: no depende de caché de theme-*.hash.css).
@@ -364,7 +374,10 @@
               aria-label="Colapsar sidebar"
               title="Colapsar sidebar"
             >
-              <i data-lucide="menu" class="app-lucide-toolbar"></i>
+              <span class="sirona-hamb-ico sirona-side-ico" aria-hidden="true">
+                <i data-lucide="menu" class="app-lucide-toolbar sirona-side-ico--menu"></i>
+                <i data-lucide="x" class="app-lucide-toolbar sirona-side-ico--close"></i>
+              </span>
             </button>
           </div>
           <nav class="sidebar-nav" aria-label="Navegación principal">
@@ -1506,6 +1519,21 @@
                   }
                   const hrefPath = (u.pathname || "").replace(/\/+$/, "") || "/";
                   if (hrefPath === "/presupuestos") a.classList.add("is-active");
+                });
+              }
+              if (herePath.startsWith("/productos/listas-precio")) {
+                links.forEach((x) => x.classList.remove("is-active"));
+                links.forEach((a) => {
+                  const rawHref = (a.getAttribute("href") || "").trim();
+                  if (!rawHref || rawHref === "#") return;
+                  let u;
+                  try {
+                    u = new URL(rawHref, window.location.origin);
+                  } catch (e) {
+                    return;
+                  }
+                  const hrefPath = (u.pathname || "").replace(/\/+$/, "") || "/";
+                  if (hrefPath === "/productos/listas-precio") a.classList.add("is-active");
                 });
               }
             } catch (e) {}

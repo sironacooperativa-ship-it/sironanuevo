@@ -66,10 +66,22 @@
             <label class="form-label">Comisión grupo (%)</label>
             {{ form.comision_grupo_porcentaje }}
             {% if form.comision_grupo_porcentaje.errors %}<div class="text-danger small">{{ form.comision_grupo_porcentaje.errors }}</div>{% endif %}
+            <div class="mt-2">
+              <label class="form-label small text-muted mb-1" for="vendGrupoSearch">Buscar vendedores</label>
+              <input
+                id="vendGrupoSearch"
+                type="search"
+                class="form-control form-control-sm"
+                placeholder="Buscar por código o nombre…"
+                autocomplete="off"
+              />
+            </div>
           </div>
           <div class="col-12 col-md-8">
             <label class="form-label">Vendedores a cargo</label>
-            {{ form.vendedores_a_cargo }}
+            <div class="border rounded-3 p-2" id="vendGrupoList" style="max-height: 240px; overflow: auto;">
+              {{ form.vendedores_a_cargo }}
+            </div>
             {% if form.vendedores_a_cargo.errors %}<div class="text-danger small">{{ form.vendedores_a_cargo.errors }}</div>{% endif %}
             {% if form.vendedores_a_cargo.help_text %}<div class="form-text">{{ form.vendedores_a_cargo.help_text }}</div>{% endif %}
           </div>
@@ -89,5 +101,31 @@
       </form>
     </div>
   </div>
+
+  <script>
+    (function () {
+      const inp = document.getElementById("vendGrupoSearch");
+      const box = document.getElementById("vendGrupoList");
+      if (!inp || !box) return;
+      const items = Array.from(box.querySelectorAll("label"));
+      function norm(s) {
+        return String(s || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .trim();
+      }
+      function run() {
+        const q = norm(inp.value);
+        items.forEach((lb) => {
+          const t = norm(lb.textContent);
+          const ok = !q || t.includes(q);
+          lb.style.display = ok ? "" : "none";
+        });
+      }
+      inp.addEventListener("input", run);
+      run();
+    })();
+  </script>
 {% endblock %}
 
