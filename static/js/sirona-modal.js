@@ -4,6 +4,20 @@
   if (!modalEl || !contentEl || typeof bootstrap === "undefined") return;
 
   const modal = new bootstrap.Modal(modalEl);
+  function applyDialogOptions(root) {
+    try {
+      const dlg = modalEl.querySelector(".modal-dialog");
+      if (!dlg) return;
+      const host = (root || contentEl).querySelector("[data-sirona-dialog-class]");
+      if (!host) return;
+      const cls = (host.getAttribute("data-sirona-dialog-class") || "").trim();
+      const centered = host.getAttribute("data-sirona-dialog-centered") === "1";
+      const noScroll = host.getAttribute("data-sirona-dialog-no-scroll") === "1";
+      if (noScroll) dlg.classList.remove("modal-dialog-scrollable");
+      if (centered) dlg.classList.add("modal-dialog-centered");
+      if (cls) dlg.classList.add(cls);
+    } catch (e) {}
+  }
   document.addEventListener("click", function (ev) {
     const btn = ev.target.closest("[data-sirona-modal-url]");
     if (!btn) return;
@@ -22,8 +36,14 @@
       })
       .then(function (html) {
         contentEl.innerHTML = html;
+        applyDialogOptions(contentEl);
         if (typeof window.sironaInitProductoFormPrecio === "function") {
           window.sironaInitProductoFormPrecio(contentEl);
+        }
+        if (typeof lucide !== "undefined") {
+          try {
+            lucide.createIcons();
+          } catch (e) {}
         }
       })
       .catch(function () {
@@ -33,6 +53,12 @@
   });
   modalEl.addEventListener("hidden.bs.modal", function () {
     contentEl.innerHTML = "";
+    try {
+      const dlg = modalEl.querySelector(".modal-dialog");
+      if (!dlg) return;
+      dlg.classList.remove("sirona-modal-dialog--product", "sirona-modal-dialog--caja-mov", "modal-dialog-centered");
+      dlg.classList.add("modal-dialog-scrollable");
+    } catch (e) {}
   });
 })();
 

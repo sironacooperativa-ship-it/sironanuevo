@@ -1,11 +1,27 @@
 {# Respuesta solo para modal (fetch ?modal=1). Sin {% extends %}. #}
-<form method="post" action="{{ form_action_url }}" class="sirona-modal-form">
+<form
+  method="post"
+  action="{{ form_action_url }}"
+  class="sirona-modal-form"
+  data-sirona-dialog-class="sirona-modal-dialog--product"
+  data-sirona-dialog-centered="1"
+  data-sirona-dialog-no-scroll="1"
+>
   {% csrf_token %}
   <input type="hidden" name="retorno_query" value="{{ retorno_query|default:'' }}" />
   <input type="hidden" name="listas_extra_present" value="1" />
   <div class="modal-header producto-modal-head border-0 pb-2 align-items-center">
-    <h5 class="modal-title producto-modal-title mb-0">{{ modal_title }}</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+    <div class="min-w-0">
+      <h5 class="modal-title producto-modal-title mb-0">
+        {% if modo == "nuevo" %}Nuevo producto{% else %}Editar producto{% endif %}
+      </h5>
+      {% if producto %}
+        <div class="text-muted small mt-1">Código: <span class="prod-code">{{ producto.codigo }}</span></div>
+      {% endif %}
+    </div>
+    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal" aria-label="Cerrar" title="Cerrar">
+      <i data-lucide="x" aria-hidden="true"></i>
+    </button>
   </div>
   <div class="modal-body producto-modal-body pt-0 px-3 px-md-4">
     {% include "productos/includes/product_form_fields_compact.html" %}
@@ -18,18 +34,3 @@
     </button>
   </div>
 </form>
-
-<script>
-  (function () {
-    try {
-      const root = document.getElementById("sironaModal");
-      const dlg = root ? root.querySelector(".modal-dialog") : null;
-      if (!dlg) return;
-      dlg.classList.remove("modal-dialog-scrollable");
-      dlg.classList.add("modal-dialog-centered", "sirona-modal-dialog--product");
-      if (typeof lucide !== "undefined") {
-        try { lucide.createIcons(); } catch (e) {}
-      }
-    } catch (e) {}
-  })();
-</script>
