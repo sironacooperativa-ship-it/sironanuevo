@@ -12,6 +12,7 @@ urlpatterns = [
     path("stock/", views.vendedor_stock, name="vendedor_stock"),
     path("listas/", views.vendedor_listas, name="vendedor_listas"),
     path("listas/<slug:slug>/pdf/", views.vendedor_lista_pdf, name="vendedor_lista_pdf"),
+    path("listas/<slug:slug>/excel/", views.vendedor_lista_excel, name="vendedor_lista_excel"),
     path("listas/<slug:slug>/png/", views.vendedor_lista_png, name="vendedor_lista_png"),
     path("cuenta-corriente/", views.vendedor_cuenta_corriente, name="vendedor_cuenta_corriente"),
     path("reportes/", views.vendedor_reportes, name="vendedor_reportes"),

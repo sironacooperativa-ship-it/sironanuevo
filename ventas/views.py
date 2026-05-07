@@ -371,9 +371,30 @@ def venta_comisiones(request):
     comisiones_por_mes = comisiones_acumuladas_por_mes(ventas_com)
 
     # `monto_comision` es una property (no existe columna en DB), así que agregamos en Python.
+    # Además: si hay jefes de grupo, agregamos "comisión por ventas del grupo" (mismo neto, % del jefe).
     totales_por_vendedor: dict[int, dict[str, object]] = {}
+
+    # Mapear "vendedor miembro" -> lista de (jefe_id, pct_grupo).
+    member_to_chiefs: dict[int, list[tuple[int, Decimal]]] = {}
+    try:
+        jefes = (
+            Vendedor.objects.filter(es_jefe_grupo=True, comision_grupo_porcentaje__gt=0, habilitado=True)
+            .prefetch_related("vendedores_a_cargo")
+            .only("id", "comision_grupo_porcentaje")
+        )
+        for jefe in jefes:
+            pct = Decimal(str(jefe.comision_grupo_porcentaje or 0))
+            if pct <= 0:
+                continue
+            for m in jefe.vendedores_a_cargo.all():
+                member_to_chiefs.setdefault(int(m.pk), []).append((int(jefe.pk), pct))
+    except Exception:
+        member_to_chiefs = {}
+
     for v in ventas_com.select_related("vendedor").iterator(chunk_size=500):
         vid = int(v.vendedor_id)
+
+        # Propias
         cur = totales_por_vendedor.get(vid)
         if not cur:
             cur = {
@@ -381,10 +402,47 @@ def venta_comisiones(request):
                 "vendedor__codigo": v.vendedor.codigo,
                 "vendedor__apellido": v.vendedor.apellido,
                 "vendedor__nombre": v.vendedor.nombre,
+                "propias": Decimal("0.00"),
+                "grupo": Decimal("0.00"),
                 "total": Decimal("0.00"),
             }
             totales_por_vendedor[vid] = cur
-        cur["total"] = q2(cur["total"] + v.monto_comision)  # type: ignore[operator]
+        cur["propias"] = q2(cur["propias"] + v.monto_comision)  # type: ignore[operator]
+
+        # Grupo (para cada jefe que incluye a este vendedor)
+        chiefs = member_to_chiefs.get(vid) or []
+        if chiefs:
+            neto = (v.subtotal_lineas - v.descuento_monto) if v.subtotal_lineas is not None else Decimal("0.00")
+            if neto < 0:
+                neto = Decimal("0.00")
+            for jefe_id, pct in chiefs:
+                jefe = totales_por_vendedor.get(jefe_id)
+                if not jefe:
+                    # Puede que el jefe no tenga ventas propias en el período: igual debe aparecer por grupo.
+                    jefe_obj = (
+                        Vendedor.objects.filter(pk=jefe_id)
+                        .values("id", "codigo", "apellido", "nombre")
+                        .first()
+                    )
+                    if not jefe_obj:
+                        continue
+                    jefe = {
+                        "vendedor_id": int(jefe_obj["id"]),
+                        "vendedor__codigo": jefe_obj["codigo"],
+                        "vendedor__apellido": jefe_obj["apellido"],
+                        "vendedor__nombre": jefe_obj["nombre"],
+                        "propias": Decimal("0.00"),
+                        "grupo": Decimal("0.00"),
+                        "total": Decimal("0.00"),
+                    }
+                    totales_por_vendedor[jefe_id] = jefe
+                jefe["grupo"] = q2(jefe["grupo"] + q2(neto * (pct / Decimal("100"))))  # type: ignore[operator]
+
+    # Total
+    for row in totales_por_vendedor.values():
+        row["propias"] = q2(row.get("propias") or Decimal("0.00"))
+        row["grupo"] = q2(row.get("grupo") or Decimal("0.00"))
+        row["total"] = q2(Decimal(str(row["propias"])) + Decimal(str(row["grupo"])))
 
     por_vendedor = sorted(
         (r for r in totales_por_vendedor.values() if (r.get("total") or Decimal("0.00")) > 0),
@@ -511,7 +569,15 @@ def venta_eliminar(request, pk: int):
 def venta_detalle(request, pk: int):
     venta = get_object_or_404(_venta_detalle_queryset(), pk=pk)
     if parse_export(request) == "pdf":
-        return remito_venta_pdf_response(venta)
+        resp = remito_venta_pdf_response(venta)
+        if (request.GET.get("inline") or "").strip() == "1":
+            try:
+                cd = resp.get("Content-Disposition", "")
+                if cd:
+                    resp["Content-Disposition"] = cd.replace("attachment", "inline", 1)
+            except Exception:
+                pass
+        return resp
     productos_pedido_listas: list[dict] = []
     seen_pids: set[int] = set()
     for ln in venta.lineas.select_related("producto").order_by("id"):

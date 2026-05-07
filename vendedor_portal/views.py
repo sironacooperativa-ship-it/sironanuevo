@@ -23,7 +23,11 @@ from presupuestos.models import Presupuesto, PresupuestoLinea, presupuesto_tiene
 from presupuestos.presupuesto_pdf import presupuesto_pdf_response
 from presupuestos.share_utils import contexto_compartir_presupuesto
 from presupuestos.views import _lineas_presupuesto_desde_post, _productos_payload, _validar_lineas_post
-from productos.lista_precios_pdf import filas_lista_precios, lista_precios_pdf_file_response
+from productos.lista_precios_pdf import (
+    filas_lista_precios,
+    lista_precios_pdf_file_response,
+    lista_precios_xlsx_response,
+)
 from productos.models import ListaPrecioItem, ListaPrecios, Producto
 from core.money_decimal import format_monto_ars
 from ventas.models import Venta
@@ -125,12 +129,12 @@ def vendedor_home(request):
         post["vendedor"] = str(vendedor.pk)
         # Comisión inamovible en modo vendedor: viene del perfil del vendedor.
         post["comision_porcentaje"] = str(vendedor.comision_porcentaje)
-        post["aplica_comision"] = "1"
+        post["aplica_comision"] = "0"
         request.POST = post  # type: ignore[misc]
 
         err, line_specs, subtotal, meta = _validar_lineas_post(request)
         if err is None:
-            vid, fecha_v, descuento, comision_pct, comprador_id, aplica_comision = meta
+            vid, fecha_v, descuento, _envio, comision_pct, comprador_id, aplica_comision = meta
             comprador_id = comprador.pk
             with transaction.atomic():
                 pr = Presupuesto.objects.create(
@@ -140,7 +144,7 @@ def vendedor_home(request):
                     subtotal_lineas=subtotal,
                     descuento_monto=descuento,
                     comision_porcentaje=vendedor.comision_porcentaje,
-                    aplica_comision=True,
+                    aplica_comision=False,
                     creado_por=request.user,
                     actualizado_por=request.user,
                 )
@@ -354,6 +358,20 @@ def vendedor_lista_pdf(request, slug: str):
     if not _vendedor_puede_ver_lista(vendedor, lista):
         return HttpResponseForbidden("No tenés acceso a esa lista de precios.")
     return lista_precios_pdf_file_response(lista=lista)
+
+
+@login_required
+def vendedor_lista_excel(request, slug: str):
+    vendedor = _get_vendedor_from_user(request.user)
+    if vendedor is None:
+        return HttpResponseForbidden("Este usuario no tiene perfil de vendedor.")
+
+    lista = _get_lista_precios_por_slug(slug)
+    if lista is None:
+        return HttpResponseBadRequest("Lista no válida o no configurada.")
+    if not _vendedor_puede_ver_lista(vendedor, lista):
+        return HttpResponseForbidden("No tenés acceso a esa lista de precios.")
+    return lista_precios_xlsx_response(lista=lista)
 
 
 @login_required

@@ -23,6 +23,10 @@
             <i data-lucide="file-down" aria-hidden="true"></i>
             PDF
           </a>
+          <a class="action-pill action-pill--excel" href="{% url 'lista_precios_export_excel' lista.pk %}">
+            <i data-lucide="download" aria-hidden="true"></i>
+            Excel
+          </a>
           <a class="action-pill action-pill--whatsapp" href="{% url 'lista_precios_export_png' lista.pk %}">
             <i data-lucide="image" aria-hidden="true"></i>
             WhatsApp

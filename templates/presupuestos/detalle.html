@@ -38,6 +38,47 @@
       font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", Menlo, monospace;
       font-weight: 650;
     }
+    .presupuesto-doc .presu-venc-note {
+      max-width: 18rem;
+      margin-left: auto;
+      margin-bottom: 0.45rem;
+      color: #64748b;
+      font-size: 0.78rem;
+      line-height: 1.2;
+      text-align: right;
+    }
+    .presupuesto-doc .presu-totals-box {
+      width: min(100%, 18rem);
+      margin-left: auto;
+      font-size: 0.82rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.45rem;
+      overflow: hidden;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .presupuesto-doc .presu-totals-box td {
+      padding: 0.32rem 0.55rem;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
+    }
+    .presupuesto-doc .presu-totals-box tr:last-child td {
+      border-bottom: 0;
+    }
+    .presupuesto-doc .presu-totals-box td:first-child {
+      color: #334155;
+    }
+    .presupuesto-doc .presu-totals-box td:last-child {
+      min-width: 7.2rem;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .presupuesto-doc .presu-totals-box .presu-total-row td {
+      background: #eff6ff;
+      color: #007aff;
+      font-weight: 700;
+    }
     @media print {
       .no-print,
       nav,
@@ -181,7 +222,22 @@
     </div>
   {% endif %}
 
-  <div class="presupuesto-factura-wrap presupuesto-print-hoja1 mb-3">
+  {# En pantalla: preview del PDF real (lo mismo que exporta/imprime). #}
+  <div class="d-print-none mb-3">
+    <div class="presupuesto-factura-wrap" style="max-width: 920px;">
+      <div class="card border-0 shadow-sm overflow-hidden">
+        <div class="card-body p-0" style="height: min(78vh, 920px);">
+          <iframe
+            title="Presupuesto PDF"
+            src="{{ presupuesto_url_pdf }}&inline=1"
+            style="width: 100%; height: 100%; border: 0; display: block; background: #fff;"
+          ></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="presupuesto-factura-wrap presupuesto-print-hoja1 mb-3 d-none d-print-block">
     {% include "presupuestos/includes/presupuesto_hoja.html" with copia_label="Remito" %}
   </div>
 

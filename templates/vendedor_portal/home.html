@@ -120,7 +120,7 @@
       {% csrf_token %}
       <input type="hidden" name="comprador" value="{{ comprador.pk }}" />
       <input type="hidden" name="comision_porcentaje" value="{{ vendedor.comision_porcentaje }}" />
-      <input type="hidden" name="aplica_comision" value="1" />
+      <input type="hidden" name="aplica_comision" value="0" />
 
       <div class="card shadow-sm presu-lista-modern mb-3">
         <div class="card-header fw-semibold">Nuevo presupuesto</div>
@@ -315,15 +315,29 @@
         }
 
         function buildSelect(tr) {
+          const wrap = document.createElement("div");
+          wrap.className = "d-grid gap-1";
+          const search = document.createElement("input");
+          search.type = "search";
+          search.className = "form-control form-control-sm";
+          search.placeholder = "Buscar producto...";
+          search.autocomplete = "off";
           const sel = document.createElement("select");
           sel.name = "linea_producto";
           sel.className = "form-select form-select-sm";
           sel.innerHTML = optionsHtml();
           sel.dataset.prevEmpty = sel.value ? "0" : "1";
+          search.addEventListener("input", () => {
+            const current = sel.value;
+            sel.innerHTML = optionsHtml(search.value, current);
+            if (current && byId[current]) sel.value = current;
+          });
           sel.addEventListener("change", () => {
             const wasEmpty = sel.dataset.prevEmpty === "1";
             const nowEmpty = !sel.value;
             sel.dataset.prevEmpty = nowEmpty ? "1" : "0";
+            const selected = sel.value ? byId[sel.value] : null;
+            if (selected) search.value = productLabel(selected);
             const qIn = tr.querySelector('input[name="linea_cantidad"]');
             const inpPu = tr.querySelector('input[name="linea_precio_unitario"]');
             const p = sel.value ? byId[sel.value] : null;
@@ -343,14 +357,37 @@
               addRow();
             }
           });
-          return sel;
+          wrap.appendChild(search);
+          wrap.appendChild(sel);
+          return wrap;
         }
 
-        function optionsHtml() {
+        function escapeHtml(s) {
+          return String(s || "").replace(/[&<>"']/g, function (ch) {
+            return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch];
+          });
+        }
+
+        function normalizeSearch(s) {
+          return String(s || "")
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
+        }
+
+        function productLabel(p) {
+          return `${p.codigo} — ${p.descripcion} (stock ${p.stock})`;
+        }
+
+        function optionsHtml(filter, keepId) {
+          const q = normalizeSearch(filter);
+          const filtered = q
+            ? productos.filter((p) => normalizeSearch(`${p.codigo} ${p.descripcion}`).includes(q) || String(p.id) === String(keepId || ""))
+            : productos;
           return (
             '<option value="">— Producto —</option>' +
-            productos
-              .map((p) => `<option value="${p.id}">${p.codigo} — ${p.descripcion} (stock ${p.stock})</option>`)
+            filtered
+              .map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(productLabel(p))}</option>`)
               .join("")
           );
         }
@@ -388,6 +425,9 @@
           if (btnAdd) btnAdd.disabled = !enabled;
           tbody.querySelectorAll('select[name="linea_producto"]').forEach((sel) => {
             sel.disabled = !enabled;
+          });
+          tbody.querySelectorAll('input[type="search"]').forEach((inp) => {
+            inp.disabled = !enabled;
           });
         }
 

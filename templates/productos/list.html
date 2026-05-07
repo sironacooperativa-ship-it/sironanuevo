@@ -479,18 +479,29 @@
               </td>
               <td class="text-end col-monto productos-td-saas productos-td-precio align-middle">
                 <span class="producto-view">{{ p.precio_venta|ars }}</span>
-                <input
-                  type="number"
-                  name="precio_venta"
-                  class="form-control form-control-sm text-end rounded-3 producto-edit d-none"
-                  form="producto-inline-{{ p.pk }}"
-                  value="{{ p.precio_venta|unlocalize }}"
-                  step="0.01"
-                  min="0"
-                  title="Precio de venta"
-                  inputmode="decimal"
-                  autocomplete="off"
-                />
+                <div class="producto-edit d-none">
+                  <input
+                    type="number"
+                    name="precio_venta"
+                    class="form-control form-control-sm text-end rounded-3"
+                    form="producto-inline-{{ p.pk }}"
+                    value="{{ p.precio_venta|unlocalize }}"
+                    step="0.01"
+                    min="0"
+                    title="Precio de venta"
+                    inputmode="decimal"
+                    autocomplete="off"
+                  />
+                  <div class="small text-muted mt-1 text-nowrap">
+                    Ganancia s/costo&nbsp;<span class="js-impl-pct" data-producto-profit-pct="{{ p.pk }}">
+                      {% if p.porcentaje_ganancia_calculado is not None %}
+                        {{ p.porcentaje_ganancia_calculado }}%
+                      {% else %}
+                        —
+                      {% endif %}
+                    </span>
+                  </div>
+                </div>
               </td>
               <td class="text-end align-middle table-actions-cell">
                 <div class="producto-view table-actions productos-actions-inline">
@@ -706,12 +717,14 @@
         if (!pid) return;
         var costoIn = row.querySelector('input[name="costo"]');
         var precioIn = row.querySelector('input[name="precio_venta"]');
-        var out = row.querySelector('.js-impl-pct[data-producto-id="' + pid + '"]');
-        if (!costoIn || !precioIn || !out) return;
+        var outs = row.querySelectorAll('.js-impl-pct[data-producto-id="' + pid + '"], .js-impl-pct[data-producto-profit-pct="' + pid + '"]');
+        if (!costoIn || !precioIn || !outs.length) return;
         var costo = parseNum(costoIn.value);
         var precio = parseNum(precioIn.value);
         var pct = calcPct(costo, precio);
-        out.textContent = pct === null ? "—" : fmtPct(pct);
+        outs.forEach(function (out) {
+          out.textContent = pct === null ? "—" : fmtPct(pct);
+        });
       }
       function bindRow(row) {
         if (!row) return;

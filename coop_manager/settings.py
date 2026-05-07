@@ -52,7 +52,6 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "core.middleware.VendedorAccessMiddleware",
-    "core.middleware.IdleSessionTimeoutMiddleware",
     "administrador.middleware.RegistroActividadMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -146,11 +145,9 @@ LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "login"
 
-# Sesión: al cerrar el navegador la cookie de sesión no persiste (nueva ventana = nuevo login).
-# Inactividad: core.middleware.IdleSessionTimeoutMiddleware cierra sesión tras N segundos sin peticiones.
+# Sesión: no se cierra por inactividad; solo termina al salir explícitamente o al cerrar el navegador.
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_IDLE_TIMEOUT_SECONDS = int(os.environ.get("SESSION_IDLE_TIMEOUT_SECONDS", str(30 * 60)))
-SESSION_COOKIE_AGE = SESSION_IDLE_TIMEOUT_SECONDS
+SESSION_COOKIE_AGE = int(os.environ.get("SESSION_COOKIE_AGE", str(14 * 24 * 60 * 60)))
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"

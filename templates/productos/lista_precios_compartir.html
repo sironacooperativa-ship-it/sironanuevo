@@ -19,6 +19,10 @@
         <i data-lucide="file-text" aria-hidden="true"></i>
         PDF
       </a>
+      <a class="action-button btn btn-outline-primary" href="{% url 'lista_precios_export_excel' lista.pk %}">
+        <i data-lucide="download" aria-hidden="true"></i>
+        Excel
+      </a>
     </div>
   </section>
 
@@ -72,6 +76,11 @@
 
         const w = 1080;
         const pad = 48;
+        const tableRight = w - pad;
+        const colCodigo = { x: pad, width: 140 };
+        const colTipo = { x: pad + 160, width: 180 };
+        const colPrecio = { x: tableRight - 200, width: 200 };
+        const colDesc = { x: pad + 360, width: Math.max(120, colPrecio.x - (pad + 360) - 20) };
         const headerH = 164;
         const filterH = 86;
         const rowH = chunk.length > 400 ? 44 : 54;
@@ -150,20 +159,34 @@
         if (logo.complete) drawLogo();
         else logo.onload = function () { drawLogo(); };
 
+        function drawClippedText(text, col, baseline, options) {
+          const cfg = options || {};
+          const align = cfg.align || "left";
+          const height = cfg.height || rowH;
+          const top = cfg.top != null ? cfg.top : baseline - 30;
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(col.x, top, col.width, height);
+          ctx.clip();
+          ctx.textAlign = align;
+          const textX = align === "right" ? col.x + col.width : col.x;
+          ctx.fillText(String(text || ""), textX, baseline);
+          ctx.restore();
+          ctx.textAlign = "left";
+        }
+
         ctx.fillStyle = "#505050";
         ctx.font = "22px system-ui, -apple-system, Segoe UI, Arial";
-        ctx.fillText("Código", pad, y + 22);
-        ctx.fillText("Tipo", pad + 160, y + 22);
-        ctx.fillText("Descripción", pad + 360, y + 22);
-        ctx.textAlign = "right";
-        ctx.fillText("Precio", w - pad - 10, y + 22);
-        ctx.textAlign = "left";
+        drawClippedText("Código", colCodigo, y + 22, { height: 34, top: y - 4 });
+        drawClippedText("Tipo", colTipo, y + 22, { height: 34, top: y - 4 });
+        drawClippedText("Descripción", colDesc, y + 22, { height: 34, top: y - 4 });
+        drawClippedText("Precio", colPrecio, y + 22, { align: "right", height: 34, top: y - 4 });
         y += 42;
         ctx.strokeStyle = "#dcdcdc";
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(pad, y);
-        ctx.lineTo(w - pad, y);
+        ctx.lineTo(tableRight, y);
         ctx.stroke();
         y += 18;
 
@@ -175,14 +198,10 @@
             ctx.fillRect(0, y - 8, w, rowH);
           }
           ctx.fillStyle = "#1e1e1e";
-          ctx.fillText(String(p.codigo || ""), pad, y + 30);
-          ctx.fillText(String(p.tipo || ""), pad + 160, y + 30);
-          let desc = String(p.descripcion || "");
-          if (desc.length > 32) desc = desc.slice(0, 29) + "...";
-          ctx.fillText(desc, pad + 360, y + 30);
-          ctx.textAlign = "right";
-          ctx.fillText(String(p.precio || ""), w - pad - 10, y + 30);
-          ctx.textAlign = "left";
+          drawClippedText(p.codigo, colCodigo, y + 30, { top: y - 8, height: rowH });
+          drawClippedText(p.tipo, colTipo, y + 30, { top: y - 8, height: rowH });
+          drawClippedText(p.descripcion, colDesc, y + 30, { top: y - 8, height: rowH });
+          drawClippedText(p.precio, colPrecio, y + 30, { align: "right", top: y - 8, height: rowH });
           y += rowH;
         }
 

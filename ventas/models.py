@@ -29,10 +29,10 @@ class Venta(models.Model):
     descuento_monto = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     envio = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     comision_porcentaje = models.DecimalField(
-        max_digits=6, decimal_places=2, default=Decimal("4.00")
+        max_digits=6, decimal_places=2, default=Decimal("5.00")
     )
     aplica_comision = models.BooleanField(
-        default=True,
+        default=False,
         help_text="Si aplica, la comisión se descuenta del ingreso en caja al cobrar.",
     )
     creado_por = models.ForeignKey(

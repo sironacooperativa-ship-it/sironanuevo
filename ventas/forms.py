@@ -31,7 +31,7 @@ class VentaCabeceraEditForm(forms.ModelForm):
         widgets = {
             "comprador": forms.Select(attrs={"class": "form-select"}),
             "comision_porcentaje": forms.TextInput(
-                attrs={"class": "form-control", "inputmode": "decimal", "placeholder": "4"}
+                attrs={"class": "form-control", "inputmode": "decimal", "placeholder": "5"}
             ),
             "aplica_comision": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }

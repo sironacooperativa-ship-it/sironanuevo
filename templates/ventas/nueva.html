@@ -130,7 +130,7 @@
                     type="text"
                     name="comision_porcentaje"
                     class="form-control venta-nueva-input"
-                    value="{% if repoblar %}{{ repoblar.comision_porcentaje }}{% else %}4{% endif %}"
+                    value="{% if repoblar %}{{ repoblar.comision_porcentaje }}{% else %}{{ comision_default|default:'5.00' }}{% endif %}"
                     inputmode="decimal"
                     id="id_comision_porcentaje"
                   />
@@ -141,7 +141,7 @@
                       name="aplica_comision"
                       value="1"
                       id="id_aplica_comision"
-                      {% if not repoblar %}checked{% elif repoblar.aplica_comision %}checked{% endif %}
+                      {% if repoblar and repoblar.aplica_comision %}checked{% endif %}
                     />
                     <label class="form-check-label venta-nueva-check-label" for="id_aplica_comision">Aplicar comisión (descuenta del ingreso en caja)</label>
                   </div>
@@ -271,35 +271,72 @@
         if (sumIngreso) sumIngreso.textContent = fmtMoney(ing);
       }
 
-      function optionsHtml() {
+      function escapeHtml(s) {
+        return String(s || "").replace(/[&<>"']/g, function (ch) {
+          return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch];
+        });
+      }
+
+      function normalizeSearch(s) {
+        return String(s || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+      }
+
+      function productLabel(p) {
+        return `${p.codigo} — ${p.descripcion} (stock ${p.stock})`;
+      }
+
+      function optionsHtml(filter, keepId) {
+        const q = normalizeSearch(filter);
+        const filtered = q
+          ? productos.filter((p) => normalizeSearch(`${p.codigo} ${p.descripcion}`).includes(q) || String(p.id) === String(keepId || ""))
+          : productos;
         return (
           '<option value="">— Producto —</option>' +
-          productos
+          filtered
             .map(
               (p) =>
-                `<option value="${p.id}">${p.codigo} — ${p.descripcion} (stock ${p.stock})</option>`
+                `<option value="${escapeHtml(p.id)}">${escapeHtml(productLabel(p))}</option>`
             )
             .join("")
         );
       }
 
       function buildSelect(tr) {
+        const wrap = document.createElement("div");
+        wrap.className = "d-grid gap-1";
+        const search = document.createElement("input");
+        search.type = "search";
+        search.className = "form-control form-control-sm venta-nueva-line-product-search";
+        search.placeholder = "Buscar producto...";
+        search.autocomplete = "off";
         const sel = document.createElement("select");
         sel.name = "linea_producto";
         sel.className = "form-select form-select-sm venta-nueva-line-product";
         sel.innerHTML = optionsHtml();
         sel.dataset.prevEmpty = sel.value ? "0" : "1";
+        search.addEventListener("input", () => {
+          const current = sel.value;
+          sel.innerHTML = optionsHtml(search.value, current);
+          if (current && byId[current]) sel.value = current;
+        });
         sel.addEventListener("change", () => {
           const wasEmpty = sel.dataset.prevEmpty === "1";
           const nowEmpty = !sel.value;
           sel.dataset.prevEmpty = nowEmpty ? "1" : "0";
+          const selected = sel.value ? byId[sel.value] : null;
+          if (selected) search.value = productLabel(selected);
           refreshRow(tr);
           totals();
           if (wasEmpty && !nowEmpty && tr === tbody.lastElementChild) {
             addRow();
           }
         });
-        return sel;
+        wrap.appendChild(search);
+        wrap.appendChild(sel);
+        return wrap;
       }
 
       function addRow() {

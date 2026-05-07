@@ -354,7 +354,7 @@ def _validar_lineas_post(request):
     if descuento > subtotal:
         return "El descuento no puede superar el subtotal de las líneas.", None, None, None
 
-    aplica_comision = request.POST.get("aplica_comision", "1") == "1"
+    aplica_comision = request.POST.get("aplica_comision") == "1"
     return None, line_specs, subtotal, (
         int(vid),
         fecha_v,
@@ -376,7 +376,7 @@ def _guardar_presupuesto_desde_lineas(
     envio,
     comision_pct,
     comprador_id=None,
-    aplica_comision: bool = True,
+    aplica_comision: bool = False,
 ):
     presupuesto.vendedor_id = vid
     presupuesto.comprador_id = comprador_id
@@ -481,7 +481,15 @@ def presupuesto_compartido(request, token: str):
         pk=pk,
     )
     if parse_export(request) == "pdf":
-        return presupuesto_pdf_response(p)
+        resp = presupuesto_pdf_response(p)
+        if (request.GET.get("inline") or "").strip() == "1":
+            try:
+                cd = resp.get("Content-Disposition", "")
+                if cd:
+                    resp["Content-Disposition"] = cd.replace("attachment", "inline", 1)
+            except Exception:
+                pass
+        return resp
     ctx = {
         "presupuesto": p,
         "alerta_catalogo": False,
@@ -508,7 +516,15 @@ def presupuesto_detalle(request, pk: int):
         pk=pk,
     )
     if parse_export(request) == "pdf":
-        return presupuesto_pdf_response(p)
+        resp = presupuesto_pdf_response(p)
+        if (request.GET.get("inline") or "").strip() == "1":
+            try:
+                cd = resp.get("Content-Disposition", "")
+                if cd:
+                    resp["Content-Disposition"] = cd.replace("attachment", "inline", 1)
+            except Exception:
+                pass
+        return resp
     ctx = {
         "presupuesto": p,
         "alerta_catalogo": presupuesto_tiene_alerta_catalogo(p),
@@ -581,6 +597,7 @@ def presupuesto_nuevo(request):
             "repoblar": repoblar,
             "vendedor_default_id": vendedor_default_id,
             "lista_default": lista_default,
+            "comision_default": COMISION_PORCENTAJE_DEFECTO,
         },
     )
 
@@ -611,7 +628,7 @@ def presupuesto_editar(request, pk: int):
     if request.method == "POST":
         err, line_specs, subtotal, meta = _validar_lineas_post(request)
         if err is None:
-            vid, fecha_v, descuento, comision_pct, comprador_id, aplica_comision = meta
+            vid, fecha_v, descuento, envio, comision_pct, comprador_id, aplica_comision = meta
             with transaction.atomic():
                 # Si ya estaba aprobado y tiene pedido generado, reflejar cambios en la Venta
                 # (solo si sigue pendiente de pago; si está pagada no se toca para no romper caja).
@@ -772,6 +789,7 @@ def presupuesto_editar(request, pk: int):
             "lineas_iniciales": lineas_iniciales,
             "repoblar": repoblar,
             "lista_default": lista_default,
+            "comision_default": COMISION_PORCENTAJE_DEFECTO,
         },
     )
 

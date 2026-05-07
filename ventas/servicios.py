@@ -70,7 +70,7 @@ def crear_venta_confirmada(
     comprador_id: int | None = None,
     creado_por_id: int | None = None,
     *,
-    aplica_comision: bool = True,
+    aplica_comision: bool = False,
     envio: Decimal = Decimal("0.00"),
 ) -> Venta:
     """

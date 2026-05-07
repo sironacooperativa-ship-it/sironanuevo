@@ -17,7 +17,11 @@ from django.views.decorators.http import require_http_methods
 from core.authz import staff_required
 from core.money_decimal import format_monto_ars, q2
 
-from .lista_precios_pdf import filas_lista_precios, lista_precios_pdf_file_response
+from .lista_precios_pdf import (
+    filas_lista_precios,
+    lista_precios_pdf_file_response,
+    lista_precios_xlsx_response,
+)
 from .models import ListaPrecioItem, ListaPrecios, Producto
 
 # Borrador de nombre para el paso de confirmación al crear una lista nueva (session key).
@@ -436,6 +440,13 @@ def lista_precios_ver(request, pk: int):
 def lista_precios_export_pdf(request, pk: int):
     lista = get_object_or_404(ListaPrecios, pk=pk)
     return lista_precios_pdf_file_response(lista=lista)
+
+
+@login_required
+@require_http_methods(["GET"])
+def lista_precios_export_excel(request, pk: int):
+    lista = get_object_or_404(ListaPrecios, pk=pk)
+    return lista_precios_xlsx_response(lista=lista)
 
 
 @login_required

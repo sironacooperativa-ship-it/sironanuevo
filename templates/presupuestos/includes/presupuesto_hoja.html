@@ -75,39 +75,35 @@
       </tbody>
     </table>
 
-    <div class="row justify-content-end mb-2">
-      <div class="col-12 col-sm-10 col-md-7">
-        <table class="table table-sm mb-0">
-          <tbody>
-            <tr>
-              <td>Subtotal líneas</td>
-              <td class="text-end">{{ presupuesto.subtotal_lineas|ars }}</td>
-            </tr>
-            {% if presupuesto.descuento_monto and presupuesto.descuento_monto > 0 %}
-              <tr>
-                <td>Descuento</td>
-                <td class="text-end">{{ presupuesto.descuento_monto|ars }}</td>
-              </tr>
-            {% endif %}
-            {% if presupuesto.envio and presupuesto.envio > 0 %}
-              <tr>
-                <td>Envío</td>
-                <td class="text-end">{{ presupuesto.envio|ars }}</td>
-              </tr>
-            {% endif %}
-            <tr class="fw-semibold table-light">
-              <td>Total</td>
-              <td class="text-end">{{ presupuesto.neto|ars }}</td>
-            </tr>
-            <tr>
-              <td>{% if presupuesto.estado == "ACT" %}Venc. pago (si se confirma){% else %}Venc. pago{% endif %}</td>
-              <td class="text-end">
-                {% if presupuesto.fecha_vencimiento_pago %}{{ presupuesto.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}<span class="text-muted">Sin indicar</span>{% endif %}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <div class="mb-2">
+      <div class="presu-venc-note">
+        <strong>{% if presupuesto.estado == "ACT" %}Vencimiento de pago si se confirma:{% else %}Vencimiento de pago:{% endif %}</strong>
+        {% if presupuesto.fecha_vencimiento_pago %}{{ presupuesto.fecha_vencimiento_pago|date:"d/m/Y" }}{% else %}Sin indicar{% endif %}
       </div>
+      <table class="presu-totals-box mb-0">
+        <tbody>
+          <tr>
+            <td>Subtotal líneas</td>
+            <td>{{ presupuesto.subtotal_lineas|ars }}</td>
+          </tr>
+          {% if presupuesto.descuento_monto and presupuesto.descuento_monto > 0 %}
+            <tr>
+              <td>Descuento</td>
+              <td>{{ presupuesto.descuento_monto|ars }}</td>
+            </tr>
+          {% endif %}
+          {% if presupuesto.envio and presupuesto.envio > 0 %}
+            <tr>
+              <td>Envío</td>
+              <td>{{ presupuesto.envio|ars }}</td>
+            </tr>
+          {% endif %}
+          <tr class="presu-total-row">
+            <td>Total</td>
+            <td>{{ presupuesto.neto|ars }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     {% if presupuesto.venta_id %}

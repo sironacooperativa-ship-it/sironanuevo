@@ -42,7 +42,7 @@
             <i data-lucide="file-down" aria-hidden="true"></i>
             Exportar PDF
           </a>
-          <a class="action-pill action-pill--excel" href="#" id="btnListaExportExcel">
+          <a class="action-pill action-pill--excel" href="{% url 'lista_precios_export_excel' lista.pk %}">
             <i data-lucide="download" aria-hidden="true"></i>
             Exportar Excel
           </a>
@@ -251,43 +251,4 @@
     </div>
   </div>
 
-  <script>
-    // Export “Excel” (CSV) desde la tabla visible (solo UI).
-    (function () {
-      function downloadCsv(filename, rows) {
-        const csv = rows.map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
-        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      }
-
-      const btn = document.getElementById("btnListaExportExcel");
-      if (!btn) return;
-      btn.addEventListener("click", function (e) {
-        e.preventDefault();
-        const rows = [["Codigo", "Tipo", "Descripcion", "Precio"]];
-        const table = document.querySelector(".pricing-table table");
-        if (!table) return;
-        const bodyRows = table.querySelectorAll("tbody tr");
-        bodyRows.forEach((tr) => {
-          const tds = tr.querySelectorAll("td");
-          if (!tds || tds.length < 3) return;
-          const prodSub = tds[0].innerText || "";
-          const codeMatch = prodSub.match(/[A-Z]{2}\d{4}|[A-Z]{2}\d{3,4}|[A-Z0-9]{4,}/);
-          const codigo = codeMatch ? codeMatch[0] : "";
-          const tipo = (tds[1].innerText || "").trim();
-          const desc = (tds[0].querySelector(".prod-desc")?.innerText || "").trim();
-          const precio = (tds[2].innerText || "").trim();
-          rows.push([codigo, tipo, desc, precio]);
-        });
-        downloadCsv("sirona-lista-precios.csv", rows);
-      });
-    })();
-  </script>
 {% endblock %}

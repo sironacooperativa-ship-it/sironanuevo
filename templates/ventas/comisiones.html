@@ -71,7 +71,15 @@
             {% for r in comisiones_por_vendedor %}
               <tr>
                 <td class="col-muted presu-col-ellipsis" title="{{ r.vendedor__apellido }}, {{ r.vendedor__nombre }}">
-                  {{ r.vendedor__apellido }}, {{ r.vendedor__nombre }}
+                  <div class="fw-semibold">{{ r.vendedor__apellido }}, {{ r.vendedor__nombre }}</div>
+                  {% if r.grupo and r.grupo > 0 %}
+                    <div class="small text-muted mt-1">
+                      Comisión por ventas: <span class="text-body">{{ r.propias|ars }}</span>
+                    </div>
+                    <div class="small text-muted">
+                      Comisión por ventas del grupo: <span class="text-body">{{ r.grupo|ars }}</span>
+                    </div>
+                  {% endif %}
                 </td>
                 <td class="text-end col-money">{{ r.total|ars }}</td>
               </tr>

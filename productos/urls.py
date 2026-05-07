@@ -41,6 +41,11 @@ urlpatterns = [
         name="lista_precios_export_pdf",
     ),
     path(
+        "listas-precio/<int:pk>/export/excel/",
+        listas_precios_views.lista_precios_export_excel,
+        name="lista_precios_export_excel",
+    ),
+    path(
         "listas-precio/<int:pk>/export/png/",
         listas_precios_views.lista_precios_export_png,
         name="lista_precios_export_png",
