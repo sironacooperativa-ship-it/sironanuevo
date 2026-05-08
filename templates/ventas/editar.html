@@ -8,47 +8,305 @@
     <a class="btn btn-outline-secondary btn-sm" href="{% url 'ventas_historial' %}">Historial</a>
   </div>
 
-  <p class="text-muted small">
-    Podés modificar solo <strong>comprador</strong>, <strong>vencimiento del pago</strong>, <strong>porcentaje de comisión</strong> y si <strong>aplica comisión</strong>. No se pueden cambiar productos, cantidades, precios ni el descuento del pedido (quedan como al crear el pedido).
-  </p>
+  {{ productos_catalogo|json_script:"ventas-productos" }}
+  {{ lineas_iniciales|json_script:"ventas-lineas-iniciales" }}
 
-  <div class="card shadow-sm">
-    <div class="card-body">
-      <form method="post" novalidate>
-        {% csrf_token %}
-        <div class="row g-3">
-          <div class="col-12 col-md-6">
-            <label class="form-label">Comprador</label>
-            {{ form.comprador }}
-            {% if form.comprador.errors %}<div class="text-danger small">{{ form.comprador.errors }}</div>{% endif %}
-          </div>
-          <div class="col-12 col-md-6">
-            <label class="form-label">Vencimiento pago (orden) <span class="text-muted fw-normal">(opcional)</span></label>
-            {{ form.fecha_vencimiento_pago }}
-            {% if form.fecha_vencimiento_pago.errors %}
-              <div class="text-danger small">{{ form.fecha_vencimiento_pago.errors }}</div>
-            {% endif %}
-          </div>
-          <div class="col-12 col-md-4">
-            <label class="form-label">Comisión (%)</label>
-            {{ form.comision_porcentaje }}
-            {% if form.comision_porcentaje.errors %}
-              <div class="text-danger small">{{ form.comision_porcentaje.errors }}</div>
-            {% endif %}
-          </div>
-          <div class="col-12">
-            <div class="form-check">
-              {{ form.aplica_comision }}
-              <label class="form-check-label" for="{{ form.aplica_comision.id_for_label }}">{{ form.aplica_comision.label }}</label>
-            </div>
-            {% if form.aplica_comision.errors %}<div class="text-danger small">{{ form.aplica_comision.errors }}</div>{% endif %}
+  <form method="post" novalidate id="ventaEditForm">
+    {% csrf_token %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-body row g-3">
+        <div class="col-12 col-md-6 col-lg-4">
+          <label class="form-label">Vendedor</label>
+          <select name="vendedor" class="form-select" required id="id_vendedor">
+            <option value="">— Elegir —</option>
+            {% for v in vendedores %}
+              <option value="{{ v.pk }}" {% if repoblar and repoblar.vendedor_id == v.pk %}selected{% elif venta and venta.vendedor_id == v.pk and not repoblar %}selected{% endif %}>
+                {{ v.codigo }} — {{ v.apellido }}, {{ v.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-6 col-lg-4">
+          <label class="form-label">Comprador <span class="text-muted fw-normal">(opcional)</span></label>
+          <select name="comprador" class="form-select" id="id_comprador">
+            <option value="">— Sin asignar —</option>
+            {% for c in compradores %}
+              <option value="{{ c.pk }}" {% if repoblar and repoblar.comprador_id == c.pk %}selected{% elif venta and venta.comprador_id == c.pk and not repoblar %}selected{% endif %}>
+                {{ c.codigo }} — {{ c.apellido }}, {{ c.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-6 col-lg-4">
+          <label class="form-label">Fecha límite de pago <span class="text-muted fw-normal">(opcional)</span></label>
+          <input
+            type="date"
+            name="fecha_vencimiento_pago"
+            class="form-control"
+            id="id_fecha_vencimiento_pago"
+            value="{% if repoblar %}{{ repoblar.fecha_vencimiento_pago }}{% elif venta and venta.fecha_vencimiento_pago %}{{ venta.fecha_vencimiento_pago|date:'Y-m-d' }}{% endif %}"
+          />
+        </div>
+        <div class="col-12 col-md-6 col-lg-4">
+          <label class="form-label">Comisión (%)</label>
+          <input
+            type="text"
+            name="comision_porcentaje"
+            class="form-control"
+            inputmode="decimal"
+            value="{% if repoblar %}{{ repoblar.comision_porcentaje }}{% elif venta %}{{ venta.comision_porcentaje }}{% else %}{{ comision_default|default:'5.00' }}{% endif %}"
+          />
+        </div>
+        <div class="col-12 col-md-6 col-lg-4 d-flex align-items-end">
+          <div class="form-check">
+            <input type="hidden" name="aplica_comision" value="0" />
+            <input
+              class="form-check-input"
+              type="checkbox"
+              name="aplica_comision"
+              id="id_aplica_comision"
+              value="1"
+              {% if repoblar %}{% if repoblar.aplica_comision %}checked{% endif %}{% elif venta %}{% if venta.aplica_comision %}checked{% endif %}{% endif %}
+            />
+            <label class="form-check-label" for="id_aplica_comision">Aplicar comisión (descuenta del ingreso en caja al cobrar)</label>
           </div>
         </div>
-        <div class="d-flex justify-content-end gap-2 mt-4">
-          <a class="btn btn-outline-secondary" href="{% url 'venta_detalle' venta.pk %}">Cancelar</a>
-          <button class="btn btn-primary" type="submit">Guardar</button>
-        </div>
-      </form>
+      </div>
     </div>
-  </div>
+
+    <div class="card shadow-sm presu-lista-modern mb-3">
+      <div class="card-body">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+          <h2 class="h6 mb-0">Productos</h2>
+          <button type="button" class="btn btn-sm btn-outline-primary ms-auto" id="btnAddLinea" title="Agregar línea">+ Agregar producto</button>
+        </div>
+        <p class="text-muted small mb-2">Podés editar cantidades y precio unitario por línea.</p>
+        <div class="table-responsive presu-lista-table-wrap">
+          <table class="modern-table form-lineas-tabla" id="tablaLineas">
+            <thead>
+              <tr>
+                <th scope="col">Producto</th>
+                <th scope="col" class="text-end" style="width: 7rem">Cantidad</th>
+                <th scope="col" class="text-end" style="width: 8rem">Precio unit.</th>
+                <th scope="col" class="text-end" style="width: 8rem">Subtotal</th>
+                <th scope="col" style="width: 3rem"></th>
+              </tr>
+            </thead>
+            <tbody id="lineasBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-body row g-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label">Aplicar descuento ($)</label>
+          <input
+            type="text"
+            name="descuento_monto"
+            class="form-control"
+            value="{% if repoblar %}{{ repoblar.descuento_monto }}{% elif venta %}{{ venta.descuento_monto }}{% else %}0{% endif %}"
+            inputmode="decimal"
+            id="id_descuento_monto"
+          />
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="border rounded p-3 bg-light small">
+            <div class="d-flex justify-content-between"><span>Subtotal líneas</span><span id="sumSubtotal">$ 0,00</span></div>
+            <div class="d-flex justify-content-between"><span>Descuento</span><span id="sumDesc">$ 0,00</span></div>
+            <div class="d-flex justify-content-between fw-semibold"><span>Total</span><span id="sumNeto">$ 0,00</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'venta_detalle' venta.pk %}">Cancelar</a>
+      <button type="submit" class="btn btn-primary">Guardar cambios</button>
+    </div>
+  </form>
+
+  <script>
+    (function () {
+      const el = document.getElementById("ventas-productos");
+      let productos = el ? JSON.parse(el.textContent) : [];
+      let byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
+      const iniEl = document.getElementById("ventas-lineas-iniciales");
+      const iniciales = iniEl ? JSON.parse(iniEl.textContent) : [];
+
+      const tbody = document.getElementById("lineasBody");
+      const btnAdd = document.getElementById("btnAddLinea");
+      const inpDesc = document.getElementById("id_descuento_monto");
+      const sumSubtotal = document.getElementById("sumSubtotal");
+      const sumDesc = document.getElementById("sumDesc");
+      const sumNeto = document.getElementById("sumNeto");
+
+      const fmtMoney =
+        typeof formatMontoArs === "function"
+          ? formatMontoArs
+          : function (n) {
+              return "$ " + Number(n).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            };
+
+      function parseMontoArsInput(s) {
+        let t = String(s || "").trim();
+        if (!t) return 0;
+        t = t.replace(/\$/g, "").replace(/\u00a0/g, " ").replace(/\s/g, "");
+        if (!t) return 0;
+        let neg = t.startsWith("-");
+        if (neg) t = t.slice(1).trim();
+        if (!t) return 0;
+        if ((t.match(/,/g) || []).length > 1) return 0;
+        const sign = neg ? "-" : "";
+        if (t.includes(",")) {
+          const i = t.lastIndexOf(",");
+          let head = t.slice(0, i).replace(/\./g, "");
+          const tail = t.slice(i + 1);
+          if (!tail || !/^\d+$/.test(tail)) return 0;
+          if (!head) head = "0";
+          t = sign + head + "." + tail;
+        } else {
+          const parts = t.split(".");
+          if (parts.length === 1) {
+            t = sign + parts[0];
+          } else if (parts.length === 2 && parts[1].length <= 2 && /^\d+$/.test(parts[1])) {
+            t = sign + parts[0] + "." + parts[1];
+          } else {
+            t = sign + parts.join("");
+          }
+        }
+        const v = parseFloat(t);
+        return Number.isFinite(v) ? v : 0;
+      }
+
+      function rowSubtotal(row) {
+        const sel = row.querySelector('select[name="linea_producto"]');
+        const q = row.querySelector('input[name="linea_cantidad"]');
+        const pu = row.querySelector('input[name="linea_precio_unitario"]');
+        const pid = sel.value;
+        const qty = parseInt(q.value, 10) || 0;
+        if (!pid || qty <= 0) return 0;
+        const precio = parseMontoArsInput(pu.value || "");
+        if (!(precio > 0)) return 0;
+        return qty * precio;
+      }
+
+      function refreshRow(row) {
+        const sel = row.querySelector('select[name="linea_producto"]');
+        const pid = sel.value;
+        const p = pid ? byId[pid] : null;
+        const subEl = row.querySelector(".js-subtotal");
+        const q = parseInt(row.querySelector('input[name="linea_cantidad"]').value, 10) || 0;
+        const puIn = row.querySelector('input[name="linea_precio_unitario"]');
+        if (p && puIn && String(puIn.value || "").trim() === "") {
+          puIn.value = fmtMoney(parseFloat(p.precio));
+        }
+        const st = rowSubtotal(row);
+        subEl.textContent = st > 0 ? fmtMoney(st) : "—";
+      }
+
+      function totals() {
+        let sub = 0;
+        tbody.querySelectorAll("tr").forEach((tr) => {
+          sub += rowSubtotal(tr);
+        });
+        const desc = Math.max(0, parseMontoArsInput(inpDesc.value));
+        const neto = Math.max(0, sub - desc);
+        sumSubtotal.textContent = fmtMoney(sub);
+        sumDesc.textContent = fmtMoney(desc);
+        sumNeto.textContent = fmtMoney(neto);
+      }
+
+      function escapeHtml(s) {
+        return String(s || "").replace(/[&<>"']/g, function (ch) {
+          return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch];
+        });
+      }
+      function productLabel(p) {
+        return `${p.codigo} — ${p.descripcion} (stock ${p.stock})`;
+      }
+      function optionsHtml() {
+        return (
+          '<option value="">— Producto —</option>' +
+          productos
+            .map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(productLabel(p))}</option>`)
+            .join("")
+        );
+      }
+
+      function addRow() {
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          '<td><select name="linea_producto" class="form-select form-select-sm">' +
+          optionsHtml() +
+          "</select></td>" +
+          '<td class="text-end"><input type="number" name="linea_cantidad" class="form-control form-control-sm text-end" min="1" step="1" value="" placeholder="1" /></td>' +
+          '<td class="text-end"><input type="text" name="linea_precio_unitario" class="form-control form-control-sm text-end" inputmode="decimal" placeholder="Precio" autocomplete="off" /></td>' +
+          '<td class="text-end fw-semibold js-subtotal">—</td>' +
+          '<td><button type="button" class="btn btn-sm btn-outline-secondary js-remove" aria-label="Quitar">×</button></td>';
+        const sel = tr.querySelector('select[name="linea_producto"]');
+        const qIn = tr.querySelector('input[name="linea_cantidad"]');
+        const puIn = tr.querySelector('input[name="linea_precio_unitario"]');
+        sel.addEventListener("change", () => {
+          const p = sel.value ? byId[sel.value] : null;
+          if (p && qIn && !String(qIn.value || "").trim()) qIn.value = "1";
+          if (p && puIn && !String(puIn.value || "").trim()) puIn.value = fmtMoney(parseFloat(p.precio));
+          refreshRow(tr);
+          totals();
+        });
+        qIn.addEventListener("input", () => {
+          refreshRow(tr);
+          totals();
+        });
+        puIn.addEventListener("input", () => {
+          refreshRow(tr);
+          totals();
+        });
+        tr.querySelector(".js-remove").addEventListener("click", () => {
+          tr.remove();
+          totals();
+        });
+        tbody.appendChild(tr);
+        refreshRow(tr);
+        totals();
+      }
+
+      btnAdd.addEventListener("click", addRow);
+      inpDesc.addEventListener("input", totals);
+
+      document.getElementById("ventaEditForm").addEventListener("submit", function () {
+        tbody.querySelectorAll("tr").forEach((tr) => {
+          const sel = tr.querySelector('select[name="linea_producto"]');
+          const qIn = tr.querySelector('input[name="linea_cantidad"]');
+          const puIn = tr.querySelector('input[name="linea_precio_unitario"]');
+          const noProd = !sel || !String(sel.value || "").trim();
+          const noQty = !qIn || !String(qIn.value || "").trim();
+          const noPu = !puIn || !String(puIn.value || "").trim();
+          if (noProd && noQty && noPu) tr.remove();
+        });
+      });
+
+      if (iniciales.length > 0) {
+        iniciales.forEach((L) => {
+          addRow();
+          const tr = tbody.lastElementChild;
+          const sel = tr.querySelector('select[name="linea_producto"]');
+          const qIn = tr.querySelector('input[name="linea_cantidad"]');
+          const puIn = tr.querySelector('input[name="linea_precio_unitario"]');
+          const pid = L.producto_id != null ? String(L.producto_id) : "";
+          if (pid && sel.querySelector(`option[value="${pid}"]`)) sel.value = pid;
+          qIn.value = L.cantidad != null ? String(L.cantidad) : "1";
+          if (puIn && L.precio_unitario != null && String(L.precio_unitario).trim() !== "") {
+            const n = parseFloat(String(L.precio_unitario).replace(",", "."));
+            puIn.value = Number.isFinite(n) ? fmtMoney(n) : String(L.precio_unitario);
+          }
+          refreshRow(tr);
+        });
+        totals();
+      } else {
+        addRow();
+      }
+    })();
+  </script>
 {% endblock %}

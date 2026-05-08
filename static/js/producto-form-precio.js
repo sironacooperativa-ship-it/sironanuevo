@@ -46,6 +46,8 @@
     if (!costoEl || !pctEl || !precioEl) return;
 
     var implicaEl = root.querySelector("[data-implica-pct]");
+    var formEl = costoEl.closest ? costoEl.closest("form") : null;
+    var confirmBound = false;
 
     function actualizarImplica() {
       if (!implicaEl) return;
@@ -76,6 +78,24 @@
 
     // Inicial
     actualizarImplica();
+
+    // Confirmación: permitir guardar sin listas, pero preguntar antes.
+    if (formEl && !formEl.__sironaListasConfirmBound) {
+      formEl.__sironaListasConfirmBound = true;
+      formEl.addEventListener("submit", function (ev) {
+        try {
+          var present = formEl.querySelector('input[name="listas_extra_present"]');
+          if (!present) return;
+          var checked = formEl.querySelectorAll('input[name="listas_extra"]:checked');
+          if (checked && checked.length > 0) return;
+          var ok = window.confirm("¿Seguro que no se asigna el producto a ninguna lista de precio?");
+          if (!ok) {
+            ev.preventDefault();
+            ev.stopPropagation();
+          }
+        } catch (e) {}
+      });
+    }
   }
 
   w.sironaInitProductoFormPrecio = bind;

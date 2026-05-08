@@ -120,22 +120,28 @@ def vendedor_home(request):
     repoblar = None
 
     if request.method == "POST":
-        if comprador is None:
-            messages.error(request, "Elegí un cliente antes de guardar el presupuesto.")
-            return redirect("vendedor_home")
-
         # Reusar validador existente, pero forzar vendedor = este perfil
         post = request.POST.copy()
         post["vendedor"] = str(vendedor.pk)
         # Comisión inamovible en modo vendedor: viene del perfil del vendedor.
         post["comision_porcentaje"] = str(vendedor.comision_porcentaje)
         post["aplica_comision"] = "0"
+        # En portal vendedor: si mandan comprador, debe ser uno asignado a este vendedor.
+        cid = (post.get("comprador") or "").strip()
+        if cid:
+            if comprador is None:
+                messages.error(request, "El cliente seleccionado no es válido (debe estar asignado a tu vendedor).")
+                return redirect("vendedor_home")
+            post["comprador"] = str(comprador.pk)
         request.POST = post  # type: ignore[misc]
 
         err, line_specs, subtotal, meta = _validar_lineas_post(request)
         if err is None:
             vid, fecha_v, descuento, _envio, comision_pct, comprador_id, aplica_comision = meta
-            comprador_id = comprador.pk
+            if comprador is not None:
+                comprador_id = comprador.pk
+            else:
+                comprador_id = None
             with transaction.atomic():
                 pr = Presupuesto.objects.create(
                     vendedor_id=vid,
@@ -160,7 +166,16 @@ def vendedor_home(request):
                         descripcion_snapshot=(desc or "")[:255],
                         producto_capturado_en=prod.actualizado_en,
                     )
-            messages.success(request, f"Presupuesto #{pr.pk} guardado. Podés compartirlo por WhatsApp desde la ficha.")
+            if comprador_id:
+                messages.success(
+                    request,
+                    f"Presupuesto #{pr.pk} guardado. Podés compartirlo por WhatsApp desde la ficha.",
+                )
+            else:
+                messages.success(
+                    request,
+                    f"Presupuesto #{pr.pk} guardado (sin cliente). Podés asignarlo después desde Editar en modo completo.",
+                )
             return redirect("vendedor_presupuesto_ver", pk=pr.pk)
 
         messages.error(request, err)

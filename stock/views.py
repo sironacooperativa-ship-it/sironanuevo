@@ -215,9 +215,12 @@ def stock_home(request):
         valor_total=Coalesce(Sum(valor_total_expr), Value(0), output_field=dec18_2),
     )
 
+    template = "stock/home.html"
+    if request.GET.get("modal") == "1":
+        template = "stock/home_fragment.html"
     return render(
         request,
-        "stock/home.html",
+        template,
         {
             "form": form,
             "productos": productos,

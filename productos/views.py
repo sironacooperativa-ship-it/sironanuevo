@@ -24,7 +24,7 @@ from django.db.models import (
 )
 from django.db.models.functions import Coalesce
 from django.utils import timezone
-from django.http import FileResponse, HttpResponseBadRequest
+from django.http import FileResponse, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
@@ -888,6 +888,30 @@ def producto_create(request):
             producto.save()
             sync_producto_listas_extras_from_post(request, producto)
             messages.success(request, f"Producto creado: {producto.codigo}")
+            if request.GET.get("modal") == "1":
+                return HttpResponse(
+                    """
+<div class="modal-body p-4">
+  <div class="text-success fw-semibold mb-1">Producto guardado.</div>
+  <div class="text-muted small">Ya podés cerrar esta ventana y seguir cargando la venta.</div>
+</div>
+<script>
+  (function () {
+    try {
+      window.dispatchEvent(new CustomEvent("sirona:producto-guardado"));
+    } catch (e) {}
+    try {
+      var el = document.getElementById("sironaModal");
+      if (el && typeof bootstrap !== "undefined") {
+        var m = bootstrap.Modal.getInstance(el);
+        if (m) m.hide();
+      }
+    } catch (e) {}
+  })();
+</script>
+""",
+                    content_type="text/html",
+                )
             return _redirect_productos_con_filtros(request)
     else:
         form = ProductoForm()
@@ -909,6 +933,30 @@ def producto_update(request, pk: int):
             producto.save()
             sync_producto_listas_extras_from_post(request, producto)
             messages.success(request, f"Producto actualizado: {producto.codigo}")
+            if request.GET.get("modal") == "1":
+                return HttpResponse(
+                    """
+<div class="modal-body p-4">
+  <div class="text-success fw-semibold mb-1">Producto guardado.</div>
+  <div class="text-muted small">Podés cerrar esta ventana.</div>
+</div>
+<script>
+  (function () {
+    try {
+      window.dispatchEvent(new CustomEvent("sirona:producto-guardado"));
+    } catch (e) {}
+    try {
+      var el = document.getElementById("sironaModal");
+      if (el && typeof bootstrap !== "undefined") {
+        var m = bootstrap.Modal.getInstance(el);
+        if (m) m.hide();
+      }
+    } catch (e) {}
+  })();
+</script>
+""",
+                    content_type="text/html",
+                )
             return _redirect_productos_con_filtros(request)
     else:
         form = ProductoForm(instance=producto)

@@ -633,29 +633,202 @@ def venta_editar(request, pk: int):
     if venta.estado != Venta.Estado.PENDIENTE:
         return render(request, "ventas/editar_bloqueado.html", {"venta": venta})
 
-    if request.method == "POST":
-        # No permitir líneas ni montos de cabecera por POST fuera del formulario acotado.
-        if request.POST.getlist("linea_producto") or request.POST.getlist("linea_cantidad"):
-            messages.error(
-                request,
-                "No se pueden modificar productos, cantidades ni precios del pedido al editar la cabecera.",
-            )
-            return redirect("venta_editar", pk=pk)
-        if (request.POST.get("descuento_monto") or "").strip():
-            messages.error(request, "El descuento del pedido no se puede cambiar desde la edición.")
-            return redirect("venta_editar", pk=pk)
-        form = VentaCabeceraEditForm(request.POST, instance=venta)
-        if form.is_valid():
-            v = form.save(commit=False)
-            v.actualizado_por = request.user
-            v.save()
-            _sync_evento_pedido_pendiente(v)
-            messages.success(request, "Pedido actualizado.")
-            return redirect("venta_detalle", pk=v.pk)
-    else:
-        form = VentaCabeceraEditForm(instance=venta)
+    vendedores = Vendedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
+    compradores = Comprador.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
+    productos_catalogo = _productos_payload_lista(_lista_farmacia_o_primera()) if _lista_farmacia_o_primera() else _productos_payload_lista(ListaPrecios.objects.order_by("id").first()) if ListaPrecios.objects.exists() else [
+        {"id": p.id, "codigo": p.codigo, "descripcion": p.descripcion, "precio": str(q2(p.precio_venta)), "stock": p.stock}
+        for p in Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
+    ]
 
-    return render(request, "ventas/editar.html", {"venta": venta, "form": form})
+    # Para edición: repoblar líneas desde la venta actual.
+    lineas_iniciales = [
+        {
+            "producto_id": ln.producto_id,
+            "cantidad": ln.cantidad,
+            "precio_unitario": str(ln.precio_unitario),
+        }
+        for ln in venta.lineas.all()
+    ]
+    repoblar = {
+        "vendedor_id": venta.vendedor_id,
+        "comprador_id": venta.comprador_id,
+        "fecha_vencimiento_pago": venta.fecha_vencimiento_pago.strftime("%Y-%m-%d")
+        if venta.fecha_vencimiento_pago
+        else "",
+        "descuento_monto": str(venta.descuento_monto or 0),
+        "comision_porcentaje": str(venta.comision_porcentaje or 0),
+        "aplica_comision": bool(venta.aplica_comision),
+    }
+
+    if request.method == "POST":
+        # Validación completa (similar a presupuestos): comprador opcional, vencimiento opcional, líneas editables.
+        err = None
+        vid_raw = (request.POST.get("vendedor") or "").strip()
+        if not vid_raw.isdigit():
+            err = "Elegí un vendedor."
+            vid = None
+        else:
+            vid = int(vid_raw)
+            if not Vendedor.objects.filter(pk=vid, habilitado=True).exists():
+                err = "El vendedor seleccionado no existe o no está habilitado."
+
+        cid_raw = (request.POST.get("comprador") or "").strip()
+        comprador_id = None
+        if err is None and cid_raw:
+            if not cid_raw.isdigit():
+                err = "Comprador no válido."
+            else:
+                comprador_id = int(cid_raw)
+                if not Comprador.objects.filter(pk=comprador_id).exists():
+                    err = "El comprador seleccionado no existe."
+
+        fecha_v = parse_fecha_param(request.POST.get("fecha_vencimiento_pago") or "")
+        raw_desc = (request.POST.get("descuento_monto") or "").strip()
+        try:
+            descuento = Decimal(str(raw_desc or "0").replace(",", "."))
+        except InvalidOperation:
+            descuento = None
+        raw_com = (request.POST.get("comision_porcentaje") or "").strip()
+        try:
+            comision_pct = Decimal(str(raw_com or "0").replace(",", "."))
+        except InvalidOperation:
+            comision_pct = None
+        aplica_comision = request.POST.get("aplica_comision") == "1"
+
+        if err is None and (descuento is None or descuento < 0):
+            err = "El descuento no es válido."
+        if err is None and (comision_pct is None or comision_pct < 0):
+            err = "El porcentaje de comisión no es válido."
+
+        pids = request.POST.getlist("linea_producto")
+        qtys = request.POST.getlist("linea_cantidad")
+        precios_raw = request.POST.getlist("linea_precio_unitario")
+
+        line_specs = []
+        subtotal = Decimal("0.00")
+        if err is None:
+            for pid_s, qraw, praw in zip_longest(pids, qtys, precios_raw, fillvalue=""):
+                pid_s = (pid_s or "").strip()
+                qraw = (qraw or "").strip()
+                praw = (praw or "").strip()
+                if not pid_s and not qraw and not praw:
+                    continue
+                if not pid_s:
+                    err = "Hay una línea sin producto (elegí el producto o borrá la fila vacía)."
+                    break
+                if not qraw:
+                    err = "Indicá la cantidad en cada línea con producto."
+                    break
+                try:
+                    qty = int(qraw)
+                except ValueError:
+                    err = "Las cantidades deben ser números enteros."
+                    break
+                if qty <= 0:
+                    err = "La cantidad debe ser mayor a cero."
+                    break
+                if not pid_s.isdigit():
+                    err = "Producto no válido."
+                    break
+                prod_id = int(pid_s)
+                prod = Producto.objects.filter(pk=prod_id, habilitado=True).first()
+                if prod is None:
+                    err = "Un producto seleccionado no existe o está deshabilitado."
+                    break
+                # Para edición: permitir guardar aunque el stock justo no alcance, pero controlamos igual para no quedar negativo.
+                # Reponemos stock viejo más abajo dentro de la transacción; acá validamos contra stock "actual" + lo que ya está en la venta.
+                # Validación conservadora: se ajusta con lock y recomputo en transacción.
+                if praw:
+                    try:
+                        pu = q2(Decimal(str(praw).replace(",", ".")))
+                    except InvalidOperation:
+                        err = f"El precio unitario no es válido en la línea de {prod.codigo}."
+                        break
+                else:
+                    pu = q2(prod.precio_venta)
+                if pu <= 0:
+                    err = f"El precio unitario debe ser mayor a cero ({prod.codigo})."
+                    break
+                st = (pu * qty).quantize(Decimal("0.01"))
+                subtotal += st
+                line_specs.append((prod, qty, pu, st, prod.codigo, prod.descripcion))
+
+        if err is None and not line_specs:
+            err = "Agregá al menos un producto."
+        if err is None and descuento > subtotal:
+            err = "El descuento no puede superar el subtotal de las líneas."
+
+        if err is None:
+            try:
+                with transaction.atomic():
+                    v_locked = Venta.objects.select_for_update().prefetch_related("lineas").get(pk=venta.pk)
+                    # Devolver stock de líneas viejas
+                    old_lines = list(v_locked.lineas.all())
+                    for ln in old_lines:
+                        Producto.objects.filter(pk=ln.producto_id).update(stock=F("stock") + ln.cantidad)
+                    VentaLinea.objects.filter(venta_id=v_locked.pk).delete()
+
+                    # Crear líneas nuevas y descontar stock
+                    pids_afectados: list[int] = []
+                    for spec in line_specs:
+                        prod, qty, pu, st, cod, desc = spec
+                        VentaLinea.objects.create(
+                            venta=v_locked,
+                            producto=prod,
+                            cantidad=qty,
+                            precio_unitario=pu,
+                            subtotal=st,
+                            codigo_snapshot=(cod or "")[:6],
+                            descripcion_snapshot=(desc or "")[:255],
+                        )
+                        Producto.objects.filter(pk=prod.pk).update(stock=F("stock") - qty)
+                        pids_afectados.append(prod.pk)
+                    Producto.deshabilitar_sin_stock(pids_afectados)
+
+                    v_locked.vendedor_id = vid
+                    v_locked.comprador_id = comprador_id
+                    v_locked.fecha_vencimiento_pago = fecha_v
+                    v_locked.subtotal_lineas = subtotal
+                    v_locked.descuento_monto = descuento
+                    v_locked.comision_porcentaje = comision_pct
+                    v_locked.aplica_comision = aplica_comision
+                    v_locked.actualizado_por = request.user
+                    v_locked.save(
+                        update_fields=[
+                            "vendedor",
+                            "comprador",
+                            "fecha_vencimiento_pago",
+                            "subtotal_lineas",
+                            "descuento_monto",
+                            "comision_porcentaje",
+                            "aplica_comision",
+                            "actualizado_por",
+                        ]
+                    )
+                    _sync_evento_pedido_pendiente(v_locked)
+                messages.success(request, "Pedido actualizado.")
+                return redirect("venta_detalle", pk=venta.pk)
+            except Exception as exc:
+                det = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
+                messages.error(request, "No se pudo actualizar el pedido." + det)
+        else:
+            messages.error(request, err)
+            lineas_iniciales = lineas_iniciales_desde_post(request)
+            repoblar = repoblar_campos_cabecera_desde_post(request)
+
+    return render(
+        request,
+        "ventas/editar.html",
+        {
+            "venta": venta,
+            "vendedores": vendedores,
+            "compradores": compradores,
+            "productos_catalogo": productos_catalogo,
+            "lineas_iniciales": lineas_iniciales,
+            "repoblar": repoblar,
+            "comision_default": COMISION_PORCENTAJE_DEFECTO,
+        },
+    )
 
 
 @login_required

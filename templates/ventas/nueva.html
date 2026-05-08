@@ -86,8 +86,18 @@
                     <span class="badge text-bg-warning">Sin listas</span>
                   {% endif %}
                 </div>
+                <button
+                  type="button"
+                  class="action-button venta-nueva-btn-add"
+                  data-sirona-modal-url="{% url 'producto_create' %}?modal=1"
+                  title="Nuevo producto"
+                  aria-label="Nuevo producto"
+                  id="btnNuevoProducto"
+                >
+                  Nuevo producto
+                </button>
                 <button type="button" class="action-button primary venta-nueva-btn-add" id="btnAddLinea" title="Agregar línea">
-                  + Agregar producto
+                  + Agregar línea
                 </button>
               </div>
             </div>
@@ -513,6 +523,15 @@
             });
         });
       }
+
+      // Si se crea/edita un producto en un modal, refrescar catálogo para que aparezca en el selector.
+      window.addEventListener("sirona:producto-guardado", function () {
+        try {
+          if (listaPreciosSel) {
+            listaPreciosSel.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        } catch (e) {}
+      });
 
       btnAdd.addEventListener("click", addRow);
       inpDesc.addEventListener("input", totals);

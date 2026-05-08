@@ -159,12 +159,12 @@ def notas_list(request):
     qs = (
         NotaAdmin.objects.filter(parent__isnull=True)
         .select_related("usuario", "vendedor")
-        .annotate(_unread_child=Exists(unread_child))
+        .annotate(unread_child=Exists(unread_child))
     )
     if estado == "no_leidas":
-        qs = qs.filter(Q(leida=False) | Q(_unread_child=True))
+        qs = qs.filter(Q(leida=False) | Q(unread_child=True))
     elif estado == "leidas":
-        qs = qs.filter(leida=True, _unread_child=False)
+        qs = qs.filter(leida=True, unread_child=False)
     else:
         estado = "todas"
 
@@ -199,7 +199,7 @@ def notas_list(request):
             rid = m.parent_id or m.pk
             hilos_por_raiz.setdefault(rid, []).append(m)
     for r in page.object_list:
-        r._hilo_mensajes = hilos_por_raiz.get(r.pk, [r])
+        r.hilo_mensajes = hilos_por_raiz.get(r.pk, [r])
 
     qcopy = request.GET.copy()
     qcopy.pop("page", None)

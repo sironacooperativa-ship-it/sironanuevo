@@ -28,6 +28,13 @@
   </div>
   <div class="modal-footer producto-modal-foot border-0 bg-transparent pt-2 px-3 px-md-4 pb-3">
     <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+    <button
+      type="button"
+      class="btn btn-outline-secondary btn-sm rounded-pill px-4"
+      data-sirona-modal-url="{% url 'stock_home' %}?modal=1"
+    >
+      Cambiar stock
+    </button>
     <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4">
       <i data-lucide="save" aria-hidden="true"></i>
       {% if modo == "nuevo" %}Guardar producto{% else %}Guardar cambios{% endif %}

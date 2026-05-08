@@ -112,96 +112,112 @@
     </div>
   </div>
 
-  {% if comprador %}
-    {{ productos_catalogo|json_script:"presupuestos-productos" }}
-    {{ lineas_iniciales|json_script:"presupuestos-lineas-iniciales" }}
+  {{ productos_catalogo|json_script:"presupuestos-productos" }}
+  {{ lineas_iniciales|json_script:"presupuestos-lineas-iniciales" }}
 
-    <form method="post" novalidate id="presupuestoForm">
-      {% csrf_token %}
-      <input type="hidden" name="comprador" value="{{ comprador.pk }}" />
-      <input type="hidden" name="comision_porcentaje" value="{{ vendedor.comision_porcentaje }}" />
-      <input type="hidden" name="aplica_comision" value="0" />
+  <form method="post" novalidate id="presupuestoForm">
+    {% csrf_token %}
+    <input type="hidden" name="comision_porcentaje" value="{{ vendedor.comision_porcentaje }}" />
+    <input type="hidden" name="aplica_comision" value="0" />
 
-      <div class="card shadow-sm presu-lista-modern mb-3">
-        <div class="card-header fw-semibold">Nuevo presupuesto</div>
-        <div class="card-body">
-          <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-            <h2 class="h6 mb-0">Armar presupuesto</h2>
-            <div class="ms-auto d-flex flex-wrap align-items-center gap-2">
-              <label class="small text-muted mb-0" for="id_lista_precios">Listas de precio</label>
-              {% if listas_precio %}
-                <select name="lista_precios" class="form-select form-select-sm" id="id_lista_precios" required>
-                  {% for l in listas_precio %}
-                    <option
-                      value="{{ l.pk }}"
-                      {% if repoblar %}
-                        {% if repoblar.lista_precios_id %}
-                          {% if repoblar.lista_precios_id == l.pk %}selected{% endif %}
-                        {% elif lista_default and lista_default.pk == l.pk %}selected{% endif %}
-                      {% elif lista_default and lista_default.pk == l.pk %}selected{% endif %}
-                    >
-                      {{ l.nombre }}{% if l.es_farmacia %} — base (producto){% endif %}
-                    </option>
-                  {% endfor %}
-                </select>
-              {% else %}
-                <span class="badge text-bg-warning">Sin listas</span>
-              {% endif %}
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddLinea">+ Agregar</button>
-          </div>
-          <div class="row g-3 mb-3">
-            <div class="col-12 col-md-6">
-              <label class="form-label">Fecha límite de pago <span class="text-muted fw-normal">(opcional)</span></label>
-              <input
-                type="date"
-                name="fecha_vencimiento_pago"
-                class="form-control"
-                value="{% if repoblar %}{{ repoblar.fecha_vencimiento_pago }}{% endif %}"
-              />
+    <div class="card shadow-sm presu-lista-modern mb-3">
+      <div class="card-header fw-semibold">Nuevo presupuesto</div>
+      <div class="card-body">
+        <div class="row g-3 mb-2">
+          <div class="col-12 col-md-6">
+            <label class="form-label">Cliente <span class="text-muted fw-normal">(opcional)</span></label>
+            <select class="form-select" name="comprador">
+              <option value="">— Sin asignar —</option>
+              {% for c in mis_clientes %}
+                <option value="{{ c.pk }}" {% if comprador and comprador.pk == c.pk %}selected{% endif %}>
+                  {{ c.codigo }} — {{ c.apellido }}, {{ c.nombre }}
+                </option>
+              {% endfor %}
+            </select>
+            <div class="form-text">
+              Si lo dejás vacío, el presupuesto se guarda igual (después podés asignar cliente en modo completo).
             </div>
           </div>
-          <div class="table-responsive presu-lista-table-wrap mb-3">
-            <table class="modern-table form-lineas-tabla" id="tablaLineas">
-              <thead>
-                <tr>
-                  <th scope="col">Producto</th>
-                  <th scope="col" class="text-end" style="width: 6.5rem">Cant.</th>
-                  <th scope="col" class="text-end" style="width: 8rem">Precio</th>
-                  <th scope="col" class="text-end" style="width: 8rem">Subtotal</th>
-                  <th scope="col" style="width: 3rem"></th>
-                </tr>
-              </thead>
-              <tbody id="lineasBody"></tbody>
-            </table>
-          </div>
-          <div class="row g-3">
-            <div class="col-12 col-md-6">
-              <label class="form-label">Descuento ($)</label>
-              <input
-                type="text"
-                name="descuento_monto"
-                class="form-control"
-                value="{% if repoblar %}{{ repoblar.descuento_monto }}{% else %}0{% endif %}"
-                inputmode="decimal"
-                id="id_descuento_monto"
-              />
-            </div>
-            <div class="col-12 col-md-6">
-              <label class="form-label">Detalle</label>
-              <div class="border rounded p-3 bg-light small">
-                <div class="d-flex justify-content-between"><span>Subtotal</span><span id="sumSubtotal">$ 0,00</span></div>
-                <div class="d-flex justify-content-between"><span>Descuento</span><span id="sumDesc">$ 0,00</span></div>
-                <div class="d-flex justify-content-between fw-semibold"><span>Neto</span><span id="sumNeto">$ 0,00</span></div>
-              </div>
-            </div>
-          </div>
-          <div class="d-grid d-md-flex justify-content-md-end gap-2 mt-4 pt-2 border-top">
-            <button type="submit" class="btn btn-primary">Guardar presupuesto</button>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Fecha límite de pago <span class="text-muted fw-normal">(opcional)</span></label>
+            <input
+              type="date"
+              name="fecha_vencimiento_pago"
+              class="form-control"
+              value="{% if repoblar %}{{ repoblar.fecha_vencimiento_pago }}{% endif %}"
+            />
           </div>
         </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+          <h2 class="h6 mb-0">Armar presupuesto</h2>
+          <div class="ms-auto d-flex flex-wrap align-items-center gap-2">
+            <label class="small text-muted mb-0" for="id_lista_precios">Listas de precio</label>
+            {% if listas_precio %}
+              <select name="lista_precios" class="form-select form-select-sm" id="id_lista_precios" required>
+                {% for l in listas_precio %}
+                  <option
+                    value="{{ l.pk }}"
+                    {% if repoblar %}
+                      {% if repoblar.lista_precios_id %}
+                        {% if repoblar.lista_precios_id == l.pk %}selected{% endif %}
+                      {% elif lista_default and lista_default.pk == l.pk %}selected{% endif %}
+                    {% elif lista_default and lista_default.pk == l.pk %}selected{% endif %}
+                  >
+                    {{ l.nombre }}{% if l.es_farmacia %} — base (producto){% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            {% else %}
+              <span class="badge text-bg-warning">Sin listas</span>
+            {% endif %}
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddLinea">+ Agregar</button>
+        </div>
+
+        <div class="table-responsive presu-lista-table-wrap mb-3">
+          <table class="modern-table form-lineas-tabla" id="tablaLineas">
+            <thead>
+              <tr>
+                <th scope="col">Producto</th>
+                <th scope="col" class="text-end" style="width: 6.5rem">Cant.</th>
+                <th scope="col" class="text-end" style="width: 8rem">Precio</th>
+                <th scope="col" class="text-end" style="width: 8rem">Subtotal</th>
+                <th scope="col" style="width: 3rem"></th>
+              </tr>
+            </thead>
+            <tbody id="lineasBody"></tbody>
+          </table>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label">Descuento ($)</label>
+            <input
+              type="text"
+              name="descuento_monto"
+              class="form-control"
+              value="{% if repoblar %}{{ repoblar.descuento_monto }}{% else %}0{% endif %}"
+              inputmode="decimal"
+              id="id_descuento_monto"
+            />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Detalle</label>
+            <div class="border rounded p-3 bg-light small">
+              <div class="d-flex justify-content-between"><span>Subtotal</span><span id="sumSubtotal">$ 0,00</span></div>
+              <div class="d-flex justify-content-between"><span>Descuento</span><span id="sumDesc">$ 0,00</span></div>
+              <div class="d-flex justify-content-between fw-semibold"><span>Neto</span><span id="sumNeto">$ 0,00</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-grid d-md-flex justify-content-md-end gap-2 mt-4 pt-2 border-top">
+          <button type="submit" class="btn btn-primary">Guardar presupuesto</button>
+        </div>
       </div>
-    </form>
+    </div>
+  </form>
 
     <script>
       (function () {
@@ -675,8 +691,8 @@
         })();
       })();
     </script>
-  {% else %}
-    <div class="text-muted small">Buscá un cliente para ver impagos y armar un presupuesto.</div>
+  {% if not comprador %}
+    <div class="text-muted small">Podés armar un presupuesto sin cliente o elegirlo arriba para ver impagos.</div>
   {% endif %}
   </div>
 {% endblock %}
