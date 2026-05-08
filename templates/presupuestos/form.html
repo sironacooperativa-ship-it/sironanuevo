@@ -322,9 +322,23 @@
           btn.textContent = p ? productLabel(p) : "— Producto —";
         }
 
+        function positionMenu() {
+          try {
+            const r = btn.getBoundingClientRect();
+            menu.style.position = "fixed";
+            menu.style.left = Math.round(r.left) + "px";
+            menu.style.top = Math.round(r.bottom + 4) + "px";
+            menu.style.width = Math.round(r.width) + "px";
+            menu.style.zIndex = "2000";
+          } catch (e) {}
+        }
+
         function close() {
           menu.hidden = true;
           btn.setAttribute("aria-expanded", "false");
+          try {
+            if (menu.parentNode) menu.parentNode.removeChild(menu);
+          } catch (e) {}
           syncBtn();
         }
 
@@ -363,6 +377,10 @@
         function open() {
           menu.hidden = false;
           btn.setAttribute("aria-expanded", "true");
+          try {
+            document.body.appendChild(menu);
+          } catch (e) {}
+          positionMenu();
           inp.value = "";
           renderList();
           window.setTimeout(function () {
@@ -381,10 +399,17 @@
           "click",
           function (ev) {
             if (menu.hidden) return;
-            if (!wrap.contains(ev.target)) close();
+            if (!wrap.contains(ev.target) && !menu.contains(ev.target)) close();
           },
           true
         );
+
+        window.addEventListener("scroll", function () {
+          if (!menu.hidden) positionMenu();
+        }, true);
+        window.addEventListener("resize", function () {
+          if (!menu.hidden) positionMenu();
+        });
 
         sel.addEventListener("change", () => {
           const wasEmpty = sel.dataset.prevEmpty === "1";
@@ -416,7 +441,6 @@
         menu.appendChild(inp);
         menu.appendChild(list);
         wrap.appendChild(btn);
-        wrap.appendChild(menu);
         wrap.appendChild(sel);
         syncBtn();
         return wrap;
@@ -611,7 +635,7 @@
           st.id = "sironaSelectSearchCss";
           st.textContent =
             ".sirona-select-search{position:relative}" +
-            ".sirona-select-search-menu{position:absolute;z-index:20;left:0;right:0;top:calc(100% + 4px);background:#fff;border:1px solid rgba(15,23,42,.12);border-radius:10px;box-shadow:0 10px 24px rgba(15,23,42,.12);padding:8px}" +
+            ".sirona-select-search-menu{background:#fff;border:1px solid rgba(15,23,42,.12);border-radius:10px;box-shadow:0 10px 24px rgba(15,23,42,.12);padding:8px}" +
             ".sirona-select-search-input{margin-bottom:8px}" +
             ".sirona-select-search-list{max-height:320px;overflow:auto;display:flex;flex-direction:column;gap:4px}" +
             ".sirona-select-search-item{width:100%;text-align:left;border:1px solid rgba(15,23,42,.08);background:#fff;border-radius:8px;padding:6px 10px;font-size:.85rem}" +

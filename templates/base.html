@@ -1481,20 +1481,36 @@
               }
               const hrefPath = (u.pathname || "").replace(/\/+$/, "") || "/";
               const hrefSearch = u.search || "";
+              const hrefParams = u.searchParams;
 
               // Best match: exact path + exact query (e.g. /ventas/?estado=PEN => "Deudas").
               if (hrefPath === herePath && hrefSearch === hereSearch) {
-                candidates.push({ a, hrefPath, score: 20000 + hrefPath.length + hrefSearch.length });
+                candidates.push({ a, hrefPath, hrefSearch, score: 20000 + hrefPath.length + hrefSearch.length });
                 return;
+              }
+              // Next best: same path and the link query is a subset of current query
+              // (keeps items like "Deudas" active even if user adds extra filters).
+              if (hrefPath === herePath && hrefSearch) {
+                try {
+                  const here = new URL(window.location.href);
+                  let ok = true;
+                  hrefParams.forEach((v, k) => {
+                    if ((here.searchParams.get(k) || "") !== String(v)) ok = false;
+                  });
+                  if (ok) {
+                    candidates.push({ a, hrefPath, hrefSearch, score: 15000 + hrefPath.length + hrefSearch.length });
+                    return;
+                  }
+                } catch (e) {}
               }
               // Fallback: exact path without considering query.
               if (hrefPath === herePath) {
-                candidates.push({ a, hrefPath, score: 10000 + hrefPath.length });
+                candidates.push({ a, hrefPath, hrefSearch, score: 10000 + hrefPath.length });
                 return;
               }
               // Section fallback: parent path.
               if (hrefPath !== "/" && herePath.startsWith(hrefPath + "/")) {
-                candidates.push({ a, hrefPath, score: hrefPath.length });
+                candidates.push({ a, hrefPath, hrefSearch, score: hrefPath.length });
               }
             });
 
