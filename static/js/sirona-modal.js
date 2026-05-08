@@ -4,10 +4,43 @@
   if (!modalEl || !contentEl || typeof bootstrap === "undefined") return;
 
   const modal = new bootstrap.Modal(modalEl);
+  function cleanupOverlays() {
+    try {
+      // Si no hay ningún modal visible, limpiar backdrops sobrantes y estado del body.
+      const anyShown = document.querySelector(".modal.show");
+      if (!anyShown) {
+        document.querySelectorAll(".modal-backdrop").forEach((bd) => {
+          try {
+            bd.parentNode && bd.parentNode.removeChild(bd);
+          } catch (e) {}
+        });
+        document.body.classList.remove("modal-open");
+        // Bootstrap usa estos estilos para compensar scrollbar; a veces quedan pegados.
+        try {
+          document.body.style.removeProperty("padding-right");
+          document.body.style.removeProperty("overflow");
+        } catch (e) {}
+      }
+      // Offcanvas: si no hay ninguno abierto, limpiar clase y backdrop sobrante.
+      const anyOff = document.querySelector(".offcanvas.show");
+      if (!anyOff) {
+        document.body.classList.remove("offcanvas-open");
+        document.querySelectorAll(".offcanvas-backdrop").forEach((bd) => {
+          try {
+            bd.parentNode && bd.parentNode.removeChild(bd);
+          } catch (e) {}
+        });
+      }
+    } catch (e) {}
+  }
   function applyDialogOptions(root) {
     try {
       const dlg = modalEl.querySelector(".modal-dialog");
       if (!dlg) return;
+      // Reset a defaults before applying per-fragment options.
+      // Esto evita que un fragment "sin scroll" deje el modal trabado sin scroll para el siguiente.
+      dlg.classList.add("modal-dialog-scrollable");
+      dlg.classList.remove("modal-dialog-centered", "sirona-modal-dialog--product", "sirona-modal-dialog--caja-mov");
       const host = (root || contentEl).querySelector("[data-sirona-dialog-class]");
       if (!host) return;
       const cls = (host.getAttribute("data-sirona-dialog-class") || "").trim();
@@ -59,6 +92,7 @@
       dlg.classList.remove("sirona-modal-dialog--product", "sirona-modal-dialog--caja-mov", "modal-dialog-centered");
       dlg.classList.add("modal-dialog-scrollable");
     } catch (e) {}
+    cleanupOverlays();
   });
 })();
 
