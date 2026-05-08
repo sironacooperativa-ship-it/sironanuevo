@@ -288,28 +288,108 @@
 
       function buildSelect(tr) {
         const wrap = document.createElement("div");
-        wrap.className = "d-grid gap-1";
-        const search = document.createElement("input");
-        search.type = "search";
-        search.className = "form-control form-control-sm";
-        search.placeholder = "Buscar producto...";
-        search.autocomplete = "off";
+        wrap.className = "sirona-select-search";
+
         const sel = document.createElement("select");
         sel.name = "linea_producto";
-        sel.className = "form-select form-select-sm";
+        sel.className = "d-none";
         sel.innerHTML = optionsHtml();
         sel.dataset.prevEmpty = sel.value ? "0" : "1";
-        search.addEventListener("input", () => {
-          const current = sel.value;
-          sel.innerHTML = optionsHtml(search.value, current);
-          if (current && byId[current]) sel.value = current;
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "form-select form-select-sm";
+        btn.setAttribute("aria-haspopup", "listbox");
+        btn.setAttribute("aria-expanded", "false");
+        btn.textContent = "— Producto —";
+
+        const menu = document.createElement("div");
+        menu.className = "sirona-select-search-menu";
+        menu.setAttribute("role", "listbox");
+        menu.hidden = true;
+
+        const inp = document.createElement("input");
+        inp.type = "search";
+        inp.className = "form-control form-control-sm sirona-select-search-input";
+        inp.placeholder = "Buscar producto…";
+        inp.autocomplete = "off";
+
+        const list = document.createElement("div");
+        list.className = "sirona-select-search-list";
+
+        function syncBtn() {
+          const p = sel.value ? byId[sel.value] : null;
+          btn.textContent = p ? productLabel(p) : "— Producto —";
+        }
+
+        function close() {
+          menu.hidden = true;
+          btn.setAttribute("aria-expanded", "false");
+          syncBtn();
+        }
+
+        function renderList() {
+          const q = normalizeSearch(inp.value);
+          const items = q
+            ? productos.filter((p) => normalizeSearch(`${p.codigo} ${p.descripcion}`).includes(q))
+            : productos;
+          list.innerHTML = "";
+
+          const empty = document.createElement("button");
+          empty.type = "button";
+          empty.className = "sirona-select-search-item";
+          empty.textContent = "— Producto —";
+          empty.addEventListener("click", function () {
+            sel.value = "";
+            sel.dispatchEvent(new Event("change", { bubbles: true }));
+            close();
+          });
+          list.appendChild(empty);
+
+          items.slice(0, 400).forEach(function (p) {
+            const it = document.createElement("button");
+            it.type = "button";
+            it.className = "sirona-select-search-item";
+            it.textContent = productLabel(p);
+            it.addEventListener("click", function () {
+              sel.value = String(p.id);
+              sel.dispatchEvent(new Event("change", { bubbles: true }));
+              close();
+            });
+            list.appendChild(it);
+          });
+        }
+
+        function open() {
+          menu.hidden = false;
+          btn.setAttribute("aria-expanded", "true");
+          inp.value = "";
+          renderList();
+          window.setTimeout(function () {
+            try {
+              inp.focus();
+            } catch (e) {}
+          }, 0);
+        }
+
+        btn.addEventListener("click", function () {
+          if (menu.hidden) open();
+          else close();
         });
+        inp.addEventListener("input", renderList);
+        document.addEventListener(
+          "click",
+          function (ev) {
+            if (menu.hidden) return;
+            if (!wrap.contains(ev.target)) close();
+          },
+          true
+        );
+
         sel.addEventListener("change", () => {
           const wasEmpty = sel.dataset.prevEmpty === "1";
           const nowEmpty = !sel.value;
           sel.dataset.prevEmpty = nowEmpty ? "1" : "0";
-          const selected = sel.value ? byId[sel.value] : null;
-          if (selected) search.value = productLabel(selected);
           const qIn = tr.querySelector('input[name="linea_cantidad"]');
           const inpPu = tr.querySelector('input[name="linea_precio_unitario"]');
           const p = sel.value ? byId[sel.value] : null;
@@ -328,9 +408,17 @@
           if (wasEmpty && !nowEmpty && tr === tbody.lastElementChild) {
             addRow();
           }
+          syncBtn();
         });
-        wrap.appendChild(search);
+
+        sel.__sironaPicker = { syncBtn: syncBtn };
+
+        menu.appendChild(inp);
+        menu.appendChild(list);
+        wrap.appendChild(btn);
+        wrap.appendChild(menu);
         wrap.appendChild(sel);
+        syncBtn();
         return wrap;
       }
 
@@ -399,9 +487,8 @@
         tbody.querySelectorAll('select[name="linea_producto"]').forEach((sel) => {
           sel.disabled = !enabled;
         });
-        tbody.querySelectorAll('input[type="search"]').forEach((inp) => {
-          inp.disabled = !enabled;
-        });
+        tbody.querySelectorAll(".sirona-select-search-input").forEach((inp) => (inp.disabled = !enabled));
+        tbody.querySelectorAll(".sirona-select-search > button.form-select").forEach((b) => (b.disabled = !enabled));
       }
 
       if (listaPreciosSel) {
@@ -429,6 +516,9 @@
                   sel.value = "";
                   sel.dataset.prevEmpty = "1";
                 }
+                try {
+                  if (sel.__sironaPicker && typeof sel.__sironaPicker.syncBtn === "function") sel.__sironaPicker.syncBtn();
+                } catch (e) {}
                 const tr = sel.closest("tr");
                 if (tr) refreshRow(tr);
               });
@@ -512,6 +602,23 @@
       if (listaPreciosSel) {
         setEnabled(productos.length > 0);
       }
+
+      // styles (scoped)
+      (function () {
+        try {
+          if (document.getElementById("sironaSelectSearchCss")) return;
+          const st = document.createElement("style");
+          st.id = "sironaSelectSearchCss";
+          st.textContent =
+            ".sirona-select-search{position:relative}" +
+            ".sirona-select-search-menu{position:absolute;z-index:20;left:0;right:0;top:calc(100% + 4px);background:#fff;border:1px solid rgba(15,23,42,.12);border-radius:10px;box-shadow:0 10px 24px rgba(15,23,42,.12);padding:8px}" +
+            ".sirona-select-search-input{margin-bottom:8px}" +
+            ".sirona-select-search-list{max-height:320px;overflow:auto;display:flex;flex-direction:column;gap:4px}" +
+            ".sirona-select-search-item{width:100%;text-align:left;border:1px solid rgba(15,23,42,.08);background:#fff;border-radius:8px;padding:6px 10px;font-size:.85rem}" +
+            ".sirona-select-search-item:hover{background:#f1f5f9}";
+          document.head.appendChild(st);
+        } catch (e) {}
+      })();
     })();
   </script>
 {% endblock %}
