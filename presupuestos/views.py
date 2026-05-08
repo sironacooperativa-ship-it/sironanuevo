@@ -8,6 +8,7 @@ from django.db.models import F
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 
@@ -463,6 +464,7 @@ def presupuesto_lista(request):
     )
 
 
+@xframe_options_sameorigin
 def presupuesto_compartido(request, token: str):
     """
     Vista sin login: el cliente abre el enlace firmado (WhatsApp, etc.).
@@ -504,6 +506,7 @@ def presupuesto_compartido(request, token: str):
 
 
 @login_required
+@xframe_options_sameorigin
 def presupuesto_detalle(request, pk: int):
     p = get_object_or_404(
         Presupuesto.objects.select_related(

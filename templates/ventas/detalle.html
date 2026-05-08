@@ -256,24 +256,12 @@
 {% block content %}
   <span id="sidebarCurrentNode" class="d-none" data-parent-url="{% url 'ventas_historial' %}">Pedido #{{ venta.pk }}</span>
 
-  {# En pantalla: preview del PDF real (lo mismo que exporta/imprime). #}
-  <div class="d-print-none mb-3">
-    <div class="mx-auto" style="max-width: 980px;">
-      <div class="card border-0 shadow-sm overflow-hidden">
-        <div class="card-body p-0" style="height: min(78vh, 920px);">
-          <iframe
-            title="Pedido PDF"
-            src="{% url 'venta_detalle' venta.pk %}?export=pdf&inline=1"
-            style="width: 100%; height: 100%; border: 0; display: block; background: #fff;"
-          ></iframe>
-        </div>
-      </div>
-    </div>
-  </div>
   <div class="no-print d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">Pedido #{{ venta.pk }}</h1>
     <div class="d-flex flex-wrap gap-2">
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'ventas_historial' %}">Volver al historial</a>
+      <a class="btn btn-outline-danger btn-sm" href="{% url 'venta_detalle' venta.pk %}?export=pdf">Exportar PDF</a>
+      <a class="btn btn-outline-dark btn-sm" href="{% url 'venta_detalle' venta.pk %}?export=pdf&inline=1" target="_blank" rel="noopener">Abrir PDF</a>
       {% if venta.estado == "PEN" %}
         <a class="btn btn-outline-primary btn-sm px-2" href="{% url 'venta_editar' venta.pk %}" title="Editar" aria-label="Editar">
           <i data-lucide="pencil"></i>
