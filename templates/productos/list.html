@@ -330,7 +330,7 @@
         </colgroup>
         <thead class="productos-thead-saas">
           <tr>
-            <th scope="col" class="text-center productos-th-cb" title="Seleccionar">
+            <th scope="col" class="text-center productos-th-cb col-hide-mobile" title="Seleccionar">
               <label class="visually-hidden" for="chkProductosTodos">Todos</label>
               <input
                 type="checkbox"
@@ -353,7 +353,7 @@
                 <a class="link-secondary text-decoration-none" href="?{{ sort_links.pct }}">%{% if sort_ord == "pct" %}<span class="producto-th-sort-caret">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
               </div>
             </th>
-            <th scope="col" class="text-center productos-th-saas">
+            <th scope="col" class="text-center productos-th-saas col-hide-mobile">
               <a class="app-th-sort" href="?{{ sort_links.stock }}" title="Ordenar por stock">Stock{% if sort_ord == "stock" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
             </th>
             <th scope="col" class="text-center col-monto productos-th-saas">
@@ -368,7 +368,7 @@
               id="producto-row-{{ p.pk }}"
               class="app-table-row producto-row-inline productos-tbody-row {% if not p.habilitado %}opacity-50{% endif %}{% if p.stock == 0 %} productos-row--zero-stock{% endif %}"
             >
-              <td class="text-center align-middle productos-td-cb">
+              <td class="text-center align-middle productos-td-cb col-hide-mobile">
                 <input
                   type="checkbox"
                   class="form-check-input productos-bulk-cb chk-bulk-producto"
@@ -460,7 +460,7 @@
                   </div>
                 </div>
               </td>
-              <td class="text-center productos-td-saas productos-td-nowrap align-middle">
+              <td class="text-center productos-td-saas productos-td-nowrap align-middle col-hide-mobile">
                 <span class="producto-view">
                   {{ p.stock }}
                 </span>

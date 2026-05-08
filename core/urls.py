@@ -11,6 +11,7 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path("modo-vendedor/", views.switch_to_vendor_mode, name="switch_to_vendor_mode"),
     path("modo-completo/", views.switch_to_full_mode, name="switch_to_full_mode"),
+    path("modo-admin/", views.switch_to_admin_mode, name="switch_to_admin_mode"),
     path("cuenta/contrasena/", views.cambiar_password, name="cambiar_password"),
     path("notas/enviar/", views.nota_admin_enviar, name="nota_admin_enviar"),
     path("notas/chat.json", views.notas_chat_json, name="notas_chat_json"),

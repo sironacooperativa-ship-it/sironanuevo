@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
+from itertools import zip_longest
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -635,20 +636,52 @@ def venta_editar(request, pk: int):
 
     vendedores = Vendedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
     compradores = Comprador.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
-    productos_catalogo = _productos_payload_lista(_lista_farmacia_o_primera()) if _lista_farmacia_o_primera() else _productos_payload_lista(ListaPrecios.objects.order_by("id").first()) if ListaPrecios.objects.exists() else [
-        {"id": p.id, "codigo": p.codigo, "descripcion": p.descripcion, "precio": str(q2(p.precio_venta)), "stock": p.stock}
+    # En edición de pedido: mostrar un catálogo amplio (productos habilitados) y además
+    # garantizar que los productos ya presentes en el pedido aparezcan en el selector.
+    productos_catalogo = [
+        {
+            "id": p.id,
+            "codigo": p.codigo,
+            "descripcion": p.descripcion,
+            "precio": str(q2(p.precio_venta)),
+            "stock": p.stock,
+        }
         for p in Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
     ]
+    by_id = {int(p["id"]): p for p in productos_catalogo}
 
     # Para edición: repoblar líneas desde la venta actual.
+    lineas_qs = list(venta.lineas.select_related("producto").all())
     lineas_iniciales = [
         {
             "producto_id": ln.producto_id,
             "cantidad": ln.cantidad,
             "precio_unitario": str(ln.precio_unitario),
+            "codigo": (ln.codigo_snapshot or (ln.producto.codigo if ln.producto_id else "")),
+            "descripcion": (ln.descripcion_snapshot or (ln.producto.descripcion if ln.producto_id else "")),
+            "stock": int(getattr(ln.producto, "stock", 0) or 0),
         }
-        for ln in venta.lineas.all()
+        for ln in lineas_qs
     ]
+    for ln in lineas_qs:
+        try:
+            pid = int(ln.producto_id or 0)
+        except Exception:
+            pid = 0
+        if not pid or pid in by_id:
+            continue
+        # Producto del pedido que no está en el catálogo (p. ej. deshabilitado): igual lo agregamos.
+        prod = getattr(ln, "producto", None)
+        if prod is None:
+            continue
+        by_id[pid] = {
+            "id": prod.id,
+            "codigo": prod.codigo,
+            "descripcion": prod.descripcion,
+            "precio": str(q2(prod.precio_venta)),
+            "stock": prod.stock,
+        }
+    productos_catalogo = list(by_id.values())
     repoblar = {
         "vendedor_id": venta.vendedor_id,
         "comprador_id": venta.comprador_id,

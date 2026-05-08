@@ -217,6 +217,15 @@
             <input type="hidden" name="resolver_catalogo" value="conservar" />
             <button type="submit" class="btn btn-outline-secondary btn-sm">Conservar presupuesto original y aprobar</button>
           </form>
+          <button
+            type="button"
+            class="btn btn-outline-dark btn-sm"
+            data-sirona-modal-url="{% url 'presupuesto_comparativa' presupuesto.pk %}?modal=1"
+            title="Ver comparativa"
+            aria-label="Ver comparativa"
+          >
+            Ver comparativa
+          </button>
         </div>
       </div>
     </div>

@@ -422,6 +422,8 @@ def _filtrar_presupuestos_queryset(request):
         .prefetch_related("lineas__producto")
         .order_by("-creado_en", "-id")
     )
+    # Los presupuestos aprobados pasan a ser pedidos (ventas) y no se listan acá.
+    qs = qs.filter(estado=Presupuesto.Estado.ACTIVO)
     if fecha_desde:
         qs = qs.filter(creado_en__date__gte=fecha_desde)
     if fecha_hasta:
@@ -538,6 +540,65 @@ def presupuesto_detalle(request, pk: int):
 
 
 @login_required
+@require_http_methods(["GET"])
+def presupuesto_comparativa(request, pk: int):
+    """
+    Modal: comparación Presupuesto guardado vs catálogo actual (Producto).
+    Se usa cuando hay `alerta_catalogo` para que el usuario elija actualizar o conservar antes de aprobar.
+    """
+    p = get_object_or_404(
+        Presupuesto.objects.select_related("vendedor", "comprador").prefetch_related("lineas__producto"),
+        pk=pk,
+    )
+    if p.estado != Presupuesto.Estado.ACTIVO:
+        raise Http404("Solo disponible para presupuestos pendientes.")
+    if not _usuario_puede_gestionar_presupuesto(request.user, p):
+        raise Http404("Sin permiso.")
+
+    filas = []
+    for ln in p.lineas.select_related("producto").order_by("id"):
+        prod = ln.producto
+        cat_pu = q2(Decimal(str(prod.precio_venta or 0)))
+        filas.append(
+            {
+                "producto_id": prod.pk,
+                "qty": int(ln.cantidad),
+                "presu": {
+                    "codigo": ln.codigo_snapshot or prod.codigo,
+                    "descripcion": ln.descripcion_snapshot or prod.descripcion,
+                    "pu": q2(Decimal(str(ln.precio_unitario or 0))),
+                    "st": q2(Decimal(str(ln.subtotal or 0))),
+                },
+                "cat": {
+                    "codigo": prod.codigo,
+                    "descripcion": prod.descripcion,
+                    "pu": cat_pu,
+                    "st": q2(cat_pu * Decimal(int(ln.cantidad))),
+                },
+                "changed": bool(
+                    (ln.codigo_snapshot or "") != (prod.codigo or "")
+                    or (ln.descripcion_snapshot or "") != (prod.descripcion or "")
+                    or q2(Decimal(str(ln.precio_unitario or 0))) != cat_pu
+                ),
+            }
+        )
+
+    tot_presu = q2(sum((f["presu"]["st"] for f in filas), Decimal("0.00")))
+    tot_cat = q2(sum((f["cat"]["st"] for f in filas), Decimal("0.00")))
+
+    return render(
+        request,
+        "presupuestos/comparativa_fragment.html",
+        {
+            "presupuesto": p,
+            "filas": filas,
+            "tot_presu": tot_presu,
+            "tot_cat": tot_cat,
+        },
+    )
+
+
+@login_required
 @require_http_methods(["GET", "POST"])
 def presupuesto_nuevo(request):
     vendedores = Vendedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
@@ -618,14 +679,32 @@ def presupuesto_editar(request, pk: int):
     listas_precio = list(ListaPrecios.objects.all().order_by("-es_farmacia", "nombre"))
     lista_default = _lista_farmacia_o_primera()
     productos_catalogo = _productos_payload_lista(lista_default) if lista_default else []
-    lineas_iniciales = [
-        {
-            "producto_id": ln.producto_id,
-            "cantidad": ln.cantidad,
-            "precio_unitario": str(ln.precio_unitario),
-        }
-        for ln in presupuesto.lineas.all()
-    ]
+    # En edición: asegurar que los productos ya cargados en el presupuesto aparezcan en el selector,
+    # incluso si quedaron fuera del catálogo por lista / estado.
+    by_id = {int(p["id"]): p for p in productos_catalogo if str(p.get("id", "")).isdigit()}
+    lineas_qs = list(presupuesto.lineas.select_related("producto").all())
+    lineas_iniciales = []
+    for ln in lineas_qs:
+        prod = getattr(ln, "producto", None)
+        if prod is not None and prod.pk and int(prod.pk) not in by_id:
+            by_id[int(prod.pk)] = {
+                "id": prod.pk,
+                "codigo": prod.codigo,
+                "descripcion": prod.descripcion,
+                "precio": str(q2(prod.precio_venta)),
+                "stock": prod.stock,
+            }
+        lineas_iniciales.append(
+            {
+                "producto_id": ln.producto_id,
+                "cantidad": ln.cantidad,
+                "precio_unitario": str(ln.precio_unitario),
+                "codigo": (ln.codigo_snapshot or (prod.codigo if prod is not None else "")),
+                "descripcion": (ln.descripcion_snapshot or (prod.descripcion if prod is not None else "")),
+                "stock": int(getattr(prod, "stock", 0) or 0),
+            }
+        )
+    productos_catalogo = list(by_id.values())
     repoblar = None
 
     if request.method == "POST":

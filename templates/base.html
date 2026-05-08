@@ -217,6 +217,12 @@
                       </li>
                       <li><hr class="dropdown-divider" /></li>
                     {% endif %}
+                    {% if request.user.is_staff %}
+                      <li>
+                        <a class="dropdown-item" href="{% url 'switch_to_admin_mode' %}">Cambiar a admin</a>
+                      </li>
+                      <li><hr class="dropdown-divider" /></li>
+                    {% endif %}
                     <li><a class="dropdown-item" href="{% url 'logout' %}">Salir</a></li>
                   </ul>
                 </div>
@@ -342,6 +348,12 @@
                     {% if can_switch_to_vendor_mode %}
                       <li>
                         <a class="dropdown-item" href="{% url 'switch_to_vendor_mode' %}">Modo vendedor</a>
+                      </li>
+                      <li><hr class="dropdown-divider" /></li>
+                    {% endif %}
+                    {% if request.user.is_staff %}
+                      <li>
+                        <a class="dropdown-item" href="{% url 'switch_to_admin_mode' %}">Cambiar a admin</a>
                       </li>
                       <li><hr class="dropdown-divider" /></li>
                     {% endif %}

@@ -258,6 +258,7 @@ nav.navbar.sirona-topbar.bg-white {
   width: 100%;
   max-width: min(680px, 100%);
   height: 40px;
+  align-self: center;
   padding: 0 0.7rem 0 0.75rem;
   border-radius: 999px;
   border: 1px solid rgba(15, 23, 42, 0.07);
@@ -267,6 +268,16 @@ nav.navbar.sirona-topbar.bg-white {
     background var(--app-transition),
     border-color var(--app-transition),
     box-shadow var(--app-transition);
+}
+
+/* Alineación vertical: búsqueda, grupo de iconos y perfil */
+.sirona-topbar-actions {
+  height: 40px;
+  align-items: center;
+}
+.sirona-profile-btn {
+  min-height: 40px;
+  align-items: center;
 }
 
 .sirona-topbar-search:hover {

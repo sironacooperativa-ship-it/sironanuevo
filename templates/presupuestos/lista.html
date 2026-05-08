@@ -142,7 +142,6 @@
             <th scope="col" class="presu-col-ellipsis">Vendedor</th>
             <th scope="col" class="presu-col-ellipsis presu-col-cliente">Cliente</th>
             <th scope="col" class="text-end col-money presu-col-neto">Neto</th>
-            <th scope="col" class="text-center col-center presu-col-estado" title="Estado">Estado</th>
             <th scope="col" class="text-end presu-th-acciones col-presu-acciones presu-actions-sticky">Acciones</th>
           </tr>
         </thead>
@@ -151,19 +150,15 @@
             <tr>
               <td class="text-center col-center col-muted small">
                 {% if user.is_staff or vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
-                  {% if p.estado == "ACT" %}
-                    <input
-                      class="form-check-input js-cb-masivo"
-                      type="checkbox"
-                      name="presupuesto_id"
-                      value="{{ p.pk }}"
-                      form="form-aprobacion-masiva"
-                      title="Incluir en aprobación en lote"
-                      aria-label="Seleccionar presupuesto #{{ p.pk }} para aprobar en lote"
-                    />
-                  {% else %}
-                    <span class="d-inline-block" style="width:1rem" aria-hidden="true"> </span>
-                  {% endif %}
+                  <input
+                    class="form-check-input js-cb-masivo"
+                    type="checkbox"
+                    name="presupuesto_id"
+                    value="{{ p.pk }}"
+                    form="form-aprobacion-masiva"
+                    title="Incluir en aprobación en lote"
+                    aria-label="Seleccionar presupuesto #{{ p.pk }} para aprobar en lote"
+                  />
                 {% else %}
                   <span class="d-inline-block" style="width:1rem" aria-hidden="true"> </span>
                 {% endif %}
@@ -186,7 +181,7 @@
                   {% if p.venta_id %}
                     · <a class="text-decoration-none" href="{% url 'venta_detalle' p.venta_id %}">Pedido #{{ p.venta_id }}</a>
                   {% endif %}
-                  {% if p.estado == "ACT" and p.alerta_catalogo %}
+                  {% if p.alerta_catalogo %}
                     · <span
                         class="text-danger fw-semibold"
                         title="Uno o más productos cambiaron en el catálogo. Abrí el detalle para elegir actualizar o conservar antes de aprobar."
@@ -197,21 +192,6 @@
                 </div>
               </td>
               <td class="text-end col-money col-presu-neto presu-col-neto">{{ p.neto|ars }}</td>
-              <td class="col-center col-presu-estado text-center presu-col-estado">
-                {% if p.estado == "ACT" %}
-                  <span class="estado-ico estado-ico--pending" title="Pendiente" aria-label="Pendiente">
-                    <i data-lucide="clock" aria-hidden="true"></i>
-                  </span>
-                {% elif p.estado == "APR" %}
-                  <span class="estado-ico estado-ico--approved" title="Aprobado" aria-label="Aprobado">
-                    <i data-lucide="clock" aria-hidden="true"></i>
-                  </span>
-                {% else %}
-                  <span class="estado-ico estado-ico--cancel" title="Cancelado" aria-label="Cancelado">
-                    <i data-lucide="clock" aria-hidden="true"></i>
-                  </span>
-                {% endif %}
-              </td>
               <td class="col-presu-acciones text-end table-actions-cell presu-actions-sticky">
                 <div class="table-actions presu-row-actions d-flex">
                   <a
@@ -230,7 +210,7 @@
                       </button>
                     </form>
                   {% endif %}
-                  {% if p.estado == "ACT" and user.is_staff or p.estado == "ACT" and vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
+                  {% if user.is_staff or vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
                     <a
                       class="btn-icon btn-edit"
                       href="{% url 'presupuesto_editar' p.pk %}"
@@ -257,7 +237,7 @@
                       </form>
                     {% endif %}
                   {% endif %}
-                  {% if user.is_staff or p.estado == "ACT" and vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
+                  {% if user.is_staff or vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
                     <form method="post" action="{% url 'presupuesto_eliminar' p.pk %}" class="d-inline m-0 presu-accion-form" onsubmit="return confirm('¿Eliminar el presupuesto #{{ p.pk }}? Si estaba aprobado, también se elimina el pedido y se revierte stock y caja.');">
                       {% csrf_token %}
                       <button type="submit" class="btn-icon btn-delete" title="Eliminar" aria-label="Eliminar">
@@ -269,7 +249,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="{% if user.is_staff or has_vendedor_perfil %}6{% else %}6{% endif %}" class="table-empty">No hay presupuestos con los filtros actuales.</td></tr>
+            <tr><td colspan="{% if user.is_staff or has_vendedor_perfil %}5{% else %}5{% endif %}" class="table-empty">No hay presupuestos con los filtros actuales.</td></tr>
           {% endfor %}
         </tbody>
       </table>

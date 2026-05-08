@@ -391,6 +391,22 @@ def switch_to_full_mode(request):
 
 
 @login_required
+@require_http_methods(["GET"])
+def switch_to_admin_mode(request):
+    """
+    Atajo para usuarios staff: salir de modo vendedor (si estaba) y entrar al panel de administración del sistema.
+    """
+    if not getattr(request.user, "is_staff", False):
+        return redirect("home")
+    try:
+        request.session["modo_vendedor"] = False
+        request.session.pop("modo_vendedor", None)
+    except Exception:
+        pass
+    return redirect("admin_usuarios_list")
+
+
+@login_required
 @require_http_methods(["GET", "POST"])
 def cambiar_password(request):
     if request.method == "POST":

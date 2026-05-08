@@ -476,6 +476,28 @@
         );
       }
 
+      function ensureSelectedOption(sel, L) {
+        const pid =
+          L && L.producto_id !== undefined && L.producto_id !== null && String(L.producto_id).trim() !== ""
+            ? String(L.producto_id)
+            : "";
+        if (!pid) return;
+        if (!sel.querySelector(`option[value="${pid}"]`)) {
+          const codigo = L.codigo ? String(L.codigo) : pid;
+          const desc = L.descripcion ? String(L.descripcion) : "Producto";
+          const stock = L.stock != null ? String(L.stock) : "?";
+          const opt = document.createElement("option");
+          opt.value = pid;
+          opt.textContent = `${codigo} — ${desc} (stock ${stock})`;
+          sel.appendChild(opt);
+        }
+        sel.value = pid;
+        sel.dataset.prevEmpty = "0";
+        try {
+          if (sel.__sironaPicker && typeof sel.__sironaPicker.syncBtn === "function") sel.__sironaPicker.syncBtn();
+        } catch (e) {}
+      }
+
       function addRow() {
         const tr = document.createElement("tr");
         tr.innerHTML =
@@ -581,17 +603,7 @@
           const sel = tr.querySelector('select[name="linea_producto"]');
           const qIn = tr.querySelector('input[name="linea_cantidad"]');
           const puIn = tr.querySelector('input[name="linea_precio_unitario"]');
-          const pid =
-            L.producto_id !== undefined && L.producto_id !== null && String(L.producto_id).trim() !== ""
-              ? String(L.producto_id)
-              : "";
-          if (pid && sel.querySelector(`option[value="${pid}"]`)) {
-            sel.value = pid;
-            sel.dataset.prevEmpty = "0";
-          } else {
-            sel.value = "";
-            sel.dataset.prevEmpty = pid ? "0" : "1";
-          }
+          ensureSelectedOption(sel, L);
           const rawQty =
             L.cantidad_raw !== undefined && L.cantidad_raw !== null
               ? String(L.cantidad_raw)

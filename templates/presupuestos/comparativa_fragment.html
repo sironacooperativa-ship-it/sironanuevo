@@ -1,0 +1,86 @@
+{% load money %}
+<div
+  class="p-0"
+  data-sirona-dialog-class="modal-lg"
+  data-sirona-dialog-centered="1"
+  data-sirona-dialog-no-scroll="0"
+>
+  <div class="modal-header">
+    <h5 class="modal-title mb-0">Comparativa catálogo · Presupuesto #{{ presupuesto.pk }}</h5>
+    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal" aria-label="Cerrar">
+      Cerrar
+    </button>
+  </div>
+  <div class="modal-body">
+    <p class="text-muted small mb-3">
+      Comparación entre lo <strong>guardado</strong> en el presupuesto y lo <strong>actual</strong> en catálogo (producto).
+      Elegí abajo si querés <strong>actualizar</strong> o <strong>conservar</strong> antes de aprobar.
+    </p>
+
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th class="text-end">Cant.</th>
+            <th class="text-end">Presu P.U.</th>
+            <th class="text-end">Cat P.U.</th>
+            <th class="text-end">Presu Subt.</th>
+            <th class="text-end">Cat Subt.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in filas %}
+            <tr {% if f.changed %}class="table-warning"{% endif %}>
+              <td>
+                <div class="fw-semibold">{{ f.presu.codigo }} — {{ f.presu.descripcion }}</div>
+                {% if f.presu.codigo != f.cat.codigo or f.presu.descripcion != f.cat.descripcion %}
+                  <div class="text-muted small">Catálogo: {{ f.cat.codigo }} — {{ f.cat.descripcion }}</div>
+                {% endif %}
+              </td>
+              <td class="text-end">{{ f.qty }}</td>
+              <td class="text-end">{{ f.presu.pu|ars }}</td>
+              <td class="text-end">{{ f.cat.pu|ars }}</td>
+              <td class="text-end fw-semibold">{{ f.presu.st|ars }}</td>
+              <td class="text-end fw-semibold">{{ f.cat.st|ars }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td class="text-muted small" colspan="4">Totales (solo líneas)</td>
+            <td class="text-end fw-bold">{{ tot_presu|ars }}</td>
+            <td class="text-end fw-bold">{{ tot_cat|ars }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="alert alert-info small mb-0">
+      <strong>Tip:</strong> la opción <em>Actualizar</em> recalcula precios y textos desde catálogo; <em>Conservar</em> deja el presupuesto tal cual se cotizó.
+    </div>
+  </div>
+  <div class="modal-footer">
+    <form
+      method="post"
+      action="{% url 'presupuesto_aprobar' presupuesto.pk %}"
+      class="d-inline"
+      onsubmit="return confirm('Se aplicarán precio de venta y datos actuales del catálogo a cada línea. ¿Aprobar y generar el pedido?');"
+    >
+      {% csrf_token %}
+      <input type="hidden" name="resolver_catalogo" value="actualizar" />
+      <button type="submit" class="btn btn-warning btn-sm">Actualizar desde catálogo y aprobar</button>
+    </form>
+    <form
+      method="post"
+      action="{% url 'presupuesto_aprobar' presupuesto.pk %}"
+      class="d-inline"
+      onsubmit="return confirm('Se mantienen los valores del presupuesto. ¿Aprobar y generar el pedido?');"
+    >
+      {% csrf_token %}
+      <input type="hidden" name="resolver_catalogo" value="conservar" />
+      <button type="submit" class="btn btn-outline-secondary btn-sm">Conservar presupuesto original y aprobar</button>
+    </form>
+  </div>
+</div>
+

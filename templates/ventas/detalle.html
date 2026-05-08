@@ -284,6 +284,22 @@
     </div>
   </div>
 
+  {# En pantalla: preview del PDF real (igual que exporta/imprime), como Presupuestos. #}
+  <div class="d-print-none mb-3">
+    <div class="presupuesto-factura-wrap" style="max-width: 920px;">
+      <div class="card border-0 shadow-sm overflow-hidden">
+        <div class="card-body p-0" style="height: min(78vh, 920px);">
+          <iframe
+            title="Pedido PDF"
+            src="{% url 'venta_detalle' venta.pk %}?export=pdf&inline=1"
+            style="width: 100%; height: 100%; border: 0; display: block; background: #fff;"
+          ></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Mantener el comprobante HTML para impresión / fallback. #}
   <div class="card shadow-sm border remito-doc">
     <div class="card-body p-4 p-md-5">
       <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 border-bottom pb-3 mb-4">

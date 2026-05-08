@@ -158,7 +158,17 @@ body.app-body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0 !important; /* override `.app-icon-btn` padding */
   line-height: 0;
+}
+
+/* Mobile: Productos → Lista de productos: priorizar Descripción + Precio + Acciones */
+@media (max-width: 575.98px) {
+  .col-hide-mobile {
+    display: none !important;
+  }
 }
 
 .sidebar-collapse-btn:hover {

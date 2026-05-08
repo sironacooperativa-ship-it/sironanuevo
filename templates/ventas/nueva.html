@@ -88,16 +88,13 @@
                 </div>
                 <button
                   type="button"
-                  class="action-button venta-nueva-btn-add"
+                  class="action-button primary venta-nueva-btn-add"
                   data-sirona-modal-url="{% url 'producto_create' %}?modal=1"
                   title="Nuevo producto"
                   aria-label="Nuevo producto"
                   id="btnNuevoProducto"
                 >
                   Nuevo producto
-                </button>
-                <button type="button" class="action-button primary venta-nueva-btn-add" id="btnAddLinea" title="Agregar línea">
-                  + Agregar línea
                 </button>
               </div>
             </div>
@@ -533,7 +530,7 @@
         } catch (e) {}
       });
 
-      btnAdd.addEventListener("click", addRow);
+      // Sin botón "Agregar línea": se puede seguir agregando al completar la última fila vacía.
       inpDesc.addEventListener("input", totals);
       inpCom.addEventListener("input", totals);
       if (chkAplica) chkAplica.addEventListener("change", totals);
@@ -548,7 +545,6 @@
       });
 
       if (productos.length === 0) {
-        btnAdd.disabled = true;
         tbody.innerHTML =
           '<tr><td colspan="5" class="table-empty">No hay productos habilitados para vender.</td></tr>';
       } else if (iniciales.length > 0) {

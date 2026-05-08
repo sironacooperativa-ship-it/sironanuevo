@@ -114,9 +114,12 @@
           <tr>
             <th scope="col" class="col-ped th-pedido">Pedido / fecha</th>
             <th scope="col" class="th-vend presu-col-ellipsis">Vendedor</th>
-            <th scope="col" class="th-compra presu-col-ellipsis">Comprador</th>
-            <th scope="col" class="text-end th-comision col-money">Comisión</th>
-            <th scope="col" class="text-end th-caja col-money">Ingreso caja</th>
+            <th scope="col" class="th-compra presu-col-ellipsis d-none d-md-table-cell">Comprador</th>
+            <th scope="col" class="text-end th-comision col-money d-none d-md-table-cell">Comisión</th>
+            <th scope="col" class="text-end th-caja col-money">
+              <span class="d-none d-md-inline">Ingreso caja</span>
+              <span class="d-inline d-md-none">Neto</span>
+            </th>
             <th scope="col" class="text-center th-estado col-center" title="Estado" aria-label="Estado"> </th>
             <th scope="col" class="text-end th-acciones presu-th-acciones col-presu-acciones" aria-label="Acciones"> </th>
           </tr>
@@ -132,7 +135,7 @@
                 <div class="ventas-hist-cell-title">{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}</div>
                 <div class="ventas-hist-cell-sub text-muted small">Código: {{ v.vendedor.codigo }}</div>
               </td>
-              <td class="col-muted presu-col-ellipsis" title="{% if v.comprador %}{{ v.comprador.apellido }}, {{ v.comprador.nombre }}{% endif %}">
+              <td class="col-muted presu-col-ellipsis d-none d-md-table-cell" title="{% if v.comprador %}{{ v.comprador.apellido }}, {{ v.comprador.nombre }}{% endif %}">
                 {% if v.comprador %}
                   <div class="ventas-hist-cell-title">{{ v.comprador.apellido }}, {{ v.comprador.nombre }}</div>
                   <div class="ventas-hist-cell-sub text-muted small">
@@ -148,7 +151,7 @@
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td class="text-end col-money comision-cel">
+              <td class="text-end col-money comision-cel d-none d-md-table-cell">
                 {% if v.aplica_comision %}
                   <div class="ventas-hist-cell-title">{{ v.comision_porcentaje }}%</div>
                   <div class="ventas-hist-cell-sub text-muted small">{{ v.monto_comision|ars }}</div>
@@ -157,14 +160,17 @@
                 {% endif %}
               </td>
               <td class="text-end col-money ventas-hist-caja">
-                <div class="ventas-hist-caja-main">{{ v.monto_ingreso_caja|ars }}</div>
-                <div class="ventas-hist-caja-sub text-muted small">(Neto: {{ v.neto|ars }})</div>
+                <div class="d-none d-md-block">
+                  <div class="ventas-hist-caja-main">{{ v.monto_ingreso_caja|ars }}</div>
+                  <div class="ventas-hist-caja-sub text-muted small">(Neto: {{ v.neto|ars }})</div>
+                </div>
+                <div class="d-block d-md-none fw-semibold">{{ v.neto|ars }}</div>
               </td>
               <td class="text-center col-center">
                 {% if v.estado == "PEN" %}
-                  <span class="estado-ico estado-ico--pending" title="Pendiente" aria-label="Pendiente">
-                    <i data-lucide="clock" aria-hidden="true"></i>
-                  </span>
+                  <a class="btn btn-sm btn-primary" href="{% url 'venta_registrar_pago' v.pk %}" title="Pagar" aria-label="Pagar">
+                    Pagar
+                  </a>
                 {% elif v.estado == "CAN" %}
                   <span class="estado-ico estado-ico--cancel" title="Cancelado" aria-label="Cancelado">
                     <i data-lucide="x-circle" aria-hidden="true"></i>
@@ -243,13 +249,13 @@
     </div>
     <div class="ventas-hist-legend" aria-label="Leyenda">
       <div class="ventas-hist-legend-row">
-        <span class="ventas-hist-legend-item"><span class="estado-ico estado-ico--pending" title="Pendiente"><i data-lucide="clock"></i></span> Pendiente</span>
+        <span class="ventas-hist-legend-item"><span class="btn btn-sm btn-primary py-0 px-2" aria-hidden="true">Pagar</span> Pendiente</span>
         <span class="ventas-hist-legend-item"><span class="estado-ico estado-ico--approved" title="Aprobado"><i data-lucide="check-circle-2"></i></span> Aprobado</span>
         <span class="ventas-hist-legend-item"><span class="estado-ico estado-ico--cancel" title="Cancelado"><i data-lucide="x-circle"></i></span> Cancelado</span>
         <span class="ventas-hist-legend-sep"></span>
         <span class="ventas-hist-legend-item"><span class="btn-icon btn-view" aria-hidden="true"><i data-lucide="eye"></i></span> Ver detalle</span>
         <span class="ventas-hist-legend-item"><span class="btn-icon btn-edit" aria-hidden="true"><i data-lucide="pencil"></i></span> Editar</span>
-        <span class="ventas-hist-legend-item"><span class="btn-icon btn-approve" aria-hidden="true"><i data-lucide="check"></i></span> Aprobar</span>
+        <span class="ventas-hist-legend-item"><span class="btn-icon btn-approve" aria-hidden="true"><i data-lucide="check"></i></span> Pagar</span>
         <span class="ventas-hist-legend-item"><span class="btn-icon btn-delete" aria-hidden="true"><i data-lucide="trash-2"></i></span> Eliminar</span>
       </div>
     </div>
