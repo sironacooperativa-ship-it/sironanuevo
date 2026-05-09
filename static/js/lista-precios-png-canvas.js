@@ -41,10 +41,16 @@
     if (!ctx) return;
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    /* Suavizado solo útil para drawImage (logo); el texto se define más nítido sin escala fraccionaria. */
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
     ctx.scale(EXPORT_SCALE, EXPORT_SCALE);
     var strokeW = 2 / EXPORT_SCALE;
+
+    /** Media unidad lógica con scale 2 → píxeles enteros (menos texto “nublado”). */
+    function snapY(v) {
+      return Math.round(Number(v) * 2) / 2;
+    }
 
     var headerTitle = parte.titulo_suffix ? baseTitulo + " · " + parte.titulo_suffix : baseTitulo;
     var filtrosRight = parte.titulo_suffix
@@ -62,11 +68,11 @@
     ctx.fillRect(0, 0, w, headerH);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 48px system-ui, -apple-system, Segoe UI, Arial";
-    ctx.fillText(headerTitle, pad, 66);
-    ctx.font = "28px system-ui, -apple-system, Segoe UI, Arial";
+    ctx.font = "bold 48px Arial, Helvetica, sans-serif";
+    ctx.fillText(headerTitle, pad, snapY(66));
+    ctx.font = "28px Arial, Helvetica, sans-serif";
     var fecha = new Date().toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
-    ctx.fillText("Emitido: " + fecha + emitidoSuffix, pad, 118);
+    ctx.fillText("Emitido: " + fecha + emitidoSuffix, pad, snapY(118));
 
     function drawLogo() {
       try {
@@ -91,6 +97,7 @@
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
+        ctx.imageSmoothingEnabled = true;
         ctx.drawImage(logo, bx + 9, by + 8, lw, lh);
         ctx.restore();
       } catch (e) {}
@@ -98,13 +105,13 @@
 
     var y = headerH + 20;
     ctx.fillStyle = "#0f172a";
-    ctx.font = "bold 24px system-ui, -apple-system, Segoe UI, Arial";
-    ctx.fillText("Filtros aplicados", pad, y + 26);
+    ctx.font = "bold 24px Arial, Helvetica, sans-serif";
+    ctx.fillText("Filtros aplicados", pad, snapY(y + 26));
     ctx.fillStyle = "#64748b";
-    ctx.font = "22px system-ui, -apple-system, Segoe UI, Arial";
-    ctx.fillText("Buscar: " + (qtxt ? qtxt : "—"), pad, y + 58);
+    ctx.font = "22px Arial, Helvetica, sans-serif";
+    ctx.fillText("Buscar: " + (qtxt ? qtxt : "—"), pad, snapY(y + 58));
     ctx.textAlign = "right";
-    ctx.fillText(filtrosRight, w - pad, y + 58);
+    ctx.fillText(filtrosRight, w - pad, snapY(y + 58));
     ctx.textAlign = "left";
     y += filterH;
 
@@ -127,11 +134,12 @@
     }
 
     ctx.fillStyle = "#505050";
-    ctx.font = "24px system-ui, -apple-system, Segoe UI, Arial";
-    drawClippedText("Código", colCodigo, y + 24, { height: 38, top: y - 4 });
-    drawClippedText("Tipo", colTipo, y + 24, { height: 38, top: y - 4 });
-    drawClippedText("Descripción", colDesc, y + 24, { height: 38, top: y - 4 });
-    drawClippedText("Precio", colPrecio, y + 24, { align: "right", height: 38, top: y - 4 });
+    ctx.font = "24px Arial, Helvetica, sans-serif";
+    var hdrBaseline = snapY(y + 24);
+    drawClippedText("Código", colCodigo, hdrBaseline, { height: 38, top: y - 4 });
+    drawClippedText("Tipo", colTipo, hdrBaseline, { height: 38, top: y - 4 });
+    drawClippedText("Descripción", colDesc, hdrBaseline, { height: 38, top: y - 4 });
+    drawClippedText("Precio", colPrecio, hdrBaseline, { align: "right", height: 38, top: y - 4 });
     y += 44;
     ctx.strokeStyle = "#dcdcdc";
     ctx.lineWidth = strokeW;
@@ -141,19 +149,19 @@
     ctx.stroke();
     y += 20;
 
-    ctx.font = dense ? "24px system-ui, -apple-system, Segoe UI, Arial" : "28px system-ui, -apple-system, Segoe UI, Arial";
-    var textBaseline = dense ? y + 32 : y + 34;
+    ctx.font = dense ? "24px Arial, Helvetica, sans-serif" : "28px Arial, Helvetica, sans-serif";
     for (var i = 0; i < chunk.length; i++) {
       var p = chunk[i];
+      var rowBaseline = snapY(dense ? y + 32 : y + 34);
       if (i % 2 === 1) {
         ctx.fillStyle = "#f8fafc";
         ctx.fillRect(0, y - 8, w, rowH);
       }
       ctx.fillStyle = "#1e1e1e";
-      drawClippedText(p.codigo, colCodigo, textBaseline, { top: y - 8, height: rowH });
-      drawClippedText(p.tipo, colTipo, textBaseline, { top: y - 8, height: rowH });
-      drawClippedText(p.descripcion, colDesc, textBaseline, { top: y - 8, height: rowH });
-      drawClippedText(p.precio, colPrecio, textBaseline, { align: "right", top: y - 8, height: rowH });
+      drawClippedText(p.codigo, colCodigo, rowBaseline, { top: y - 8, height: rowH });
+      drawClippedText(p.tipo, colTipo, rowBaseline, { top: y - 8, height: rowH });
+      drawClippedText(p.descripcion, colDesc, rowBaseline, { top: y - 8, height: rowH });
+      drawClippedText(p.precio, colPrecio, rowBaseline, { align: "right", top: y - 8, height: rowH });
       y += rowH;
     }
   }
