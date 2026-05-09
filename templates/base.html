@@ -16,8 +16,8 @@
       rel="stylesheet"
     />
     <!-- theme: ios-2026r29 -->
-    <link href="{% static 'css/theme.css' %}?v=ios-2026r41" rel="stylesheet" />
-    <link href="{% static 'css/styles.css' %}?v=saas-2026r15" rel="stylesheet" />
+    <link href="{% static 'css/theme.css' %}?v=ios-2026r42" rel="stylesheet" />
+    <link href="{% static 'css/styles.css' %}?v=saas-2026r16" rel="stylesheet" />
     <link href="{% static 'css/ui-force-productos.css' %}?v=2" rel="stylesheet" />
     <link href="{% static 'css/sirona-calc.css' %}" rel="stylesheet" />
     <style>
@@ -126,6 +126,7 @@
               </a>
             </div>
 
+            <div class="sirona-topbar-cluster">
             <div class="sirona-topbar-trailing">
               <div class="sirona-topbar-center d-none d-md-flex">
                 <div class="sirona-topbar-search" role="search" aria-label="Buscar en el sistema">
@@ -201,7 +202,7 @@
                         {% if request.user.last_name %}{{ request.user.last_name|slice:":1"|upper }}{% else %}{{ request.user.username|slice:"1:2"|upper }}{% endif %}
                       </span>
                     </span>
-                    <span class="sirona-profile-text d-flex flex-column align-items-start">
+                    <span class="sirona-profile-text d-none d-lg-flex flex-column align-items-start">
                       <span class="sirona-profile-name text-truncate">
                         {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user.username }}{% endif %}
                       </span>
@@ -231,6 +232,7 @@
                 {# Logout queda solo en el dropdown de perfil #}
               </div>
             </div>
+            </div>
           </div>
         </nav>
       {% else %}
@@ -259,9 +261,14 @@
               </a>
             </div>
 
+            <div class="sirona-topbar-cluster">
             <div class="sirona-topbar-trailing">
               <div class="sirona-topbar-center">
-                <div class="sirona-topbar-search" role="search" aria-label="Buscar en el sistema">
+                <div
+                  class="sirona-topbar-search sirona-topbar-search--desktop d-none d-lg-flex"
+                  role="search"
+                  aria-label="Buscar en el sistema"
+                >
                   <i data-lucide="search" class="sirona-search-ico" aria-hidden="true"></i>
                   <input
                     id="sironaTopbarSearch"
@@ -271,6 +278,17 @@
                     placeholder="Buscar…"
                   />
                 </div>
+                <button
+                  type="button"
+                  class="btn app-icon-btn sirona-topbar-search-mobile-btn d-lg-none"
+                  id="sironaTopbarSearchBtn"
+                  data-bs-toggle="modal"
+                  data-bs-target="#sironaSearchMobileModal"
+                  aria-label="Buscar"
+                  title="Buscar"
+                >
+                  <i data-lucide="search" class="app-lucide-toolbar"></i>
+                </button>
               </div>
               <div class="sirona-topbar-actions">
                 <button
@@ -334,7 +352,7 @@
                         {% if request.user.last_name %}{{ request.user.last_name|slice:":1"|upper }}{% else %}{{ request.user.username|slice:"1:2"|upper }}{% endif %}
                       </span>
                     </span>
-                    <span class="sirona-profile-text d-flex flex-column align-items-start">
+                    <span class="sirona-profile-text d-none d-lg-flex flex-column align-items-start">
                       <span class="sirona-profile-name text-truncate">
                         {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user.username }}{% endif %}
                       </span>
@@ -365,6 +383,7 @@
 
                 {# Logout queda solo en el dropdown de perfil #}
               </div>
+            </div>
             </div>
           </div>
         </nav>
@@ -922,6 +941,35 @@
     </div>
 
     {% if request.user.is_authenticated %}
+      <div
+        class="modal fade sirona-search-mobile-modal"
+        id="sironaSearchMobileModal"
+        tabindex="-1"
+        aria-labelledby="sironaSearchMobileModalLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog modal-dialog-centered modal-lg px-2">
+          <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-2">
+              <h5 class="modal-title" id="sironaSearchMobileModalLabel">Buscar</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body pt-0">
+              <div class="sirona-topbar-search sirona-topbar-search--modal w-100" role="search" aria-label="Buscar en el sistema">
+                <i data-lucide="search" class="sirona-search-ico" aria-hidden="true"></i>
+                <input
+                  type="search"
+                  id="sironaTopbarSearchModalInput"
+                  class="sirona-search-input"
+                  autocomplete="off"
+                  placeholder="Buscar…"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {% if not recibe_notas_admin %}
         <div
           class="modal fade"
@@ -1448,6 +1496,33 @@
             onScroll();
             window.addEventListener("scroll", onScroll, { passive: true });
           }
+        } catch (e) {}
+      })();
+    </script>
+    <script>
+      // Móvil: modal de búsqueda — foco y sincronizar texto con el campo de escritorio (mismo criterio al redimensionar).
+      (function () {
+        try {
+          const modalEl = document.getElementById("sironaSearchMobileModal");
+          const inpModal = document.getElementById("sironaTopbarSearchModalInput");
+          const inpDesk = document.getElementById("sironaTopbarSearch");
+          if (!modalEl || !inpModal) return;
+          modalEl.addEventListener("shown.bs.modal", function () {
+            try {
+              if (inpDesk && inpDesk.value) {
+                inpModal.value = inpDesk.value;
+              }
+              inpModal.focus();
+            } catch (e) {}
+            try {
+              if (window.lucide && typeof lucide.createIcons === "function") lucide.createIcons();
+            } catch (e) {}
+          });
+          modalEl.addEventListener("hidden.bs.modal", function () {
+            try {
+              if (inpDesk) inpDesk.value = inpModal.value || "";
+            } catch (e) {}
+          });
         } catch (e) {}
       })();
     </script>

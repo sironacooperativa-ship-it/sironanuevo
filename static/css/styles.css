@@ -1512,6 +1512,11 @@ nav.navbar.sirona-topbar.bg-white.topbar {
   min-width: 0;
 }
 
+/* Agrupa búsqueda + iconos + perfil; en escritorio no afecta el layout (hijos participan en la grilla). */
+.sirona-topbar-cluster {
+  display: contents;
+}
+
 .sirona-topbar-left,
 .sirona-topbar-right {
   min-width: 0;
@@ -1750,8 +1755,8 @@ nav.navbar.sirona-topbar.bg-white.topbar {
 
 @media (max-width: 991.98px) {
   /*
-    Una sola fila (flex, nowrap): marca | [ búsqueda flex‑1 | calc+msgs fijos ] | credenciales fijas.
-    La grilla de 3 columnas podía dejar el perfil debajo; flex alinea todo en línea.
+    Marca | franja sólida: lupa + calc + mensajes + avatar (todo en línea).
+    La búsqueda por texto va en modal (#sironaSearchMobileModal).
   */
   .sirona-topbar-inner {
     display: flex !important;
@@ -1772,17 +1777,30 @@ nav.navbar.sirona-topbar.bg-white.topbar {
     min-width: 0;
   }
 
-  .sirona-topbar-trailing {
+  .sirona-topbar-cluster {
+    display: flex !important;
+    align-items: center;
     flex: 1 1 0;
     min-width: 0;
-    gap: 0.28rem;
-    justify-content: flex-start;
+    gap: 0.2rem;
+    padding: 0.15rem 0.35rem 0.15rem 0.4rem;
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    border-radius: 999px;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.07);
+  }
+
+  .sirona-topbar-trailing {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 0.2rem;
+    justify-content: flex-end;
     align-items: center;
     flex-wrap: nowrap !important;
   }
 
   .sirona-topbar-trailing .sirona-topbar-center {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     min-width: 0;
     max-width: none !important;
   }
@@ -1791,12 +1809,21 @@ nav.navbar.sirona-topbar.bg-white.topbar {
     flex: 0 0 auto;
     flex-shrink: 0;
     margin-left: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    gap: 0.06rem;
   }
 
   .sirona-topbar-right {
     flex: 0 0 auto;
     flex-shrink: 0;
     min-width: 0;
+  }
+
+  .sirona-topbar-search-mobile-btn {
+    flex-shrink: 0;
   }
 
   .sirona-topbar-search {
@@ -1812,36 +1839,45 @@ nav.navbar.sirona-topbar.bg-white.topbar {
     font-size: 0.8125rem;
   }
 
-  .sirona-topbar-actions {
-    flex-shrink: 0;
-    padding: 0.08rem;
-    gap: 0.05rem;
-  }
-
   .sirona-topbar-actions .app-icon-btn {
     padding: 0.3rem 0.42rem;
   }
 
-  .sirona-profile-btn {
-    padding: 0.22rem 0.44rem;
-    gap: 0.35rem;
-    max-width: 9.25rem;
+  .sirona-topbar-right .sirona-profile-btn {
+    padding: 0.15rem;
+    gap: 0;
+    max-width: none;
+    border: none;
+    background: transparent;
+    box-shadow: none;
   }
 
-  .sirona-profile-text {
-    min-width: 0;
-    max-width: 6.75rem;
+  .sirona-topbar-right .sirona-profile-btn:hover {
+    background: rgba(15, 23, 42, 0.06);
   }
 
-  .sirona-profile-name {
-    font-size: 0.8125rem;
-    font-weight: 850;
+  .sirona-topbar-right .sirona-profile-btn.dropdown-toggle::after {
+    display: none;
+  }
+
+  .sirona-topbar-right .sirona-profile-text {
+    display: none !important;
   }
 
   .sirona-avatar {
     width: 30px;
     height: 30px;
     font-size: 0.75rem;
+  }
+
+  .theme-dark .sirona-topbar-cluster {
+    background: rgba(18, 26, 44, 0.98);
+    border-color: rgba(148, 163, 184, 0.24);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  }
+
+  .theme-dark .sirona-topbar-right .sirona-profile-btn:hover {
+    background: rgba(255, 255, 255, 0.07);
   }
 }
 
@@ -1860,15 +1896,6 @@ nav.navbar.sirona-topbar.bg-white.topbar {
 
   .sirona-topbar-left {
     max-width: min(38vw, 9.5rem);
-  }
-
-  .sirona-profile-btn {
-    max-width: 8.5rem;
-    padding: 0.2rem 0.4rem;
-  }
-
-  .sirona-profile-text {
-    max-width: 5.75rem;
   }
 }
 

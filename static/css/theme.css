@@ -156,6 +156,10 @@ nav.navbar.sirona-topbar.bg-white {
   min-width: 0;
 }
 
+.sirona-topbar-cluster {
+  display: contents;
+}
+
 .sirona-topbar-left,
 .sirona-topbar-right {
   min-width: 0;
@@ -508,7 +512,7 @@ nav.navbar.sirona-topbar.bg-white {
   color: var(--cg-text);
 }
 
-/* Una sola fila: marca | búsqueda (flex) + iconos + perfil — mismo criterio que styles.css */
+/* Móvil: detalle en styles.css (franja sólida + lupa/modal + solo avatar). Resumen aquí por si falta cache de styles. */
 @media (max-width: 991.98px) {
   .sirona-topbar-inner {
     display: flex !important;
@@ -528,16 +532,29 @@ nav.navbar.sirona-topbar.bg-white {
     min-width: 0;
   }
 
-  .sirona-topbar-trailing {
+  .sirona-topbar-cluster {
+    display: flex !important;
+    align-items: center;
     flex: 1 1 0;
     min-width: 0;
+    gap: 0.2rem;
+    padding: 0.15rem 0.35rem 0.15rem 0.4rem;
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    border-radius: 999px;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.07);
+  }
+
+  .sirona-topbar-trailing {
+    flex: 1 1 auto;
+    min-width: 0;
     flex-wrap: nowrap !important;
-    justify-content: flex-start;
-    gap: 0.28rem;
+    justify-content: flex-end;
+    gap: 0.2rem;
   }
 
   .sirona-topbar-trailing .sirona-topbar-center {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     min-width: 0;
     max-width: none !important;
   }
@@ -545,6 +562,10 @@ nav.navbar.sirona-topbar.bg-white {
   .sirona-topbar-trailing .sirona-topbar-actions {
     flex: 0 0 auto;
     margin-left: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
   }
 
   .sirona-topbar-right {
@@ -566,25 +587,31 @@ nav.navbar.sirona-topbar.bg-white {
     font-size: 0.8125rem;
   }
 
-  .sirona-topbar-actions {
-    flex-shrink: 0;
-    padding: 0.08rem;
-    gap: 0.05rem;
-  }
-
   .sirona-topbar-actions .app-icon-btn {
     padding: 0.3rem 0.42rem;
   }
 
-  .sirona-profile-btn {
-    padding: 0.22rem 0.45rem;
-    gap: 0.35rem;
+  .sirona-topbar-right .sirona-profile-btn {
+    padding: 0.15rem;
+    gap: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .sirona-topbar-right .sirona-profile-btn.dropdown-toggle::after {
+    display: none;
   }
 
   .sirona-avatar {
     width: 30px;
     height: 30px;
     font-size: 0.75rem;
+  }
+
+  .theme-dark .sirona-topbar-cluster {
+    background: rgba(18, 26, 44, 0.98);
+    border-color: rgba(148, 163, 184, 0.24);
   }
 }
 
