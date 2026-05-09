@@ -24,12 +24,18 @@
       min-width: 760px; /* evita columnas aplastadas */
     }
     .sirona-presu-old {
-      color: #dc2626; /* rojo legible */
+      color: #dc2626 !important; /* rojo legible (override table-warning) */
       font-weight: 650;
     }
     .sirona-presu-new {
-      color: #0f172a;
+      color: #0f172a !important;
       font-weight: 650;
+    }
+    .sirona-presu-sub {
+      font-size: 0.78rem;
+      line-height: 1.15;
+      margin-top: 2px;
+      opacity: 0.95;
     }
   </style>
   <div class="modal-header">
@@ -68,10 +74,36 @@
                 {% endif %}
               </td>
               <td class="text-end">{{ f.qty }}</td>
-              <td class="text-end {% if f.changed and f.presu.pu != f.cat.pu %}sirona-presu-old{% endif %}">{{ f.presu.pu|ars }}</td>
-              <td class="text-end {% if f.changed and f.presu.pu != f.cat.pu %}sirona-presu-new{% endif %}">{{ f.cat.pu|ars }}</td>
-              <td class="text-end fw-semibold {% if f.changed and f.presu.pu != f.cat.pu %}sirona-presu-old{% endif %}">{{ f.presu.st|ars }}</td>
-              <td class="text-end fw-semibold {% if f.changed and f.presu.pu != f.cat.pu %}sirona-presu-new{% endif %}">{{ f.cat.st|ars }}</td>
+              <td class="text-end">
+                {% if f.changed and f.presu.pu != f.cat.pu %}
+                  <div class="sirona-presu-old">{{ f.presu.pu|ars }}</div>
+                  <div class="sirona-presu-new sirona-presu-sub">Nuevo: {{ f.cat.pu|ars }}</div>
+                {% else %}
+                  {{ f.presu.pu|ars }}
+                {% endif %}
+              </td>
+              <td class="text-end">
+                {% if f.changed and f.presu.pu != f.cat.pu %}
+                  <div class="sirona-presu-new">{{ f.cat.pu|ars }}</div>
+                {% else %}
+                  {{ f.cat.pu|ars }}
+                {% endif %}
+              </td>
+              <td class="text-end fw-semibold">
+                {% if f.changed and f.presu.pu != f.cat.pu %}
+                  <div class="sirona-presu-old">{{ f.presu.st|ars }}</div>
+                  <div class="sirona-presu-new sirona-presu-sub">Nuevo: {{ f.cat.st|ars }}</div>
+                {% else %}
+                  {{ f.presu.st|ars }}
+                {% endif %}
+              </td>
+              <td class="text-end fw-semibold">
+                {% if f.changed and f.presu.pu != f.cat.pu %}
+                  <div class="sirona-presu-new">{{ f.cat.st|ars }}</div>
+                {% else %}
+                  {{ f.cat.st|ars }}
+                {% endif %}
+              </td>
             </tr>
           {% endfor %}
         </tbody>
