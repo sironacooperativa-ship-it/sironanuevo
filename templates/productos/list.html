@@ -247,12 +247,12 @@
         <div class="col-12 col-md-6 col-lg-3">
           <label class="form-label small text-muted mb-1">Lista de precio</label>
           <select class="form-select form-select-sm rounded-3" name="lista">
-            <option value="">Todas</option>
             {% for l in listas_precios_filtro %}
               <option value="{{ l.pk }}" {% if lista == l.pk|stringformat:"s" %}selected{% endif %}>
-                {{ l.nombre }}{% if l.es_farmacia %} (Farmacia/PDF){% endif %}
+                {{ l.nombre }}{% if l.es_farmacia %} (Farmacia){% endif %}
               </option>
             {% endfor %}
+            <option value="all" {% if lista == "all" %}selected{% endif %}>Todos los productos (sin filtro por lista)</option>
           </select>
         </div>
         <div class="col-12 col-md-6 col-lg-2">
@@ -280,9 +280,10 @@
         {% endif %}
       </form>
       <p class="small text-muted mb-0 mt-2">
-        <strong>Proveedor:</strong> muestra productos que tengan al menos una compra cargada con ese proveedor.
-        <strong>Nuevos ingresos:</strong> productos dados de alta en los últimos 30 días.
-        <strong>Orden de la tabla:</strong> por defecto, tipo (alfabético según rubro) → descripción A-Z → precio. Tocá un título de columna para ordenar; otro toque en la misma invierte el sentido.
+        <strong>Lista de precio:</strong> por defecto se muestra la lista Farmacia (mismos criterios que en Listas de precios). En cada rubro solo ves los ítems habilitados en esa lista; la columna Precio usa el importe de esa lista (en Farmacia, el precio del producto). Si un ítem está en varias listas con el mismo criterio, aparece al cambiar de lista; si el precio difiere por lista, cada vista muestra una sola fila con el precio correspondiente.
+        <strong>Proveedor:</strong> productos con al menos una compra registrada a ese proveedor.
+        <strong>Nuevos ingresos:</strong> altas en los últimos 30 días.
+        <strong>Orden:</strong> por defecto rubro → descripción A-Z → precio; tocá un encabezado para ordenar.
         {% if sort_ord %}
           <a class="ms-1" href="{% url 'productos_list' %}{% if querystring_no_sort %}?{{ querystring_no_sort }}{% endif %}">Volver al orden predeterminado</a>.
         {% endif %}
@@ -364,7 +365,7 @@
               <a class="app-th-sort" href="?{{ sort_links.stock }}" title="Ordenar por stock">Stock{% if sort_ord == "stock" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
             </th>
             <th scope="col" class="text-center col-monto productos-th-saas">
-              <a class="app-th-sort" href="?{{ sort_links.precio }}" title="Ordenar por precio de venta">Precio{% if sort_ord == "precio" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+              <a class="app-th-sort" href="?{{ sort_links.precio }}" title="Ordenar por precio">{% if lista_modo == "rubro" and lista_obj %}Precio ({{ lista_obj.nombre }}){% elif lista_modo == "all" %}Precio catálogo{% else %}Precio Farmacia{% endif %}{% if sort_ord == "precio" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
             </th>
             <th scope="col" class="text-end productos-th-saas productos-th-actions" aria-label="Acciones"></th>
           </tr>
@@ -485,7 +486,7 @@
                 />
               </td>
               <td class="text-end col-monto productos-td-saas productos-td-precio align-middle">
-                <span class="producto-view">{{ p.precio_venta|ars }}</span>
+                <span class="producto-view">{{ p.precio_lista_vista|ars }}</span>
                 <div class="producto-edit d-none">
                   <input
                     type="number"

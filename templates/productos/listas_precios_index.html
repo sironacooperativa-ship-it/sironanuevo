@@ -1,5 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Listas de precio{% endblock %}
+{% block extra_head %}
+  <style>
+    .listas-precios-index .btn-icon.btn-delete:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  </style>
+{% endblock %}
 {% block content %}
   <div class="page-header">
     <div class="min-w-0">
@@ -33,14 +41,12 @@
         <colgroup>
           <col style="width: auto;" />
           <col style="width: 8rem;" />
-          <col style="width: 12rem;" />
-          <col style="width: 9.5rem;" />
+          <col style="width: 11rem;" />
         </colgroup>
         <thead>
           <tr>
             <th scope="col" class="presu-col-ellipsis">Nombre</th>
             <th scope="col">Tipo</th>
-            <th scope="col" class="presu-col-ellipsis">Slug</th>
             <th scope="col" class="text-end presu-th-acciones col-presu-acciones">Acciones</th>
           </tr>
         </thead>
@@ -57,18 +63,35 @@
                   <span class="text-muted">Rubro</span>
                 {% endif %}
               </td>
-              <td class="col-muted small presu-col-ellipsis" title="{{ l.slug }}">
-                <span class="persona-cod">{{ l.slug }}</span>
-              </td>
               <td class="col-presu-acciones text-end table-actions-cell">
-                <div class="table-actions presu-row-actions d-flex">
+                <div class="table-actions presu-row-actions d-flex justify-content-end flex-wrap">
                   <a class="btn-icon btn-view" href="{% url 'lista_precios_ver' l.pk %}" title="Ver" aria-label="Ver">
                     <i data-lucide="eye" aria-hidden="true"></i>
                   </a>
                   <a class="btn-icon btn-edit" href="{% url 'lista_precios_trabajar' l.pk %}" title="Editar" aria-label="Editar">
                     <i data-lucide="pencil" aria-hidden="true"></i>
                   </a>
-                  {% if not l.es_farmacia %}
+                  <button
+                    type="button"
+                    class="btn-icon btn-share-public js-lista-share-public"
+                    title="Compartir enlace público"
+                    aria-label="Compartir"
+                    data-share-url="{{ l.url_publica_cliente }}"
+                    data-share-title="{{ l.nombre|escape }} — Precios"
+                  >
+                    <i data-lucide="share-2" aria-hidden="true"></i>
+                  </button>
+                  {% if l.es_farmacia %}
+                    <button
+                      type="button"
+                      class="btn-icon btn-delete"
+                      disabled
+                      title="La lista Farmacia no se puede eliminar"
+                      aria-label="Eliminar no disponible"
+                    >
+                      <i data-lucide="trash-2" aria-hidden="true"></i>
+                    </button>
+                  {% else %}
                     <form method="post" action="{% url 'lista_precios_eliminar' l.pk %}" class="d-inline m-0 presu-accion-form" onsubmit="return confirm('¿Eliminar esta lista y sus precios de rubro?');">
                       {% csrf_token %}
                       <button type="submit" class="btn-icon btn-delete" title="Eliminar" aria-label="Eliminar">
@@ -80,10 +103,58 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="4" class="table-empty">No hay listas. Creá una nueva.</td></tr>
+            <tr><td colspan="3" class="table-empty">No hay listas. Creá una nueva.</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
+
+  <script>
+    (function () {
+      function fallbackCopy(u) {
+        var ta = document.createElement("textarea");
+        ta.value = u;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand("copy");
+          alert("Enlace copiado al portapapeles.");
+        } catch (e) {
+          alert("No se pudo copiar automáticamente.");
+        }
+        document.body.removeChild(ta);
+      }
+      async function shareOrCopy(url, title) {
+        if (!url) return;
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: title || "Lista de precios", url: url });
+            return;
+          } catch (e) {}
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          try {
+            await navigator.clipboard.writeText(url);
+            alert("Enlace copiado al portapapeles.");
+            return;
+          } catch (e) {}
+        }
+        fallbackCopy(url);
+      }
+      document.querySelectorAll(".js-lista-share-public").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var url = btn.getAttribute("data-share-url") || "";
+          var title = btn.getAttribute("data-share-title") || "";
+          shareOrCopy(url.trim(), title);
+        });
+      });
+      if (window.lucide && typeof lucide.createIcons === "function") {
+        lucide.createIcons();
+      }
+    })();
+  </script>
 {% endblock %}

@@ -120,12 +120,12 @@
           <div class="col-12 col-md-4">
             <label class="form-label small text-muted mb-1">Lista de precio</label>
             <select class="form-select form-select-sm rounded-3" name="lista">
-              <option value="">Todas</option>
               {% for l in listas_precios_filtro %}
                 <option value="{{ l.pk }}" {% if lista == l.pk|stringformat:"s" %}selected{% endif %}>
-                  {{ l.nombre }}{% if l.es_farmacia %} (Farmacia/PDF){% endif %}
+                  {{ l.nombre }}{% if l.es_farmacia %} (Farmacia){% endif %}
                 </option>
               {% endfor %}
+              <option value="all" {% if lista == "all" %}selected{% endif %}>Todos los productos (sin filtro por lista)</option>
             </select>
           </div>
           <div class="col-12 col-md-4">
@@ -209,7 +209,7 @@
                   <td class="small text-muted">{{ p.get_tipo_display }}</td>
                   <td class="text-end small">{{ p.costo|ars }}</td>
                   <td class="text-end small">{{ p.porcentaje_ganancia }}%</td>
-                  <td class="text-end small fw-medium">{{ p.precio_venta|ars }}</td>
+                  <td class="text-end small fw-medium">{{ p.precio_lista_vista|ars }}</td>
                 </tr>
               {% empty %}
                 <tr>

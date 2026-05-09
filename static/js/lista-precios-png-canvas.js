@@ -1,14 +1,15 @@
 /**
  * Genera el PNG de lista de precios (canvas 2D).
- * Escala adaptativa (2× o 3×) según alto del lienzo para máxima nitidez sin
- * superar límites típicos del canvas (~32k px).
+ * Lienzo ancho (~1480px lógicos × EXPORT_SCALE) para que la tabla no quede
+ * comprimida ni ilegible al compartir por WhatsApp.
  */
 (function (global) {
+  /** Retina / nitidez en apps que reescalan la imagen */
+  var EXPORT_SCALE = 2;
+  /** Ancho útil de diseño (px CSS antes del scale); mayor que 1080 = más columna Descripción */
   var BASE_WIDTH = 1480;
-  var PAD = 44;
+  var PAD = 52;
   var COL_GAP = 18;
-  /** Por debajo de esto (px dispositivo) se puede usar trazado 3× más denso */
-  var MAX_DEVICE_DIM = 30000;
 
   function paintListaPreciosCanvas(canvas, parte, cfg) {
     var chunk = (parte && parte.productos) || [];
@@ -28,33 +29,22 @@
       width: Math.max(180, colPrecio.x - COL_GAP - (colTipo.x + colTipo.width + COL_GAP)),
     };
 
+    var headerH = 176;
+    var filterH = 92;
     var dense = chunk.length > 400;
-    var fontRow = dense ? "600 27px Arial, Helvetica, sans-serif" : "600 32px Arial, Helvetica, sans-serif";
-    var rowH = dense ? 54 : 68;
-    var headerH = 184;
-    var filterH = 96;
-    var h =
-      headerH + filterH + pad + Math.max(1, chunk.length) * rowH + pad;
+    var rowH = dense ? 50 : 60;
+    var h = headerH + filterH + pad + Math.max(1, chunk.length) * rowH + pad;
 
-    var exportScale =
-      h * 3 <= MAX_DEVICE_DIM && w * 3 <= MAX_DEVICE_DIM ? 3 : 2;
-
-    canvas.width = Math.round(w * exportScale);
-    canvas.height = Math.round(h * exportScale);
-    var ctx = canvas.getContext("2d", { alpha: false });
+    canvas.width = Math.round(w * EXPORT_SCALE);
+    canvas.height = Math.round(h * EXPORT_SCALE);
+    var ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
-    ctx.scale(exportScale, exportScale);
-    var strokeW = 2 / exportScale;
-    ctx.textBaseline = "alphabetic";
-
-    /** Alinea al grid de píxeles reales del bitmap (evita subpixel “borroso”). */
-    function snap(v) {
-      return Math.round(Number(v) * exportScale) / exportScale;
-    }
+    ctx.scale(EXPORT_SCALE, EXPORT_SCALE);
+    var strokeW = 2 / EXPORT_SCALE;
 
     var headerTitle = parte.titulo_suffix ? baseTitulo + " · " + parte.titulo_suffix : baseTitulo;
     var filtrosRight = parte.titulo_suffix
@@ -72,16 +62,16 @@
     ctx.fillRect(0, 0, w, headerH);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 50px Arial, Helvetica, sans-serif";
-    ctx.fillText(headerTitle, snap(pad), snap(68));
-    ctx.font = "29px Arial, Helvetica, sans-serif";
+    ctx.font = "bold 48px system-ui, -apple-system, Segoe UI, Arial";
+    ctx.fillText(headerTitle, pad, 66);
+    ctx.font = "28px system-ui, -apple-system, Segoe UI, Arial";
     var fecha = new Date().toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
-    ctx.fillText("Emitido: " + fecha + emitidoSuffix, snap(pad), snap(122));
+    ctx.fillText("Emitido: " + fecha + emitidoSuffix, pad, 118);
 
     function drawLogo() {
       try {
         if (!logo || !logo.complete || !logo.width) return;
-        var lh = 42;
+        var lh = 40;
         var lw = Math.round((logo.width / logo.height) * lh);
         ctx.save();
         ctx.fillStyle = "rgba(255,255,255,0.92)";
@@ -101,7 +91,6 @@
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
-        ctx.imageSmoothingEnabled = true;
         ctx.drawImage(logo, bx + 9, by + 8, lw, lh);
         ctx.restore();
       } catch (e) {}
@@ -109,13 +98,13 @@
 
     var y = headerH + 20;
     ctx.fillStyle = "#0f172a";
-    ctx.font = "bold 25px Arial, Helvetica, sans-serif";
-    ctx.fillText("Filtros aplicados", snap(pad), snap(y + 28));
+    ctx.font = "bold 24px system-ui, -apple-system, Segoe UI, Arial";
+    ctx.fillText("Filtros aplicados", pad, y + 26);
     ctx.fillStyle = "#64748b";
-    ctx.font = "23px Arial, Helvetica, sans-serif";
-    ctx.fillText("Buscar: " + (qtxt ? qtxt : "—"), snap(pad), snap(y + 62));
+    ctx.font = "22px system-ui, -apple-system, Segoe UI, Arial";
+    ctx.fillText("Buscar: " + (qtxt ? qtxt : "—"), pad, y + 58);
     ctx.textAlign = "right";
-    ctx.fillText(filtrosRight, snap(w - pad), snap(y + 62));
+    ctx.fillText(filtrosRight, w - pad, y + 58);
     ctx.textAlign = "left";
     y += filterH;
 
@@ -125,47 +114,46 @@
       var cfgOpt = options || {};
       var align = cfgOpt.align || "left";
       var height = cfgOpt.height || rowH;
-      var top = cfgOpt.top != null ? cfgOpt.top : baseline - 34;
+      var top = cfgOpt.top != null ? cfgOpt.top : baseline - 32;
       ctx.save();
       ctx.beginPath();
       ctx.rect(col.x, top, col.width, height);
       ctx.clip();
       ctx.textAlign = align;
-      var textX = align === "right" ? snap(col.x + col.width) : snap(col.x);
-      ctx.fillText(String(text || ""), textX, snap(baseline));
+      var textX = align === "right" ? col.x + col.width : col.x;
+      ctx.fillText(String(text || ""), textX, baseline);
       ctx.restore();
       ctx.textAlign = "left";
     }
 
-    ctx.fillStyle = "#404040";
-    ctx.font = "bold 25px Arial, Helvetica, sans-serif";
-    var hdrBaseline = snap(y + 26);
-    drawClippedText("Código", colCodigo, hdrBaseline, { height: 42, top: y - 4 });
-    drawClippedText("Tipo", colTipo, hdrBaseline, { height: 42, top: y - 4 });
-    drawClippedText("Descripción", colDesc, hdrBaseline, { height: 42, top: y - 4 });
-    drawClippedText("Precio", colPrecio, hdrBaseline, { align: "right", height: 42, top: y - 4 });
-    y += 46;
-    ctx.strokeStyle = "#c8c8c8";
+    ctx.fillStyle = "#505050";
+    ctx.font = "24px system-ui, -apple-system, Segoe UI, Arial";
+    drawClippedText("Código", colCodigo, y + 24, { height: 38, top: y - 4 });
+    drawClippedText("Tipo", colTipo, y + 24, { height: 38, top: y - 4 });
+    drawClippedText("Descripción", colDesc, y + 24, { height: 38, top: y - 4 });
+    drawClippedText("Precio", colPrecio, y + 24, { align: "right", height: 38, top: y - 4 });
+    y += 44;
+    ctx.strokeStyle = "#dcdcdc";
     ctx.lineWidth = strokeW;
     ctx.beginPath();
-    ctx.moveTo(snap(pad), snap(y));
-    ctx.lineTo(snap(tableRight), snap(y));
+    ctx.moveTo(pad, y);
+    ctx.lineTo(tableRight, y);
     ctx.stroke();
-    y += 22;
+    y += 20;
 
-    ctx.font = fontRow;
+    ctx.font = dense ? "24px system-ui, -apple-system, Segoe UI, Arial" : "28px system-ui, -apple-system, Segoe UI, Arial";
+    var textBaseline = dense ? y + 32 : y + 34;
     for (var i = 0; i < chunk.length; i++) {
       var p = chunk[i];
-      var rowBaseline = snap(dense ? y + 36 : y + 38);
       if (i % 2 === 1) {
-        ctx.fillStyle = "#f1f5f9";
+        ctx.fillStyle = "#f8fafc";
         ctx.fillRect(0, y - 8, w, rowH);
       }
-      ctx.fillStyle = "#0a0a0a";
-      drawClippedText(p.codigo, colCodigo, rowBaseline, { top: y - 8, height: rowH });
-      drawClippedText(p.tipo, colTipo, rowBaseline, { top: y - 8, height: rowH });
-      drawClippedText(p.descripcion, colDesc, rowBaseline, { top: y - 8, height: rowH });
-      drawClippedText(p.precio, colPrecio, rowBaseline, { align: "right", top: y - 8, height: rowH });
+      ctx.fillStyle = "#1e1e1e";
+      drawClippedText(p.codigo, colCodigo, textBaseline, { top: y - 8, height: rowH });
+      drawClippedText(p.tipo, colTipo, textBaseline, { top: y - 8, height: rowH });
+      drawClippedText(p.descripcion, colDesc, textBaseline, { top: y - 8, height: rowH });
+      drawClippedText(p.precio, colPrecio, textBaseline, { align: "right", top: y - 8, height: rowH });
       y += rowH;
     }
   }
@@ -174,6 +162,9 @@
     paint: paintListaPreciosCanvas,
     getLogicalWidth: function () {
       return BASE_WIDTH;
+    },
+    getExportScale: function () {
+      return EXPORT_SCALE;
     },
   };
 })(typeof window !== "undefined" ? window : this);

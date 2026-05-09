@@ -17,7 +17,9 @@ from django.db.models import (
     DecimalField,
     ExpressionWrapper,
     F,
+    OuterRef,
     Q,
+    Subquery,
     Sum,
     Value,
     When,
@@ -60,6 +62,25 @@ def _productos_picker_data():
     )
 
 
+def _lista_precios_farmacia():
+    return ListaPrecios.objects.filter(es_farmacia=True).order_by("id").first()
+
+
+def _annotate_precio_lista_vista(qs, lista_modo: str, lista_obj: ListaPrecios | None):
+    """
+    Precio mostrado en grilla: Farmacia/todos = Producto.precio_venta; rubro = ListaPrecioItem.precio_venta.
+    """
+    if lista_modo == "rubro" and lista_obj is not None:
+        sq = ListaPrecioItem.objects.filter(
+            lista_id=lista_obj.pk,
+            producto_id=OuterRef("pk"),
+        ).values("precio_venta")[:1]
+        return qs.annotate(
+            precio_lista_vista=Subquery(sq, output_field=DecimalField(max_digits=12, decimal_places=2))
+        )
+    return qs.annotate(precio_lista_vista=F("precio_venta"))
+
+
 # Claves GET permitidas al volver a /productos/ (retorno_query o retorno_*).
 _REDIR_PRODUCTOS_LIST_KEYS = frozenset(
     {"q", "tipo", "proveedor", "lista", "estado", "ingreso", "page", "ord", "dir"}
@@ -90,24 +111,28 @@ def _annotar_orden_tipo_alfa(qs):
     )
 
 
-def _productos_ordenar_queryset(productos, request) -> tuple:
+def _productos_ordenar_queryset(
+    productos, request, *, sort_fields: dict[str, str] | None = None
+) -> tuple:
     """
     Sin ?ord= : rubro (nombre) → descripción A-Z → precio (e id).
     Con ?ord= & ?dir=asc|desc : una sola columna; mismo cabecero alterna asc/desc.
     """
+    fields = dict(sort_fields) if sort_fields is not None else dict(PRODUCTOS_SORT_FIELDS)
     ord_key = (request.GET.get("ord") or "").strip()
     dir_raw = (request.GET.get("dir") or "").strip().lower()
     if dir_raw not in ("asc", "desc"):
         dir_raw = "asc"
-    if ord_key in PRODUCTOS_SORT_FIELDS:
-        f = PRODUCTOS_SORT_FIELDS[ord_key]
+    if ord_key in fields:
+        f = fields[ord_key]
         prefix = "-" if dir_raw == "desc" else ""
         if f == "tipo":
             q2 = _annotar_orden_tipo_alfa(productos)
             return q2.order_by(f"{prefix}_tipo_orden", "id"), ord_key, dir_raw
         return productos.order_by(f"{prefix}{f}", "id"), ord_key, dir_raw
     qd = _annotar_orden_tipo_alfa(productos)
-    return qd.order_by("_tipo_orden", "descripcion", "precio_venta", "id"), "", "asc"
+    precio_ord = fields.get("precio", "precio_venta")
+    return qd.order_by("_tipo_orden", "descripcion", precio_ord, "id"), "", "asc"
 
 
 def _productos_sort_links(request) -> dict[str, str]:
@@ -190,6 +215,13 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
     estado = (request.GET.get("estado") or "").strip()
     ingreso = (request.GET.get("ingreso") or "").strip()
 
+    farmacia = _lista_precios_farmacia()
+    if lista == "" and farmacia is not None:
+        lista = str(farmacia.pk)
+
+    lista_obj: ListaPrecios | None = None
+    lista_modo = "all"
+
     productos = Producto.objects.all()
     if q:
         productos = productos.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
@@ -197,29 +229,36 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
         productos = productos.filter(tipo=tipo)
     if proveedor.isdigit():
         productos = productos.filter(compras_origen__proveedor_id=int(proveedor)).distinct()
-    if lista.isdigit():
+
+    if lista == "all":
+        lista_modo = "all"
+    elif lista.isdigit():
         lid = int(lista)
         lobj = ListaPrecios.objects.filter(pk=lid).first()
         if lobj:
+            lista_obj = lobj
             if lobj.es_farmacia:
-                productos = productos.filter(en_lista_precios=True)
+                lista_modo = "farmacia"
+                productos = productos.filter(habilitado=True, en_lista_precios=True)
             else:
-                productos = productos.filter(items_lista_precio__lista_id=lid).distinct()
-    if estado == "1":
-        productos = productos.filter(habilitado=True)
-    elif estado == "0":
-        productos = productos.filter(habilitado=False)
-    if ingreso == "nuevos":
-        desde = timezone.now() - timedelta(days=30)
-        productos = productos.filter(creado_en__gte=desde)
+                lista_modo = "rubro"
+                productos = productos.filter(
+                    habilitado=True,
+                    items_lista_precio__lista_id=lid,
+                ).distinct()
 
-    productos, sort_ord, sort_dir = _productos_ordenar_queryset(productos, request)
+    productos = _annotate_precio_lista_vista(productos, lista_modo, lista_obj)
+    sort_merge = dict(PRODUCTOS_SORT_FIELDS)
+    sort_merge["precio"] = "precio_lista_vista"
+    productos, sort_ord, sort_dir = _productos_ordenar_queryset(productos, request, sort_fields=sort_merge)
 
     return productos, {
         "q": q,
         "tipo": tipo,
         "proveedor": proveedor,
         "lista": lista,
+        "lista_modo": lista_modo,
+        "lista_obj": lista_obj,
         "estado": estado,
         "ingreso": ingreso,
         "sort_ord": sort_ord,
@@ -521,11 +560,20 @@ def _aplicar_snapshot_excel_a_producto(producto: Producto, snap: dict) -> None:
 
 @login_required
 def productos_list(request):
+    farmacia = _lista_precios_farmacia()
+    raw_lista = request.GET.get("lista")
+    if farmacia is not None and (raw_lista is None or raw_lista == ""):
+        q = request.GET.copy()
+        q["lista"] = str(farmacia.pk)
+        return redirect(reverse("productos_list") + "?" + q.urlencode())
+
     productos, filtros_ctx = _filtrar_productos_queryset(request)
     q = filtros_ctx["q"]
     tipo = filtros_ctx["tipo"]
     proveedor = filtros_ctx["proveedor"]
     lista = filtros_ctx["lista"]
+    lista_modo = filtros_ctx["lista_modo"]
+    lista_obj = filtros_ctx["lista_obj"]
     estado = filtros_ctx["estado"]
     ingreso = filtros_ctx["ingreso"]
     sort_ord = filtros_ctx["sort_ord"]
@@ -533,6 +581,12 @@ def productos_list(request):
 
     exp = parse_export(request)
     if exp in ("xlsx", "pdf"):
+        if lista_modo == "rubro" and lista_obj is not None:
+            precio_header = f"Precio ({lista_obj.nombre})"
+        elif lista_modo == "all":
+            precio_header = "Precio venta (catálogo)"
+        else:
+            precio_header = "Precio venta (Farmacia)"
         headers = [
             "Código",
             "Descripción",
@@ -540,7 +594,7 @@ def productos_list(request):
             "Costo",
             "Stock",
             "% ganancia",
-            "Precio venta",
+            precio_header,
             "Habilitado",
             "Lista precios",
             "Fecha vencimiento",
@@ -555,7 +609,7 @@ def productos_list(request):
                     str(p.costo),
                     p.stock,
                     str(p.porcentaje_ganancia),
-                    str(p.precio_venta),
+                    str(p.precio_lista_vista),
                     "Sí" if p.habilitado else "No",
                     "Sí" if p.en_lista_precios else "No",
                     p.fecha_vencimiento.strftime("%d/%m/%Y") if p.fecha_vencimiento else "",
@@ -607,6 +661,8 @@ def productos_list(request):
             "tipo": tipo,
             "proveedor": proveedor,
             "lista": lista,
+            "lista_modo": lista_modo,
+            "lista_obj": lista_obj,
             "estado": estado,
             "ingreso": ingreso,
             "sort_ord": sort_ord,
@@ -755,6 +811,8 @@ def productos_aumento(request):
             "tipo": filtros_ctx["tipo"],
             "proveedor": filtros_ctx["proveedor"],
             "lista": filtros_ctx["lista"],
+            "lista_modo": filtros_ctx["lista_modo"],
+            "lista_obj": filtros_ctx["lista_obj"],
             "estado": filtros_ctx["estado"],
             "ingreso": filtros_ctx["ingreso"],
             "tipos": Producto.Tipo.choices,

@@ -30,8 +30,9 @@
     var vpHintEl = opts.vpHintEl;
     var categoryButtons = opts.categoryButtons;
 
+    /** Sin crossOrigin: el logo suele ser mismo origen (/static/). Con anonymous sin CORS en el static,
+     *  el canvas queda contaminado y toBlob()/descarga fallan silenciosamente. */
     var logo = new Image();
-    logo.crossOrigin = "anonymous";
     logo.src = logoSrc;
 
     function filenameForParte(parte) {

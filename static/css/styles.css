@@ -4402,19 +4402,7 @@ button.btn-icon.btn-ink,
   padding-bottom: 10px !important;
 }
 
-/* Tabla “Ver lista”: estado/acciones más chicos y sin aire */
-.lista-precio-ver .report-table th,
-.lista-precio-ver .report-table td {
-  padding-top: 5px;
-  padding-bottom: 5px;
-}
-.lista-precio-farm .report-table th,
-.lista-precio-farm .report-table td,
-.lista-precio-rubro .report-table th,
-.lista-precio-rubro .report-table td {
-  padding-top: 5px;
-  padding-bottom: 5px;
-}
+/* Tabla “Ver lista”: estado/acciones más chicos (padding de filas → más abajo, tras .pricing-table) */
 .lista-precio-ver .status-badge {
   height: 20px;
   padding: 0 8px;
@@ -4821,6 +4809,36 @@ button.btn-icon.btn-ink,
 .pricing-table .prod-sub {
   color: var(--s-muted);
   font-size: 0.85rem;
+}
+
+/* Listas de precio (ver / editar farmacia-rubro): ~50% menos “aire” entre filas que .pricing-table genérico */
+.dashboard-card.pricing-table.lista-precio-ver .report-table th,
+.dashboard-card.pricing-table.lista-precio-ver .report-table td {
+  padding: 7px 10px;
+}
+
+.dashboard-card.lista-precio-farm .report-table th,
+.dashboard-card.lista-precio-farm .report-table td,
+.dashboard-card.lista-precio-rubro .report-table th,
+.dashboard-card.lista-precio-rubro .report-table td {
+  padding: 7px 10px;
+}
+
+.dashboard-card.pricing-table.lista-precio-ver .prod-meta,
+.dashboard-card.lista-precio-farm .prod-meta,
+.dashboard-card.lista-precio-rubro .prod-meta {
+  gap: 1px;
+}
+
+@media (max-width: 767.98px) {
+  .dashboard-card.pricing-table.lista-precio-ver .report-table th,
+  .dashboard-card.pricing-table.lista-precio-ver .report-table td,
+  .dashboard-card.lista-precio-farm .report-table th,
+  .dashboard-card.lista-precio-farm .report-table td,
+  .dashboard-card.lista-precio-rubro .report-table th,
+  .dashboard-card.lista-precio-rubro .report-table td {
+    padding: 5px 8px;
+  }
 }
 
 /* Hardening: evitar que theme.css comprima/ensucie esta pantalla */

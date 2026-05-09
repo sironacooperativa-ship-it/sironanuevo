@@ -112,6 +112,10 @@ def listas_precios_menu(request):
         messages.info(request, "No se creó ninguna lista.")
         return redirect("productos_listas_precios")
     listas = list(ListaPrecios.objects.all().order_by("-es_farmacia", "nombre"))
+    for lista in listas:
+        lista.url_publica_cliente = request.build_absolute_uri(
+            reverse("lista_precios_public_cliente", kwargs={"slug": lista.slug})
+        )
     return render(request, "productos/listas_precios_index.html", {"listas": listas})
 
 
