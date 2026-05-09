@@ -54,6 +54,24 @@
         </div>
       </div>
 
+      <section class="modern-filter-card mb-3" aria-label="Compartir lista con clientes">
+        <div class="fw-semibold mb-1">Link público para clientes</div>
+        <p class="text-muted small mb-2 mb-md-3">
+          Vista sin menú del sistema: solo esta lista de precios. Ideal para WhatsApp o QR (mismo tipo de enlace absoluto).
+        </p>
+        <div class="input-group">
+          <input
+            type="text"
+            readonly
+            class="form-control form-control-sm"
+            id="lp-public-link"
+            value="{{ url_publica_cliente }}"
+          />
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="lp-copy-public-link">Copiar</button>
+          <button type="button" class="btn btn-primary btn-sm" id="lp-share-public-link">Compartir enlace</button>
+        </div>
+      </section>
+
       <section class="modern-filter-bar mb-3" aria-label="Filtros">
         <form method="get">
           <div class="filter-toolbar" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;">
@@ -223,6 +241,57 @@
         SironaProductosQPicker.attach({
           dataScriptId: "lp-productos-picker",
           inputId: "lp-q",
+        });
+      }
+    })();
+  </script>
+
+  <script>
+    (function () {
+      var inp = document.getElementById("lp-public-link");
+      var copyBtn = document.getElementById("lp-copy-public-link");
+      var shareBtn = document.getElementById("lp-share-public-link");
+      function urlValue() {
+        return inp ? String(inp.value || "").trim() : "";
+      }
+      if (copyBtn && inp) {
+        copyBtn.addEventListener("click", function () {
+          copyUrlFeedback();
+        });
+      }
+      function copyUrlFeedback() {
+        var u = urlValue();
+        if (!u) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(u).then(function () {
+            alert("Enlace copiado al portapapeles.");
+          }).catch(function () {
+            inp.select();
+            inp.setSelectionRange(0, 99999);
+            alert("Seleccioná el enlace y copiá con Ctrl+C.");
+          });
+        } else {
+          inp.select();
+          inp.setSelectionRange(0, 99999);
+          try {
+            document.execCommand("copy");
+            alert("Enlace copiado al portapapeles.");
+          } catch (e) {
+            alert("Seleccioná el enlace y copiá con Ctrl+C.");
+          }
+        }
+      }
+      if (shareBtn && inp) {
+        shareBtn.addEventListener("click", async function () {
+          var u = urlValue();
+          if (!u) return;
+          if (navigator.share) {
+            try {
+              await navigator.share({ title: "{{ lista.nombre|escapejs }} — Precios", url: u });
+              return;
+            } catch (e) {}
+          }
+          copyUrlFeedback();
         });
       }
     })();

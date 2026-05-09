@@ -19,12 +19,13 @@
         <h1 class="header-title">{{ titulo }}</h1>
         <p class="header-subtitle">
           {% if png_export.modo == "por_categoria" %}
-            Lista grande: elegí una categoría y descargá las hojas (PNG). Las hojas reparten los renglones de forma pareja.
+            Lista grande: elegí una categoría para ver la vista previa y descargar PNG por partes.
           {% elif png_export.partes|length > 1 %}
             Varias partes listas para descargar.
           {% else %}
-            Exportá una imagen para WhatsApp.
+            Vista previa del PNG para WhatsApp u otros usos.
           {% endif %}
+          Para compartir con clientes usá el <strong>link público</strong> en «Ver lista».
         </p>
       </div>
     </div>
@@ -54,15 +55,11 @@
         <i data-lucide="download" aria-hidden="true"></i>
         {% if png_export.modo == "por_categoria" %}Descargar todas las hojas{% elif png_export.partes|length > 1 %}Descargar todas{% else %}Descargar PNG{% endif %}
       </button>
-      <button class="action-button primary btn btn-primary" type="button" id="btnShare" disabled>
-        <i data-lucide="share-2" aria-hidden="true"></i>
-        Compartir (WhatsApp)
-      </button>
       <span class="text-muted small ms-auto" id="meta"></span>
     </div>
     <div class="text-muted small mt-2">
       {% if png_export.modo == "por_categoria" %}
-        Primero elegí categoría. Si supera 200 ítems en esa categoría, se generan varias hojas con cantidades parejas de renglones (ej.: 201 ítems → dos hojas de ~100).
+        Elegí una categoría (Farmacia / Accesorios / Otros) para generar la vista previa. Si supera 200 ítems en esa categoría, se generan hojas parejas.
       {% else %}
         Si la lista es muy grande, la generación puede tardar unos segundos.
       {% endif %}
@@ -81,7 +78,7 @@
         {% endfor %}
       </div>
       <p class="text-muted small mt-3 mb-0" id="lp-png-placeholder">
-        Elegí <strong>Farmacia</strong>, <strong>Accesorios</strong> u <strong>Otros</strong> para ver las hojas y descargar.
+        Elegí <strong>Farmacia</strong>, <strong>Accesorios</strong> u <strong>Otros</strong> para ver la vista previa y descargar.
       </p>
     </div>
   {% endif %}
@@ -90,11 +87,12 @@
     <div class="card-head">
       <h2 class="card-title"><i data-lucide="eye" aria-hidden="true"></i> Vista previa</h2>
       <div class="card-subtle">
-        {% if png_export.modo == "por_categoria" %}Por categoría{% elif png_export.partes|length > 1 %}{{ png_export.partes|length }} imágenes{% else %}Una imagen{% endif %}
+        {% if png_export.modo == "por_categoria" %}Elegí categoría{% elif png_export.partes|length > 1 %}{{ png_export.partes|length }} imágenes{% else %}Una imagen{% endif %}
       </div>
     </div>
     <div class="card-body">
       {% if png_export.modo == "por_categoria" %}
+        <p class="text-muted small mb-3" id="lp-png-vp-hint">Elegí arriba una categoría para mostrar la vista previa aquí.</p>
         <div id="lp-png-category-panel" class="d-none"></div>
       {% else %}
         {% for parte in png_export.partes %}
@@ -104,9 +102,11 @@
                 {% if parte.titulo_suffix %}{{ parte.titulo_suffix }}{% else %}Lista completa{% endif %}
                 <span class="text-muted fw-normal small">({{ parte.productos|length }} ítems)</span>
               </div>
-              <button type="button" class="btn btn-sm btn-outline-primary lp-download-one" data-idx="{{ forloop.counter0 }}" disabled>
-                Descargar esta parte
-              </button>
+              {% if png_export.partes|length > 1 %}
+                <button type="button" class="btn btn-sm btn-outline-primary lp-download-one" data-idx="{{ forloop.counter0 }}" disabled>
+                  Descargar esta parte
+                </button>
+              {% endif %}
             </div>
             <canvas
               id="cnv-{{ forloop.counter0 }}"
@@ -119,7 +119,7 @@
   </div>
 
   <script src="{% static 'js/lista-precios-png-canvas.js' %}?v=3"></script>
-  <script src="{% static 'js/lista-precios-png-ui.js' %}?v=3"></script>
+  <script src="{% static 'js/lista-precios-png-ui.js' %}?v=5"></script>
   <script>
     (function () {
       var jsonEl = document.getElementById("lp-png-export");
@@ -133,10 +133,10 @@
         logoSrc: "{% static 'img/sirona-logo.png' %}",
         metaEl: document.getElementById("meta"),
         btnDownload: document.getElementById("btnDownload"),
-        btnShare: document.getElementById("btnShare"),
         totalProductos: {{ kpi.productos|default:0 }},
         panelHost: document.getElementById("lp-png-category-panel"),
         placeholderEl: document.getElementById("lp-png-placeholder"),
+        vpHintEl: document.getElementById("lp-png-vp-hint"),
         categoryButtons: document.querySelectorAll(".lp-pick-category"),
       });
     })();

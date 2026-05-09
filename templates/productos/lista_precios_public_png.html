@@ -42,6 +42,7 @@
           {% endfor %}
         </div>
         <p class="text-muted small mb-3" id="lp-png-placeholder">Tocá Farmacia, Accesorios u Otros para generar la vista.</p>
+        <p class="text-muted small mb-3" id="lp-png-vp-hint">Elegí arriba una categoría para mostrar la vista previa aquí.</p>
         <div id="lp-png-category-panel" class="d-none"></div>
       {% else %}
         {% if png_export.partes|length > 1 %}
@@ -61,7 +62,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{% static 'js/lista-precios-png-canvas.js' %}?v=3"></script>
-    <script src="{% static 'js/lista-precios-png-ui.js' %}?v=3"></script>
+    <script src="{% static 'js/lista-precios-png-ui.js' %}?v=5"></script>
     <script>
       (function () {
         var jsonEl = document.getElementById("lp-png-export");
@@ -75,10 +76,10 @@
           logoSrc: "{% static 'img/sirona-logo.png' %}",
           metaEl: document.getElementById("meta"),
           btnDownload: document.getElementById("btnDownload"),
-          btnShare: null,
           totalProductos: {{ kpi.productos|default:0 }},
           panelHost: document.getElementById("lp-png-category-panel"),
           placeholderEl: document.getElementById("lp-png-placeholder"),
+          vpHintEl: document.getElementById("lp-png-vp-hint"),
           categoryButtons: document.querySelectorAll(".lp-pick-category"),
         });
       })();

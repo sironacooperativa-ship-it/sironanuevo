@@ -11,6 +11,7 @@ from django.db.models import Avg, Case, Count, DecimalField, ExpressionWrapper, 
 from django.http import Http404, HttpResponseForbidden
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
@@ -395,6 +396,9 @@ def lista_precios_ver(request, pk: int):
         )
         paginator = Paginator(qs, 120)
         page_obj = paginator.get_page(page or 1)
+        url_publica_cliente = request.build_absolute_uri(
+            reverse("lista_precios_public_cliente", kwargs={"slug": lista.slug})
+        )
         return render(
             request,
             "productos/lista_precios_ver.html",
@@ -407,6 +411,7 @@ def lista_precios_ver(request, pk: int):
                 "emitido_en": emitido_en,
                 "kpi": kpi,
                 "productos_picker": productos_picker,
+                "url_publica_cliente": url_publica_cliente,
             },
         )
 
@@ -440,6 +445,9 @@ def lista_precios_ver(request, pk: int):
     )
     paginator = Paginator(items, 120)
     page_obj = paginator.get_page(page or 1)
+    url_publica_cliente = request.build_absolute_uri(
+        reverse("lista_precios_public_cliente", kwargs={"slug": lista.slug})
+    )
     return render(
         request,
         "productos/lista_precios_ver.html",
@@ -452,6 +460,66 @@ def lista_precios_ver(request, pk: int):
             "emitido_en": emitido_en,
             "kpi": kpi,
             "productos_picker": productos_picker,
+            "url_publica_cliente": url_publica_cliente,
+        },
+    )
+
+
+@require_http_methods(["GET"])
+def lista_precios_public_cliente(request, slug: str):
+    """
+    Vista pública minimalista (sin menú app): solo nombre de lista, búsqueda y tabla de precios.
+    Pensada para compartir por WhatsApp / QR con el mismo estilo de link absoluto.
+    """
+    lista = get_object_or_404(ListaPrecios, slug=slug)
+    q = (request.GET.get("q") or "").strip()
+    page = (request.GET.get("page") or "").strip()
+    emitido_en = timezone.localtime()
+
+    if lista.es_farmacia:
+        qs_all = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
+            "tipo", "descripcion", "codigo"
+        )
+        qs = qs_all
+        if q:
+            qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
+        paginator = Paginator(qs, 120)
+        page_obj = paginator.get_page(page or 1)
+        return render(
+            request,
+            "productos/lista_precios_public_cliente.html",
+            {
+                "lista": lista,
+                "es_farmacia": True,
+                "productos": list(page_obj),
+                "page_obj": page_obj,
+                "q": q,
+                "emitido_en": emitido_en,
+            },
+        )
+
+    items_all = (
+        ListaPrecioItem.objects.filter(lista=lista)
+        .select_related("producto")
+        .order_by("producto__tipo", "producto__descripcion", "producto__codigo")
+    )
+    items = items_all
+    if q:
+        items = items.filter(
+            Q(producto__descripcion__icontains=q) | Q(producto__codigo__icontains=q)
+        )
+    paginator = Paginator(items, 120)
+    page_obj = paginator.get_page(page or 1)
+    return render(
+        request,
+        "productos/lista_precios_public_cliente.html",
+        {
+            "lista": lista,
+            "es_farmacia": False,
+            "items": list(page_obj),
+            "page_obj": page_obj,
+            "q": q,
+            "emitido_en": emitido_en,
         },
     )
 

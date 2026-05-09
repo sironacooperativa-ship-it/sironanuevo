@@ -5,7 +5,7 @@
   <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 vendedor-portal-toolbar">
     <div>
       <h1 class="h5 mb-1">{{ titulo }}</h1>
-      <div class="text-muted small">Generá un PNG para compartir desde el celular.</div>
+      <div class="text-muted small">Generá un PNG para descargar; el link público para clientes está en «Ver lista» del panel principal.</div>
     </div>
     <div class="d-flex gap-2">
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor_listas' %}">Volver</a>
@@ -35,7 +35,6 @@
 
       <div class="d-flex flex-wrap gap-2 mt-3">
         <button class="btn btn-outline-primary btn-sm rounded-pill" type="button" id="btnDownload" disabled>Descargar PNG</button>
-        <button class="btn btn-outline-secondary btn-sm rounded-pill" type="button" id="btnShare" disabled>Compartir</button>
       </div>
       <div class="text-muted small mt-2" id="meta"></div>
     </div>
@@ -56,7 +55,6 @@
       const meta = document.getElementById("meta");
       const btnRender = document.getElementById("btnRender");
       const btnDownload = document.getElementById("btnDownload");
-      const btnShare = document.getElementById("btnShare");
       const inpPage = document.getElementById("inpPage");
       const inpPageSize = document.getElementById("inpPageSize");
 
@@ -145,7 +143,6 @@
         meta.textContent = "Productos: " + productos.length + " · Página " + page + "/" + pages + " · Filas: " + chunk.length;
 
         btnDownload.disabled = false;
-        btnShare.disabled = false;
       }
 
       const pngFilename = "{{ slug|escapejs }}.png";
@@ -174,22 +171,6 @@
         const blob = await canvasToBlob();
         if (!blob) return;
         triggerBlobDownload(blob);
-      });
-
-      btnShare.addEventListener("click", async function () {
-        const blob = await canvasToBlob();
-        if (!blob) return;
-        triggerBlobDownload(blob);
-        const file = new File([blob], pngFilename, { type: "image/png" });
-        if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
-          try {
-            await navigator.share({ title: "Lista de precios", files: [file] });
-            return;
-          } catch (e) {}
-        }
-        alert(
-          "Ya se descargó el mismo PNG que «Descargar PNG». Si no se abrió el menú para compartir, adjuntalo en WhatsApp desde descargas."
-        );
       });
 
       render();
