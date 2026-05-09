@@ -16,8 +16,8 @@
       rel="stylesheet"
     />
     <!-- theme: ios-2026r29 -->
-    <link href="{% static 'css/theme.css' %}?v=ios-2026r38" rel="stylesheet" />
-    <link href="{% static 'css/styles.css' %}?v=saas-2026r12" rel="stylesheet" />
+    <link href="{% static 'css/theme.css' %}?v=ios-2026r39" rel="stylesheet" />
+    <link href="{% static 'css/styles.css' %}?v=saas-2026r13" rel="stylesheet" />
     <link href="{% static 'css/ui-force-productos.css' %}?v=2" rel="stylesheet" />
     <link href="{% static 'css/sirona-calc.css' %}" rel="stylesheet" />
     <style>
@@ -201,11 +201,11 @@
                         {% if request.user.last_name %}{{ request.user.last_name|slice:":1"|upper }}{% else %}{{ request.user.username|slice:"1:2"|upper }}{% endif %}
                       </span>
                     </span>
-                    <span class="sirona-profile-text d-none d-md-flex">
+                    <span class="sirona-profile-text d-flex flex-column align-items-start">
                       <span class="sirona-profile-name text-truncate">
                         {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user.username }}{% endif %}
                       </span>
-                      <span class="sirona-profile-role text-truncate">Vendedor</span>
+                      <span class="sirona-profile-role text-truncate d-none d-md-flex">Vendedor</span>
                     </span>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end shadow-sm">
@@ -334,11 +334,11 @@
                         {% if request.user.last_name %}{{ request.user.last_name|slice:":1"|upper }}{% else %}{{ request.user.username|slice:"1:2"|upper }}{% endif %}
                       </span>
                     </span>
-                    <span class="sirona-profile-text d-none d-md-flex">
+                    <span class="sirona-profile-text d-flex flex-column align-items-start">
                       <span class="sirona-profile-name text-truncate">
                         {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user.username }}{% endif %}
                       </span>
-                      <span class="sirona-profile-role text-truncate">
+                      <span class="sirona-profile-role text-truncate d-none d-md-flex">
                         {% if request.user.is_staff %}Administrador{% else %}Usuario{% endif %}
                       </span>
                     </span>

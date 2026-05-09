@@ -142,8 +142,8 @@
     y += 20;
 
     ctx.font = dense ? "24px system-ui, -apple-system, Segoe UI, Arial" : "28px system-ui, -apple-system, Segoe UI, Arial";
-    var textBaseline = dense ? y + 32 : y + 34;
     for (var i = 0; i < chunk.length; i++) {
+      var textBaseline = dense ? y + 32 : y + 34;
       var p = chunk[i];
       if (i % 2 === 1) {
         ctx.fillStyle = "#f8fafc";
