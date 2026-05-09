@@ -1499,13 +1499,17 @@ nav.navbar.sirona-topbar.bg-white.topbar {
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06) !important;
 }
 
+/* Bootstrap pone .navbar > .container-fluid { display:flex; flex-wrap:wrap } y gana a .sirona-topbar-inner;
+   eso hace que en celular el bloque de perfil pase a segunda fila. Forzamos grilla. */
 .sirona-topbar-inner {
-  display: grid;
+  display: grid !important;
   grid-template-columns: minmax(0, 1fr) minmax(160px, 1.45fr) minmax(0, auto);
   align-items: center;
   gap: 0.5rem;
   padding-top: 0.3rem;
   padding-bottom: 0.3rem;
+  flex-wrap: nowrap !important;
+  min-width: 0;
 }
 
 .sirona-topbar-left,
@@ -1745,38 +1749,54 @@ nav.navbar.sirona-topbar.bg-white.topbar {
 }
 
 @media (max-width: 991.98px) {
+  /*
+    Una sola fila (flex, nowrap): marca | [ búsqueda flex‑1 | calc+msgs fijos ] | credenciales fijas.
+    La grilla de 3 columnas podía dejar el perfil debajo; flex alinea todo en línea.
+  */
   .sirona-topbar-inner {
-    grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    max-width: 100%;
     gap: 0.35rem;
     padding-left: 0.25rem;
     padding-right: 0.25rem;
+    box-sizing: border-box;
   }
 
   .sirona-topbar-left {
-    max-width: min(46vw, 11.5rem);
+    flex: 0 0 auto;
+    max-width: min(42vw, 10.5rem);
+    min-width: 0;
   }
 
-  /* Búsqueda ~mitad del hueco habitual; al enfocar, el campo se ensancha para escribir cómodo */
   .sirona-topbar-trailing {
+    flex: 1 1 0;
+    min-width: 0;
     gap: 0.28rem;
-    justify-content: flex-end;
+    justify-content: flex-start;
+    align-items: center;
+    flex-wrap: nowrap !important;
   }
 
   .sirona-topbar-trailing .sirona-topbar-center {
-    flex: 0 1 auto;
+    flex: 1 1 auto;
     min-width: 0;
-    max-width: min(48vw, 11.25rem);
-    transition:
-      max-width 0.22s ease,
-      flex-grow 0.22s ease;
+    max-width: none !important;
   }
 
-  .sirona-topbar-trailing .sirona-topbar-center:has(.sirona-search-input:focus),
-  .sirona-topbar-trailing .sirona-topbar-center:has(.sirona-topbar-search:focus-within) {
-    flex: 1 1 auto;
-    flex-grow: 1;
-    max-width: min(calc(100vw - 8.25rem), 26rem);
-    z-index: 5;
+  .sirona-topbar-trailing .sirona-topbar-actions {
+    flex: 0 0 auto;
+    flex-shrink: 0;
+    margin-left: 0 !important;
+  }
+
+  .sirona-topbar-right {
+    flex: 0 0 auto;
+    flex-shrink: 0;
+    min-width: 0;
   }
 
   .sirona-topbar-search {
@@ -1784,7 +1804,8 @@ nav.navbar.sirona-topbar.bg-white.topbar {
     border-radius: 12px;
     padding: 0 0.55rem 0 0.6rem;
     width: 100%;
-    max-width: 100%;
+    max-width: none;
+    min-width: 0;
   }
 
   .sirona-search-input {
@@ -1802,18 +1823,14 @@ nav.navbar.sirona-topbar.bg-white.topbar {
   }
 
   .sirona-profile-btn {
-    padding: 0.22rem 0.48rem;
+    padding: 0.22rem 0.44rem;
     gap: 0.35rem;
-    max-width: min(52vw, 13.5rem);
-  }
-
-  .sirona-topbar-right {
-    flex-shrink: 0;
+    max-width: 9.25rem;
   }
 
   .sirona-profile-text {
     min-width: 0;
-    max-width: min(38vw, 11rem);
+    max-width: 6.75rem;
   }
 
   .sirona-profile-name {
@@ -1841,17 +1858,17 @@ nav.navbar.sirona-topbar.bg-white.topbar {
     height: 34px;
   }
 
-  .sirona-topbar-trailing .sirona-topbar-center {
-    max-width: min(40vw, 9.5rem);
+  .sirona-topbar-left {
+    max-width: min(38vw, 9.5rem);
   }
 
   .sirona-profile-btn {
-    max-width: min(48vw, 12rem);
-    padding: 0.2rem 0.42rem;
+    max-width: 8.5rem;
+    padding: 0.2rem 0.4rem;
   }
 
   .sirona-profile-text {
-    max-width: min(32vw, 9rem);
+    max-width: 5.75rem;
   }
 }
 
