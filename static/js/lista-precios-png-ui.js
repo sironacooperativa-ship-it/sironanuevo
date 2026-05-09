@@ -1,5 +1,6 @@
 /**
- * UI export PNG lista de precios: modo único o por categoría (Farmacia / Accesorios / Otros).
+ * UI export PNG lista de precios: modo único o por categoría (Farmacia / Accesorios / Otros)
+ * con hojas ya definidas en el JSON del servidor.
  */
 (function (global) {
   function esc(s) {
@@ -22,6 +23,7 @@
     var logoSrc = opts.logoSrc || "";
     var metaEl = opts.metaEl;
     var btnDownload = opts.btnDownload;
+    var btnShare = opts.btnShare;
     var totalProductos = opts.totalProductos || 0;
     var panelHost = opts.panelHost;
     var placeholderEl = opts.placeholderEl;
@@ -93,6 +95,7 @@
       } catch (e) {}
     }
 
+    /** Modo lista corta: una o más partes ya en el DOM (canvas fijos). */
     function runUnico(partes, canvasSelectorPrefix) {
       var partesArr = partes || [];
       function renderAll() {
@@ -102,6 +105,7 @@
         });
         updateMeta("PNG: " + partesArr.length);
         if (btnDownload) btnDownload.disabled = false;
+        if (btnShare) btnShare.disabled = false;
         document.querySelectorAll(".lp-download-one").forEach(function (b) {
           b.disabled = false;
         });
@@ -122,6 +126,35 @@
         };
       }
 
+      if (btnShare) {
+        btnShare.onclick = async function () {
+          var paired = [];
+          for (var i = 0; i < partesArr.length; i++) {
+            var c = document.getElementById((canvasSelectorPrefix || "cnv-") + i);
+            if (!c) continue;
+            var blob = await canvasToBlob(c);
+            if (blob) paired.push({ blob: blob, parte: partesArr[i] });
+          }
+          if (!paired.length) return;
+          for (var j = 0; j < paired.length; j++) {
+            triggerBlobDownload(paired[j].blob, filenameForParte(paired[j].parte));
+            if (paired.length > 1) await delay(280);
+          }
+          var files = paired.map(function (x) {
+            return new File([x.blob], filenameForParte(x.parte), { type: "image/png" });
+          });
+          if (navigator.canShare && navigator.canShare({ files: files }) && navigator.share) {
+            try {
+              await navigator.share({ title: "Lista de precios", files: files });
+              return;
+            } catch (e) {}
+          }
+          alert(
+            "Ya se descargaron los mismos PNG que exportarías con «Descargar». Si el navegador no abre el menú para compartir, adjuntá esos archivos en WhatsApp."
+          );
+        };
+      }
+
       document.querySelectorAll(".lp-download-one").forEach(function (btn) {
         btn.onclick = async function () {
           var idx = Number(btn.getAttribute("data-idx"));
@@ -129,19 +162,31 @@
           if (!c || !partesArr[idx]) return;
           var blob = await canvasToBlob(c);
           if (!blob) return;
-          triggerBlobDownload(blob, filenameForParte(partesArr[idx]));
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url;
+          a.download = filenameForParte(partesArr[idx]);
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(function () {
+            URL.revokeObjectURL(url);
+          }, 5000);
         };
       });
     }
 
+    /** Lista grande: elegir categoría y luego hojas. */
     function runPorCategoria(categorias) {
       if (btnDownload) btnDownload.disabled = true;
+      if (btnShare) btnShare.disabled = true;
 
       var activeTipo = null;
       var activeCat = null;
 
-      function setDownloadEnabled(on) {
+      function setDownloadShareEnabled(on) {
         if (btnDownload) btnDownload.disabled = !on;
+        if (btnShare) btnShare.disabled = !on;
       }
 
       logo.addEventListener("load", function () {
@@ -205,7 +250,7 @@
         });
 
         updateMeta(activeCat.button_label + " · " + partes.length + " PNG");
-        setDownloadEnabled(true);
+        setDownloadShareEnabled(true);
         refreshLucide();
 
         panelHost.querySelectorAll(".lp-download-hoja").forEach(function (b) {
@@ -215,8 +260,18 @@
             if (!c) return;
             var blob = await canvasToBlob(c);
             if (!blob) return;
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement("a");
+            a.href = url;
             var suf = b.getAttribute("data-filename-key");
-            triggerBlobDownload(blob, filenameForParte({ filename_suffix: suf }));
+            var parteFake = { filename_suffix: suf };
+            a.download = filenameForParte(parteFake);
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(function () {
+              URL.revokeObjectURL(url);
+            }, 5000);
           };
         });
       }
@@ -234,7 +289,8 @@
         });
       }
 
-      if (btnDownload) {
+      function bindDownloadAllInCategory() {
+        if (!btnDownload) return;
         btnDownload.onclick = async function () {
           if (!activeCat) return;
           var sid = sanitizeId(activeTipo);
@@ -249,6 +305,42 @@
           }
         };
       }
+
+      function bindShareCategory() {
+        if (!btnShare) return;
+        btnShare.onclick = async function () {
+          if (!activeCat) return;
+          var sid = sanitizeId(activeTipo);
+          var partes = activeCat.partes || [];
+          var paired = [];
+          for (var j = 0; j < partes.length; j++) {
+            var c = document.getElementById("cnv-" + sid + "-" + j);
+            if (!c) continue;
+            var blob = await canvasToBlob(c);
+            if (blob) paired.push({ blob: blob, parte: partes[j] });
+          }
+          if (!paired.length) return;
+          for (var k = 0; k < paired.length; k++) {
+            triggerBlobDownload(paired[k].blob, filenameForParte(paired[k].parte));
+            if (paired.length > 1) await delay(280);
+          }
+          var files = paired.map(function (x) {
+            return new File([x.blob], filenameForParte(x.parte), { type: "image/png" });
+          });
+          if (navigator.canShare && navigator.canShare({ files: files }) && navigator.share) {
+            try {
+              await navigator.share({ title: "Lista de precios", files: files });
+              return;
+            } catch (e) {}
+          }
+          alert(
+            "Ya se descargaron los mismos PNG. Si no se abrió el menú para compartir, adjuntalos en WhatsApp desde archivos descargados."
+          );
+        };
+      }
+
+      bindDownloadAllInCategory();
+      bindShareCategory();
 
       updateMeta("Elegí una categoría");
     }
