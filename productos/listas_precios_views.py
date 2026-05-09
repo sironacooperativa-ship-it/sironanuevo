@@ -558,7 +558,7 @@ def lista_precios_public_farmacia_png(request):
     }
     return render(
         request,
-        "productos/lista_precios_compartir.html",
+        "productos/lista_precios_public_png.html",
         {
             "lista": lista,
             "titulo": "Lista de precios — Farmacia",
