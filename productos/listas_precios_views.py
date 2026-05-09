@@ -206,9 +206,13 @@ def lista_precios_trabajar(request, pk: int):
     page_disp = (request.GET.get("page_disp") or "").strip()
 
     if lista.es_farmacia:
-        qs = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
+        qs_all = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
             "tipo", "descripcion", "codigo"
         )
+        productos_picker = list(
+            qs_all.values("codigo", "descripcion")[:3000]
+        )
+        qs = qs_all
         if q:
             qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
         paginator = Paginator(qs, 120)
@@ -244,6 +248,7 @@ def lista_precios_trabajar(request, pk: int):
                 "productos": productos,
                 "q": q,
                 "page_obj": page_obj,
+                "productos_picker": productos_picker,
             },
         )
 
@@ -303,11 +308,16 @@ def lista_precios_trabajar(request, pk: int):
         messages.success(request, f"Se guardaron {n} precio(s) de la lista.")
         return redirect(f"{request.path}?q={q}" if q else request.path)
 
-    items = (
+    items_all = (
         ListaPrecioItem.objects.filter(lista=lista)
         .select_related("producto")
         .order_by("producto__tipo", "producto__descripcion", "producto__codigo")
     )
+    productos_picker = [
+        {"codigo": r["producto__codigo"], "descripcion": r["producto__descripcion"]}
+        for r in items_all.values("producto__codigo", "producto__descripcion")[:3000]
+    ]
+    items = items_all
     if q:
         items = items.filter(
             Q(producto__descripcion__icontains=q) | Q(producto__codigo__icontains=q)
@@ -336,6 +346,7 @@ def lista_precios_trabajar(request, pk: int):
             "q": q,
             "page_obj": page_obj,
             "page_disp_obj": page_disp_obj,
+            "productos_picker": productos_picker,
         },
     )
 
@@ -350,9 +361,11 @@ def lista_precios_ver(request, pk: int):
     emitido_en = timezone.localtime()
 
     if lista.es_farmacia:
-        qs = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
+        qs_all = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
             "tipo", "descripcion", "codigo"
         )
+        productos_picker = list(qs_all.values("codigo", "descripcion")[:3000])
+        qs = qs_all
         if q:
             qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
         kpi = qs.aggregate(
@@ -392,14 +405,20 @@ def lista_precios_ver(request, pk: int):
                 "q": q,
                 "emitido_en": emitido_en,
                 "kpi": kpi,
+                "productos_picker": productos_picker,
             },
         )
 
-    items = (
+    items_all = (
         ListaPrecioItem.objects.filter(lista=lista)
         .select_related("producto")
         .order_by("producto__tipo", "producto__descripcion", "producto__codigo")
     )
+    productos_picker = [
+        {"codigo": r["producto__codigo"], "descripcion": r["producto__descripcion"]}
+        for r in items_all.values("producto__codigo", "producto__descripcion")[:3000]
+    ]
+    items = items_all
     if q:
         items = items.filter(
             Q(producto__descripcion__icontains=q) | Q(producto__codigo__icontains=q)
@@ -431,6 +450,7 @@ def lista_precios_ver(request, pk: int):
             "q": q,
             "emitido_en": emitido_en,
             "kpi": kpi,
+            "productos_picker": productos_picker,
         },
     )
 

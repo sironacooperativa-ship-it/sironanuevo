@@ -171,6 +171,11 @@ def stock_home(request):
         )
 
     productos_qs, filtros = _stock_productos_queryset(request)
+    productos_picker = list(
+        Producto.objects.all()
+        .order_by("descripcion", "codigo")
+        .values("codigo", "descripcion")[:3000]
+    )
     page = (request.GET.get("page") or "").strip()
     paginator = Paginator(productos_qs, 120)
     page_obj = paginator.get_page(page or 1)
@@ -232,6 +237,7 @@ def stock_home(request):
             "page_obj": page_obj,
             "querystring": querystring,
             "kpi": kpi,
+            "productos_picker": productos_picker,
             "tipos": Producto.Tipo.choices,
             "proveedores_filtro": Proveedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo"),
         },

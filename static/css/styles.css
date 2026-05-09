@@ -4402,8 +4402,15 @@ button.btn-icon.btn-ink,
 /* Tabla “Ver lista”: estado/acciones más chicos y sin aire */
 .lista-precio-ver .report-table th,
 .lista-precio-ver .report-table td {
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+.lista-precio-farm .report-table th,
+.lista-precio-farm .report-table td,
+.lista-precio-rubro .report-table th,
+.lista-precio-rubro .report-table td {
+  padding-top: 5px;
+  padding-bottom: 5px;
 }
 .lista-precio-ver .status-badge {
   height: 20px;

@@ -11,6 +11,8 @@
     <div class="d-flex gap-2">
       <a class="btn btn-outline-primary btn-sm" href="{% url 'vendedor_clientes_list' %}">Clientes</a>
       <a class="btn btn-outline-primary btn-sm" href="{% url 'vendedor_stock' %}">Stock</a>
+      <a class="btn btn-primary btn-sm" href="{% url 'vendedor_presupuestos_list' %}">Presupuestos</a>
+      <a class="btn btn-primary btn-sm" href="{% url 'vendedor_ventas_list' %}">Ventas</a>
       <a class="btn btn-outline-primary btn-sm" href="{% url 'vendedor_listas' %}">Listas de precio</a>
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor_cuenta_corriente' %}">Cuenta corriente</a>
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor_reportes' %}">Reportes</a>
@@ -21,7 +23,7 @@
     <div class="card-body">
       <h2 class="h6 mb-3">Mis clientes</h2>
       <form method="get" class="row g-2 align-items-end" novalidate>
-        <div class="col-12">
+        <div class="col-12 col-md-5 col-lg-4">
           <label class="form-label">Elegir</label>
           <select class="form-select" name="comprador">
             <option value="">— Elegir —</option>
@@ -29,17 +31,16 @@
               <option value="{{ c.pk }}" {% if comprador and comprador.pk == c.pk %}selected{% endif %}>{{ c.codigo }} — {{ c.apellido }}, {{ c.nombre }}</option>
             {% endfor %}
           </select>
-          {% if not mis_clientes %}
-            <div class="form-text text-warning">
-              Todavía no hay clientes con <strong>vendedor asignado</strong> igual a tu registro (<strong>{{ vendedor.codigo }}</strong>).
-              Si ya están cargados, pedí que en <strong>Administración → Usuarios</strong> tu cuenta quede vinculada al mismo vendedor que figura en <strong>Personas → Compradores</strong>.
-            </div>
-          {% else %}
-            <div class="form-text">Muestra clientes vigentes asignados a vos.</div>
-          {% endif %}
+          <div class="form-text">Muestra clientes vigentes asignados a vos.</div>
         </div>
-        <div class="col-12 col-md-8">
-          <label class="form-label">Cliente</label>
+        <div class="col-12 col-md-1 col-lg-1 d-grid">
+          <label class="form-label d-none d-md-block" aria-hidden="true">&nbsp;</label>
+          <a class="btn btn-primary" href="{% url 'vendedor_cliente_create' %}" title="Agregar nuevo cliente" aria-label="Agregar nuevo cliente">
+            <i data-lucide="plus" aria-hidden="true"></i>
+          </a>
+        </div>
+        <div class="col-12 col-md-4 col-lg-5">
+          <label class="form-label">Buscar cliente</label>
           <input
             type="text"
             name="cliente"
@@ -49,7 +50,7 @@
             autocomplete="off"
           />
         </div>
-        <div class="col-12 col-md-4 d-grid">
+        <div class="col-12 col-md-2 col-lg-2 d-grid">
           <button class="btn btn-outline-primary" type="submit">Ver</button>
         </div>
       </form>
@@ -172,7 +173,6 @@
               <span class="badge text-bg-warning">Sin listas</span>
             {% endif %}
           </div>
-          <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddLinea">+ Agregar</button>
         </div>
 
         <div class="table-responsive presu-lista-table-wrap mb-3">
@@ -229,7 +229,7 @@
         const iniciales = iniEl ? JSON.parse(iniEl.textContent) : [];
 
         const tbody = document.getElementById("lineasBody");
-        const btnAdd = document.getElementById("btnAddLinea");
+        const btnAdd = null;
         const inpDesc = document.getElementById("id_descuento_monto");
         const sumSubtotal = document.getElementById("sumSubtotal");
         const sumDesc = document.getElementById("sumDesc");
@@ -550,11 +550,11 @@
           totals();
         }
 
-        if (btnAdd) btnAdd.addEventListener("click", addRow);
+        // En portal vendedor no mostramos botón “Agregar”: el picker agrega líneas automáticamente.
         if (inpDesc) inpDesc.addEventListener("input", totals);
 
         function setEnabled(enabled) {
-          if (btnAdd) btnAdd.disabled = !enabled;
+          // btnAdd no existe en portal vendedor
           tbody.querySelectorAll('select[name="linea_producto"]').forEach((sel) => {
             sel.disabled = !enabled;
           });
@@ -618,7 +618,7 @@
         });
 
         if (productos.length === 0) {
-          if (btnAdd) btnAdd.disabled = true;
+          // btnAdd no existe en portal vendedor
           tbody.innerHTML =
             '<tr><td colspan="5" class="table-empty">No hay productos habilitados.</td></tr>';
         } else if (iniciales.length > 0) {

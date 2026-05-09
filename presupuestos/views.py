@@ -921,6 +921,12 @@ def presupuesto_eliminar(request, pk: int):
 @require_http_methods(["POST"])
 def presupuesto_aprobar(request, pk: int):
     presupuesto = get_object_or_404(Presupuesto, pk=pk)
+    if not is_staff_user(request.user):
+        messages.error(
+            request,
+            "No tenés permiso para aprobar presupuestos (solo personal autorizado).",
+        )
+        return redirect("presupuesto_detalle", pk=pk)
     if not _usuario_puede_gestionar_presupuesto(request.user, presupuesto):
         messages.error(
             request,
@@ -1019,6 +1025,12 @@ def presupuesto_duplicar(request, pk: int):
 @login_required
 @require_http_methods(["POST"])
 def presupuestos_aprobar_masivo(request):
+    if not is_staff_user(request.user):
+        messages.error(
+            request,
+            "No tenés permiso para aprobar presupuestos (solo personal autorizado).",
+        )
+        return redirect("presupuesto_lista")
     raw = request.POST.getlist("presupuesto_id")
     ids = sorted({int(x) for x in raw if str(x).isdigit()})
     retorno = (request.POST.get("retorno_query") or "").strip()

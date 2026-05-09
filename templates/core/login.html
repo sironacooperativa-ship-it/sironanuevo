@@ -38,13 +38,25 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Contraseña</label>
-              <input
-                name="password"
-                type="password"
-                class="form-control"
-                autocomplete="current-password"
-                required
-              />
+              <div class="input-group">
+                <input
+                  id="login-password"
+                  name="password"
+                  type="password"
+                  class="form-control"
+                  autocomplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  id="login-toggle-password"
+                  aria-label="Mostrar contraseña"
+                  title="Mostrar contraseña"
+                >
+                  <i data-lucide="eye" aria-hidden="true"></i>
+                </button>
+              </div>
             </div>
             {% if vendedor_option_visible %}
               <div class="form-check mb-3">
@@ -68,6 +80,26 @@
             {% endif %}
             <button class="btn btn-primary w-100" type="submit">Entrar</button>
           </form>
+          <script>
+            (function () {
+              const inp = document.getElementById("login-password");
+              const btn = document.getElementById("login-toggle-password");
+              if (!inp || !btn) return;
+              btn.addEventListener("click", function () {
+                const showing = inp.type === "text";
+                inp.type = showing ? "password" : "text";
+                btn.setAttribute("aria-label", showing ? "Mostrar contraseña" : "Ocultar contraseña");
+                btn.title = showing ? "Mostrar contraseña" : "Ocultar contraseña";
+                const ico = btn.querySelector("[data-lucide]");
+                if (ico) ico.setAttribute("data-lucide", showing ? "eye" : "eye-off");
+                try {
+                  if (window.lucide && typeof window.lucide.createIcons === "function") {
+                    window.lucide.createIcons();
+                  }
+                } catch (e) {}
+              });
+            })();
+          </script>
         </div>
       </div>
       <p class="text-muted small mt-3 mb-0">

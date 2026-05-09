@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Presupuestos{% endblock %}
+{% block content %}
+  <div class="vendedor-portal-page">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 vendedor-portal-toolbar">
+    <div>
+      <h1 class="h4 mb-1">Presupuestos</h1>
+      <div class="text-muted small">Cargados por {{ vendedor.codigo }} — {{ vendedor.apellido }}, {{ vendedor.nombre }}.</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor_home' %}">Volver</a>
+    </div>
+  </div>
+
+  <div class="modern-filter-card vendedor-portal-filter-wrap mb-3">
+    <form method="get" class="vportal-filters-row">
+      <div class="vportal-filter-field vportal-filter-field--grow">
+        <label class="form-label vportal-filter-label" for="vportal-presu-q">Buscar</label>
+        <input id="vportal-presu-q" name="q" class="form-control vportal-filter-control" value="{{ q }}" placeholder="#, cliente, código…" autocomplete="off" />
+      </div>
+      <div class="vportal-filter-actions">
+        <button class="btn btn-primary vportal-filter-btn" type="submit">Buscar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="dashboard-card mb-3">
+    <div class="card-head">
+      <h2 class="card-title"><i data-lucide="file-text" aria-hidden="true"></i> Presupuestos</h2>
+      <div class="card-subtle">{{ presupuestos|length }} registro(s)</div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="report-table">
+          <colgroup>
+            <col style="width: 6rem" />
+            <col style="width: 10rem" />
+            <col style="width: auto" />
+            <col style="width: 8.5rem" />
+            <col style="width: 9rem" />
+            <col style="width: 8rem" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Fecha</th>
+              <th>Cliente</th>
+              <th class="text-end">Neto</th>
+              <th>Estado</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in presupuestos %}
+              <tr>
+                <td class="fw-semibold">#{{ p.pk }}</td>
+                <td class="text-muted small">{{ p.creado_en|date:"d/m/Y H:i" }}</td>
+                <td>
+                  {% if p.comprador_id %}
+                    {{ p.comprador.apellido }}, {{ p.comprador.nombre }} <span class="text-muted small">({{ p.comprador.codigo }})</span>
+                  {% else %}
+                    <span class="text-muted small">Sin cliente</span>
+                  {% endif %}
+                </td>
+                <td class="num text-end">{{ p.neto|ars }}</td>
+                <td>
+                  {% if p.estado == "APR" %}
+                    <span class="status-badge status-badge--success">Aprobado</span>
+                  {% else %}
+                    <span class="status-badge status-badge--warning">Pendiente</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <div class="d-inline-flex gap-2">
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'vendedor_presupuesto_ver' p.pk %}">Ver</a>
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'presupuesto_editar' p.pk %}">Editar</a>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="6" class="table-empty">No hay presupuestos.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  </div>
+{% endblock %}
+

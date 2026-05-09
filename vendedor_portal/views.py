@@ -234,6 +234,33 @@ def vendedor_presupuesto_ver(request, pk: int):
 
 
 @login_required
+def vendedor_presupuestos_list(request):
+    vendedor = _get_vendedor_from_user(request.user)
+    if vendedor is None:
+        return HttpResponseForbidden("Este usuario no tiene perfil de vendedor.")
+
+    q = (request.GET.get("q") or "").strip()
+    qs = (
+        Presupuesto.objects.filter(vendedor_id=vendedor.pk)
+        .select_related("comprador")
+        .order_by("-creado_en", "-id")
+    )
+    if q:
+        qs = qs.filter(
+            Q(comprador__apellido__icontains=q)
+            | Q(comprador__nombre__icontains=q)
+            | Q(comprador__codigo__icontains=q)
+            | Q(id__icontains=q)
+        )
+    presupuestos = list(qs[:250])
+    return render(
+        request,
+        "vendedor_portal/presupuestos_list.html",
+        {"vendedor": vendedor, "presupuestos": presupuestos, "q": q},
+    )
+
+
+@login_required
 def vendedor_clientes_list(request):
     vendedor = _get_vendedor_from_user(request.user)
     if vendedor is None:
@@ -328,6 +355,46 @@ def vendedor_stock(request):
         "vendedor_portal/stock.html",
         {"vendedor": vendedor, "productos": productos, "q": q},
     )
+
+
+@login_required
+def vendedor_ventas_list(request):
+    vendedor = _get_vendedor_from_user(request.user)
+    if vendedor is None:
+        return HttpResponseForbidden("Este usuario no tiene perfil de vendedor.")
+
+    q = (request.GET.get("q") or "").strip()
+    qs = (
+        Venta.objects.filter(vendedor_id=vendedor.pk)
+        .select_related("comprador")
+        .order_by("-creado_en", "-id")
+    )
+    if q:
+        qs = qs.filter(
+            Q(comprador__apellido__icontains=q)
+            | Q(comprador__nombre__icontains=q)
+            | Q(comprador__codigo__icontains=q)
+            | Q(id__icontains=q)
+        )
+    ventas = list(qs[:250])
+    return render(
+        request,
+        "vendedor_portal/ventas_list.html",
+        {"vendedor": vendedor, "ventas": ventas, "q": q},
+    )
+
+
+@login_required
+def vendedor_venta_ver(request, pk: int):
+    vendedor = _get_vendedor_from_user(request.user)
+    if vendedor is None:
+        return HttpResponseForbidden("Este usuario no tiene perfil de vendedor.")
+    venta = get_object_or_404(
+        Venta.objects.select_related("comprador", "vendedor").prefetch_related("lineas__producto"),
+        pk=pk,
+        vendedor_id=vendedor.pk,
+    )
+    return render(request, "ventas/detalle.html", {"venta": venta, "productos_pedido_listas": [], "lista_farmacia": None})
 
 
 def _get_lista_precios_por_slug(slug: str) -> ListaPrecios | None:
