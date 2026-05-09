@@ -60,8 +60,6 @@
       const inpPage = document.getElementById("inpPage");
       const inpPageSize = document.getElementById("inpPageSize");
 
-      let lastBlob = null;
-
       const EXPORT_SCALE = 2;
 
       function clamp(n, a, b) {
@@ -148,8 +146,9 @@
 
         btnDownload.disabled = false;
         btnShare.disabled = false;
-        lastBlob = null;
       }
+
+      const pngFilename = "{{ slug|escapejs }}.png";
 
       function canvasToBlob() {
         return new Promise((resolve) => {
@@ -157,33 +156,40 @@
         });
       }
 
-      btnRender.addEventListener("click", render);
-
-      btnDownload.addEventListener("click", async function () {
-        const blob = lastBlob || (lastBlob = await canvasToBlob());
+      function triggerBlobDownload(blob) {
         if (!blob) return;
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "{{ slug|escapejs }}.png";
+        a.download = pngFilename;
         document.body.appendChild(a);
         a.click();
         a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 5000);
+      }
+
+      btnRender.addEventListener("click", render);
+
+      btnDownload.addEventListener("click", async function () {
+        const blob = await canvasToBlob();
+        if (!blob) return;
+        triggerBlobDownload(blob);
       });
 
       btnShare.addEventListener("click", async function () {
-        const blob = lastBlob || (lastBlob = await canvasToBlob());
+        const blob = await canvasToBlob();
         if (!blob) return;
-        const file = new File([blob], "{{ slug|escapejs }}.png", { type: "image/png" });
+        triggerBlobDownload(blob);
+        const file = new File([blob], pngFilename, { type: "image/png" });
         if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
           try {
             await navigator.share({ title: "Lista de precios", files: [file] });
             return;
           } catch (e) {}
         }
-        // Fallback: descargar y compartir desde galería/archivos.
-        alert("Tu navegador no permite compartir archivos directo. Usá 'Descargar PNG' y compartilo desde el teléfono.");
+        alert(
+          "Ya se descargó el mismo PNG que «Descargar PNG». Si no se abrió el menú para compartir, adjuntalo en WhatsApp desde descargas."
+        );
       });
 
       render();

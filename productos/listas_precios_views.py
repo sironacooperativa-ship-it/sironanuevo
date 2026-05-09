@@ -18,10 +18,10 @@ from core.authz import staff_required
 from core.money_decimal import format_monto_ars, q2
 
 from .lista_precios_pdf import (
+    build_png_export_payload,
     filas_lista_precios,
     lista_precios_pdf_file_response,
     lista_precios_xlsx_response,
-    partes_lista_precios_png,
 )
 from .models import ListaPrecioItem, ListaPrecios, Producto
 
@@ -480,7 +480,7 @@ def lista_precios_export_png(request, pk: int):
         ql = q.lower()
         filas = [(p, precio) for (p, precio) in filas if ql in (p.descripcion or "").lower() or ql in (p.codigo or "").lower()]
 
-    partes = partes_lista_precios_png(filas)
+    png_export = build_png_export_payload(filas)
 
     total_valor = Decimal("0.00")
     for _, precio in filas:
@@ -498,7 +498,7 @@ def lista_precios_export_png(request, pk: int):
         {
             "lista": lista,
             "titulo": f"Lista de precios — {lista.nombre}",
-            "partes": partes,
+            "png_export": png_export,
             "q": q,
             "kpi": kpi,
         },
@@ -525,7 +525,7 @@ def lista_precios_public_farmacia_png(request):
             if ql in (p.descripcion or "").lower() or ql in (p.codigo or "").lower()
         ]
 
-    partes = partes_lista_precios_png(filas)
+    png_export = build_png_export_payload(filas)
 
     total_valor = Decimal("0.00")
     for _, precio in filas:
@@ -543,7 +543,7 @@ def lista_precios_public_farmacia_png(request):
         {
             "lista": lista,
             "titulo": "Lista de precios — Farmacia",
-            "partes": partes,
+            "png_export": png_export,
             "q": q,
             "kpi": kpi,
             "public": True,

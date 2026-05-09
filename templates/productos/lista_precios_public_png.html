@@ -13,112 +13,74 @@
       body { background: #fff; }
       .lp-public-wrap { max-width: min(1280px, 100%); margin: 0 auto; padding: 16px 12px 24px; }
       .lp-public-actions { position: sticky; top: 0; background: rgba(255,255,255,.92); backdrop-filter: blur(6px); padding: 10px 0; z-index: 10; }
+      .lp-dynamic-canvas,
       .lp-public-canvas { width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 12px; }
+      .lp-pick-category.active { background: var(--bs-primary); color: #fff; border-color: var(--bs-primary); }
+      .lp-pick-category.active .text-muted { color: rgba(255,255,255,0.85) !important; }
     </style>
   </head>
   <body>
-    {{ partes|json_script:"lp-partes" }}
+    {{ png_export|json_script:"lp-png-export" }}
     <div class="lp-public-wrap">
       <div class="lp-public-actions d-flex flex-wrap align-items-center gap-2">
         <button class="btn btn-primary" type="button" id="btnDownload" disabled>
-          {% if partes|length > 1 %}Descargar todas{% else %}Descargar PNG{% endif %}
+          {% if png_export.modo == "por_categoria" %}Descargar todas las hojas{% elif png_export.partes|length > 1 %}Descargar todas{% else %}Descargar PNG{% endif %}
         </button>
         <span class="text-muted small ms-auto" id="meta"></span>
       </div>
-      {% if partes|length > 1 %}
-        <p class="text-muted small mt-2 mb-3">Lista grande: se genera un PNG por categoría de producto.</p>
-      {% endif %}
-      {% for parte in partes %}
-        <div class="mb-4">
-          <div class="small fw-semibold text-secondary mb-2">
-            {% if parte.titulo_suffix %}{{ parte.titulo_suffix }}{% else %}Lista completa{% endif %}
-            <span class="text-muted fw-normal">({{ parte.productos|length }} ítems)</span>
-          </div>
-          <canvas id="cnv-{{ forloop.counter0 }}" class="lp-public-canvas"></canvas>
+
+      {% if png_export.modo == "por_categoria" %}
+        <p class="text-muted small mt-3 mb-2">
+          Elegí una categoría. Si tiene más de 200 ítems, verás varias hojas parejas (ej.: 201 → dos de ~100).
+        </p>
+        <div class="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Categorías">
+          {% for cat in png_export.categorias %}
+            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill lp-pick-category" data-tipo="{{ cat.tipo_key }}">
+              {{ cat.button_label }}
+              <span class="text-muted">({{ cat.productos_total }})</span>
+            </button>
+          {% endfor %}
         </div>
-      {% endfor %}
+        <p class="text-muted small mb-3" id="lp-png-placeholder">Tocá Farmacia, Accesorios u Otros para generar la vista.</p>
+        <div id="lp-png-category-panel" class="d-none"></div>
+      {% else %}
+        {% if png_export.partes|length > 1 %}
+          <p class="text-muted small mt-2 mb-3">Lista grande: varias partes para descargar.</p>
+        {% endif %}
+        {% for parte in png_export.partes %}
+          <div class="mb-4">
+            <div class="small fw-semibold text-secondary mb-2">
+              {% if parte.titulo_suffix %}{{ parte.titulo_suffix }}{% else %}Lista completa{% endif %}
+              <span class="text-muted fw-normal">({{ parte.productos|length }} ítems)</span>
+            </div>
+            <canvas id="cnv-{{ forloop.counter0 }}" class="lp-public-canvas"></canvas>
+          </div>
+        {% endfor %}
+      {% endif %}
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{% static 'js/lista-precios-png-canvas.js' %}?v=3"></script>
+    <script src="{% static 'js/lista-precios-png-ui.js' %}?v=3"></script>
     <script>
       (function () {
-        const partesEl = document.getElementById("lp-partes");
-        const partes = partesEl ? JSON.parse(partesEl.textContent) : [];
-        const meta = document.getElementById("meta");
-        const btnDownload = document.getElementById("btnDownload");
-        const totalProductos = {{ kpi.productos|default:0 }};
-        const baseTitulo = "{{ titulo|escapejs }}";
-        const baseSlug = "{{ lista.slug|default:'lista-farmacia'|escapejs }}";
-        const qtxt = "{{ q|default:''|escapejs }}";
-
-        const logo = new Image();
-        logo.crossOrigin = "anonymous";
-        logo.src = "{% static 'img/sirona-logo.png' %}";
-
-        function filenameForParte(parte) {
-          if (!parte.filename_suffix) return baseSlug + ".png";
-          return baseSlug + "--" + parte.filename_suffix + ".png";
-        }
-
-        function renderAll() {
-          partes.forEach(function (parte, i) {
-            const c = document.getElementById("cnv-" + i);
-            if (c && window.SironaListaPreciosPng) {
-              SironaListaPreciosPng.paint(c, parte, {
-                baseTitulo: baseTitulo,
-                qtxt: qtxt,
-                logo: logo,
-                emitidoSuffix: "",
-              });
-            }
-          });
-          if (meta) {
-            meta.textContent =
-              "Productos: " +
-              totalProductos +
-              " · PNG: " +
-              partes.length +
-              (qtxt ? " · Buscar: " + qtxt : "");
-          }
-          btnDownload.disabled = false;
-        }
-
-        logo.onload = function () {
-          renderAll();
-        };
-
-        function canvasToBlob(canvas) {
-          return new Promise(function (resolve) {
-            canvas.toBlob(function (b) {
-              resolve(b);
-            }, "image/png");
-          });
-        }
-
-        btnDownload.addEventListener("click", async function () {
-          for (let i = 0; i < partes.length; i++) {
-            const c = document.getElementById("cnv-" + i);
-            if (!c) continue;
-            const blob = await canvasToBlob(c);
-            if (!blob) continue;
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = filenameForParte(partes[i]);
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            setTimeout(function () {
-              URL.revokeObjectURL(url);
-            }, 5000);
-            if (partes.length > 1) await new Promise(function (r) {
-              setTimeout(r, 280);
-            });
-          }
+        var jsonEl = document.getElementById("lp-png-export");
+        var png_export = jsonEl ? JSON.parse(jsonEl.textContent) : {};
+        SironaListaPreciosPngUi.boot({
+          png_export: png_export,
+          baseTitulo: "{{ titulo|escapejs }}",
+          qtxt: "{{ q|default:''|escapejs }}",
+          emitidoSuffix: "",
+          baseSlug: "{{ lista.slug|default:'lista-farmacia'|escapejs }}",
+          logoSrc: "{% static 'img/sirona-logo.png' %}",
+          metaEl: document.getElementById("meta"),
+          btnDownload: document.getElementById("btnDownload"),
+          btnShare: null,
+          totalProductos: {{ kpi.productos|default:0 }},
+          panelHost: document.getElementById("lp-png-category-panel"),
+          placeholderEl: document.getElementById("lp-png-placeholder"),
+          categoryButtons: document.querySelectorAll(".lp-pick-category"),
         });
-
-        renderAll();
       })();
     </script>
   </body>

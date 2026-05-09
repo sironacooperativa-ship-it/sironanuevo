@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from decimal import Decimal
 from io import BytesIO
 from typing import Any
@@ -42,15 +43,45 @@ def filas_lista_precios(lista: ListaPrecios) -> list[tuple[Producto, Decimal]]:
     return [(i.producto, i.precio_venta) for i in items]
 
 
-# PNG «para WhatsApp»: por debajo del umbral, una sola imagen; si la lista es larga, una imagen por tipo (Medicamentos / Accesorios / Otros) y trozos si hace falta.
+# PNG «para WhatsApp»: por debajo del umbral, una sola imagen; si es grande, el usuario elige categoría;
+# dentro de cada categoría, las hojas reparten los renglones lo más parejo posible (sin una hoja casi vacía).
 SPLIT_PNG_ROW_THRESHOLD = 200
-PNG_MAX_ROWS_PER_IMAGE = 260
+PNG_MAX_ROWS_PER_IMAGE = 200
 
 _TIPO_SORT_ORDER_PNG = {
     Producto.Tipo.MEDICAMENTOS: 0,
     Producto.Tipo.ACCESORIOS: 1,
     Producto.Tipo.OTROS: 2,
 }
+
+# Etiquetas de botón en la UI de export PNG (Medicamentos → Farmacia).
+PNG_CATEGORY_BUTTON_LABELS = {
+    Producto.Tipo.MEDICAMENTOS: "Farmacia",
+    Producto.Tipo.ACCESORIOS: "Accesorios",
+    Producto.Tipo.OTROS: "Otros",
+}
+
+
+def balanced_chunks(items: list[Any], max_per_chunk: int) -> list[list[Any]]:
+    """
+    Parte `items` en listas de tamaño similar, ninguna mayor que `max_per_chunk`.
+    Ej.: 201 ítems y máx 200 → [101, 100], no [200, 1].
+    """
+    n = len(items)
+    if n == 0:
+        return []
+    if n <= max_per_chunk:
+        return [items]
+    k = math.ceil(n / max_per_chunk)
+    base = n // k
+    rem = n % k
+    out: list[list[Any]] = []
+    idx = 0
+    for i in range(k):
+        sz = base + (1 if i < rem else 0)
+        out.append(items[idx : idx + sz])
+        idx += sz
+    return out
 
 
 def _payload_producto_png(p: Producto, precio: Decimal) -> dict[str, Any]:
@@ -63,21 +94,25 @@ def _payload_producto_png(p: Producto, precio: Decimal) -> dict[str, Any]:
     }
 
 
-def partes_lista_precios_png(filas: list[tuple[Producto, Decimal]]) -> list[dict[str, Any]]:
+def build_png_export_payload(filas: list[tuple[Producto, Decimal]]) -> dict[str, Any]:
     """
-    Partes para exportar PNG sin superar límites del canvas del navegador.
-    Listas cortas: una sola parte. Listas largas: agrupa por categoría (tipo de producto);
-    si una categoría supera PNG_MAX_ROWS_PER_IMAGE, la divide en varias imágenes numeradas.
+    Estructura para exportar PNG: modo único (lista corta) o por categoría con hojas balanceadas.
     """
     n = len(filas)
     if n <= SPLIT_PNG_ROW_THRESHOLD:
-        return [
-            {
-                "titulo_suffix": "",
-                "filename_suffix": "",
-                "productos": [_payload_producto_png(p, pr) for p, pr in filas],
-            }
-        ]
+        return {
+            "modo": "unico",
+            "partes": [
+                {
+                    "titulo_suffix": "",
+                    "filename_suffix": "",
+                    "productos": [_payload_producto_png(p, pr) for p, pr in filas],
+                    "hoja_num": 1,
+                    "hojas_total": 1,
+                }
+            ],
+            "categorias": [],
+        }
 
     grouped: dict[str, list[tuple[Producto, Decimal]]] = {}
     for p, pr in filas:
@@ -85,29 +120,54 @@ def partes_lista_precios_png(filas: list[tuple[Producto, Decimal]]) -> list[dict
 
     keys_sorted = sorted(grouped.keys(), key=lambda k: _TIPO_SORT_ORDER_PNG.get(k, 99))
 
-    out: list[dict[str, Any]] = []
+    categorias: list[dict[str, Any]] = []
     for tipo_key in keys_sorted:
         rows = grouped[tipo_key]
-        label_base = Producto.Tipo(tipo_key).label
-        chunks = [rows[i : i + PNG_MAX_ROWS_PER_IMAGE] for i in range(0, len(rows), PNG_MAX_ROWS_PER_IMAGE)]
-        for ci, chunk in enumerate(chunks):
-            if len(chunks) == 1:
-                titulo_suffix = label_base
-                fname = slugify(label_base) or "parte"
-            else:
-                titulo_suffix = f"{label_base} ({ci + 1}/{len(chunks)})"
-                base_slug = slugify(label_base) or "parte"
-                fname = f"{base_slug}-{ci + 1}"
+        tipo_enum = Producto.Tipo(tipo_key)
+        label_btn = PNG_CATEGORY_BUTTON_LABELS.get(tipo_enum, tipo_enum.label)
+        slug_base = slugify(label_btn) or slugify(tipo_key) or "categoria"
 
-            out.append(
+        chunks = balanced_chunks(rows, PNG_MAX_ROWS_PER_IMAGE)
+        partes_cat: list[dict[str, Any]] = []
+        nh = len(chunks)
+        for ci, chunk in enumerate(chunks):
+            if nh == 1:
+                titulo_suffix = label_btn
+                fname = slug_base
+            else:
+                titulo_suffix = f"{label_btn} · Hoja {ci + 1}/{nh}"
+                fname = f"{slug_base}-hoja-{ci + 1}"
+
+            partes_cat.append(
                 {
                     "titulo_suffix": titulo_suffix,
                     "filename_suffix": fname,
                     "productos": [_payload_producto_png(p, pr) for p, pr in chunk],
+                    "hoja_num": ci + 1,
+                    "hojas_total": nh,
                 }
             )
 
-    return out
+        categorias.append(
+            {
+                "tipo_key": tipo_key,
+                "button_label": label_btn,
+                "productos_total": len(rows),
+                "partes": partes_cat,
+            }
+        )
+
+    return {
+        "modo": "por_categoria",
+        "partes": [],
+        "categorias": categorias,
+    }
+
+
+def partes_lista_precios_png(filas: list[tuple[Producto, Decimal]]) -> list[dict[str, Any]]:
+    """Compatibilidad: devuelve solo la lista de partes (modo único o vacío si es por categoría)."""
+    payload = build_png_export_payload(filas)
+    return list(payload.get("partes") or [])
 
 
 def _truncate_text_to_width(
