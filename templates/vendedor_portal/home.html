@@ -31,7 +31,6 @@
               <option value="{{ c.pk }}" {% if comprador and comprador.pk == c.pk %}selected{% endif %}>{{ c.codigo }} — {{ c.apellido }}, {{ c.nombre }}</option>
             {% endfor %}
           </select>
-          <div class="form-text">Muestra clientes vigentes asignados a vos.</div>
         </div>
         <div class="col-12 col-md-1 col-lg-1 d-grid">
           <label class="form-label d-none d-md-block" aria-hidden="true">&nbsp;</label>

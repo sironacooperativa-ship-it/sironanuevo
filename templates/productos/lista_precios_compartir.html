@@ -11,18 +11,20 @@
       </div>
     </div>
     <div class="d-flex gap-2 flex-wrap justify-content-end">
-      <a class="action-button btn btn-outline-secondary" href="{% url 'lista_precios_ver' lista.pk %}">
-        <i data-lucide="arrow-left" aria-hidden="true"></i>
-        Volver
-      </a>
-      <a class="action-button btn btn-outline-primary" href="{% url 'lista_precios_export_pdf' lista.pk %}">
-        <i data-lucide="file-text" aria-hidden="true"></i>
-        PDF
-      </a>
-      <a class="action-button btn btn-outline-primary" href="{% url 'lista_precios_export_excel' lista.pk %}">
-        <i data-lucide="download" aria-hidden="true"></i>
-        Excel
-      </a>
+      {% if not public %}
+        <a class="action-button btn btn-outline-secondary" href="{% url 'lista_precios_ver' lista.pk %}">
+          <i data-lucide="arrow-left" aria-hidden="true"></i>
+          Volver
+        </a>
+        <a class="action-button btn btn-outline-primary" href="{% url 'lista_precios_export_pdf' lista.pk %}">
+          <i data-lucide="file-text" aria-hidden="true"></i>
+          PDF
+        </a>
+        <a class="action-button btn btn-outline-primary" href="{% url 'lista_precios_export_excel' lista.pk %}">
+          <i data-lucide="download" aria-hidden="true"></i>
+          Excel
+        </a>
+      {% endif %}
     </div>
   </section>
 

@@ -512,3 +512,59 @@ def lista_precios_export_png(request, pk: int):
             "kpi": kpi,
         },
     )
+
+
+@require_http_methods(["GET"])
+def lista_precios_public_farmacia_png(request):
+    """
+    Endpoint público (para QR ya impresos vía Sheet):
+    muestra una página que genera un PNG completo de la lista Farmacia en el momento.
+    """
+    lista = ListaPrecios.objects.filter(es_farmacia=True).order_by("id").first()
+    if lista is None:
+        raise Http404("No existe lista Farmacia.")
+
+    q = (request.GET.get("q") or "").strip()
+    filas = filas_lista_precios(lista)
+    if q:
+        ql = q.lower()
+        filas = [
+            (p, precio)
+            for (p, precio) in filas
+            if ql in (p.descripcion or "").lower() or ql in (p.codigo or "").lower()
+        ]
+
+    payload = []
+    for p, precio in filas:
+        payload.append(
+            {
+                "codigo": p.codigo,
+                "tipo": p.get_tipo_display(),
+                "descripcion": p.descripcion,
+                "precio": format_monto_ars(precio),
+                "stock": int(p.stock or 0),
+            }
+        )
+
+    total_valor = Decimal("0.00")
+    for _, precio in filas:
+        try:
+            total_valor += Decimal(precio or 0)
+        except Exception:
+            pass
+    kpi = {
+        "productos": len(payload),
+        "valor_total": format_monto_ars(total_valor),
+    }
+    return render(
+        request,
+        "productos/lista_precios_compartir.html",
+        {
+            "lista": lista,
+            "titulo": "Lista de precios — Farmacia",
+            "productos": payload,
+            "q": q,
+            "kpi": kpi,
+            "public": True,
+        },
+    )
