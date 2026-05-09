@@ -214,26 +214,15 @@
       <form class="row g-2 align-items-end" method="get">
         <div class="col-12 col-md-6 col-lg-2">
           <label class="form-label small text-muted mb-1" for="productos-filter-q">Buscar</label>
-          <div class="input-group">
-            <input
-              id="productos-filter-q"
-              class="form-control form-control-sm rounded-3"
-              type="search"
-              name="q"
-              value="{{ q }}"
-              placeholder="Código o descripción"
-              autocomplete="off"
-            />
-            <button
-              type="button"
-              class="btn btn-outline-secondary"
-              id="productos-q-picker-btn"
-              title="Listado de productos"
-              aria-label="Abrir listado de productos para filtrar"
-            >
-              <i data-lucide="search" aria-hidden="true"></i>
-            </button>
-          </div>
+          <input
+            id="productos-filter-q"
+            class="form-control form-control-sm rounded-3"
+            type="search"
+            name="q"
+            value="{{ q }}"
+            placeholder="Código o descripción"
+            autocomplete="off"
+          />
         </div>
         <div class="col-12 col-md-6 col-lg-2">
           <label class="form-label small text-muted mb-1">Tipo</label>
@@ -953,14 +942,13 @@
     Código automático: <code>ME/AC/OT</code> + 4 dígitos.
   </p>
 
-  <script src="{% static 'js/sirona-productos-q-picker.js' %}?v=1"></script>
+  <script src="{% static 'js/sirona-productos-q-picker.js' %}?v=2"></script>
   <script>
     (function () {
       if (window.SironaProductosQPicker) {
         SironaProductosQPicker.attach({
           dataScriptId: "productos-list-picker-data",
           inputId: "productos-filter-q",
-          buttonId: "productos-q-picker-btn",
         });
       }
     })();

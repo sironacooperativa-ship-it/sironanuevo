@@ -140,20 +140,15 @@
       <div class="stock-filters-grid">
         <div class="stock-filter-group stock-filter-group--q">
           <label class="form-label stock-filter-label" for="stock-filter-q">Buscar producto</label>
-          <div class="input-group">
-            <input
-              id="stock-filter-q"
-              type="search"
-              name="q"
-              class="form-control stock-filter-control"
-              value="{{ q|default:'' }}"
-              placeholder="Código o descripción"
-              autocomplete="off"
-            />
-            <button type="button" class="btn btn-outline-secondary" id="stock-q-picker-btn" title="Buscar producto" aria-label="Buscar producto">
-              <i data-lucide="search" aria-hidden="true"></i>
-            </button>
-          </div>
+          <input
+            id="stock-filter-q"
+            type="search"
+            name="q"
+            class="form-control stock-filter-control"
+            value="{{ q|default:'' }}"
+            placeholder="Código o descripción"
+            autocomplete="off"
+          />
         </div>
         <div class="stock-filter-group">
           <label class="form-label stock-filter-label" for="stock-filter-tipo">Tipo</label>
@@ -357,14 +352,13 @@
       }
     })();
   </script>
-  <script src="{% static 'js/sirona-productos-q-picker.js' %}?v=1"></script>
+  <script src="{% static 'js/sirona-productos-q-picker.js' %}?v=2"></script>
   <script>
     (function () {
       if (window.SironaProductosQPicker) {
         SironaProductosQPicker.attach({
           dataScriptId: "stock-productos-picker",
           inputId: "stock-filter-q",
-          buttonId: "stock-q-picker-btn",
         });
       }
     })();

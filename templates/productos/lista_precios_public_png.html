@@ -11,7 +11,7 @@
     />
     <style>
       body { background: #fff; }
-      .lp-public-wrap { max-width: 980px; margin: 0 auto; padding: 16px 12px 24px; }
+      .lp-public-wrap { max-width: min(1280px, 100%); margin: 0 auto; padding: 16px 12px 24px; }
       .lp-public-actions { position: sticky; top: 0; background: rgba(255,255,255,.92); backdrop-filter: blur(6px); padding: 10px 0; z-index: 10; }
       .lp-public-canvas { width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 12px; }
     </style>
@@ -40,6 +40,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/lista-precios-png-canvas.js' %}?v=1"></script>
     <script>
       (function () {
         const partesEl = document.getElementById("lp-partes");
@@ -51,7 +52,6 @@
         const baseSlug = "{{ lista.slug|default:'lista-farmacia'|escapejs }}";
         const qtxt = "{{ q|default:''|escapejs }}";
 
-        const EXPORT_SCALE = 2;
         const logo = new Image();
         logo.crossOrigin = "anonymous";
         logo.src = "{% static 'img/sirona-logo.png' %}";
@@ -61,144 +61,17 @@
           return baseSlug + "--" + parte.filename_suffix + ".png";
         }
 
-        function paintListaPreciosCanvas(canvas, parte) {
-          const chunk = parte.productos || [];
-          const w = 1080;
-          const pad = 48;
-          const tableRight = w - pad;
-          const colCodigo = { x: pad, width: 140 };
-          const colTipo = { x: pad + 160, width: 180 };
-          const colPrecio = { x: tableRight - 200, width: 200 };
-          const colDesc = { x: pad + 360, width: Math.max(120, colPrecio.x - (pad + 360) - 20) };
-          const headerH = 164;
-          const filterH = 86;
-          const rowH = chunk.length > 400 ? 44 : 54;
-          const h = headerH + filterH + pad + Math.max(1, chunk.length) * rowH + pad;
-          canvas.width = Math.round(w * EXPORT_SCALE);
-          canvas.height = Math.round(h * EXPORT_SCALE);
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return;
-
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = "high";
-          ctx.scale(EXPORT_SCALE, EXPORT_SCALE);
-          const strokeW = 2 / EXPORT_SCALE;
-
-          const headerTitle = parte.titulo_suffix ? baseTitulo + " · " + parte.titulo_suffix : baseTitulo;
-          const filtrosRight = parte.titulo_suffix
-            ? "Categoría: " + parte.titulo_suffix
-            : "Tipo: Todos  ·  Proveedor: Todos  ·  Estado: Todos";
-
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(0, 0, w, h);
-
-          const grad = ctx.createLinearGradient(0, 0, w, headerH);
-          grad.addColorStop(0, "#0ea5a5");
-          grad.addColorStop(0.65, "#2563eb");
-          grad.addColorStop(1, "#38bdf8");
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, 0, w, headerH);
-
-          ctx.fillStyle = "#ffffff";
-          ctx.font = "bold 42px system-ui, -apple-system, Segoe UI, Arial";
-          ctx.fillText(headerTitle, pad, 62);
-          ctx.font = "26px system-ui, -apple-system, Segoe UI, Arial";
-          const fecha = new Date().toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
-          ctx.fillText("Emitido: " + fecha, pad, 112);
-
-          const drawLogo = () => {
-            try {
-              if (!logo || !logo.complete || !logo.width) return;
-              const lh = 36;
-              const lw = Math.round((logo.width / logo.height) * lh);
-              ctx.save();
-              ctx.fillStyle = "rgba(255,255,255,0.92)";
-              ctx.strokeStyle = "rgba(255,255,255,0.25)";
-              ctx.lineWidth = strokeW;
-              const bx = w - pad - lw - 18;
-              const by = 24;
-              const bw = lw + 18;
-              const bh = lh + 16;
-              const r = 14;
-              ctx.beginPath();
-              ctx.moveTo(bx + r, by);
-              ctx.arcTo(bx + bw, by, bx + bw, by + bh, r);
-              ctx.arcTo(bx + bw, by + bh, bx, by + bh, r);
-              ctx.arcTo(bx, by + bh, bx, by, r);
-              ctx.arcTo(bx, by, bx + bw, by, r);
-              ctx.closePath();
-              ctx.fill();
-              ctx.stroke();
-              ctx.drawImage(logo, bx + 9, by + 8, lw, lh);
-              ctx.restore();
-            } catch (e) {}
-          };
-
-          let y = headerH + 18;
-          ctx.fillStyle = "#0f172a";
-          ctx.font = "bold 22px system-ui, -apple-system, Segoe UI, Arial";
-          ctx.fillText("Filtros aplicados", pad, y + 24);
-          ctx.fillStyle = "#64748b";
-          ctx.font = "20px system-ui, -apple-system, Segoe UI, Arial";
-          ctx.fillText("Buscar: " + (qtxt ? qtxt : "—"), pad, y + 54);
-          ctx.textAlign = "right";
-          ctx.fillText(filtrosRight, w - pad, y + 54);
-          ctx.textAlign = "left";
-          y += filterH;
-
-          if (logo.complete) drawLogo();
-
-          function drawClippedText(text, col, baseline, options) {
-            const cfg = options || {};
-            const align = cfg.align || "left";
-            const height = cfg.height || rowH;
-            const top = cfg.top != null ? cfg.top : baseline - 30;
-            ctx.save();
-            ctx.beginPath();
-            ctx.rect(col.x, top, col.width, height);
-            ctx.clip();
-            ctx.textAlign = align;
-            const textX = align === "right" ? col.x + col.width : col.x;
-            ctx.fillText(String(text || ""), textX, baseline);
-            ctx.restore();
-            ctx.textAlign = "left";
-          }
-
-          ctx.fillStyle = "#505050";
-          ctx.font = "22px system-ui, -apple-system, Segoe UI, Arial";
-          drawClippedText("Código", colCodigo, y + 22, { height: 34, top: y - 4 });
-          drawClippedText("Tipo", colTipo, y + 22, { height: 34, top: y - 4 });
-          drawClippedText("Descripción", colDesc, y + 22, { height: 34, top: y - 4 });
-          drawClippedText("Precio", colPrecio, y + 22, { align: "right", height: 34, top: y - 4 });
-          y += 42;
-          ctx.strokeStyle = "#dcdcdc";
-          ctx.lineWidth = strokeW;
-          ctx.beginPath();
-          ctx.moveTo(pad, y);
-          ctx.lineTo(tableRight, y);
-          ctx.stroke();
-          y += 18;
-
-          ctx.font = chunk.length > 400 ? "22px system-ui, -apple-system, Segoe UI, Arial" : "26px system-ui, -apple-system, Segoe UI, Arial";
-          for (let i = 0; i < chunk.length; i++) {
-            const p = chunk[i];
-            if (i % 2 === 1) {
-              ctx.fillStyle = "#f8fafc";
-              ctx.fillRect(0, y - 8, w, rowH);
-            }
-            ctx.fillStyle = "#1e1e1e";
-            drawClippedText(p.codigo, colCodigo, y + 30, { top: y - 8, height: rowH });
-            drawClippedText(p.tipo, colTipo, y + 30, { top: y - 8, height: rowH });
-            drawClippedText(p.descripcion, colDesc, y + 30, { top: y - 8, height: rowH });
-            drawClippedText(p.precio, colPrecio, y + 30, { align: "right", top: y - 8, height: rowH });
-            y += rowH;
-          }
-        }
-
         function renderAll() {
           partes.forEach(function (parte, i) {
             const c = document.getElementById("cnv-" + i);
-            if (c) paintListaPreciosCanvas(c, parte);
+            if (c && window.SironaListaPreciosPng) {
+              SironaListaPreciosPng.paint(c, parte, {
+                baseTitulo: baseTitulo,
+                qtxt: qtxt,
+                logo: logo,
+                emitidoSuffix: "",
+              });
+            }
           });
           if (meta) {
             meta.textContent =

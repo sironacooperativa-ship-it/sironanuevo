@@ -86,26 +86,15 @@
         <form class="row g-2 align-items-end" method="get" action="{% url 'productos_aumento' %}">
           <div class="col-12 col-md-5">
             <label class="form-label small text-muted mb-1" for="aumento-filter-q">Buscar</label>
-            <div class="input-group">
-              <input
-                id="aumento-filter-q"
-                type="search"
-                class="form-control form-control-sm rounded-3"
-                name="q"
-                value="{{ q }}"
-                placeholder="Código o descripción"
-                autocomplete="off"
-              />
-              <button
-                type="button"
-                class="btn btn-outline-secondary"
-                id="aumento-q-picker-btn"
-                title="Listado de productos"
-                aria-label="Abrir listado de productos para filtrar"
-              >
-                <i data-lucide="search" aria-hidden="true"></i>
-              </button>
-            </div>
+            <input
+              id="aumento-filter-q"
+              type="search"
+              class="form-control form-control-sm rounded-3"
+              name="q"
+              value="{{ q }}"
+              placeholder="Código o descripción"
+              autocomplete="off"
+            />
           </div>
           <div class="col-12 col-md-3">
             <label class="form-label small text-muted mb-1">Tipo</label>
@@ -263,14 +252,13 @@
         });
       })();
     </script>
-    <script src="{% static 'js/sirona-productos-q-picker.js' %}?v=1"></script>
+    <script src="{% static 'js/sirona-productos-q-picker.js' %}?v=2"></script>
     <script>
       (function () {
         if (window.SironaProductosQPicker) {
           SironaProductosQPicker.attach({
             dataScriptId: "aumento-productos-picker-data",
             inputId: "aumento-filter-q",
-            buttonId: "aumento-q-picker-btn",
           });
         }
       })();
