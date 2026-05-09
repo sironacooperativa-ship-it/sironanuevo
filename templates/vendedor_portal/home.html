@@ -11,7 +11,9 @@
     <div class="d-flex gap-2">
       <a class="btn btn-outline-primary btn-sm" href="{% url 'vendedor_clientes_list' %}">Clientes</a>
       <a class="btn btn-outline-primary btn-sm" href="{% url 'vendedor_stock' %}">Stock</a>
-      <a class="btn btn-primary btn-sm" href="{% url 'vendedor_presupuestos_list' %}">Presupuestos</a>
+      <a class="btn btn-primary btn-sm" href="{% url 'vendedor_presupuestos_list' %}">
+        Presupuestos{% if presupuestos_alerta %} <span class="badge text-bg-danger">!</span>{% endif %}
+      </a>
       <a class="btn btn-primary btn-sm" href="{% url 'vendedor_ventas_list' %}">Ventas</a>
       <a class="btn btn-outline-primary btn-sm" href="{% url 'vendedor_listas' %}">Listas de precio</a>
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor_cuenta_corriente' %}">Cuenta corriente</a>

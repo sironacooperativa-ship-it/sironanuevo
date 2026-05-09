@@ -2,8 +2,11 @@ from __future__ import annotations
 
 from django.core.exceptions import ObjectDoesNotExist
 
+from django.db.models import F, Q
+
 from core.models import NotaAdmin
 from personas.models import Vendedor
+from presupuestos.models import Presupuesto
 
 
 def vendor_mode(request):
@@ -51,6 +54,30 @@ def vendor_mode(request):
                 usuario=user, es_staff=True, leida_usuario=False
             ).count()
 
+    presupuestos_alerta_count = 0
+    if user is not None and getattr(user, "is_authenticated", False):
+        try:
+            base_qs = Presupuesto.objects.filter(estado=Presupuesto.Estado.ACTIVO)
+            # Si no es staff, limitar al vendedor del usuario si existe.
+            if not getattr(user, "is_staff", False):
+                try:
+                    v = user.vendedor_perfil
+                except ObjectDoesNotExist:
+                    v = None
+                if isinstance(v, Vendedor):
+                    base_qs = base_qs.filter(vendedor_id=v.pk)
+                else:
+                    base_qs = base_qs.none()
+
+            # Alerta: alguna línea capturada antes de la última actualización del producto,
+            # o bien sin producto_capturado_en.
+            alerta_q = Q(lineas__producto_capturado_en__isnull=True) | Q(
+                lineas__producto__actualizado_en__gt=F("lineas__producto_capturado_en")
+            )
+            presupuestos_alerta_count = int(base_qs.filter(alerta_q).distinct().count())
+        except Exception:
+            presupuestos_alerta_count = 0
+
     pa = getattr(user, "perfil_acceso", None) if user is not None and getattr(user, "is_authenticated", False) else None
     solo_vendedor_profile = bool(getattr(pa, "solo_vendedor", False)) if pa is not None else False
     if user is not None and getattr(user, "is_authenticated", False):
@@ -67,5 +94,7 @@ def vendor_mode(request):
         "notas_admin_no_leidas": notas_admin_no_leidas,
         "notas_usuario_no_leidas": notas_usuario_no_leidas,
         "recibe_notas_admin": recibe_notas_admin,
+        "presupuestos_alerta_count": presupuestos_alerta_count,
+        "presupuestos_alerta": presupuestos_alerta_count > 0,
     }
 

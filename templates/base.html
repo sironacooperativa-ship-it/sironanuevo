@@ -436,7 +436,12 @@
               <div class="sidebar-subnav" aria-label="Submenú Ventas">
                 <a class="sidebar-link app-sidebar-link" href="{% url 'presupuesto_lista' %}" title="Presupuestos">
                   <span class="app-sidebar-icon-wrap"><i data-lucide="file-text"></i></span>
-                  <span class="app-sidebar-label sidebar-label">Presupuestos</span>
+                  <span class="app-sidebar-label sidebar-label">
+                    Presupuestos
+                    {% if presupuestos_alerta %}
+                      <span class="badge text-bg-danger ms-1" title="Hay presupuestos con cambios en catálogo">!</span>
+                    {% endif %}
+                  </span>
                 </a>
                 <a class="sidebar-link app-sidebar-link" href="{% url 'venta_nueva' %}" title="Nueva venta">
                   <span class="app-sidebar-icon-wrap"><i data-lucide="receipt"></i></span>
@@ -721,7 +726,12 @@
                 <div class="sidebar-subnav offcanvas-subnav" aria-label="Submenú Ventas">
                   <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'presupuesto_lista' %}">
                     <span class="app-sidebar-icon-wrap"><i data-lucide="file-text"></i></span>
-                    <span class="app-sidebar-label">Presupuestos</span>
+                    <span class="app-sidebar-label">
+                      Presupuestos
+                      {% if presupuestos_alerta %}
+                        <span class="badge text-bg-danger ms-1" title="Hay presupuestos con cambios en catálogo">!</span>
+                      {% endif %}
+                    </span>
                   </a>
                   <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'venta_nueva' %}">
                     <span class="app-sidebar-icon-wrap"><i data-lucide="receipt"></i></span>
