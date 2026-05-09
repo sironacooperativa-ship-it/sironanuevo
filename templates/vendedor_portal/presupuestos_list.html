@@ -39,7 +39,7 @@
             <col style="width: auto" />
             <col style="width: 8.5rem" />
             <col style="width: 9rem" />
-            <col style="width: 8rem" />
+            <col style="width: 13rem" />
           </colgroup>
           <thead>
             <tr>
@@ -75,6 +75,12 @@
                   <div class="d-inline-flex gap-2">
                     <a class="btn btn-sm btn-outline-secondary" href="{% url 'vendedor_presupuesto_ver' p.pk %}">Ver</a>
                     <a class="btn btn-sm btn-outline-primary" href="{% url 'presupuesto_editar' p.pk %}">Editar</a>
+                    {% if p.estado == "ACT" %}
+                      <form method="post" action="{% url 'vendedor_presupuesto_eliminar' p.pk %}" class="d-inline m-0" onsubmit="return confirm('¿Eliminar el presupuesto #{{ p.pk }}?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                      </form>
+                    {% endif %}
                   </div>
                 </td>
               </tr>

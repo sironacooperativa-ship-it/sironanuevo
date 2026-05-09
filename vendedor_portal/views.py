@@ -23,6 +23,7 @@ from presupuestos.models import Presupuesto, PresupuestoLinea, presupuesto_tiene
 from presupuestos.presupuesto_pdf import presupuesto_pdf_response
 from presupuestos.share_utils import contexto_compartir_presupuesto
 from presupuestos.views import _lineas_presupuesto_desde_post, _productos_payload, _validar_lineas_post
+from ventas.servicios import eliminar_venta_admin
 from productos.lista_precios_pdf import (
     filas_lista_precios,
     lista_precios_pdf_file_response,
@@ -231,6 +232,38 @@ def vendedor_presupuesto_ver(request, pk: int):
         **contexto_compartir_presupuesto(request, p),
     }
     return render(request, "presupuestos/detalle.html", ctx)
+
+
+@login_required
+@require_http_methods(["POST"])
+def vendedor_presupuesto_eliminar(request, pk: int):
+    vendedor = _get_vendedor_from_user(request.user)
+    if vendedor is None:
+        return HttpResponseForbidden("Este usuario no tiene perfil de vendedor.")
+
+    presupuesto = get_object_or_404(Presupuesto, pk=pk, vendedor_id=vendedor.pk)
+    if presupuesto.estado != Presupuesto.Estado.ACTIVO:
+        messages.warning(request, "No se puede eliminar un presupuesto ya aprobado.")
+        return redirect("vendedor_presupuestos_list")
+
+    nid = presupuesto.pk
+    try:
+        with transaction.atomic():
+            qs = Presupuesto.objects
+            try:
+                qs = qs.select_for_update(of=("self",))
+            except TypeError:
+                qs = qs.select_for_update()
+            pr = qs.get(pk=presupuesto.pk)
+            if pr.venta_id:
+                eliminar_venta_admin(pr.venta)
+            pr.delete()
+    except Exception:
+        messages.error(request, "No se pudo eliminar el presupuesto.")
+        return redirect("vendedor_presupuestos_list")
+
+    messages.success(request, f"Presupuesto #{nid} eliminado.")
+    return redirect("vendedor_presupuestos_list")
 
 
 @login_required
