@@ -15,6 +15,11 @@ urlpatterns = [
     path("<int:pk>/editar/", views.presupuesto_editar, name="presupuesto_editar"),
     path("<int:pk>/eliminar/", views.presupuesto_eliminar, name="presupuesto_eliminar"),
     path("<int:pk>/aprobar/", views.presupuesto_aprobar, name="presupuesto_aprobar"),
+    path(
+        "<int:pk>/resolver-catalogo/",
+        views.presupuesto_resolver_catalogo,
+        name="presupuesto_resolver_catalogo",
+    ),
     path("<int:pk>/comparativa/", views.presupuesto_comparativa, name="presupuesto_comparativa"),
     path("<int:pk>/duplicar/", views.presupuesto_duplicar, name="presupuesto_duplicar"),
     path(

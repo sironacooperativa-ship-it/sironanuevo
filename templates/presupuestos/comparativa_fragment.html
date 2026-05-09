@@ -75,7 +75,7 @@
               </td>
               <td class="text-end">{{ f.qty }}</td>
               <td class="text-end">
-                {% if f.changed and f.presu.pu != f.cat.pu %}
+                {% if f.changed %}
                   <div class="sirona-presu-old">{{ f.presu.pu|ars }}</div>
                   <div class="sirona-presu-new sirona-presu-sub">Nuevo: {{ f.cat.pu|ars }}</div>
                 {% else %}
@@ -83,14 +83,14 @@
                 {% endif %}
               </td>
               <td class="text-end">
-                {% if f.changed and f.presu.pu != f.cat.pu %}
+                {% if f.changed %}
                   <div class="sirona-presu-new">{{ f.cat.pu|ars }}</div>
                 {% else %}
                   {{ f.cat.pu|ars }}
                 {% endif %}
               </td>
               <td class="text-end fw-semibold">
-                {% if f.changed and f.presu.pu != f.cat.pu %}
+                {% if f.changed %}
                   <div class="sirona-presu-old">{{ f.presu.st|ars }}</div>
                   <div class="sirona-presu-new sirona-presu-sub">Nuevo: {{ f.cat.st|ars }}</div>
                 {% else %}
@@ -98,7 +98,7 @@
                 {% endif %}
               </td>
               <td class="text-end fw-semibold">
-                {% if f.changed and f.presu.pu != f.cat.pu %}
+                {% if f.changed %}
                   <div class="sirona-presu-new">{{ f.cat.st|ars }}</div>
                 {% else %}
                   {{ f.cat.st|ars }}
@@ -124,24 +124,91 @@
   <div class="modal-footer">
     <form
       method="post"
-      action="{% url 'presupuesto_aprobar' presupuesto.pk %}"
+      action="{% url 'presupuesto_resolver_catalogo' presupuesto.pk %}"
       class="d-inline"
-      onsubmit="return confirm('Se aplicarán precio de venta y datos actuales del catálogo a cada línea. ¿Aprobar y generar el pedido?');"
+      onsubmit="return confirm('Se aplicarán precio de venta y datos actuales del catálogo a cada línea. ¿Actualizar el presupuesto?');"
+      data-presu-comp-form="1"
     >
       {% csrf_token %}
       <input type="hidden" name="resolver_catalogo" value="actualizar" />
-      <button type="submit" class="btn btn-warning btn-sm">Actualizar desde catálogo y aprobar</button>
+      <button type="submit" class="btn btn-warning btn-sm">Actualizar desde catálogo</button>
     </form>
     <form
       method="post"
-      action="{% url 'presupuesto_aprobar' presupuesto.pk %}"
+      action="{% url 'presupuesto_resolver_catalogo' presupuesto.pk %}"
       class="d-inline"
-      onsubmit="return confirm('Se mantienen los valores del presupuesto. ¿Aprobar y generar el pedido?');"
+      onsubmit="return confirm('Se mantienen los valores del presupuesto. ¿Conservar?');"
+      data-presu-comp-form="1"
     >
       {% csrf_token %}
       <input type="hidden" name="resolver_catalogo" value="conservar" />
-      <button type="submit" class="btn btn-outline-secondary btn-sm">Conservar presupuesto original y aprobar</button>
+      <button type="submit" class="btn btn-outline-secondary btn-sm">Conservar presupuesto original</button>
     </form>
   </div>
 </div>
+
+<script>
+  (function () {
+    try {
+      const root = document.currentScript && document.currentScript.parentElement ? document.currentScript.parentElement : document;
+      const forms = (root.querySelectorAll ? root.querySelectorAll('form[data-presu-comp-form="1"]') : []) || [];
+      if (!forms.length) return;
+
+      function getModalEl() {
+        const content = root.closest ? root.closest(".modal-content") : null;
+        if (content && content.closest) {
+          const m = content.closest(".modal");
+          if (m) return m;
+        }
+        return document.getElementById("sironaModal");
+      }
+
+      async function submitAjax(form) {
+        const url = form.getAttribute("action");
+        if (!url) return;
+        const fd = new FormData(form);
+        const csrf = (form.querySelector('[name="csrfmiddlewaretoken"]') || {}).value || "";
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) btn.disabled = true;
+        try {
+          const resp = await fetch(url, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              "X-CSRFToken": csrf,
+            },
+            body: fd,
+            redirect: "follow",
+          });
+          // Django responde redirect -> fetch lo sigue; usamos resp.url para ir a la ficha actualizada.
+          const modalEl = getModalEl();
+          try {
+            if (modalEl && typeof bootstrap !== "undefined") {
+              const inst = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+              inst.hide();
+            }
+          } catch (e) {}
+          if (resp && resp.url) {
+            window.location.href = resp.url;
+          } else {
+            window.location.reload();
+          }
+        } catch (e) {
+          window.location.href = url;
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      }
+
+      forms.forEach(function (f) {
+        f.addEventListener("submit", function (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          submitAjax(f);
+        });
+      });
+    } catch (e) {}
+  })();
+</script>
 

@@ -972,6 +972,44 @@ def presupuesto_aprobar(request, pk: int):
 
 @login_required
 @require_http_methods(["POST"])
+def presupuesto_resolver_catalogo(request, pk: int):
+    """
+    Aplica una resolución de catálogo SIN aprobar:
+    - actualizar: recalcula montos/textos desde catálogo.
+    - conservar: marca líneas al día (capturado_en) pero no cambia montos.
+    """
+    presupuesto = get_object_or_404(Presupuesto, pk=pk)
+    if presupuesto.estado != Presupuesto.Estado.ACTIVO:
+        raise Http404("Solo disponible para presupuestos pendientes.")
+    if not _usuario_puede_gestionar_presupuesto(request.user, presupuesto):
+        raise Http404("Sin permiso.")
+
+    resolver = (request.POST.get("resolver_catalogo") or "").strip()
+    if resolver not in ("actualizar", "conservar"):
+        messages.error(request, "Acción inválida.")
+        return redirect("presupuesto_detalle", pk=pk)
+
+    try:
+        with transaction.atomic():
+            pr = Presupuesto.objects.select_for_update().get(pk=pk)
+            if pr.estado != Presupuesto.Estado.ACTIVO:
+                messages.warning(request, "Este presupuesto ya no está pendiente.")
+                return redirect("presupuesto_detalle", pk=pk)
+            if resolver == "actualizar":
+                _actualizar_presupuesto_lineas_desde_catalogo(pr)
+                messages.success(request, "Presupuesto actualizado desde catálogo.")
+            else:
+                _marcar_lineas_presupuesto_al_dia_con_catalogo(pr)
+                messages.success(request, "Se conservaron los valores del presupuesto (catalogo validado).")
+    except Exception as exc:
+        detalle = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
+        messages.error(request, "No se pudo aplicar la resolución de catálogo." + detalle)
+
+    return redirect("presupuesto_detalle", pk=pk)
+
+
+@login_required
+@require_http_methods(["POST"])
 def presupuesto_duplicar(request, pk: int):
     orig = get_object_or_404(
         Presupuesto.objects.select_related("vendedor", "comprador").prefetch_related("lineas__producto"),
