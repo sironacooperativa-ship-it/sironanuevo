@@ -415,6 +415,8 @@ def cambiar_password(request):
             user = form.save()
             update_session_auth_hash(request, user)
             messages.success(request, "Tu contraseña fue actualizada.")
+            if bool(request.session.get("modo_vendedor", False)):
+                return redirect("vendedor_home")
             return redirect("home")
     else:
         form = SironaPasswordChangeForm(user=request.user)

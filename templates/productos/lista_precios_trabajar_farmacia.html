@@ -197,9 +197,14 @@
         try {
           const r = btn.getBoundingClientRect();
           menu.style.position = "fixed";
-          menu.style.left = Math.round(r.left) + "px";
           menu.style.top = Math.round(r.bottom + 4) + "px";
-          menu.style.width = Math.max(280, Math.round(r.width)) + "px";
+          if (window.innerWidth <= 575) {
+            menu.style.left = "8px";
+            menu.style.width = Math.max(260, window.innerWidth - 16) + "px";
+          } else {
+            menu.style.left = Math.round(r.left) + "px";
+            menu.style.width = Math.max(280, Math.round(r.width)) + "px";
+          }
           menu.style.zIndex = "2000";
         } catch (e) {}
       }
