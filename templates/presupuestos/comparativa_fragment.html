@@ -5,20 +5,47 @@
   data-sirona-dialog-centered="1"
   data-sirona-dialog-no-scroll="0"
 >
+  <style>
+    /* Modal comparativa: cuerpo con scroll vertical y tabla legible */
+    .sirona-presu-comp-body {
+      max-height: min(78vh, calc(100dvh - 220px));
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    @media (max-width: 575.98px) {
+      .sirona-presu-comp-body {
+        max-height: calc(100dvh - 190px);
+      }
+    }
+    .sirona-presu-comp-table-wrap {
+      overflow: auto;
+    }
+    .sirona-presu-comp-table {
+      min-width: 760px; /* evita columnas aplastadas */
+    }
+    .sirona-presu-old {
+      color: #dc2626; /* rojo legible */
+      font-weight: 650;
+    }
+    .sirona-presu-new {
+      color: #0f172a;
+      font-weight: 650;
+    }
+  </style>
   <div class="modal-header">
     <h5 class="modal-title mb-0">Comparativa catálogo · Presupuesto #{{ presupuesto.pk }}</h5>
     <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal" aria-label="Cerrar">
       Cerrar
     </button>
   </div>
-  <div class="modal-body">
+  <div class="modal-body sirona-presu-comp-body">
     <p class="text-muted small mb-3">
       Comparación entre lo <strong>guardado</strong> en el presupuesto y lo <strong>actual</strong> en catálogo (producto).
       Elegí abajo si querés <strong>actualizar</strong> o <strong>conservar</strong> antes de aprobar.
     </p>
 
-    <div class="table-responsive">
-      <table class="table table-sm align-middle">
+    <div class="table-responsive sirona-presu-comp-table-wrap">
+      <table class="table table-sm align-middle sirona-presu-comp-table">
         <thead>
           <tr>
             <th>Producto</th>
@@ -33,16 +60,18 @@
           {% for f in filas %}
             <tr {% if f.changed %}class="table-warning"{% endif %}>
               <td>
-                <div class="fw-semibold">{{ f.presu.codigo }} — {{ f.presu.descripcion }}</div>
-                {% if f.presu.codigo != f.cat.codigo or f.presu.descripcion != f.cat.descripcion %}
-                  <div class="text-muted small">Catálogo: {{ f.cat.codigo }} — {{ f.cat.descripcion }}</div>
+                {% if f.changed %}
+                  <div class="sirona-presu-old">{{ f.presu.codigo }} — {{ f.presu.descripcion }}</div>
+                  <div class="sirona-presu-new">{{ f.cat.codigo }} — {{ f.cat.descripcion }}</div>
+                {% else %}
+                  <div class="fw-semibold">{{ f.presu.codigo }} — {{ f.presu.descripcion }}</div>
                 {% endif %}
               </td>
               <td class="text-end">{{ f.qty }}</td>
-              <td class="text-end">{{ f.presu.pu|ars }}</td>
-              <td class="text-end">{{ f.cat.pu|ars }}</td>
-              <td class="text-end fw-semibold">{{ f.presu.st|ars }}</td>
-              <td class="text-end fw-semibold">{{ f.cat.st|ars }}</td>
+              <td class="text-end {% if f.changed and f.presu.pu != f.cat.pu %}sirona-presu-old{% endif %}">{{ f.presu.pu|ars }}</td>
+              <td class="text-end {% if f.changed and f.presu.pu != f.cat.pu %}sirona-presu-new{% endif %}">{{ f.cat.pu|ars }}</td>
+              <td class="text-end fw-semibold {% if f.changed and f.presu.pu != f.cat.pu %}sirona-presu-old{% endif %}">{{ f.presu.st|ars }}</td>
+              <td class="text-end fw-semibold {% if f.changed and f.presu.pu != f.cat.pu %}sirona-presu-new{% endif %}">{{ f.cat.st|ars }}</td>
             </tr>
           {% endfor %}
         </tbody>
