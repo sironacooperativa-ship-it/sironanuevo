@@ -114,6 +114,49 @@
         height: 14px !important;
       }
     }
+    /* Filtros productos: una fila en escritorio; selects compactos; dropdown suele ampliarse al texto en el navegador */
+    .productos-filtros-toolbar {
+      display: grid;
+      grid-template-columns:
+        minmax(5.5rem, 1fr)
+        minmax(4rem, 0.55fr)
+        minmax(7rem, 1.05fr)
+        minmax(7rem, 1.05fr)
+        minmax(4.25rem, 0.5fr)
+        minmax(5.5rem, 0.62fr)
+        auto;
+      gap: 0.35rem 0.4rem;
+      align-items: end;
+    }
+    .productos-filtros-toolbar > div > .form-select,
+    .productos-filtros-toolbar > div > .form-control {
+      min-width: 0;
+      width: 100%;
+    }
+    .productos-filtros-actions {
+      padding-bottom: 1px;
+    }
+    .productos-filtros-actions .btn {
+      flex: 0 0 auto;
+    }
+    select.productos-select-lista--farmacia,
+    select.form-select.productos-select-lista--farmacia {
+      background-color: #e0f2fe;
+      border-color: #7dd3fc;
+    }
+    @media (max-width: 1199.98px) {
+      .productos-filtros-toolbar {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .productos-filtros-actions {
+        grid-column: 1 / -1;
+      }
+    }
+    @media (max-width: 767.98px) {
+      .productos-filtros-toolbar {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
   </style>
 {% endblock %}
 {% block title %}Productos{% endblock %}
@@ -211,8 +254,8 @@
   {% endif %}
 
   <section class="modern-filter-card" aria-label="Filtros">
-      <form class="row g-2 align-items-end" method="get">
-        <div class="col-12 col-md-6 col-lg-2">
+      <form class="productos-filtros-toolbar" method="get">
+        <div>
           <label class="form-label small text-muted mb-1" for="productos-filter-q">Buscar</label>
           <input
             id="productos-filter-q"
@@ -224,7 +267,7 @@
             autocomplete="off"
           />
         </div>
-        <div class="col-12 col-md-6 col-lg-2">
+        <div>
           <label class="form-label small text-muted mb-1">Tipo</label>
           <select class="form-select form-select-sm rounded-3" name="tipo">
             <option value="">Todos</option>
@@ -233,9 +276,9 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-12 col-md-6 col-lg-3">
+        <div>
           <label class="form-label small text-muted mb-1">Proveedor</label>
-          <select class="form-select form-select-sm rounded-3" name="proveedor">
+          <select class="form-select form-select-sm rounded-3" name="proveedor" title="Filtrar por proveedor (compras registradas)">
             <option value="">Todos</option>
             {% for pr in proveedores_filtro %}
               <option value="{{ pr.pk }}" {% if proveedor == pr.pk|stringformat:"s" %}selected{% endif %}>
@@ -244,9 +287,9 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-12 col-md-6 col-lg-3">
+        <div>
           <label class="form-label small text-muted mb-1">Lista de precio</label>
-          <select class="form-select form-select-sm rounded-3" name="lista">
+          <select class="form-select form-select-sm rounded-3 {% if lista_es_farmacia_sel %}productos-select-lista--farmacia{% endif %}" name="lista">
             {% for l in listas_precios_filtro %}
               <option value="{{ l.pk }}" {% if lista == l.pk|stringformat:"s" %}selected{% endif %}>
                 {{ l.nombre }}{% if l.es_farmacia %} (Farmacia){% endif %}
@@ -255,7 +298,7 @@
             <option value="all" {% if lista == "all" %}selected{% endif %}>Todos los productos (sin filtro por lista)</option>
           </select>
         </div>
-        <div class="col-12 col-md-6 col-lg-2">
+        <div>
           <label class="form-label small text-muted mb-1">Estado</label>
           <select class="form-select form-select-sm rounded-3" name="estado">
             <option value="" {% if not estado %}selected{% endif %}>Todos</option>
@@ -263,31 +306,27 @@
             <option value="0" {% if estado == "0" %}selected{% endif %}>Deshabilitados</option>
           </select>
         </div>
-        <div class="col-12 col-md-6 col-lg-2">
+        <div>
           <label class="form-label small text-muted mb-1">Ingreso</label>
-          <select class="form-select form-select-sm rounded-3" name="ingreso">
+          <select class="form-select form-select-sm rounded-3" name="ingreso" title="Últimos 30 días desde el alta">
             <option value="" {% if not ingreso %}selected{% endif %}>Todos</option>
             <option value="nuevos" {% if ingreso == "nuevos" %}selected{% endif %}>Nuevos ingresos</option>
           </select>
         </div>
-        <div class="col-12 col-md-12 col-lg-3 d-flex gap-2">
-          <button class="btn btn-outline-dark btn-sm rounded-pill flex-grow-1" type="submit">Filtrar</button>
-          <a class="btn btn-outline-secondary btn-sm rounded-pill flex-grow-1" href="{% url 'productos_list' %}">Limpiar</a>
+        <div class="productos-filtros-actions d-flex gap-2 justify-content-start flex-wrap align-items-end">
+          {% if sort_ord %}
+            <input type="hidden" name="ord" value="{{ sort_ord }}" />
+            <input type="hidden" name="dir" value="{{ sort_dir }}" />
+          {% endif %}
+          <button class="btn btn-primary btn-sm text-white px-3" type="submit">Filtrar</button>
+          <a class="btn btn-outline-secondary btn-sm px-3" href="{% url 'productos_list' %}">Limpiar</a>
         </div>
-        {% if sort_ord %}
-          <input type="hidden" name="ord" value="{{ sort_ord }}" />
-          <input type="hidden" name="dir" value="{{ sort_dir }}" />
-        {% endif %}
       </form>
-      <p class="small text-muted mb-0 mt-2">
-        <strong>Lista de precio:</strong> por defecto se muestra la lista Farmacia (mismos criterios que en Listas de precios). En cada rubro solo ves los ítems habilitados en esa lista; la columna Precio usa el importe de esa lista (en Farmacia, el precio del producto). Si un ítem está en varias listas con el mismo criterio, aparece al cambiar de lista; si el precio difiere por lista, cada vista muestra una sola fila con el precio correspondiente.
-        <strong>Proveedor:</strong> productos con al menos una compra registrada a ese proveedor.
-        <strong>Nuevos ingresos:</strong> altas en los últimos 30 días.
-        <strong>Orden:</strong> por defecto rubro → descripción A-Z → precio; tocá un encabezado para ordenar.
-        {% if sort_ord %}
-          <a class="ms-1" href="{% url 'productos_list' %}{% if querystring_no_sort %}?{{ querystring_no_sort }}{% endif %}">Volver al orden predeterminado</a>.
-        {% endif %}
-      </p>
+      {% if sort_ord %}
+        <p class="small text-muted mb-0 mt-2">
+          <a href="{% url 'productos_list' %}{% if querystring_no_sort %}?{{ querystring_no_sort }}{% endif %}">Volver al orden predeterminado</a>
+        </p>
+      {% endif %}
   </section>
 
   {% if request.GET.stats != "1" %}

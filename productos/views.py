@@ -673,6 +673,7 @@ def productos_list(request):
             "proveedores_filtro": proveedores_filtro,
             "listas_precios_filtro": listas_precios_filtro,
             "proveedor_sel_label": proveedor_sel_label,
+            "lista_es_farmacia_sel": lista_modo == "farmacia",
             "page_obj": page_obj,
             "querystring": querystring,
             "kpi": kpi,

@@ -546,11 +546,10 @@ def lista_precios_export_excel(request, pk: int):
 @require_http_methods(["GET"])
 def lista_precios_export_png(request, pk: int):
     lista = get_object_or_404(ListaPrecios, pk=pk)
-    q = (request.GET.get("q") or "").strip()
+    # Misma base que PDF/Excel: lista completa. (El filtro ?q de la pantalla «Ver» hacía que
+    # el PNG mostrara solo los ítems de la búsqueda; el PDF siempre traía todo → incoherencia.)
     filas = filas_lista_precios(lista)
-    if q:
-        ql = q.lower()
-        filas = [(p, precio) for (p, precio) in filas if ql in (p.descripcion or "").lower() or ql in (p.codigo or "").lower()]
+    q = (request.GET.get("q") or "").strip()
 
     png_export = build_png_export_payload(filas)
 
