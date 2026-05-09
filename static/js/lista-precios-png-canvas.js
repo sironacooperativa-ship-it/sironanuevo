@@ -1,15 +1,14 @@
 /**
  * Genera el PNG de lista de precios (canvas 2D).
- * Lienzo ancho (~1480px lógicos × EXPORT_SCALE) para que la tabla no quede
- * comprimida ni ilegible al compartir por WhatsApp.
+ * Escala adaptativa (2× o 3×) según alto del lienzo para máxima nitidez sin
+ * superar límites típicos del canvas (~32k px).
  */
 (function (global) {
-  /** Retina / nitidez en apps que reescalan la imagen */
-  var EXPORT_SCALE = 2;
-  /** Ancho útil de diseño (px CSS antes del scale); mayor que 1080 = más columna Descripción */
   var BASE_WIDTH = 1480;
-  var PAD = 52;
+  var PAD = 44;
   var COL_GAP = 18;
+  /** Por debajo de esto (px dispositivo) se puede usar trazado 3× más denso */
+  var MAX_DEVICE_DIM = 30000;
 
   function paintListaPreciosCanvas(canvas, parte, cfg) {
     var chunk = (parte && parte.productos) || [];
@@ -29,27 +28,32 @@
       width: Math.max(180, colPrecio.x - COL_GAP - (colTipo.x + colTipo.width + COL_GAP)),
     };
 
-    var headerH = 176;
-    var filterH = 92;
     var dense = chunk.length > 400;
-    var rowH = dense ? 50 : 60;
-    var h = headerH + filterH + pad + Math.max(1, chunk.length) * rowH + pad;
+    var fontRow = dense ? "600 27px Arial, Helvetica, sans-serif" : "600 32px Arial, Helvetica, sans-serif";
+    var rowH = dense ? 54 : 68;
+    var headerH = 184;
+    var filterH = 96;
+    var h =
+      headerH + filterH + pad + Math.max(1, chunk.length) * rowH + pad;
 
-    canvas.width = Math.round(w * EXPORT_SCALE);
-    canvas.height = Math.round(h * EXPORT_SCALE);
-    var ctx = canvas.getContext("2d");
+    var exportScale =
+      h * 3 <= MAX_DEVICE_DIM && w * 3 <= MAX_DEVICE_DIM ? 3 : 2;
+
+    canvas.width = Math.round(w * exportScale);
+    canvas.height = Math.round(h * exportScale);
+    var ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) return;
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    /* Suavizado solo útil para drawImage (logo); el texto se define más nítido sin escala fraccionaria. */
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
-    ctx.scale(EXPORT_SCALE, EXPORT_SCALE);
-    var strokeW = 2 / EXPORT_SCALE;
+    ctx.scale(exportScale, exportScale);
+    var strokeW = 2 / exportScale;
+    ctx.textBaseline = "alphabetic";
 
-    /** Media unidad lógica con scale 2 → píxeles enteros (menos texto “nublado”). */
-    function snapY(v) {
-      return Math.round(Number(v) * 2) / 2;
+    /** Alinea al grid de píxeles reales del bitmap (evita subpixel “borroso”). */
+    function snap(v) {
+      return Math.round(Number(v) * exportScale) / exportScale;
     }
 
     var headerTitle = parte.titulo_suffix ? baseTitulo + " · " + parte.titulo_suffix : baseTitulo;
@@ -68,16 +72,16 @@
     ctx.fillRect(0, 0, w, headerH);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 48px Arial, Helvetica, sans-serif";
-    ctx.fillText(headerTitle, pad, snapY(66));
-    ctx.font = "28px Arial, Helvetica, sans-serif";
+    ctx.font = "bold 50px Arial, Helvetica, sans-serif";
+    ctx.fillText(headerTitle, snap(pad), snap(68));
+    ctx.font = "29px Arial, Helvetica, sans-serif";
     var fecha = new Date().toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
-    ctx.fillText("Emitido: " + fecha + emitidoSuffix, pad, snapY(118));
+    ctx.fillText("Emitido: " + fecha + emitidoSuffix, snap(pad), snap(122));
 
     function drawLogo() {
       try {
         if (!logo || !logo.complete || !logo.width) return;
-        var lh = 40;
+        var lh = 42;
         var lw = Math.round((logo.width / logo.height) * lh);
         ctx.save();
         ctx.fillStyle = "rgba(255,255,255,0.92)";
@@ -105,13 +109,13 @@
 
     var y = headerH + 20;
     ctx.fillStyle = "#0f172a";
-    ctx.font = "bold 24px Arial, Helvetica, sans-serif";
-    ctx.fillText("Filtros aplicados", pad, snapY(y + 26));
+    ctx.font = "bold 25px Arial, Helvetica, sans-serif";
+    ctx.fillText("Filtros aplicados", snap(pad), snap(y + 28));
     ctx.fillStyle = "#64748b";
-    ctx.font = "22px Arial, Helvetica, sans-serif";
-    ctx.fillText("Buscar: " + (qtxt ? qtxt : "—"), pad, snapY(y + 58));
+    ctx.font = "23px Arial, Helvetica, sans-serif";
+    ctx.fillText("Buscar: " + (qtxt ? qtxt : "—"), snap(pad), snap(y + 62));
     ctx.textAlign = "right";
-    ctx.fillText(filtrosRight, w - pad, snapY(y + 58));
+    ctx.fillText(filtrosRight, snap(w - pad), snap(y + 62));
     ctx.textAlign = "left";
     y += filterH;
 
@@ -121,43 +125,43 @@
       var cfgOpt = options || {};
       var align = cfgOpt.align || "left";
       var height = cfgOpt.height || rowH;
-      var top = cfgOpt.top != null ? cfgOpt.top : baseline - 32;
+      var top = cfgOpt.top != null ? cfgOpt.top : baseline - 34;
       ctx.save();
       ctx.beginPath();
       ctx.rect(col.x, top, col.width, height);
       ctx.clip();
       ctx.textAlign = align;
-      var textX = align === "right" ? col.x + col.width : col.x;
-      ctx.fillText(String(text || ""), textX, baseline);
+      var textX = align === "right" ? snap(col.x + col.width) : snap(col.x);
+      ctx.fillText(String(text || ""), textX, snap(baseline));
       ctx.restore();
       ctx.textAlign = "left";
     }
 
-    ctx.fillStyle = "#505050";
-    ctx.font = "24px Arial, Helvetica, sans-serif";
-    var hdrBaseline = snapY(y + 24);
-    drawClippedText("Código", colCodigo, hdrBaseline, { height: 38, top: y - 4 });
-    drawClippedText("Tipo", colTipo, hdrBaseline, { height: 38, top: y - 4 });
-    drawClippedText("Descripción", colDesc, hdrBaseline, { height: 38, top: y - 4 });
-    drawClippedText("Precio", colPrecio, hdrBaseline, { align: "right", height: 38, top: y - 4 });
-    y += 44;
-    ctx.strokeStyle = "#dcdcdc";
+    ctx.fillStyle = "#404040";
+    ctx.font = "bold 25px Arial, Helvetica, sans-serif";
+    var hdrBaseline = snap(y + 26);
+    drawClippedText("Código", colCodigo, hdrBaseline, { height: 42, top: y - 4 });
+    drawClippedText("Tipo", colTipo, hdrBaseline, { height: 42, top: y - 4 });
+    drawClippedText("Descripción", colDesc, hdrBaseline, { height: 42, top: y - 4 });
+    drawClippedText("Precio", colPrecio, hdrBaseline, { align: "right", height: 42, top: y - 4 });
+    y += 46;
+    ctx.strokeStyle = "#c8c8c8";
     ctx.lineWidth = strokeW;
     ctx.beginPath();
-    ctx.moveTo(pad, y);
-    ctx.lineTo(tableRight, y);
+    ctx.moveTo(snap(pad), snap(y));
+    ctx.lineTo(snap(tableRight), snap(y));
     ctx.stroke();
-    y += 20;
+    y += 22;
 
-    ctx.font = dense ? "24px Arial, Helvetica, sans-serif" : "28px Arial, Helvetica, sans-serif";
+    ctx.font = fontRow;
     for (var i = 0; i < chunk.length; i++) {
       var p = chunk[i];
-      var rowBaseline = snapY(dense ? y + 32 : y + 34);
+      var rowBaseline = snap(dense ? y + 36 : y + 38);
       if (i % 2 === 1) {
-        ctx.fillStyle = "#f8fafc";
+        ctx.fillStyle = "#f1f5f9";
         ctx.fillRect(0, y - 8, w, rowH);
       }
-      ctx.fillStyle = "#1e1e1e";
+      ctx.fillStyle = "#0a0a0a";
       drawClippedText(p.codigo, colCodigo, rowBaseline, { top: y - 8, height: rowH });
       drawClippedText(p.tipo, colTipo, rowBaseline, { top: y - 8, height: rowH });
       drawClippedText(p.descripcion, colDesc, rowBaseline, { top: y - 8, height: rowH });
@@ -170,9 +174,6 @@
     paint: paintListaPreciosCanvas,
     getLogicalWidth: function () {
       return BASE_WIDTH;
-    },
-    getExportScale: function () {
-      return EXPORT_SCALE;
     },
   };
 })(typeof window !== "undefined" ? window : this);
