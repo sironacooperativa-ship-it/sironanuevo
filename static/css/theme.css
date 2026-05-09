@@ -1975,8 +1975,9 @@ h2.h6 {
 }
 
 @media (max-width: 575.98px) {
+  /* Portrait / narrow: no aplastar la columna principal (antes ~7rem era ilegible). */
   .table-card--productos .table-productos th.productos-th-desc-col {
-    min-width: 7rem;
+    min-width: 0;
     width: auto;
   }
 

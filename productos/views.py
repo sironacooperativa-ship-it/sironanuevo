@@ -52,6 +52,14 @@ from .listas_precios_views import (
 )
 from .models import ListaPrecioItem, ListaPrecios, Producto
 
+
+def _productos_picker_data():
+    """Lista compacta (código + descripción) para buscadores con menú desplegable (máx. 3000)."""
+    return list(
+        Producto.objects.order_by("descripcion", "codigo").values("codigo", "descripcion")[:3000]
+    )
+
+
 # Claves GET permitidas al volver a /productos/ (retorno_query o retorno_*).
 _REDIR_PRODUCTOS_LIST_KEYS = frozenset(
     {"q", "tipo", "proveedor", "lista", "estado", "ingreso", "page", "ord", "dir"}
@@ -612,6 +620,7 @@ def productos_list(request):
             "page_obj": page_obj,
             "querystring": querystring,
             "kpi": kpi,
+            "productos_picker": _productos_picker_data(),
         },
     )
 
@@ -751,6 +760,7 @@ def productos_aumento(request):
             "tipos": Producto.Tipo.choices,
             "proveedores_filtro": proveedores_filtro,
             "listas_precios_filtro": listas_filtro,
+            "productos_picker": _productos_picker_data(),
         },
     )
 

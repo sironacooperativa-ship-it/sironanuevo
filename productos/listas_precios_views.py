@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Avg, Case, Count, DecimalField, ExpressionWrapper, F, Q, Sum, Value, When
-from django.http import HttpResponseForbidden
+from django.http import Http404, HttpResponseForbidden
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -21,6 +21,7 @@ from .lista_precios_pdf import (
     filas_lista_precios,
     lista_precios_pdf_file_response,
     lista_precios_xlsx_response,
+    partes_lista_precios_png,
 )
 from .models import ListaPrecioItem, ListaPrecios, Producto
 
@@ -479,17 +480,7 @@ def lista_precios_export_png(request, pk: int):
         ql = q.lower()
         filas = [(p, precio) for (p, precio) in filas if ql in (p.descripcion or "").lower() or ql in (p.codigo or "").lower()]
 
-    payload = []
-    for p, precio in filas:
-        payload.append(
-            {
-                "codigo": p.codigo,
-                "tipo": p.get_tipo_display(),
-                "descripcion": p.descripcion,
-                "precio": format_monto_ars(precio),
-                "stock": int(p.stock or 0),
-            }
-        )
+    partes = partes_lista_precios_png(filas)
 
     total_valor = Decimal("0.00")
     for _, precio in filas:
@@ -498,7 +489,7 @@ def lista_precios_export_png(request, pk: int):
         except Exception:
             pass
     kpi = {
-        "productos": len(payload),
+        "productos": len(filas),
         "valor_total": format_monto_ars(total_valor),
     }
     return render(
@@ -507,7 +498,7 @@ def lista_precios_export_png(request, pk: int):
         {
             "lista": lista,
             "titulo": f"Lista de precios — {lista.nombre}",
-            "productos": payload,
+            "partes": partes,
             "q": q,
             "kpi": kpi,
         },
@@ -534,17 +525,7 @@ def lista_precios_public_farmacia_png(request):
             if ql in (p.descripcion or "").lower() or ql in (p.codigo or "").lower()
         ]
 
-    payload = []
-    for p, precio in filas:
-        payload.append(
-            {
-                "codigo": p.codigo,
-                "tipo": p.get_tipo_display(),
-                "descripcion": p.descripcion,
-                "precio": format_monto_ars(precio),
-                "stock": int(p.stock or 0),
-            }
-        )
+    partes = partes_lista_precios_png(filas)
 
     total_valor = Decimal("0.00")
     for _, precio in filas:
@@ -553,7 +534,7 @@ def lista_precios_public_farmacia_png(request):
         except Exception:
             pass
     kpi = {
-        "productos": len(payload),
+        "productos": len(filas),
         "valor_total": format_monto_ars(total_valor),
     }
     return render(
@@ -562,7 +543,7 @@ def lista_precios_public_farmacia_png(request):
         {
             "lista": lista,
             "titulo": "Lista de precios — Farmacia",
-            "productos": payload,
+            "partes": partes,
             "q": q,
             "kpi": kpi,
             "public": True,

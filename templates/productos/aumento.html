@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load money %}
+{% load static %}
 {% block title %}Aumento de costos{% endblock %}
 {% block content %}
   <div class="app-page-header mb-3">
@@ -79,12 +80,32 @@
       </div>
     </form>
   {% else %}
+    {{ productos_picker|json_script:"aumento-productos-picker-data" }}
     <div class="card app-card border-0 shadow-sm mb-3">
       <div class="card-body p-3">
         <form class="row g-2 align-items-end" method="get" action="{% url 'productos_aumento' %}">
           <div class="col-12 col-md-5">
-            <label class="form-label small text-muted mb-1">Buscar</label>
-            <input class="form-control form-control-sm rounded-3" name="q" value="{{ q }}" placeholder="Código o descripción" />
+            <label class="form-label small text-muted mb-1" for="aumento-filter-q">Buscar</label>
+            <div class="input-group">
+              <input
+                id="aumento-filter-q"
+                type="search"
+                class="form-control form-control-sm rounded-3"
+                name="q"
+                value="{{ q }}"
+                placeholder="Código o descripción"
+                autocomplete="off"
+              />
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                id="aumento-q-picker-btn"
+                title="Listado de productos"
+                aria-label="Abrir listado de productos para filtrar"
+              >
+                <i data-lucide="search" aria-hidden="true"></i>
+              </button>
+            </div>
           </div>
           <div class="col-12 col-md-3">
             <label class="form-label small text-muted mb-1">Tipo</label>
@@ -240,6 +261,18 @@
             alert("Indicá el porcentaje de aumento sobre el costo.");
           }
         });
+      })();
+    </script>
+    <script src="{% static 'js/sirona-productos-q-picker.js' %}?v=1"></script>
+    <script>
+      (function () {
+        if (window.SironaProductosQPicker) {
+          SironaProductosQPicker.attach({
+            dataScriptId: "aumento-productos-picker-data",
+            inputId: "aumento-filter-q",
+            buttonId: "aumento-q-picker-btn",
+          });
+        }
       })();
     </script>
   {% endif %}

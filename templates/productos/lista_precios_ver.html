@@ -221,158 +221,16 @@
       </div>
     </div>
   </div>
+  <script src="{% static 'js/sirona-productos-q-picker.js' %}?v=1"></script>
   <script>
     (function () {
-      const dataEl = document.getElementById("lp-productos-picker");
-      const productos = dataEl ? JSON.parse(dataEl.textContent || "[]") : [];
-      const inpQ = document.getElementById("lp-q");
-      const btn = document.getElementById("lp-q-picker-btn");
-      if (!inpQ || !btn || !Array.isArray(productos) || productos.length === 0) return;
-
-      function normalizeSearch(s) {
-        return String(s || "")
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "");
-      }
-
-      function productLabel(p) {
-        const c = (p && p.codigo) ? String(p.codigo) : "";
-        const d = (p && p.descripcion) ? String(p.descripcion) : "";
-        if (c && d) return `${c} — ${d}`;
-        return d || c || "Producto";
-      }
-
-      const wrap = document.createElement("div");
-      wrap.className = "sirona-select-search";
-
-      const menu = document.createElement("div");
-      menu.className = "sirona-select-search-menu";
-      menu.setAttribute("role", "listbox");
-      menu.hidden = true;
-
-      const inp = document.createElement("input");
-      inp.type = "search";
-      inp.className = "form-control form-control-sm sirona-select-search-input";
-      inp.placeholder = "Buscar producto…";
-      inp.autocomplete = "off";
-
-      const list = document.createElement("div");
-      list.className = "sirona-select-search-list";
-
-      function positionMenu() {
-        try {
-          const r = btn.getBoundingClientRect();
-          menu.style.position = "fixed";
-          menu.style.top = Math.round(r.bottom + 4) + "px";
-          if (window.innerWidth <= 575) {
-            menu.style.left = "8px";
-            menu.style.width = Math.max(260, window.innerWidth - 16) + "px";
-          } else {
-            menu.style.left = Math.round(r.left) + "px";
-            menu.style.width = Math.max(280, Math.round(r.width)) + "px";
-          }
-          menu.style.zIndex = "2000";
-        } catch (e) {}
-      }
-
-      function close() {
-        menu.hidden = true;
-        btn.setAttribute("aria-expanded", "false");
-        try {
-          if (menu.parentNode) menu.parentNode.removeChild(menu);
-        } catch (e) {}
-      }
-
-      function renderList() {
-        const q = normalizeSearch(inp.value);
-        const items = q
-          ? productos.filter((p) => normalizeSearch(`${p.codigo} ${p.descripcion}`).includes(q))
-          : productos;
-        list.innerHTML = "";
-
-        items.slice(0, 400).forEach(function (p) {
-          const it = document.createElement("button");
-          it.type = "button";
-          it.className = "sirona-select-search-item";
-          it.textContent = productLabel(p);
-          it.addEventListener("click", function () {
-            inpQ.value = (p && p.codigo) ? String(p.codigo) : "";
-            const form = inpQ.closest("form");
-            if (form) form.submit();
-            close();
-          });
-          list.appendChild(it);
+      if (window.SironaProductosQPicker) {
+        SironaProductosQPicker.attach({
+          dataScriptId: "lp-productos-picker",
+          inputId: "lp-q",
+          buttonId: "lp-q-picker-btn",
         });
-
-        if (items.length === 0) {
-          list.innerHTML = `<div class="text-muted small px-2 py-1">Sin resultados</div>`;
-        }
       }
-
-      function open() {
-        menu.hidden = false;
-        btn.setAttribute("aria-expanded", "true");
-        try {
-          document.body.appendChild(menu);
-        } catch (e) {}
-        positionMenu();
-        inp.value = inpQ.value || "";
-        renderList();
-        window.setTimeout(function () {
-          try {
-            inp.focus();
-            inp.select();
-          } catch (e) {}
-        }, 0);
-      }
-
-      btn.type = "button";
-      btn.setAttribute("aria-haspopup", "listbox");
-      btn.setAttribute("aria-expanded", "false");
-      btn.addEventListener("click", function () {
-        if (menu.hidden) open();
-        else close();
-      });
-      inp.addEventListener("input", renderList);
-      document.addEventListener(
-        "click",
-        function (ev) {
-          if (menu.hidden) return;
-          if (!wrap.contains(ev.target) && !menu.contains(ev.target)) close();
-        },
-        true
-      );
-      window.addEventListener(
-        "scroll",
-        function () {
-          if (!menu.hidden) positionMenu();
-        },
-        true
-      );
-      window.addEventListener("resize", function () {
-        if (!menu.hidden) positionMenu();
-      });
-
-      menu.appendChild(inp);
-      menu.appendChild(list);
-      wrap.appendChild(btn);
-
-      (function () {
-        try {
-          if (document.getElementById("sironaSelectSearchCss")) return;
-          const st = document.createElement("style");
-          st.id = "sironaSelectSearchCss";
-          st.textContent =
-            ".sirona-select-search{position:relative}" +
-            ".sirona-select-search-menu{background:#fff;border:1px solid rgba(15,23,42,.12);border-radius:10px;box-shadow:0 10px 24px rgba(15,23,42,.12);padding:8px}" +
-            ".sirona-select-search-input{margin-bottom:8px}" +
-            ".sirona-select-search-list{max-height:320px;overflow:auto;display:flex;flex-direction:column;gap:4px}" +
-            ".sirona-select-search-item{width:100%;text-align:left;border:1px solid rgba(15,23,42,.08);background:#fff;border-radius:8px;padding:6px 10px;font-size:.85rem}" +
-            ".sirona-select-search-item:hover{background:#f1f5f9}";
-          document.head.appendChild(st);
-        } catch (e) {}
-      })();
     })();
   </script>
 

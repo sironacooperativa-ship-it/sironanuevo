@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from decimal import Decimal
 from io import BytesIO
+from typing import Any
 
 from django.contrib.staticfiles import finders
 from django.http import FileResponse, HttpResponse
 from django.utils import timezone
+from django.utils.text import slugify
 from openpyxl import Workbook
 from openpyxl.drawing.image import Image as XlsxImage
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -38,6 +40,74 @@ def filas_lista_precios(lista: ListaPrecios) -> list[tuple[Producto, Decimal]]:
         .order_by("producto__tipo", "producto__descripcion", "producto__codigo")
     )
     return [(i.producto, i.precio_venta) for i in items]
+
+
+# PNG «para WhatsApp»: por debajo del umbral, una sola imagen; si la lista es larga, una imagen por tipo (Medicamentos / Accesorios / Otros) y trozos si hace falta.
+SPLIT_PNG_ROW_THRESHOLD = 200
+PNG_MAX_ROWS_PER_IMAGE = 260
+
+_TIPO_SORT_ORDER_PNG = {
+    Producto.Tipo.MEDICAMENTOS: 0,
+    Producto.Tipo.ACCESORIOS: 1,
+    Producto.Tipo.OTROS: 2,
+}
+
+
+def _payload_producto_png(p: Producto, precio: Decimal) -> dict[str, Any]:
+    return {
+        "codigo": p.codigo,
+        "tipo": p.get_tipo_display(),
+        "descripcion": p.descripcion,
+        "precio": format_monto_ars(precio),
+        "stock": int(p.stock or 0),
+    }
+
+
+def partes_lista_precios_png(filas: list[tuple[Producto, Decimal]]) -> list[dict[str, Any]]:
+    """
+    Partes para exportar PNG sin superar límites del canvas del navegador.
+    Listas cortas: una sola parte. Listas largas: agrupa por categoría (tipo de producto);
+    si una categoría supera PNG_MAX_ROWS_PER_IMAGE, la divide en varias imágenes numeradas.
+    """
+    n = len(filas)
+    if n <= SPLIT_PNG_ROW_THRESHOLD:
+        return [
+            {
+                "titulo_suffix": "",
+                "filename_suffix": "",
+                "productos": [_payload_producto_png(p, pr) for p, pr in filas],
+            }
+        ]
+
+    grouped: dict[str, list[tuple[Producto, Decimal]]] = {}
+    for p, pr in filas:
+        grouped.setdefault(p.tipo, []).append((p, pr))
+
+    keys_sorted = sorted(grouped.keys(), key=lambda k: _TIPO_SORT_ORDER_PNG.get(k, 99))
+
+    out: list[dict[str, Any]] = []
+    for tipo_key in keys_sorted:
+        rows = grouped[tipo_key]
+        label_base = Producto.Tipo(tipo_key).label
+        chunks = [rows[i : i + PNG_MAX_ROWS_PER_IMAGE] for i in range(0, len(rows), PNG_MAX_ROWS_PER_IMAGE)]
+        for ci, chunk in enumerate(chunks):
+            if len(chunks) == 1:
+                titulo_suffix = label_base
+                fname = slugify(label_base) or "parte"
+            else:
+                titulo_suffix = f"{label_base} ({ci + 1}/{len(chunks)})"
+                base_slug = slugify(label_base) or "parte"
+                fname = f"{base_slug}-{ci + 1}"
+
+            out.append(
+                {
+                    "titulo_suffix": titulo_suffix,
+                    "filename_suffix": fname,
+                    "productos": [_payload_producto_png(p, pr) for p, pr in chunk],
+                }
+            )
+
+    return out
 
 
 def _truncate_text_to_width(

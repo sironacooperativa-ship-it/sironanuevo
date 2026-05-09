@@ -62,6 +62,8 @@
 
       let lastBlob = null;
 
+      const EXPORT_SCALE = 2;
+
       function clamp(n, a, b) {
         n = Number(n || 0);
         if (!Number.isFinite(n)) n = a;
@@ -82,10 +84,14 @@
         const headerH = 150;
         const rowH = 54;
         const h = headerH + pad + Math.max(1, chunk.length) * rowH + pad;
-        cnv.width = w;
-        cnv.height = h;
+        cnv.width = Math.round(w * EXPORT_SCALE);
+        cnv.height = Math.round(h * EXPORT_SCALE);
         const ctx = cnv.getContext("2d");
         if (!ctx) return;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.scale(EXPORT_SCALE, EXPORT_SCALE);
+        const strokeW = 2 / EXPORT_SCALE;
 
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, w, h);
@@ -112,7 +118,7 @@
         ctx.textAlign = "left";
         y += 42;
         ctx.strokeStyle = "#dcdcdc";
-        ctx.lineWidth = 2;
+        ctx.lineWidth = strokeW;
         ctx.beginPath();
         ctx.moveTo(pad, y);
         ctx.lineTo(w - pad, y);

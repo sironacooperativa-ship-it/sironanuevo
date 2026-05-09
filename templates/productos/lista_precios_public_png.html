@@ -17,27 +17,52 @@
     </style>
   </head>
   <body>
-    {{ productos|json_script:"lp-productos" }}
+    {{ partes|json_script:"lp-partes" }}
     <div class="lp-public-wrap">
-      <div class="lp-public-actions d-flex align-items-center gap-2">
-        <button class="btn btn-primary" type="button" id="btnDownload" disabled>Descargar PNG</button>
+      <div class="lp-public-actions d-flex flex-wrap align-items-center gap-2">
+        <button class="btn btn-primary" type="button" id="btnDownload" disabled>
+          {% if partes|length > 1 %}Descargar todas{% else %}Descargar PNG{% endif %}
+        </button>
         <span class="text-muted small ms-auto" id="meta"></span>
       </div>
-      <canvas id="cnv" class="lp-public-canvas"></canvas>
+      {% if partes|length > 1 %}
+        <p class="text-muted small mt-2 mb-3">Lista grande: se genera un PNG por categoría de producto.</p>
+      {% endif %}
+      {% for parte in partes %}
+        <div class="mb-4">
+          <div class="small fw-semibold text-secondary mb-2">
+            {% if parte.titulo_suffix %}{{ parte.titulo_suffix }}{% else %}Lista completa{% endif %}
+            <span class="text-muted fw-normal">({{ parte.productos|length }} ítems)</span>
+          </div>
+          <canvas id="cnv-{{ forloop.counter0 }}" class="lp-public-canvas"></canvas>
+        </div>
+      {% endfor %}
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
       (function () {
-        const productosEl = document.getElementById("lp-productos");
-        const productos = productosEl ? JSON.parse(productosEl.textContent) : [];
-        const cnv = document.getElementById("cnv");
+        const partesEl = document.getElementById("lp-partes");
+        const partes = partesEl ? JSON.parse(partesEl.textContent) : [];
         const meta = document.getElementById("meta");
         const btnDownload = document.getElementById("btnDownload");
-        let lastBlob = null;
+        const totalProductos = {{ kpi.productos|default:0 }};
+        const baseTitulo = "{{ titulo|escapejs }}";
+        const baseSlug = "{{ lista.slug|default:'lista-farmacia'|escapejs }}";
+        const qtxt = "{{ q|default:''|escapejs }}";
 
-        function render() {
-          const chunk = productos;
+        const EXPORT_SCALE = 2;
+        const logo = new Image();
+        logo.crossOrigin = "anonymous";
+        logo.src = "{% static 'img/sirona-logo.png' %}";
+
+        function filenameForParte(parte) {
+          if (!parte.filename_suffix) return baseSlug + ".png";
+          return baseSlug + "--" + parte.filename_suffix + ".png";
+        }
+
+        function paintListaPreciosCanvas(canvas, parte) {
+          const chunk = parte.productos || [];
           const w = 1080;
           const pad = 48;
           const tableRight = w - pad;
@@ -49,10 +74,20 @@
           const filterH = 86;
           const rowH = chunk.length > 400 ? 44 : 54;
           const h = headerH + filterH + pad + Math.max(1, chunk.length) * rowH + pad;
-          cnv.width = w;
-          cnv.height = h;
-          const ctx = cnv.getContext("2d");
+          canvas.width = Math.round(w * EXPORT_SCALE);
+          canvas.height = Math.round(h * EXPORT_SCALE);
+          const ctx = canvas.getContext("2d");
           if (!ctx) return;
+
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.scale(EXPORT_SCALE, EXPORT_SCALE);
+          const strokeW = 2 / EXPORT_SCALE;
+
+          const headerTitle = parte.titulo_suffix ? baseTitulo + " · " + parte.titulo_suffix : baseTitulo;
+          const filtrosRight = parte.titulo_suffix
+            ? "Categoría: " + parte.titulo_suffix
+            : "Tipo: Todos  ·  Proveedor: Todos  ·  Estado: Todos";
 
           ctx.fillStyle = "#ffffff";
           ctx.fillRect(0, 0, w, h);
@@ -66,10 +101,38 @@
 
           ctx.fillStyle = "#ffffff";
           ctx.font = "bold 42px system-ui, -apple-system, Segoe UI, Arial";
-          ctx.fillText("{{ titulo|escapejs }}", pad, 62);
+          ctx.fillText(headerTitle, pad, 62);
           ctx.font = "26px system-ui, -apple-system, Segoe UI, Arial";
           const fecha = new Date().toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
           ctx.fillText("Emitido: " + fecha, pad, 112);
+
+          const drawLogo = () => {
+            try {
+              if (!logo || !logo.complete || !logo.width) return;
+              const lh = 36;
+              const lw = Math.round((logo.width / logo.height) * lh);
+              ctx.save();
+              ctx.fillStyle = "rgba(255,255,255,0.92)";
+              ctx.strokeStyle = "rgba(255,255,255,0.25)";
+              ctx.lineWidth = strokeW;
+              const bx = w - pad - lw - 18;
+              const by = 24;
+              const bw = lw + 18;
+              const bh = lh + 16;
+              const r = 14;
+              ctx.beginPath();
+              ctx.moveTo(bx + r, by);
+              ctx.arcTo(bx + bw, by, bx + bw, by + bh, r);
+              ctx.arcTo(bx + bw, by + bh, bx, by + bh, r);
+              ctx.arcTo(bx, by + bh, bx, by, r);
+              ctx.arcTo(bx, by, bx + bw, by, r);
+              ctx.closePath();
+              ctx.fill();
+              ctx.stroke();
+              ctx.drawImage(logo, bx + 9, by + 8, lw, lh);
+              ctx.restore();
+            } catch (e) {}
+          };
 
           let y = headerH + 18;
           ctx.fillStyle = "#0f172a";
@@ -77,12 +140,13 @@
           ctx.fillText("Filtros aplicados", pad, y + 24);
           ctx.fillStyle = "#64748b";
           ctx.font = "20px system-ui, -apple-system, Segoe UI, Arial";
-          const qtxt = "{{ q|default:''|escapejs }}";
           ctx.fillText("Buscar: " + (qtxt ? qtxt : "—"), pad, y + 54);
           ctx.textAlign = "right";
-          ctx.fillText("Tipo: Todos  ·  Proveedor: Todos  ·  Estado: Todos", w - pad, y + 54);
+          ctx.fillText(filtrosRight, w - pad, y + 54);
           ctx.textAlign = "left";
           y += filterH;
+
+          if (logo.complete) drawLogo();
 
           function drawClippedText(text, col, baseline, options) {
             const cfg = options || {};
@@ -108,7 +172,7 @@
           drawClippedText("Precio", colPrecio, y + 22, { align: "right", height: 34, top: y - 4 });
           y += 42;
           ctx.strokeStyle = "#dcdcdc";
-          ctx.lineWidth = 2;
+          ctx.lineWidth = strokeW;
           ctx.beginPath();
           ctx.moveTo(pad, y);
           ctx.lineTo(tableRight, y);
@@ -129,34 +193,60 @@
             drawClippedText(p.precio, colPrecio, y + 30, { align: "right", top: y - 8, height: rowH });
             y += rowH;
           }
-
-          if (meta) meta.textContent = "Productos: " + productos.length + (qtxt ? " · Buscar: " + qtxt : "");
-          btnDownload.disabled = false;
-          lastBlob = null;
         }
 
-        function canvasToBlob() {
-          return new Promise((resolve) => {
-            cnv.toBlob((b) => resolve(b), "image/png");
+        function renderAll() {
+          partes.forEach(function (parte, i) {
+            const c = document.getElementById("cnv-" + i);
+            if (c) paintListaPreciosCanvas(c, parte);
+          });
+          if (meta) {
+            meta.textContent =
+              "Productos: " +
+              totalProductos +
+              " · PNG: " +
+              partes.length +
+              (qtxt ? " · Buscar: " + qtxt : "");
+          }
+          btnDownload.disabled = false;
+        }
+
+        logo.onload = function () {
+          renderAll();
+        };
+
+        function canvasToBlob(canvas) {
+          return new Promise(function (resolve) {
+            canvas.toBlob(function (b) {
+              resolve(b);
+            }, "image/png");
           });
         }
 
         btnDownload.addEventListener("click", async function () {
-          const blob = lastBlob || (lastBlob = await canvasToBlob());
-          if (!blob) return;
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "lista-farmacia.png";
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          setTimeout(() => URL.revokeObjectURL(url), 5000);
+          for (let i = 0; i < partes.length; i++) {
+            const c = document.getElementById("cnv-" + i);
+            if (!c) continue;
+            const blob = await canvasToBlob(c);
+            if (!blob) continue;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filenameForParte(partes[i]);
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(function () {
+              URL.revokeObjectURL(url);
+            }, 5000);
+            if (partes.length > 1) await new Promise(function (r) {
+              setTimeout(r, 280);
+            });
+          }
         });
 
-        render();
+        renderAll();
       })();
     </script>
   </body>
 </html>
-

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load money %}
 {% load l10n %}
+{% load static %}
 {% block extra_head %}
   <style>
     tr.producto-row-inline.is-editing .producto-view {
@@ -100,9 +101,6 @@
       height: 13px !important;
     }
     @media (max-width: 575.98px) {
-      .table-card--productos .table-actions-cell {
-        min-width: 8.75rem !important;
-      }
       .table-card--productos .table-actions .btn-icon,
       .table-card--productos .table-actions a.btn-icon {
         width: 28px !important;
@@ -120,6 +118,7 @@
 {% endblock %}
 {% block title %}Productos{% endblock %}
 {% block content %}
+  {{ productos_picker|json_script:"productos-list-picker-data" }}
   <section class="page-header-card inventory-header">
     <div class="header-left">
       <span class="header-ico" aria-hidden="true"><i data-lucide="package"></i></span>
@@ -214,8 +213,27 @@
   <section class="modern-filter-card" aria-label="Filtros">
       <form class="row g-2 align-items-end" method="get">
         <div class="col-12 col-md-6 col-lg-2">
-          <label class="form-label small text-muted mb-1">Buscar</label>
-          <input class="form-control form-control-sm rounded-3" name="q" value="{{ q }}" placeholder="Código o descripción" />
+          <label class="form-label small text-muted mb-1" for="productos-filter-q">Buscar</label>
+          <div class="input-group">
+            <input
+              id="productos-filter-q"
+              class="form-control form-control-sm rounded-3"
+              type="search"
+              name="q"
+              value="{{ q }}"
+              placeholder="Código o descripción"
+              autocomplete="off"
+            />
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              id="productos-q-picker-btn"
+              title="Listado de productos"
+              aria-label="Abrir listado de productos para filtrar"
+            >
+              <i data-lucide="search" aria-hidden="true"></i>
+            </button>
+          </div>
         </div>
         <div class="col-12 col-md-6 col-lg-2">
           <label class="form-label small text-muted mb-1">Tipo</label>
@@ -934,4 +952,17 @@
   <p class="text-muted small mt-3 mb-0">
     Código automático: <code>ME/AC/OT</code> + 4 dígitos.
   </p>
+
+  <script src="{% static 'js/sirona-productos-q-picker.js' %}?v=1"></script>
+  <script>
+    (function () {
+      if (window.SironaProductosQPicker) {
+        SironaProductosQPicker.attach({
+          dataScriptId: "productos-list-picker-data",
+          inputId: "productos-filter-q",
+          buttonId: "productos-q-picker-btn",
+        });
+      }
+    })();
+  </script>
 {% endblock %}

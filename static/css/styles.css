@@ -151,16 +151,19 @@ body.app-body {
   min-height: 0;
 }
 
+/* Escritorio: sin rectángulo; solo la cruz/menú alineados al ícono (móvil usa hamburguesa del topbar). */
 .sidebar-collapse-btn {
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  border-radius: 12px;
+  border: none;
+  background: transparent;
+  border-radius: 0.65rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0 !important; /* override `.app-icon-btn` padding */
+  min-width: 36px;
+  min-height: 36px;
+  width: auto;
+  height: auto;
+  padding: 0.35rem !important;
   line-height: 0;
 }
 
@@ -172,8 +175,8 @@ body.app-body {
 }
 
 .sidebar-collapse-btn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+  background: var(--cg-hover, rgba(60, 60, 67, 0.08));
+  border: none;
 }
 
 /* (legacy) sidebar-collapsed removed: only sidebar-hidden is supported. */
@@ -5592,6 +5595,65 @@ button.btn-icon.btn-ink,
   border-color: rgba(148, 163, 184, 0.35);
   background: rgba(148, 163, 184, 0.12);
   color: rgba(71, 85, 105, 0.95);
+}
+
+/* Móvil vertical: tabla legible sin depender del modo apaisado (≥576px sigue como antes). */
+@media (max-width: 575.98px) {
+  .table-card--productos table.table-productos {
+    table-layout: auto;
+    width: 100%;
+  }
+
+  .table-card--productos .productos-td-desc {
+    max-width: none;
+  }
+
+  /* Pisar reglas “premium” de una sola línea: permitir varias líneas en portrait. */
+  .table-card--productos .productos-desc-title {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+    line-height: 1.35;
+  }
+
+  .table-card--productos .productos-desc-meta {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.25;
+  }
+
+  .table-card--productos .productos-th-desc-col .app-th-sort {
+    white-space: normal;
+    line-height: 1.25;
+    display: inline-block;
+    max-width: 100%;
+  }
+
+  .table-card--productos .productos-th-subsort {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    margin-top: 6px !important;
+  }
+
+  .table-card--productos .productos-th-subsort .text-body-tertiary {
+    display: none;
+  }
+
+  .table-card--productos .productos-td-precio .producto-view {
+    font-size: 0.92rem;
+    font-weight: 650;
+  }
+
+  .table-card--productos .presu-lista-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* ==========================================================================
