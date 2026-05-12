@@ -126,7 +126,7 @@
           <col style="width: 138px" />  {# Pedido/fecha #}
           <col style="width: 22%" />    {# Vendedor (ancha) #}
           <col style="width: 25%" />    {# Comprador (más ancha) #}
-          <col style="width: 104px" />  {# Comisión + switch #}
+          <col style="width: 132px" />  {# Comisión: switch + monto en fila #}
           <col style="width: 156px" />  {# Ingreso caja (mediana) #}
           <col style="width: 56px" />   {# Estado (muy angosta) #}
           <col style="width: 170px" />  {# Acciones (angosta, sin wrap) #}
@@ -140,10 +140,7 @@
               <span class="d-block">Comisión</span>
               <span class="fw-normal text-muted" style="font-size: 0.7rem">vendedor 5%</span>
             </th>
-            <th scope="col" class="text-end th-caja col-money">
-              <span class="d-none d-md-inline">Ingreso caja</span>
-              <span class="d-inline d-md-none">Neto</span>
-            </th>
+            <th scope="col" class="text-end th-caja col-money">Ingreso caja</th>
             <th scope="col" class="text-center th-estado col-center" title="Estado" aria-label="Estado"> </th>
             <th scope="col" class="text-end th-acciones presu-th-acciones col-presu-acciones" aria-label="Acciones"> </th>
           </tr>
@@ -184,9 +181,9 @@
                   {% csrf_token %}
                   <input type="hidden" name="next" value="{{ request.get_full_path }}" />
                   <input type="hidden" name="aplica_comision" value="0" />
-                  <div class="d-flex flex-column align-items-center gap-1">
+                  <div class="d-flex flex-row align-items-center justify-content-center gap-2 flex-nowrap">
                     <input
-                      class="form-check-input m-0"
+                      class="form-check-input m-0 flex-shrink-0"
                       type="checkbox"
                       role="switch"
                       name="aplica_comision"
@@ -200,22 +197,18 @@
                       aria-label="Aplicar comisión del vendedor al 5 por ciento"
                       onchange="this.form.submit()"
                     />
-                    <div class="ventas-hist-cell-sub text-muted small text-nowrap">
+                    <span class="text-muted small text-nowrap">
                       {% if v.aplica_comision %}
                         {{ v.monto_comision|ars }}
                       {% else %}
                         —
                       {% endif %}
-                    </div>
+                    </span>
                   </div>
                 </form>
               </td>
               <td class="text-end col-money ventas-hist-caja">
-                <div class="d-none d-md-block">
-                  <div class="ventas-hist-caja-main">{{ v.monto_ingreso_caja|ars }}</div>
-                  <div class="ventas-hist-caja-sub text-muted small">(Neto: {{ v.neto|ars }})</div>
-                </div>
-                <div class="d-block d-md-none fw-semibold">{{ v.neto|ars }}</div>
+                <div class="ventas-hist-caja-main">{{ v.monto_ingreso_caja|ars }}</div>
               </td>
               <td class="text-center col-center">
                 {% if v.estado == "PEN" %}
