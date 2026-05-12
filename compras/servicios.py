@@ -19,15 +19,18 @@ def _borrar_eventos_compra(compra: Compra) -> None:
 
 
 def compra_anular_por_admin(compra: Compra, user: AbstractUser) -> None:
-    """Marca la compra como anulada y registra un ingreso en caja (nota de crédito)."""
+    """Marca la compra como anulada y, si hubo egreso en caja, registra ingreso (nota de crédito)."""
     with transaction.atomic():
         locked = Compra.objects.select_for_update().select_related("movimiento_caja").get(pk=compra.pk)
         if locked.anulada:
             raise ValidationError("La compra ya está anulada.")
+
         if not locked.movimiento_caja_id:
-            raise ValidationError(
-                "Esta compra no tiene egreso en caja; no aplica anular con nota de crédito."
-            )
+            locked.anulada = True
+            locked.actualizado_por = user
+            locked.save(update_fields=["anulada", "actualizado_por", "actualizado_en"])
+            _borrar_eventos_compra(locked)
+            return
 
         orig = locked.movimiento_caja
         nc = MovimientoCaja(
@@ -57,18 +60,19 @@ def compra_anular_por_admin(compra: Compra, user: AbstractUser) -> None:
 def compra_eliminar_por_admin(compra: Compra, _user: AbstractUser) -> None:
     """
     Elimina la compra y sus movimientos de caja asociados (egreso y, si existía, nota de crédito).
-    Descuenta la cantidad del stock del producto.
+    Descuenta la cantidad del stock del producto cuando la compra llevaba detalle de producto.
     """
     with transaction.atomic():
         locked = Compra.objects.select_for_update().select_related("producto").get(pk=compra.pk)
         producto = locked.producto
         cant = locked.cantidad
 
-        if producto.stock < cant:
-            raise ValidationError(
-                "No se puede eliminar: el stock actual es menor que la cantidad de la compra "
-                "(probablemente ya se vendió parte del lote)."
-            )
+        if producto is not None:
+            if producto.stock < cant:
+                raise ValidationError(
+                    "No se puede eliminar: el stock actual es menor que la cantidad de la compra "
+                    "(probablemente ya se vendió parte del lote)."
+                )
 
         _borrar_eventos_compra(locked)
 
@@ -82,8 +86,9 @@ def compra_eliminar_por_admin(compra: Compra, _user: AbstractUser) -> None:
             Compra.objects.filter(pk=locked.pk).update(movimiento_caja_id=None)
             MovimientoCaja.objects.filter(pk=eg_id).delete()
 
-        producto.stock -= cant
-        producto.actualizado_en = timezone.now()
-        producto.save(update_fields=["stock", "actualizado_en"])
+        if producto is not None:
+            producto.stock -= cant
+            producto.actualizado_en = timezone.now()
+            producto.save(update_fields=["stock", "actualizado_en"])
 
         locked.delete()

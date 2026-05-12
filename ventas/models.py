@@ -1,9 +1,44 @@
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
 from core.money_decimal import q2 as _q2
+
+
+class ComisionLiquidacionPago(models.Model):
+    """Pago de comisiones del vendedor por mes calendario (egreso de caja). Agrupa pedidos ya cobrados."""
+
+    vendedor = models.ForeignKey(
+        "personas.Vendedor",
+        on_delete=models.PROTECT,
+        related_name="liquidaciones_comision_pago",
+    )
+    anio = models.PositiveIntegerField()
+    mes = models.PositiveSmallIntegerField()
+    total = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0.00"))
+    movimiento_caja = models.OneToOneField(
+        "caja.MovimientoCaja",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="liquidacion_comision_pago",
+    )
+    creado_en = models.DateTimeField(auto_now_add=True)
+    creado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="liquidaciones_comision_creadas",
+    )
+
+    class Meta:
+        ordering = ["-anio", "-mes", "-id"]
+
+    def __str__(self) -> str:
+        return f"Liq. com. {self.vendedor_id} {self.anio}-{self.mes:02d} ${self.total}"
 
 
 class Venta(models.Model):
@@ -33,7 +68,7 @@ class Venta(models.Model):
     )
     aplica_comision = models.BooleanField(
         default=False,
-        help_text="Si aplica, la comisión se descuenta del ingreso en caja al cobrar.",
+        help_text="Si aplica, la comisión se calcula sobre el neto y se liquida por mes desde Comisiones (egreso de caja).",
     )
     creado_por = models.ForeignKey(
         "auth.User",
@@ -58,6 +93,14 @@ class Venta(models.Model):
         on_delete=models.SET_NULL,
         related_name="venta_pago",
     )
+    comision_liquidacion_pago = models.ForeignKey(
+        ComisionLiquidacionPago,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="ventas",
+        help_text="Liquidación de comisión en la que se incluyó este pedido (si ya se pagó al vendedor).",
+    )
 
     class Meta:
         ordering = ["-creado_en", "-id"]
@@ -78,8 +121,8 @@ class Venta(models.Model):
 
     @property
     def monto_ingreso_caja(self) -> Decimal:
-        """Importe que se registra en caja al cobrar el pedido (neto menos comisión si aplica)."""
-        return _q2(self.neto - self.monto_comision)
+        """Importe que se registra en caja al cobrar el pedido (igual al neto; la comisión se paga aparte al liquidar)."""
+        return _q2(self.neto)
 
     def clean(self):
         super().clean()

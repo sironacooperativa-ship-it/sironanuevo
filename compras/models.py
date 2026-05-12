@@ -1,16 +1,29 @@
-from decimal import Decimal
-
 from django.db import models
 
 from caja.models import MovimientoCaja
 
 
 class Compra(models.Model):
+    class Modo(models.TextChoices):
+        PRODUCTOS = "PRO", "Productos (detalle)"
+        FACTURA = "FAC", "Factura sin detalle"
+
+    modo = models.CharField(
+        max_length=3,
+        choices=Modo.choices,
+        default=Modo.PRODUCTOS,
+        db_index=True,
+        help_text="PRO: alta con producto y stock. FAC: factura / deuda sin detallar ítems ni egreso en caja.",
+    )
     proveedor = models.ForeignKey(
         "personas.Proveedor", on_delete=models.PROTECT, related_name="compras"
     )
     producto = models.ForeignKey(
-        "productos.Producto", on_delete=models.PROTECT, related_name="compras_origen"
+        "productos.Producto",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="compras_origen",
     )
     fecha_compra = models.DateField()
     fecha_vencimiento_pedido = models.DateField(null=True, blank=True)
@@ -59,4 +72,6 @@ class Compra(models.Model):
         ordering = ["-creado_en", "-id"]
 
     def __str__(self) -> str:
-        return f"Compra #{self.pk} — {self.producto.codigo}"
+        if self.producto_id:
+            return f"Compra #{self.pk} — {self.producto.codigo}"
+        return f"Compra #{self.pk} — Factura (sin detalle)"

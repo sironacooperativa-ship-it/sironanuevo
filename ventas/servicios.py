@@ -5,6 +5,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Optional
 
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import F
 
@@ -16,6 +17,69 @@ from productos.models import ListaPrecioItem, ListaPrecios, Producto
 from presupuestos.models import Presupuesto
 
 from .models import Venta, VentaLinea
+
+
+def sync_evento_pedido_pendiente(venta: Venta) -> None:
+    """Crea, actualiza o elimina el evento de calendario según la fecha de vencimiento del pedido."""
+    titulo = f"Pago pendiente — Pedido #{venta.pk}"
+    qs = Evento.objects.filter(tipo=Evento.Tipo.PEDIDO, titulo=titulo)
+    extra = f" Comprador: {venta.comprador}." if venta.comprador_id else ""
+    com_txt = (
+        f"Comisión ({venta.comision_porcentaje}%): {format_monto_ars(venta.monto_comision)} (se liquida mensualmente)."
+        if venta.aplica_comision
+        else "Sin comisión al vendedor."
+    )
+    desc = (
+        f"Vendedor: {venta.vendedor}. "
+        f"Monto neto pedido: {format_monto_ars(venta.neto)}. {com_txt} "
+        f"Ingreso en caja al cobrar: {format_monto_ars(venta.monto_ingreso_caja)} (importe íntegro al neto).{extra}"
+    )
+    if venta.fecha_vencimiento_pago is None:
+        qs.delete()
+        return
+    if qs.exists():
+        qs.update(fecha=venta.fecha_vencimiento_pago, descripcion=desc)
+    else:
+        Evento.objects.create(
+            fecha=venta.fecha_vencimiento_pago,
+            titulo=titulo,
+            tipo=Evento.Tipo.PEDIDO,
+            descripcion=desc,
+        )
+
+
+def revertir_cobro_pedido_desde_movimiento_caja(mov: MovimientoCaja, user) -> bool:
+    """
+    Si `mov` es el ingreso de caja del cobro de un pedido pagado, pasa el pedido a pendiente,
+    sincroniza calendario y elimina el movimiento. Devuelve True si aplicó.
+
+    Si el pedido ya entró en una liquidación de comisión pagada, levanta ValidationError.
+    """
+    if mov.tipo != MovimientoCaja.Tipo.INGRESO or not mov.venta_id:
+        return False
+    vid = int(mov.venta_id)
+    qs = Venta.objects
+    try:
+        qs = qs.select_for_update(of=("self",))
+    except TypeError:
+        qs = qs.select_for_update()
+    venta = qs.filter(pk=vid).first()
+    if venta is None:
+        return False
+    if venta.estado != Venta.Estado.PAGADA or venta.pago_movimiento_id != mov.pk:
+        return False
+    if venta.comision_liquidacion_pago_id:
+        raise ValidationError(
+            "Este pedido ya figura en una liquidación de comisión pagada. "
+            "No se puede anular el cobro desde caja sin corregir esa liquidación."
+        )
+    venta.estado = Venta.Estado.PENDIENTE
+    venta.pago_movimiento = None
+    venta.actualizado_por = user
+    venta.save(update_fields=["estado", "pago_movimiento", "actualizado_por"])
+    sync_evento_pedido_pendiente(venta)
+    mov.delete()
+    return True
 
 
 def unpack_linea_spec(spec: tuple) -> tuple:
@@ -109,25 +173,7 @@ def crear_venta_confirmada(
 
         Producto.deshabilitar_sin_stock(pids_afectados)
 
-        extra_comprador = (
-            f" Comprador: {venta.comprador}." if getattr(venta, "comprador_id", None) else ""
-        )
-        if venta.fecha_vencimiento_pago is not None:
-            Evento.objects.create(
-                fecha=venta.fecha_vencimiento_pago,
-                titulo=f"Pago pendiente — Pedido #{venta.pk}",
-                tipo=Evento.Tipo.PEDIDO,
-                descripcion=(
-                    f"Vendedor: {venta.vendedor}. "
-                    f"Monto neto pedido: {format_monto_ars(venta.neto)}. "
-                    + (
-                        f"Comisión ({venta.comision_porcentaje}%): {format_monto_ars(venta.monto_comision)}. "
-                        if venta.aplica_comision
-                        else "Sin comisión al vendedor. "
-                    )
-                    + f"Ingreso en caja al cobrar: {format_monto_ars(venta.monto_ingreso_caja)}.{extra_comprador}"
-                ),
-            )
+        sync_evento_pedido_pendiente(venta)
     return venta
 
 

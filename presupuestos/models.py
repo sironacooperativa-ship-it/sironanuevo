@@ -33,7 +33,7 @@ class Presupuesto(models.Model):
     )
     aplica_comision = models.BooleanField(
         default=False,
-        help_text="Si aplica, al generar el pedido la comisión se discrimina y descuenta del ingreso en caja.",
+        help_text="Si aplica, al generar el pedido se discrimina la comisión (se liquida por mes desde Comisiones).",
     )
     creado_por = models.ForeignKey(
         "auth.User",
@@ -86,7 +86,8 @@ class Presupuesto(models.Model):
 
     @property
     def monto_ingreso_caja(self) -> Decimal:
-        return _q2(self.neto - self.monto_comision)
+        """Ingreso en caja al cobrar el pedido generado: igual al neto (comisión aparte)."""
+        return _q2(self.neto)
 
     def clean(self):
         super().clean()

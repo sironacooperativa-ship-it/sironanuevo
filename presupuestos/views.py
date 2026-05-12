@@ -327,8 +327,10 @@ def _validar_lineas_post(request):
             break
         prod = _productos_queryset_para_lista(lista_venta).filter(pk=prod_id).first()
         if prod is None:
-            err = "Un producto seleccionado no pertenece a la lista de precios elegida."
-            break
+            prod = Producto.objects.filter(pk=prod_id, habilitado=True).first()
+            if prod is None:
+                err = "Un producto seleccionado no existe o está deshabilitado."
+                break
         if prod.stock < qty:
             err = f"Stock insuficiente para {prod.codigo} (disponible: {prod.stock})."
             break
@@ -340,6 +342,12 @@ def _validar_lineas_post(request):
                 err = f"El precio unitario no es válido en la línea de {prod.codigo}."
                 break
         else:
+            if not _productos_queryset_para_lista(lista_venta).filter(pk=prod_id).exists():
+                err = (
+                    f"El producto {prod.codigo} no está en la lista «{lista_venta.nombre}». "
+                    "Indicá el precio unitario en la línea o elegí otra lista."
+                )
+                break
             pu = _precio_producto_para_lista(lista_venta, prod)
         if pu <= 0:
             err = f"El precio unitario debe ser mayor a cero ({prod.codigo})."
@@ -822,7 +830,7 @@ def presupuesto_editar(request, pk: int):
                             f" Comprador: {venta.comprador}." if venta.comprador_id else ""
                         )
                         com_txt = (
-                            f"Comisión ({venta.comision_porcentaje}%): {format_monto_ars(venta.monto_comision)}. "
+                            f"Comisión ({venta.comision_porcentaje}%): {format_monto_ars(venta.monto_comision)} (liquidación mensual). "
                             if venta.aplica_comision
                             else "Sin comisión al vendedor. "
                         )
@@ -834,7 +842,7 @@ def presupuesto_editar(request, pk: int):
                                 f"Vendedor: {venta.vendedor}. "
                                 f"Monto neto pedido: {format_monto_ars(venta.neto)}. "
                                 f"{com_txt}"
-                                f"Ingreso en caja al cobrar: {format_monto_ars(venta.monto_ingreso_caja)}.{extra_comprador}"
+                                f"Ingreso en caja al cobrar: {format_monto_ars(venta.monto_ingreso_caja)} (neto íntegro).{extra_comprador}"
                             ),
                         )
                 else:

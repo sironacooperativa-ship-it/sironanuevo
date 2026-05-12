@@ -104,3 +104,36 @@ class CompraRegistrarForm(forms.Form):
             if not data.get("fecha_vencimiento_cheque"):
                 raise ValidationError({"fecha_vencimiento_cheque": "Indicá el vencimiento del cheque."})
         return data
+
+
+class CompraFacturaForm(forms.Form):
+    """Solo deuda a proveedor: monto, vencimiento y fecha de factura; sin producto ni egreso en caja."""
+
+    proveedor = forms.ModelChoiceField(
+        queryset=Proveedor.objects.none(),
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    fecha_compra = forms.DateField(
+        label="Fecha de la factura",
+        input_formats=list(DATE_INPUT_FORMATS),
+        widget=date_input_widget("form-control rounded-3"),
+    )
+    fecha_vencimiento = forms.DateField(
+        label="Vencimiento del pago al proveedor",
+        input_formats=list(DATE_INPUT_FORMATS),
+        widget=date_input_widget("form-control rounded-3"),
+        help_text="Se crea un recordatorio en Calendario para ese día.",
+    )
+    monto = forms.DecimalField(
+        label="Monto adeudado",
+        max_digits=14,
+        decimal_places=2,
+        min_value=Decimal("0.01"),
+        widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "min": "0.01"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["proveedor"].queryset = Proveedor.objects.filter(habilitado=True).order_by(
+            "apellido", "nombre", "codigo"
+        )

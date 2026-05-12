@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from itertools import zip_longest
@@ -7,19 +8,26 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
+from django.db.models import F
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.http import require_http_methods
 
 from core.authz import staff_required
 from core.comision_agg import comisiones_acumuladas_por_mes
 from core.export_utils import parse_export, pdf_response, xlsx_response
-from core.money_decimal import COMISION_PORCENTAJE_DEFECTO, format_monto_ars, q2
+from core.money_decimal import (
+    COMISION_PORCENTAJE_DEFECTO,
+    format_monto_ars,
+    parse_decimal_from_input,
+    q2,
+)
 from core.repoblar_lineas import lineas_iniciales_desde_post, repoblar_campos_cabecera_desde_post
 from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_dashboard, parse_fecha_param, rango_periodo
 
-from calendario.models import Evento
 from caja.models import MovimientoCaja
 from personas.models import Comprador, Vendedor
 from productos.listas_precios_views import (
@@ -29,42 +37,14 @@ from productos.listas_precios_views import (
 from productos.models import ListaPrecios, Producto
 
 from .forms import VentaCabeceraEditForm, VentaPagoForm
-from .models import Venta, VentaLinea
+from .models import ComisionLiquidacionPago, Venta, VentaLinea
 from .remito_pdf import remito_venta_pdf_response
 from .servicios import (
     crear_venta_confirmada,
     eliminar_venta_admin,
     sincronizar_productos_lista_elegida_en_venta,
+    sync_evento_pedido_pendiente,
 )
-
-
-def _sync_evento_pedido_pendiente(venta: Venta) -> None:
-    """Crea, actualiza o elimina el evento de calendario según la fecha de vencimiento del pedido."""
-    titulo = f"Pago pendiente — Pedido #{venta.pk}"
-    qs = Evento.objects.filter(tipo=Evento.Tipo.PEDIDO, titulo=titulo)
-    extra = f" Comprador: {venta.comprador}." if venta.comprador_id else ""
-    com_txt = (
-        f"Comisión ({venta.comision_porcentaje}%): {format_monto_ars(venta.monto_comision)}."
-        if venta.aplica_comision
-        else "Sin comisión al vendedor."
-    )
-    desc = (
-        f"Vendedor: {venta.vendedor}. "
-        f"Monto neto pedido: {format_monto_ars(venta.neto)}. {com_txt} "
-        f"Ingreso en caja al cobrar: {format_monto_ars(venta.monto_ingreso_caja)}.{extra}"
-    )
-    if venta.fecha_vencimiento_pago is None:
-        qs.delete()
-        return
-    if qs.exists():
-        qs.update(fecha=venta.fecha_vencimiento_pago, descripcion=desc)
-    else:
-        Evento.objects.create(
-            fecha=venta.fecha_vencimiento_pago,
-            titulo=titulo,
-            tipo=Evento.Tipo.PEDIDO,
-            descripcion=desc,
-        )
 
 
 def _venta_detalle_queryset():
@@ -294,7 +274,11 @@ def venta_nueva(request):
     )
 
 
-def _filtrar_ventas_queryset(request):
+def _ventas_lista_base_queryset(request):
+    """
+    Listado de ventas con filtros de período / vendedor / comprador / producto.
+    No aplica filtro por estado (lo agrega `_filtrar_ventas_queryset`).
+    """
     periodo = (request.GET.get("periodo") or "").strip()
     if periodo in ("7d", "30d", "mes", "mes_ant"):
         fecha_desde, fecha_hasta = rango_periodo(periodo)
@@ -321,21 +305,59 @@ def _filtrar_ventas_queryset(request):
     if pid.isdigit():
         qs = qs.filter(lineas__producto_id=int(pid)).distinct()
 
-    estado_raw = (request.GET.get("estado") or "").strip().upper()
-    estado = estado_raw if estado_raw in {c for c, _ in Venta.Estado.choices} else ""
-
-    if estado:
-        qs = qs.filter(estado=estado)
-
-    return qs, {
+    filtros = {
         "periodo": periodo,
         "fecha_desde": fecha_filtro_value_iso(request.GET.get("fecha_desde")),
         "fecha_hasta": fecha_filtro_value_iso(request.GET.get("fecha_hasta")),
         "vendedor": vid,
         "comprador": cid,
         "producto": pid,
-        "estado": estado,
     }
+    return qs, filtros
+
+
+def _venta_historial_querystring_pestana(request, pestana: str) -> str:
+    q = request.GET.copy()
+    q["pestana"] = pestana
+    q.pop("page", None)
+    q.pop("estado", None)
+    return q.urlencode()
+
+
+def _filtrar_ventas_queryset(request, *, historial_pestana: bool = False):
+    qs, filtros = _ventas_lista_base_queryset(request)
+    pestana = ""
+    estado = ""
+
+    if historial_pestana:
+        pestana_raw = (request.GET.get("pestana") or "").strip().lower()
+        estado_legacy = (request.GET.get("estado") or "").strip().upper()
+        if pestana_raw == "pagos":
+            pestana = "pagos"
+            qs = qs.filter(estado=Venta.Estado.PAGADA)
+        elif pestana_raw == "a_pagar":
+            pestana = "a_pagar"
+            qs = qs.filter(estado=Venta.Estado.PENDIENTE)
+        elif estado_legacy == "PAG":
+            pestana = "pagos"
+            qs = qs.filter(estado=Venta.Estado.PAGADA)
+        elif estado_legacy == "PEN":
+            pestana = "a_pagar"
+            qs = qs.filter(estado=Venta.Estado.PENDIENTE)
+        else:
+            pestana = "a_pagar"
+            qs = qs.filter(estado=Venta.Estado.PENDIENTE)
+        filtros["pestana"] = pestana
+        filtros["estado"] = ""
+    else:
+        estado_raw = (request.GET.get("estado") or "").strip().upper()
+        estado = estado_raw if estado_raw in {c for c, _ in Venta.Estado.choices} else ""
+        if estado:
+            qs = qs.filter(estado=estado)
+        filtros["estado"] = estado
+        filtros["pestana"] = ""
+
+    return qs, filtros
 
 
 def _parse_ym(raw: str) -> tuple[int, int] | None:
@@ -356,8 +378,7 @@ def _parse_ym(raw: str) -> tuple[int, int] | None:
 @require_http_methods(["GET"])
 def venta_comisiones(request):
     """
-    Vista de comisiones: filtros por mes (YYYY-MM) o desde/hasta (fecha registro).
-    Muestra acumulado mensual y desglose por vendedor (solo totales > 0).
+    Comisiones sobre ventas **cobradas** (estado pagada). La liquidación en caja es aparte del cobro del cliente.
     """
     ventas, _ = _filtrar_ventas_queryset(request)
 
@@ -367,16 +388,16 @@ def venta_comisiones(request):
         y, m = ym
         ventas = ventas.filter(creado_en__year=y, creado_en__month=m)
 
-    # Solo ventas con comisión aplicada y comisión > 0.
-    ventas_com = ventas.filter(aplica_comision=True, comision_porcentaje__gt=0)
+    ventas_com = ventas.filter(
+        estado=Venta.Estado.PAGADA,
+        aplica_comision=True,
+        comision_porcentaje__gt=0,
+    )
 
     comisiones_por_mes = comisiones_acumuladas_por_mes(ventas_com)
 
-    # `monto_comision` es una property (no existe columna en DB), así que agregamos en Python.
-    # Además: si hay jefes de grupo, agregamos "comisión por ventas del grupo" (mismo neto, % del jefe).
     totales_por_vendedor: dict[int, dict[str, object]] = {}
 
-    # Mapear "vendedor miembro" -> lista de (jefe_id, pct_grupo).
     member_to_chiefs: dict[int, list[tuple[int, Decimal]]] = {}
     try:
         jefes = (
@@ -396,7 +417,6 @@ def venta_comisiones(request):
     for v in ventas_com.select_related("vendedor").iterator(chunk_size=500):
         vid = int(v.vendedor_id)
 
-        # Propias
         cur = totales_por_vendedor.get(vid)
         if not cur:
             cur = {
@@ -411,7 +431,6 @@ def venta_comisiones(request):
             totales_por_vendedor[vid] = cur
         cur["propias"] = q2(cur["propias"] + v.monto_comision)  # type: ignore[operator]
 
-        # Grupo (para cada jefe que incluye a este vendedor)
         chiefs = member_to_chiefs.get(vid) or []
         if chiefs:
             neto = (v.subtotal_lineas - v.descuento_monto) if v.subtotal_lineas is not None else Decimal("0.00")
@@ -420,7 +439,6 @@ def venta_comisiones(request):
             for jefe_id, pct in chiefs:
                 jefe = totales_por_vendedor.get(jefe_id)
                 if not jefe:
-                    # Puede que el jefe no tenga ventas propias en el período: igual debe aparecer por grupo.
                     jefe_obj = (
                         Vendedor.objects.filter(pk=jefe_id)
                         .values("id", "codigo", "apellido", "nombre")
@@ -440,7 +458,6 @@ def venta_comisiones(request):
                     totales_por_vendedor[jefe_id] = jefe
                 jefe["grupo"] = q2(jefe["grupo"] + q2(neto * (pct / Decimal("100"))))  # type: ignore[operator]
 
-    # Total
     for row in totales_por_vendedor.values():
         row["propias"] = q2(row.get("propias") or Decimal("0.00"))
         row["grupo"] = q2(row.get("grupo") or Decimal("0.00"))
@@ -452,11 +469,35 @@ def venta_comisiones(request):
         reverse=True,
     )
 
-    # Opciones de meses: meses con comisiones en el conjunto (sin filtro de mes).
+    pendiente_liquidar: list[dict[str, object]] = []
+    if ym:
+        pend_map: dict[int, Decimal] = defaultdict(lambda: Decimal("0.00"))
+        for v in ventas_com.filter(comision_liquidacion_pago_id__isnull=True).select_related("vendedor"):
+            pend_map[int(v.vendedor_id)] = q2(pend_map[int(v.vendedor_id)] + v.monto_comision)
+        for vid, total in sorted(pend_map.items(), key=lambda x: (-x[1], x[0])):
+            if total <= 0:
+                continue
+            vo = Vendedor.objects.filter(pk=vid).values("codigo", "apellido", "nombre").first()
+            if not vo:
+                continue
+            pendiente_liquidar.append(
+                {
+                    "vendedor_id": vid,
+                    "vendedor__codigo": vo["codigo"],
+                    "vendedor__apellido": vo["apellido"],
+                    "vendedor__nombre": vo["nombre"],
+                    "pendiente": total,
+                }
+            )
+
     meses_opciones = []
     seen = set()
     for row in comisiones_acumuladas_por_mes(
-        _filtrar_ventas_queryset(request)[0].filter(aplica_comision=True, comision_porcentaje__gt=0)
+        _filtrar_ventas_queryset(request)[0].filter(
+            estado=Venta.Estado.PAGADA,
+            aplica_comision=True,
+            comision_porcentaje__gt=0,
+        )
     ):
         key = f"{row['anio']}-{int(row['mes']):02d}"
         if key in seen:
@@ -477,13 +518,165 @@ def venta_comisiones(request):
             "meses_opciones": meses_opciones,
             "comisiones_por_mes": comisiones_por_mes,
             "comisiones_por_vendedor": por_vendedor,
+            "pendiente_liquidar": pendiente_liquidar,
+            "liquidacion_mes": mes if ym else "",
         },
     )
 
 
+def _ventas_comision_liquidables_por_mes(request, y: int, month: int):
+    ventas, _ = _filtrar_ventas_queryset(request)
+    return ventas.filter(
+        creado_en__year=y,
+        creado_en__month=month,
+        estado=Venta.Estado.PAGADA,
+        aplica_comision=True,
+        comision_porcentaje__gt=0,
+        comision_liquidacion_pago_id__isnull=True,
+    )
+
+
+@login_required
+@require_http_methods(["GET"])
+def comision_liquidacion_pdf(request):
+    mes = (request.GET.get("mes") or "").strip()
+    ym = _parse_ym(mes)
+    if not ym:
+        messages.error(request, "Elegí un mes (YYYY-MM) para exportar la liquidación.")
+        return redirect("ventas_comisiones")
+    y, month = ym
+    vid_raw = (request.GET.get("vendedor") or "").strip()
+    vid = int(vid_raw) if vid_raw.isdigit() else None
+
+    base = _ventas_comision_liquidables_por_mes(request, y, month).select_related("vendedor").order_by(
+        "vendedor__apellido", "vendedor__nombre", "id"
+    )
+    if vid is not None:
+        base = base.filter(vendedor_id=vid)
+
+    by_v: dict[int, list[Venta]] = defaultdict(list)
+    for sale in base:
+        by_v[int(sale.vendedor_id)].append(sale)
+
+    sections: list[tuple[str, list[str], list[list[object]]]] = []
+    titulo = f"Liquidación comisiones {y}-{month:02d}"
+    grand = Decimal("0.00")
+
+    headers = ["Pedido", "Fecha registro", "Neto", "% comisión", "Comisión"]
+    for v_id in sorted(by_v.keys(), key=lambda i: (by_v[i][0].vendedor.apellido, by_v[i][0].vendedor.nombre)):
+        sales = by_v[v_id]
+        vend = sales[0].vendedor
+        rows: list[list[object]] = []
+        sub = Decimal("0.00")
+        for s in sales:
+            com = s.monto_comision
+            sub = q2(sub + com)
+            rows.append(
+                [
+                    s.pk,
+                    s.creado_en.strftime("%d/%m/%Y %H:%M"),
+                    str(q2(s.neto)),
+                    str(s.comision_porcentaje),
+                    str(q2(com)),
+                ]
+            )
+        rows.append(["", "", "", "Subtotal vendedor", str(q2(sub))])
+        grand = q2(grand + sub)
+        label = f"{vend.apellido}, {vend.nombre} ({vend.codigo})"
+        sections.append((label, headers, rows))
+
+    if not sections:
+        messages.warning(request, "No hay comisiones pendientes de liquidar en ese período.")
+        return redirect(reverse("ventas_comisiones") + (f"?mes={mes}" if mes else ""))
+
+    sections.append(("Total general", ["Concepto", "Monto"], [["Comisiones pendientes de pago", str(q2(grand))]]))
+    safe = f"liquidacion_comisiones_{y}_{month:02d}"
+    if vid is not None:
+        safe += f"_v{vid}"
+    return pdf_response(safe, titulo, sections)
+
+
+@login_required
+@require_http_methods(["POST"])
+def comision_liquidacion_pagar(request):
+    mes = (request.POST.get("mes") or "").strip()
+    ym = _parse_ym(mes)
+    vid_raw = (request.POST.get("vendedor") or "").strip()
+    redir = reverse("ventas_comisiones") + (f"?mes={mes}" if mes else "")
+    if not ym or not vid_raw.isdigit():
+        messages.error(request, "Datos inválidos para el pago de comisiones.")
+        return redirect(redir)
+    y, month = ym
+    vid = int(vid_raw)
+
+    try:
+        with transaction.atomic():
+            qs = (
+                _ventas_comision_liquidables_por_mes(request, y, month)
+                .filter(vendedor_id=vid)
+                .select_related("vendedor")
+            )
+            try:
+                qs = qs.select_for_update(of=("self",))
+            except TypeError:
+                qs = qs.select_for_update()
+            ventas_list = list(qs)
+            if not ventas_list:
+                messages.warning(request, "No hay comisiones pendientes para ese vendedor y mes.")
+                return redirect(redir)
+            total = q2(sum(v.monto_comision for v in ventas_list))
+            if total <= 0:
+                messages.warning(request, "El total a pagar es cero.")
+                return redirect(redir)
+
+            vend = ventas_list[0].vendedor
+            liq = ComisionLiquidacionPago.objects.create(
+                vendedor=vend,
+                anio=y,
+                mes=month,
+                total=total,
+                creado_por=request.user,
+            )
+            mov = MovimientoCaja(
+                fecha=timezone.localdate(),
+                operacion=f"Pago comisiones {vend.apellido}, {vend.nombre} — {y}-{month:02d} ({len(ventas_list)} pedidos)",
+                tipo=MovimientoCaja.Tipo.EGRESO,
+                monto=total,
+                medio_pago=MovimientoCaja.MedioPago.EFECTIVO,
+                vendedor=vend,
+                creado_por=request.user,
+                actualizado_por=request.user,
+            )
+            mov.full_clean()
+            mov.save()
+            liq.movimiento_caja = mov
+            liq.save(update_fields=["movimiento_caja"])
+            for v in ventas_list:
+                v.comision_liquidacion_pago = liq
+                v.save(update_fields=["comision_liquidacion_pago"])
+        messages.success(request, f"Pago de comisiones registrado en caja: {format_monto_ars(total)}.")
+    except ValidationError as e:
+        if getattr(e, "error_dict", None):
+            for msgs in e.error_dict.values():
+                for merr in msgs:
+                    messages.error(request, str(merr))
+        else:
+            for merr in e.messages:
+                messages.error(request, str(merr))
+    except Exception as exc:
+        det = f" {exc}" if getattr(request.user, "is_staff", False) else ""
+        messages.error(request, "No se pudo registrar el pago." + det)
+
+    return redirect(redir)
+
+
 @login_required
 def venta_historial(request):
-    ventas, filtros_ctx = _filtrar_ventas_queryset(request)
+    ventas, filtros_ctx = _filtrar_ventas_queryset(request, historial_pestana=True)
+    base_qs, _ = _ventas_lista_base_queryset(request)
+    n_ventas_a_pagar = base_qs.filter(estado=Venta.Estado.PENDIENTE).count()
+    n_ventas_pagos = base_qs.filter(estado=Venta.Estado.PAGADA).count()
+
     exp = parse_export(request)
     if exp in ("xlsx", "pdf"):
         headers = [
@@ -547,6 +740,10 @@ def venta_historial(request):
             "compradores_filtro": compradores,
             "page_obj": page_obj,
             "querystring": querystring,
+            "n_ventas_a_pagar": n_ventas_a_pagar,
+            "n_ventas_pagos": n_ventas_pagos,
+            "querystring_a_pagar": _venta_historial_querystring_pestana(request, "a_pagar"),
+            "querystring_pagos": _venta_historial_querystring_pestana(request, "pagos"),
         },
     )
 
@@ -631,7 +828,8 @@ def venta_producto_listas_precio(request, pk: int, producto_pk: int):
 @require_http_methods(["GET", "POST"])
 def venta_editar(request, pk: int):
     venta = get_object_or_404(Venta.objects.select_related("vendedor", "comprador"), pk=pk)
-    if venta.estado != Venta.Estado.PENDIENTE:
+    pedido_pagado = venta.estado == Venta.Estado.PAGADA
+    if venta.estado not in (Venta.Estado.PENDIENTE, Venta.Estado.PAGADA):
         return render(request, "ventas/editar_bloqueado.html", {"venta": venta})
 
     vendedores = Vendedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
@@ -694,6 +892,12 @@ def venta_editar(request, pk: int):
     }
 
     if request.method == "POST":
+        if venta.comision_liquidacion_pago_id:
+            messages.error(
+                request,
+                "Este pedido ya está incluido en una liquidación de comisión pagada; no se puede editar desde acá.",
+            )
+            return redirect("venta_detalle", pk=venta.pk)
         # Validación completa (similar a presupuestos): comprador opcional, vencimiento opcional, líneas editables.
         err = None
         vid_raw = (request.POST.get("vendedor") or "").strip()
@@ -702,7 +906,10 @@ def venta_editar(request, pk: int):
             vid = None
         else:
             vid = int(vid_raw)
-            if not Vendedor.objects.filter(pk=vid, habilitado=True).exists():
+            v_ok = Vendedor.objects.filter(pk=vid, habilitado=True).exists()
+            if not v_ok and vid == venta.vendedor_id and Vendedor.objects.filter(pk=vid).exists():
+                v_ok = True
+            if not v_ok:
                 err = "El vendedor seleccionado no existe o no está habilitado."
 
         cid_raw = (request.POST.get("comprador") or "").strip()
@@ -718,12 +925,12 @@ def venta_editar(request, pk: int):
         fecha_v = parse_fecha_param(request.POST.get("fecha_vencimiento_pago") or "")
         raw_desc = (request.POST.get("descuento_monto") or "").strip()
         try:
-            descuento = Decimal(str(raw_desc or "0").replace(",", "."))
+            descuento = parse_decimal_from_input(raw_desc) if raw_desc else Decimal("0")
         except InvalidOperation:
             descuento = None
         raw_com = (request.POST.get("comision_porcentaje") or "").strip()
         try:
-            comision_pct = Decimal(str(raw_com or "0").replace(",", "."))
+            comision_pct = parse_decimal_from_input(raw_com) if raw_com else Decimal("0")
         except InvalidOperation:
             comision_pct = None
         aplica_comision = request.POST.get("aplica_comision") == "1"
@@ -732,6 +939,77 @@ def venta_editar(request, pk: int):
             err = "El descuento no es válido."
         if err is None and (comision_pct is None or comision_pct < 0):
             err = "El porcentaje de comisión no es válido."
+
+        solo_cab = request.POST.get("accion") == "solo_cabecera"
+        if solo_cab and err is None:
+            ref_sub = venta.subtotal_lineas or Decimal("0")
+            if descuento is not None and descuento > ref_sub:
+                err = "El descuento no puede superar el subtotal actual de líneas."
+            elif descuento is not None and q2(ref_sub - descuento + (venta.envio or Decimal("0"))) < 0:
+                err = "El descuento no puede superar el subtotal de las líneas actuales."
+
+        if solo_cab:
+            if err is not None:
+                messages.error(request, err)
+                repoblar = repoblar_campos_cabecera_desde_post(request)
+                lineas_iniciales = lineas_iniciales_desde_post(request)
+                return render(
+                    request,
+                    "ventas/editar.html",
+                    {
+                        "venta": venta,
+                        "vendedores": vendedores,
+                        "compradores": compradores,
+                        "productos_catalogo": productos_catalogo,
+                        "lineas_iniciales": lineas_iniciales,
+                        "repoblar": repoblar,
+                        "comision_default": COMISION_PORCENTAJE_DEFECTO,
+                        "pedido_pagado": pedido_pagado,
+                    },
+                )
+            try:
+                with transaction.atomic():
+                    v_locked = Venta.objects.select_for_update().get(pk=venta.pk)
+                    v_locked.vendedor_id = vid
+                    v_locked.comprador_id = comprador_id
+                    v_locked.fecha_vencimiento_pago = fecha_v
+                    v_locked.descuento_monto = descuento or Decimal("0")
+                    v_locked.comision_porcentaje = comision_pct or Decimal("0")
+                    v_locked.aplica_comision = aplica_comision
+                    v_locked.actualizado_por = request.user
+                    v_locked.save(
+                        update_fields=[
+                            "vendedor",
+                            "comprador",
+                            "fecha_vencimiento_pago",
+                            "descuento_monto",
+                            "comision_porcentaje",
+                            "aplica_comision",
+                            "actualizado_por",
+                        ]
+                    )
+                    sync_evento_pedido_pendiente(v_locked)
+                messages.success(request, "Se actualizó cabecera y comisión (sin modificar productos ni stock).")
+                return redirect("venta_detalle", pk=venta.pk)
+            except Exception as exc:
+                det = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
+                messages.error(request, "No se pudo guardar." + det)
+                repoblar = repoblar_campos_cabecera_desde_post(request)
+                lineas_iniciales = lineas_iniciales_desde_post(request)
+                return render(
+                    request,
+                    "ventas/editar.html",
+                    {
+                        "venta": venta,
+                        "vendedores": vendedores,
+                        "compradores": compradores,
+                        "productos_catalogo": productos_catalogo,
+                        "lineas_iniciales": lineas_iniciales,
+                        "repoblar": repoblar,
+                        "comision_default": COMISION_PORCENTAJE_DEFECTO,
+                        "pedido_pagado": pedido_pagado,
+                    },
+                )
 
         pids = request.POST.getlist("linea_producto")
         qtys = request.POST.getlist("linea_cantidad")
@@ -764,16 +1042,22 @@ def venta_editar(request, pk: int):
                     err = "Producto no válido."
                     break
                 prod_id = int(pid_s)
-                prod = Producto.objects.filter(pk=prod_id, habilitado=True).first()
-                if prod is None:
-                    err = "Un producto seleccionado no existe o está deshabilitado."
-                    break
+                if pedido_pagado:
+                    prod = Producto.objects.filter(pk=prod_id).first()
+                    if prod is None:
+                        err = "Un producto seleccionado no existe."
+                        break
+                else:
+                    prod = Producto.objects.filter(pk=prod_id, habilitado=True).first()
+                    if prod is None:
+                        err = "Un producto seleccionado no existe o está deshabilitado."
+                        break
                 # Para edición: permitir guardar aunque el stock justo no alcance, pero controlamos igual para no quedar negativo.
                 # Reponemos stock viejo más abajo dentro de la transacción; acá validamos contra stock "actual" + lo que ya está en la venta.
                 # Validación conservadora: se ajusta con lock y recomputo en transacción.
                 if praw:
                     try:
-                        pu = q2(Decimal(str(praw).replace(",", ".")))
+                        pu = q2(parse_decimal_from_input(praw))
                     except InvalidOperation:
                         err = f"El precio unitario no es válido en la línea de {prod.codigo}."
                         break
@@ -795,28 +1079,39 @@ def venta_editar(request, pk: int):
             try:
                 with transaction.atomic():
                     v_locked = Venta.objects.select_for_update().prefetch_related("lineas").get(pk=venta.pk)
-                    # Devolver stock de líneas viejas
-                    old_lines = list(v_locked.lineas.all())
-                    for ln in old_lines:
-                        Producto.objects.filter(pk=ln.producto_id).update(stock=F("stock") + ln.cantidad)
-                    VentaLinea.objects.filter(venta_id=v_locked.pk).delete()
-
-                    # Crear líneas nuevas y descontar stock
-                    pids_afectados: list[int] = []
-                    for spec in line_specs:
-                        prod, qty, pu, st, cod, desc = spec
-                        VentaLinea.objects.create(
-                            venta=v_locked,
-                            producto=prod,
-                            cantidad=qty,
-                            precio_unitario=pu,
-                            subtotal=st,
-                            codigo_snapshot=(cod or "")[:6],
-                            descripcion_snapshot=(desc or "")[:255],
-                        )
-                        Producto.objects.filter(pk=prod.pk).update(stock=F("stock") - qty)
-                        pids_afectados.append(prod.pk)
-                    Producto.deshabilitar_sin_stock(pids_afectados)
+                    if pedido_pagado:
+                        VentaLinea.objects.filter(venta_id=v_locked.pk).delete()
+                        for spec in line_specs:
+                            prod, qty, pu, st, cod, desc = spec
+                            VentaLinea.objects.create(
+                                venta=v_locked,
+                                producto=prod,
+                                cantidad=qty,
+                                precio_unitario=pu,
+                                subtotal=st,
+                                codigo_snapshot=(cod or "")[:6],
+                                descripcion_snapshot=(desc or "")[:255],
+                            )
+                    else:
+                        old_lines = list(v_locked.lineas.all())
+                        for ln in old_lines:
+                            Producto.objects.filter(pk=ln.producto_id).update(stock=F("stock") + ln.cantidad)
+                        VentaLinea.objects.filter(venta_id=v_locked.pk).delete()
+                        pids_afectados: list[int] = []
+                        for spec in line_specs:
+                            prod, qty, pu, st, cod, desc = spec
+                            VentaLinea.objects.create(
+                                venta=v_locked,
+                                producto=prod,
+                                cantidad=qty,
+                                precio_unitario=pu,
+                                subtotal=st,
+                                codigo_snapshot=(cod or "")[:6],
+                                descripcion_snapshot=(desc or "")[:255],
+                            )
+                            Producto.objects.filter(pk=prod.pk).update(stock=F("stock") - qty)
+                            pids_afectados.append(prod.pk)
+                        Producto.deshabilitar_sin_stock(pids_afectados)
 
                     v_locked.vendedor_id = vid
                     v_locked.comprador_id = comprador_id
@@ -838,8 +1133,13 @@ def venta_editar(request, pk: int):
                             "actualizado_por",
                         ]
                     )
-                    _sync_evento_pedido_pendiente(v_locked)
-                messages.success(request, "Pedido actualizado.")
+                    sync_evento_pedido_pendiente(v_locked)
+                messages.success(
+                    request,
+                    "Pedido actualizado (pedido ya cobrado: solo se ajustó el registro, el stock no se modificó)."
+                    if pedido_pagado
+                    else "Pedido actualizado.",
+                )
                 return redirect("venta_detalle", pk=venta.pk)
             except Exception as exc:
                 det = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
@@ -860,8 +1160,46 @@ def venta_editar(request, pk: int):
             "lineas_iniciales": lineas_iniciales,
             "repoblar": repoblar,
             "comision_default": COMISION_PORCENTAJE_DEFECTO,
+            "pedido_pagado": pedido_pagado,
         },
     )
+
+
+@login_required
+@require_http_methods(["POST"])
+def venta_actualizar_comision(request, pk: int):
+    """Actualiza solo comisión (5% fijo si aplica) sin revalidar líneas; útil desde el historial."""
+    venta = get_object_or_404(Venta, pk=pk)
+    next_url = (request.POST.get("next") or "").strip()
+
+    def _redirect_response():
+        if next_url.startswith("/") and not next_url.startswith("//"):
+            return redirect(next_url)
+        return redirect("ventas_historial")
+
+    if venta.comision_liquidacion_pago_id:
+        messages.warning(
+            request,
+            "No se puede cambiar la comisión: este pedido ya figura en una liquidación de comisión pagada.",
+        )
+        return _redirect_response()
+
+    if venta.estado not in (Venta.Estado.PENDIENTE, Venta.Estado.PAGADA):
+        messages.warning(request, "Solo se puede cambiar la comisión en pedidos pendientes o ya cobrados.")
+        return _redirect_response()
+
+    aplica = request.POST.get("aplica_comision") == "1"
+    venta.aplica_comision = aplica
+    if aplica:
+        venta.comision_porcentaje = COMISION_PORCENTAJE_DEFECTO
+    venta.actualizado_por = request.user
+    venta.save(update_fields=["aplica_comision", "comision_porcentaje", "actualizado_por"])
+    sync_evento_pedido_pendiente(venta)
+    messages.success(
+        request,
+        "Comisión del vendedor activada (5% sobre el neto)." if aplica else "Comisión del vendedor desactivada.",
+    )
+    return _redirect_response()
 
 
 @login_required

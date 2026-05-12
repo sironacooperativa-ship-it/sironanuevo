@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% load money %}
-{% block title %}Pedidos{% endblock %}
+{% block title %}Historial de ventas{% endblock %}
 {% block content %}
   <div class="app-page-header mb-3">
-    <h1 class="app-page-title mb-1">Historial de pedidos</h1>
+    <h1 class="app-page-title mb-1">Historial de ventas</h1>
     <div class="d-flex flex-wrap gap-2 align-items-center">
       <a class="btn btn-primary btn-sm rounded-pill" href="{% url 'venta_nueva' %}">Nueva venta</a>
       <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'ventas_comisiones' %}">Comisiones</a>
@@ -13,6 +13,7 @@
   <div class="card app-card border-0 shadow-sm app-list-filters mb-3">
     <div class="card-body">
       <form method="get" class="row g-2 align-items-end">
+        <input type="hidden" name="pestana" value="{{ filtros.pestana }}" />
         <div class="col-12 col-md-6 col-lg-2">
           <label class="form-label small text-muted mb-0">Período</label>
           <select name="periodo" class="form-select form-select-sm">
@@ -74,30 +75,50 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-12 col-md-6 col-lg-2">
-          <label class="form-label small text-muted mb-0">Estado</label>
-          <select name="estado" class="form-select form-select-sm">
-            <option value="" {% if not filtros.estado %}selected{% endif %}>Todos</option>
-            <option value="PEN" {% if filtros.estado == "PEN" %}selected{% endif %}>Pendiente de pago</option>
-            <option value="PAG" {% if filtros.estado == "PAG" %}selected{% endif %}>Pagada</option>
-            <option value="CAN" {% if filtros.estado == "CAN" %}selected{% endif %}>Cancelada</option>
-          </select>
-        </div>
         <div class="col-12 d-flex gap-2 flex-wrap">
           <button type="submit" class="btn btn-sm btn-outline-dark rounded-pill">Filtrar</button>
           <a class="btn btn-sm btn-outline-secondary rounded-pill" href="{% url 'ventas_historial' %}">Limpiar</a>
         </div>
       </form>
       <p class="small text-muted mb-0 mt-2">
-        Fechas según <strong>fecha de registro</strong> del pedido. Si elegís un período predefinido, reemplaza desde/hasta al aplicar el filtro.
+        Fechas según <strong>fecha de registro</strong> del pedido. Las pestañas separan pendientes de cobro y pedidos ya pagados.
+        Si elegís un período predefinido, reemplaza desde/hasta al aplicar el filtro.
       </p>
     </div>
   </div>
 
   <div class="table-card ui-force-productos presu-lista-modern ventas-historial-modern mb-3">
-    <div class="table-card-header">
-      <h2 class="table-card-title">Pedidos</h2>
-      <span class="table-card-count">{{ page_obj.paginator.count }} resultado(s)</span>
+    <div class="table-card-header flex-column align-items-stretch gap-0 pb-0">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2 w-100">
+        <h2 class="table-card-title mb-0">
+          {% if filtros.pestana == "pagos" %}Pedidos pagos{% else %}Pedidos a pagar{% endif %}
+        </h2>
+        <span class="table-card-count text-nowrap">{{ page_obj.paginator.count }} resultado(s)</span>
+      </div>
+      <ul class="nav nav-tabs ventas-hist-tabs px-2 border-bottom-0 gap-1 flex-nowrap" role="tablist">
+        <li class="nav-item text-nowrap" role="presentation">
+          <a
+            class="nav-link py-2 px-3 {% if filtros.pestana == 'a_pagar' %}active{% endif %}"
+            href="?{{ querystring_a_pagar }}"
+            role="tab"
+            {% if filtros.pestana == "a_pagar" %}aria-current="page"{% endif %}
+          >
+            Pedidos a pagar
+            <span class="badge rounded-pill text-bg-secondary ms-1">{{ n_ventas_a_pagar }}</span>
+          </a>
+        </li>
+        <li class="nav-item text-nowrap" role="presentation">
+          <a
+            class="nav-link py-2 px-3 {% if filtros.pestana == 'pagos' %}active{% endif %}"
+            href="?{{ querystring_pagos }}"
+            role="tab"
+            {% if filtros.pestana == "pagos" %}aria-current="page"{% endif %}
+          >
+            Pedidos pagos
+            <span class="badge rounded-pill text-bg-secondary ms-1">{{ n_ventas_pagos }}</span>
+          </a>
+        </li>
+      </ul>
     </div>
     <div class="table-responsive presu-lista-table-wrap venta-hist-table-wrap">
       <table class="modern-table ventas-historial-tabla" id="venta-hist-tabla">
@@ -105,7 +126,7 @@
           <col style="width: 138px" />  {# Pedido/fecha #}
           <col style="width: 22%" />    {# Vendedor (ancha) #}
           <col style="width: 25%" />    {# Comprador (más ancha) #}
-          <col style="width: 86px" />   {# Comisión (muy angosta) #}
+          <col style="width: 104px" />  {# Comisión + switch #}
           <col style="width: 156px" />  {# Ingreso caja (mediana) #}
           <col style="width: 56px" />   {# Estado (muy angosta) #}
           <col style="width: 170px" />  {# Acciones (angosta, sin wrap) #}
@@ -115,7 +136,10 @@
             <th scope="col" class="col-ped th-pedido">Pedido / fecha</th>
             <th scope="col" class="th-vend presu-col-ellipsis">Vendedor</th>
             <th scope="col" class="th-compra presu-col-ellipsis d-none d-md-table-cell">Comprador</th>
-            <th scope="col" class="text-end th-comision col-money d-none d-md-table-cell">Comisión</th>
+            <th scope="col" class="text-center th-comision col-comision-switch small">
+              <span class="d-block">Comisión</span>
+              <span class="fw-normal text-muted" style="font-size: 0.7rem">vendedor 5%</span>
+            </th>
             <th scope="col" class="text-end th-caja col-money">
               <span class="d-none d-md-inline">Ingreso caja</span>
               <span class="d-inline d-md-none">Neto</span>
@@ -151,13 +175,40 @@
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td class="text-end col-money comision-cel d-none d-md-table-cell">
-                {% if v.aplica_comision %}
-                  <div class="ventas-hist-cell-title">{{ v.comision_porcentaje }}%</div>
-                  <div class="ventas-hist-cell-sub text-muted small">{{ v.monto_comision|ars }}</div>
-                {% else %}
-                  <span class="text-muted">—</span>
-                {% endif %}
+              <td class="text-center align-middle comision-cel col-comision-switch py-2">
+                <form
+                  method="post"
+                  action="{% url 'venta_actualizar_comision' v.pk %}"
+                  class="venta-comision-toggle-form m-0"
+                >
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                  <input type="hidden" name="aplica_comision" value="0" />
+                  <div class="d-flex flex-column align-items-center gap-1">
+                    <input
+                      class="form-check-input m-0"
+                      type="checkbox"
+                      role="switch"
+                      name="aplica_comision"
+                      value="1"
+                      id="comision-v-{{ v.pk }}"
+                      {% if v.aplica_comision %}checked{% endif %}
+                      {% if v.estado == "PEN" or v.estado == "PAG" %}
+                        {% if v.comision_liquidacion_pago_id %}disabled{% endif %}
+                      {% else %}disabled{% endif %}
+                      title="{% if v.comision_liquidacion_pago_id %}Comisión ya liquidada y pagada{% elif v.estado == 'PEN' or v.estado == 'PAG' %}Aplicar comisión del vendedor (5% sobre el neto){% else %}Solo en pedidos pendientes o cobrados{% endif %}"
+                      aria-label="Aplicar comisión del vendedor al 5 por ciento"
+                      onchange="this.form.submit()"
+                    />
+                    <div class="ventas-hist-cell-sub text-muted small text-nowrap">
+                      {% if v.aplica_comision %}
+                        {{ v.monto_comision|ars }}
+                      {% else %}
+                        —
+                      {% endif %}
+                    </div>
+                  </div>
+                </form>
               </td>
               <td class="text-end col-money ventas-hist-caja">
                 <div class="d-none d-md-block">

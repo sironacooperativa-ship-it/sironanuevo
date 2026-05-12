@@ -63,7 +63,7 @@
         <i data-lucide="file-text" aria-hidden="true"></i>
         Nuevo presupuesto
       </a>
-      <a class="action-button btn btn-outline-primary" href="{% url 'compra_registrar' %}">
+      <a class="action-button btn btn-outline-primary" href="{% url 'compra_registrar' %}?pestana=productos">
         <i data-lucide="shopping-cart" aria-hidden="true"></i>
         Nueva compra
       </a>
@@ -211,11 +211,11 @@
     {% if ventas_pendientes_total > ventas_pendientes|length %}
       <div class="card-table-footer text-muted small">
         Mostrando los {{ ventas_pendientes|length }} más recientes de {{ ventas_pendientes_total }}.
-        <a class="text-decoration-none" href="{% url 'ventas_historial' %}" title="Abrir listado completo de pedidos">Listado de pedidos</a>
+        <a class="text-decoration-none" href="{% url 'ventas_historial' %}" title="Abrir historial completo de ventas">Historial de ventas</a>
       </div>
     {% elif ventas_pendientes_total %}
       <div class="card-table-footer text-muted small">
-        <a class="text-decoration-none" href="{% url 'ventas_historial' %}" title="Abrir listado completo de pedidos">Listado de pedidos</a>
+        <a class="text-decoration-none" href="{% url 'ventas_historial' %}" title="Abrir historial completo de ventas">Historial de ventas</a>
       </div>
     {% endif %}
   </div>

@@ -469,10 +469,10 @@
                 <a
                   class="sidebar-link app-sidebar-link"
                   href="{% url 'ventas_historial' %}"
-                  title="Listado de pedidos: ver, editar, cobrar o eliminar según permisos"
+                  title="Historial de ventas: ver, editar, cobrar o eliminar según permisos"
                 >
                   <span class="app-sidebar-icon-wrap"><i data-lucide="clipboard-list"></i></span>
-                  <span class="app-sidebar-label sidebar-label">Historial de pedidos</span>
+                  <span class="app-sidebar-label sidebar-label">Historial de ventas</span>
                 </a>
                 <a class="sidebar-link app-sidebar-link" href="{% url 'compradores_list' %}" title="Clientes">
                   <span class="app-sidebar-icon-wrap"><i data-lucide="users"></i></span>
@@ -507,7 +507,7 @@
                   <span class="app-sidebar-icon-wrap"><i data-lucide="landmark"></i></span>
                   <span class="app-sidebar-label sidebar-label">Bancos</span>
                 </a>
-                <a class="sidebar-link app-sidebar-link" href="{% url 'ventas_historial' %}?estado=PEN" title="Deudas (pedidos pendientes de pago)">
+                <a class="sidebar-link app-sidebar-link" href="{% url 'ventas_historial' %}?pestana=a_pagar" title="Deudas (pedidos pendientes de pago)">
                   <span class="app-sidebar-icon-wrap"><i data-lucide="clock"></i></span>
                   <span class="app-sidebar-label sidebar-label">Deudas</span>
                 </a>
@@ -532,9 +532,13 @@
                   <span class="app-sidebar-icon-wrap"><i data-lucide="truck"></i></span>
                   <span class="app-sidebar-label sidebar-label">Proveedores</span>
                 </a>
-                <a class="sidebar-link app-sidebar-link" href="{% url 'compra_registrar' %}" title="Registrar pago / compra">
-                  <span class="app-sidebar-icon-wrap"><i data-lucide="credit-card"></i></span>
-                  <span class="app-sidebar-label sidebar-label">Pagos</span>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'compra_registrar' %}?pestana=productos" title="Alta con producto y egreso en caja">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="package"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Comprar productos</span>
+                </a>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'compra_registrar' %}?pestana=factura" title="Deuda / factura sin detalle (sin caja)">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="file-text"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Cargar factura</span>
                 </a>
               </div>
             </div>
@@ -759,10 +763,10 @@
                   <a
                     class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link"
                     href="{% url 'ventas_historial' %}"
-                    title="Listado de pedidos: ver, editar, cobrar o eliminar según permisos"
+                    title="Historial de ventas: ver, editar, cobrar o eliminar según permisos"
                   >
                     <span class="app-sidebar-icon-wrap"><i data-lucide="clipboard-list"></i></span>
-                    <span class="app-sidebar-label">Historial de pedidos</span>
+                    <span class="app-sidebar-label">Historial de ventas</span>
                   </a>
                   <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'compradores_list' %}">
                     <span class="app-sidebar-icon-wrap"><i data-lucide="users"></i></span>
@@ -797,7 +801,7 @@
                     <span class="app-sidebar-icon-wrap"><i data-lucide="landmark"></i></span>
                     <span class="app-sidebar-label">Bancos</span>
                   </a>
-                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'ventas_historial' %}?estado=PEN" title="Deudas (pedidos pendientes de pago)">
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'ventas_historial' %}?pestana=a_pagar" title="Deudas (pedidos pendientes de pago)">
                     <span class="app-sidebar-icon-wrap"><i data-lucide="clock"></i></span>
                     <span class="app-sidebar-label">Deudas</span>
                   </a>
@@ -822,9 +826,13 @@
                     <span class="app-sidebar-icon-wrap"><i data-lucide="truck"></i></span>
                     <span class="app-sidebar-label">Proveedores</span>
                   </a>
-                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'compra_registrar' %}">
-                    <span class="app-sidebar-icon-wrap"><i data-lucide="credit-card"></i></span>
-                    <span class="app-sidebar-label">Pagos</span>
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'compra_registrar' %}?pestana=productos" title="Alta con producto y egreso en caja">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="package"></i></span>
+                    <span class="app-sidebar-label">Comprar productos</span>
+                  </a>
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'compra_registrar' %}?pestana=factura" title="Deuda / factura sin detalle (sin caja)">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="file-text"></i></span>
+                    <span class="app-sidebar-label">Cargar factura</span>
                   </a>
                 </div>
               </div>
@@ -1581,7 +1589,7 @@
               const hrefSearch = u.search || "";
               const hrefParams = u.searchParams;
 
-              // Best match: exact path + exact query (e.g. /ventas/?estado=PEN => "Deudas").
+              // Best match: exact path + exact query (e.g. /ventas/?pestana=a_pagar => "Deudas").
               if (hrefPath === herePath && hrefSearch === hereSearch) {
                 candidates.push({ a, hrefPath, hrefSearch, score: 20000 + hrefPath.length + hrefSearch.length });
                 return;

@@ -45,7 +45,7 @@ class VentaCabeceraEditForm(forms.ModelForm):
             )
         self.fields["comprador"].queryset = qs
         self.fields["comprador"].required = False
-        self.fields["aplica_comision"].label = "Aplicar comisión (se descuenta del ingreso en caja al cobrar)"
+        self.fields["aplica_comision"].label = "Aplicar comisión del vendedor (se liquida por mes en Comisiones)"
 
     def clean_comision_porcentaje(self):
         raw = (self.data.get("comision_porcentaje") or "").strip().replace(",", ".")

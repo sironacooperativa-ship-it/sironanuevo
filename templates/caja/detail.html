@@ -5,6 +5,15 @@
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h4 mb-0">Detalles del movimiento</h1>
     <a class="btn btn-outline-secondary" href="{% url 'caja_list' %}">Volver</a>
+    <form
+      method="post"
+      action="{% url 'caja_delete' mov.id %}"
+      class="ms-auto"
+      onsubmit="return confirm('¿Eliminar este movimiento de caja?{% if mov.venta_id and mov.tipo == 'IN' %} Si es el cobro de un pedido, el pedido volverá a pendiente de pago.{% endif %}');"
+    >
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill">Eliminar</button>
+    </form>
   </div>
 
   <div class="card shadow-sm">
@@ -22,11 +31,18 @@
         <dt class="col-sm-3">Vendedor</dt><dd class="col-sm-9">{% if mov.vendedor %}{{ mov.vendedor }}{% else %}-{% endif %}</dd>
         {% if mov.venta_id %}
           <dt class="col-sm-3">Venta</dt>
-          <dd class="col-sm-9">Pedido #{{ mov.venta_id }} (historial de ventas)</dd>
+          <dd class="col-sm-9"><a href="{% url 'venta_detalle' mov.venta_id %}">Pedido #{{ mov.venta_id }}</a></dd>
         {% endif %}
         {% if mov.compra_registro %}
           <dt class="col-sm-3">Compra</dt>
-          <dd class="col-sm-9">Registro #{{ mov.compra_registro.pk }} — {{ mov.compra_registro.producto.codigo }}</dd>
+          <dd class="col-sm-9">
+            Registro #{{ mov.compra_registro.pk }} —
+            {% if mov.compra_registro.producto %}
+              {{ mov.compra_registro.producto.codigo }}
+            {% else %}
+              Factura (sin detalle)
+            {% endif %}
+          </dd>
         {% endif %}
         {% if mov.compra_nota_credito %}
           <dt class="col-sm-3">Nota de crédito</dt>

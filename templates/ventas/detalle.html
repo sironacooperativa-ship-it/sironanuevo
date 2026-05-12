@@ -394,12 +394,12 @@
               </tr>
               {% if venta.aplica_comision and venta.monto_comision and venta.monto_comision > 0 %}
                 <tr>
-                  <td>Comisión vendedor ({{ venta.comision_porcentaje }}%)</td>
+                  <td>Comisión vendedor ({{ venta.comision_porcentaje }}%) <span class="text-muted fw-normal small">· liquidación mensual</span></td>
                   <td class="text-end">{{ venta.monto_comision|ars }}</td>
                 </tr>
               {% endif %}
               <tr class="fw-semibold">
-                <td>Ingreso en caja al cobrar</td>
+                <td>Ingreso en caja al cobrar <span class="text-muted fw-normal small">(neto íntegro)</span></td>
                 <td class="text-end">{{ venta.monto_ingreso_caja|ars }}</td>
               </tr>
               <tr>
@@ -455,11 +455,9 @@
             {% endif %}
           </p>
           <p class="small mb-0">
-            Al cobrar se registrará un ingreso de <strong>{{ venta.monto_ingreso_caja|ars }}</strong> en caja
+            Al cobrar se registra en caja el <strong>neto del pedido</strong> (<strong>{{ venta.monto_ingreso_caja|ars }}</strong>).
             {% if venta.aplica_comision and venta.monto_comision > 0 %}
-              (neto {{ venta.neto|ars }} menos comisión {{ venta.monto_comision|ars }}).
-            {% else %}
-              (igual al neto del pedido).
+              La comisión al vendedor (<strong>{{ venta.monto_comision|ars }}</strong>) se paga por separado desde <strong>Comisiones</strong> al liquidar el mes.
             {% endif %}
           </p>
         {% endif %}

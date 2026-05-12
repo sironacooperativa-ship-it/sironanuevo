@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -16,7 +17,7 @@ from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_dashboard, ra
 from personas.models import Proveedor
 from productos.models import Producto
 
-from .forms import CompraRegistrarForm
+from .forms import CompraFacturaForm, CompraRegistrarForm
 from .models import Compra
 from .servicios import compra_anular_por_admin, compra_eliminar_por_admin
 
@@ -81,11 +82,19 @@ def compra_historial(request):
                     c.pk,
                     c.fecha_compra.strftime("%d/%m/%Y"),
                     str(c.proveedor),
-                    f"{c.producto.codigo} {c.producto.descripcion}"[:80],
-                    c.cantidad,
+                    (
+                        f"{c.producto.codigo} {c.producto.descripcion}"[:80]
+                        if c.producto_id
+                        else "Factura (sin detalle)"
+                    ),
+                    str(c.cantidad),
                     str(c.costo_unitario),
                     str(c.monto),
-                    c.get_medio_pago_display(),
+                    (
+                        "Sin egreso en caja"
+                        if c.modo == Compra.Modo.FACTURA and not c.movimiento_caja_id
+                        else c.get_medio_pago_display()
+                    ),
                     "Sí" if c.anulada else "No",
                     c.creado_en.strftime("%d/%m/%Y %H:%M"),
                 ]
@@ -130,7 +139,7 @@ def compra_admin_eliminar(request, pk: int):
     except ValidationError as exc:
         messages.error(request, " ".join(exc.messages) if exc.messages else str(exc))
     else:
-        messages.success(request, "Compra eliminada; movimientos de caja asociados y stock actualizados.")
+        messages.success(request, "Compra eliminada (caja y stock se ajustaron si correspondía).")
     return redirect("compra_historial")
 
 
@@ -144,18 +153,94 @@ def compra_admin_anular(request, pk: int):
     except ValidationError as exc:
         messages.error(request, " ".join(exc.messages) if exc.messages else str(exc))
     else:
-        messages.success(
-            request,
-            "Compra anulada. Quedó registrada la nota de crédito en caja (ingreso que compensa el egreso).",
-        )
+        messages.success(request, "Compra anulada.")
     return redirect("compra_historial")
+
+
+def _pestana_compra_registro(request) -> str:
+    raw = (request.GET.get("pestana") or request.POST.get("pestana") or "productos").strip().lower()
+    return raw if raw in ("productos", "factura") else "productos"
+
+
+def _render_compra_registrar(request, *, form, form_factura, pestana: str):
+    return render(
+        request,
+        "compras/registrar.html",
+        {
+            "form": form,
+            "form_factura": form_factura,
+            "pestana": pestana,
+        },
+    )
 
 
 @login_required
 @require_http_methods(["GET", "POST"])
 def compra_registrar(request):
+    pestana = _pestana_compra_registro(request)
+    hoy = datetime.now().strftime("%Y-%m-%d")
+
     if request.method == "POST":
+        sub = (request.POST.get("formulario") or "").strip().lower()
+        if sub == "factura":
+            pestana = "factura"
+            form_factura = CompraFacturaForm(request.POST)
+            form = CompraRegistrarForm(
+                initial={"fecha_compra": hoy, "medio_pago": MovimientoCaja.MedioPago.EFECTIVO}
+            )
+            if form_factura.is_valid():
+                cd = form_factura.cleaned_data
+                prov = cd["proveedor"]
+                try:
+                    with transaction.atomic():
+                        compra = Compra.objects.create(
+                            modo=Compra.Modo.FACTURA,
+                            proveedor=prov,
+                            producto=None,
+                            fecha_compra=cd["fecha_compra"],
+                            fecha_vencimiento_pedido=cd["fecha_vencimiento"],
+                            cantidad=0,
+                            costo_unitario=Decimal("0.00"),
+                            monto=cd["monto"],
+                            medio_pago=MovimientoCaja.MedioPago.EFECTIVO,
+                            movimiento_caja=None,
+                            creado_por=request.user,
+                            actualizado_por=request.user,
+                        )
+                        Evento.objects.create(
+                            fecha=cd["fecha_vencimiento"],
+                            titulo=f"Pagar factura — {prov.apellido}, {prov.nombre}",
+                            tipo=Evento.Tipo.COMPRA,
+                            descripcion=(
+                                f"Proveedor: {prov}. Monto adeudado: {cd['monto']}. "
+                                f"Fecha factura: {cd['fecha_compra'].strftime('%d/%m/%Y')}. "
+                                f"Pedido/compra #{compra.pk}. Registro sin detalle de ítems."
+                            ),
+                        )
+                except ValidationError as exc:
+                    msgs = []
+                    if getattr(exc, "error_dict", None):
+                        for lst in exc.error_dict.values():
+                            msgs.extend(str(m) for m in lst)
+                    else:
+                        msgs = [str(m) for m in exc.messages]
+                    messages.error(request, " ".join(msgs) if msgs else str(exc))
+                    return _render_compra_registrar(request, form=form, form_factura=form_factura, pestana=pestana)
+                except DatabaseError as exc:
+                    messages.error(request, f"Error al guardar en la base de datos: {exc}")
+                    return _render_compra_registrar(request, form=form, form_factura=form_factura, pestana=pestana)
+
+                messages.success(
+                    request,
+                    f"Factura / deuda registrada (#{compra.pk}). Recordatorio en calendario para el vencimiento. "
+                    "No se generó movimiento en caja.",
+                )
+                return redirect("compra_historial")
+            return _render_compra_registrar(request, form=form, form_factura=form_factura, pestana=pestana)
+
+        pestana = "productos"
         form = CompraRegistrarForm(request.POST)
+        form_factura = CompraFacturaForm(initial={"fecha_compra": hoy})
         if form.is_valid():
             cd = form.cleaned_data
             try:
@@ -187,6 +272,7 @@ def compra_registrar(request):
                     mov.save()
 
                     compra = Compra.objects.create(
+                        modo=Compra.Modo.PRODUCTOS,
                         proveedor=cd["proveedor"],
                         producto=producto,
                         fecha_compra=cd["fecha_compra"],
@@ -221,22 +307,23 @@ def compra_registrar(request):
                 else:
                     msgs = [str(m) for m in exc.messages]
                 messages.error(request, " ".join(msgs) if msgs else str(exc))
-                return render(request, "compras/registrar.html", {"form": form})
+                return _render_compra_registrar(request, form=form, form_factura=form_factura, pestana=pestana)
             except DatabaseError as exc:
                 messages.error(request, f"Error al guardar en la base de datos: {exc}")
-                return render(request, "compras/registrar.html", {"form": form})
+                return _render_compra_registrar(request, form=form, form_factura=form_factura, pestana=pestana)
 
             messages.success(
                 request,
                 f"Compra registrada. Producto creado con código {producto.codigo}. Egreso en caja #{mov.pk}.",
             )
             return redirect("compra_historial")
-    else:
-        form = CompraRegistrarForm(
-            initial={
-                "fecha_compra": datetime.now().strftime("%Y-%m-%d"),
-                "medio_pago": MovimientoCaja.MedioPago.EFECTIVO,
-            }
-        )
+        return _render_compra_registrar(request, form=form, form_factura=form_factura, pestana=pestana)
 
-    return render(request, "compras/registrar.html", {"form": form})
+    form = CompraRegistrarForm(
+        initial={
+            "fecha_compra": hoy,
+            "medio_pago": MovimientoCaja.MedioPago.EFECTIVO,
+        }
+    )
+    form_factura = CompraFacturaForm(initial={"fecha_compra": hoy})
+    return _render_compra_registrar(request, form=form, form_factura=form_factura, pestana=pestana)

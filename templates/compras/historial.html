@@ -5,7 +5,8 @@
   <div class="app-page-header mb-3">
     <h1 class="app-page-title mb-1">Historial de compras</h1>
     <div class="d-flex flex-wrap gap-2 align-items-center">
-      <a class="btn btn-primary btn-sm rounded-pill" href="{% url 'compra_registrar' %}">Nueva compra</a>
+      <a class="btn btn-primary btn-sm rounded-pill" href="{% url 'compra_registrar' %}?pestana=productos">Comprar productos</a>
+      <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'compra_registrar' %}?pestana=factura">Cargar factura</a>
     </div>
   </div>
 
@@ -105,12 +106,23 @@
                 {{ c.proveedor.apellido }}, {{ c.proveedor.nombre }}
               </td>
               <td class="th-prod-cel small">
-                <span class="compra-cod-prod text-muted font-monospace">{{ c.producto.codigo }}</span>
-                {{ c.producto.descripcion|truncatechars:40 }}
+                {% if c.producto_id %}
+                  <span class="compra-cod-prod text-muted font-monospace">{{ c.producto.codigo }}</span>
+                  {{ c.producto.descripcion|truncatechars:40 }}
+                {% else %}
+                  <span class="badge text-bg-secondary">Factura</span>
+                  <span class="text-muted">Sin detalle de ítems</span>
+                {% endif %}
               </td>
               <td class="text-end col-money compra-cant-cel">{{ c.cantidad }}</td>
               <td class="text-end col-money">{{ c.monto|ars }}</td>
-              <td class="col-muted small th-medio-cel">{{ c.get_medio_pago_display }}</td>
+              <td class="col-muted small th-medio-cel">
+                {% if c.modo == "FAC" and not c.movimiento_caja %}
+                  <span class="text-muted">Sin egreso en caja</span>
+                {% else %}
+                  {{ c.get_medio_pago_display }}
+                {% endif %}
+              </td>
               <td class="text-center compra-caja-cel">
                 <div class="table-actions presu-row-actions d-flex justify-content-center">
                   {% if c.movimiento_caja %}
@@ -156,7 +168,7 @@
                       class="d-inline m-0 presu-accion-form"
                       method="post"
                       action="{% url 'compra_admin_eliminar' c.pk %}"
-                      onsubmit="return confirm('¿Eliminar definitivamente la compra #{{ c.pk }}? Se borrarán los movimientos de caja vinculados y se descontará la cantidad del stock.');"
+                      onsubmit="return confirm('¿Eliminar definitivamente la compra #{{ c.pk }}? Se borrarán los movimientos de caja vinculados (si los hay) y se ajustará el stock solo si la compra tenía producto.');"
                     >
                       {% csrf_token %}
                       <button type="submit" class="btn-icon btn-delete" title="Eliminar compra" aria-label="Eliminar compra">
@@ -172,6 +184,18 @@
                       >
                         {% csrf_token %}
                         <button type="submit" class="btn-icon btn-refresh" title="Anular compra" aria-label="Anular compra">
+                          <i data-lucide="refresh-cw" aria-hidden="true"></i>
+                        </button>
+                      </form>
+                    {% elif not c.anulada and c.modo == "FAC" and not c.movimiento_caja %}
+                      <form
+                        class="d-inline m-0 presu-accion-form"
+                        method="post"
+                        action="{% url 'compra_admin_anular' c.pk %}"
+                        onsubmit="return confirm('¿Anular el registro de factura #{{ c.pk }}? Solo se marca como anulado y se quita el recordatorio de calendario.');"
+                      >
+                        {% csrf_token %}
+                        <button type="submit" class="btn-icon btn-refresh" title="Anular registro" aria-label="Anular registro">
                           <i data-lucide="refresh-cw" aria-hidden="true"></i>
                         </button>
                       </form>

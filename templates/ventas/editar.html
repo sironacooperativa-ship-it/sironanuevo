@@ -13,6 +13,12 @@
 
   <form method="post" novalidate id="ventaEditForm">
     {% csrf_token %}
+    {% if pedido_pagado %}
+      <div class="alert alert-warning small mb-3">
+        Este pedido ya está <strong>cobrado</strong>. Podés corregir montos y comisión en el registro; al guardar líneas
+        <strong>no se modifica el stock</strong> del depósito (solo el comprobante).
+      </div>
+    {% endif %}
     <div class="card shadow-sm mb-3">
       <div class="card-body row g-3">
         <div class="col-12 col-md-6 col-lg-4">
@@ -68,7 +74,7 @@
               value="1"
               {% if repoblar %}{% if repoblar.aplica_comision %}checked{% endif %}{% elif venta %}{% if venta.aplica_comision %}checked{% endif %}{% endif %}
             />
-            <label class="form-check-label" for="id_aplica_comision">Aplicar comisión (descuenta del ingreso en caja al cobrar)</label>
+            <label class="form-check-label" for="id_aplica_comision">Aplicar comisión del vendedor (liquidación mensual en Comisiones)</label>
           </div>
         </div>
       </div>
@@ -121,9 +127,18 @@
       </div>
     </div>
 
-    <div class="d-flex justify-content-end gap-2">
+    <div class="d-flex justify-content-end gap-2 flex-wrap">
       <a class="btn btn-outline-secondary" href="{% url 'venta_detalle' venta.pk %}">Cancelar</a>
-      <button type="submit" class="btn btn-primary">Guardar cambios</button>
+      <button type="submit" name="accion" value="guardar_todo" class="btn btn-primary">Guardar todo</button>
+      <button
+        type="submit"
+        name="accion"
+        value="solo_cabecera"
+        class="btn btn-outline-primary"
+        title="Actualiza vendedor, comprador, vencimiento, descuento y comisión sin tocar productos ni stock"
+      >
+        Solo cabecera y comisión
+      </button>
     </div>
   </form>
 

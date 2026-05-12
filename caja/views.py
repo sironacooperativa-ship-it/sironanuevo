@@ -4,17 +4,19 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.db.models import Q, Sum, Case, When, F, Value, DecimalField, ExpressionWrapper
 from django.db.models.functions import Coalesce
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
-from core.authz import staff_required
 from core.export_utils import parse_export, pdf_response, xlsx_response
 from core.money_decimal import q2
 from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_param
 from personas.models import Vendedor
+from ventas.servicios import revertir_cobro_pedido_desde_movimiento_caja
 
 from .forms import MovimientoCajaForm
 from .models import MovimientoCaja
@@ -331,11 +333,22 @@ def caja_detail(request, pk: int):
     return render(request, "caja/detail.html", {"mov": mov})
 
 
-@staff_required
+@login_required
 @require_http_methods(["POST"])
 def caja_delete(request, pk: int):
     mov = get_object_or_404(MovimientoCaja, pk=pk)
-    mov.delete()
-    messages.success(request, "Movimiento eliminado.")
+    try:
+        revirtio = False
+        with transaction.atomic():
+            revirtio = revertir_cobro_pedido_desde_movimiento_caja(mov, request.user)
+            if not revirtio:
+                mov.delete()
+        if revirtio:
+            messages.success(request, "Cobro eliminado de caja. El pedido volvió a pendiente de pago en el historial.")
+        else:
+            messages.success(request, "Movimiento eliminado.")
+    except ValidationError as e:
+        for msg in e.messages:
+            messages.error(request, msg)
     return redirect("caja_list")
 

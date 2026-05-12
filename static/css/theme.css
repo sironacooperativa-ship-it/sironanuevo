@@ -2248,7 +2248,7 @@ h2.h6 {
   }
 }
 
-/* Historial de pedidos: estado y acciones con íconos */
+/* Historial de ventas: estado y acciones con íconos */
 .ventas-hist-pendiente-icon {
   display: inline-flex;
   align-items: center;
@@ -3380,7 +3380,24 @@ h2.h6 {
   background: #fff;
 }
 
-/* —— Historial de pedidos: vive bajo .presu-lista-modern; solo ajustes de la tabla de ventas —— */
+/* —— Historial de ventas: vive bajo .presu-lista-modern; solo ajustes de la tabla de ventas —— */
+.ventas-historial-modern.presu-lista-modern .ventas-hist-tabs {
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  margin-bottom: 0;
+}
+
+.ventas-historial-modern.presu-lista-modern .ventas-hist-tabs .nav-link {
+  border: 1px solid transparent;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.ventas-historial-modern.presu-lista-modern .ventas-hist-tabs .nav-link.active {
+  color: var(--bs-body-color, #212529);
+  background: #fff;
+  border-color: var(--bs-border-color, #dee2e6) var(--bs-border-color, #dee2e6) #fff;
+  margin-bottom: -1px;
+}
+
 .ventas-historial-modern.presu-lista-modern .ventas-historial-tabla {
   min-width: 1200px;
   table-layout: auto;

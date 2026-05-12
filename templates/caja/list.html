@@ -154,19 +154,17 @@
                     <a class="btn-icon btn-view" href="{% url 'caja_detail' r.m.id %}" title="Detalles" aria-label="Detalles">
                       <i data-lucide="eye" aria-hidden="true"></i>
                     </a>
-                    {% if user.is_staff %}
-                      <form
+                    <form
                         class="d-inline m-0 presu-accion-form"
                         method="post"
                         action="{% url 'caja_delete' r.m.id %}"
-                        onsubmit="return confirm('¿Eliminar movimiento?');"
+                        onsubmit="return confirm('¿Eliminar este movimiento de caja?{% if r.m.venta_id and r.m.tipo == 'IN' %} Si es el cobro de un pedido, el pedido volverá a pendiente de pago.{% endif %}');"
                       >
                         {% csrf_token %}
                         <button class="btn-icon btn-delete" type="submit" title="Eliminar" aria-label="Eliminar">
                           <i data-lucide="trash-2" aria-hidden="true"></i>
                         </button>
                       </form>
-                    {% endif %}
                   </div>
                 </td>
               </tr>
