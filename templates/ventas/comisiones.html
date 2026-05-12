@@ -6,21 +6,34 @@
     <div class="app-page-header mb-2">
       <h1 class="app-page-title mb-1">Comisiones</h1>
       <p class="text-muted small mb-2">
-        Sobre pedidos <strong>ya cobrados</strong> (fecha de registro). El cobro al cliente ingresa el neto íntegro en caja; las comisiones al vendedor se pagan acá al liquidar el mes.
+        Por <strong>pedido</strong>: en <span class="text-success">verde</span> el cliente ya pagó (la comisión puede liquidarse al vendedor); en negro sigue pendiente el cobro al cliente.
+        La liquidación suma <strong>todos</strong> los pedidos pagos aún no liquidados de ese vendedor (no depende del mes del desplegable).
       </p>
-      <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'ventas_historial' %}">Volver al historial</a>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'ventas_historial' %}">Volver al historial de ventas</a>
+        <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'ventas_comisiones_historial' %}">Historial de liquidaciones</a>
+      </div>
     </div>
 
-    <div class="card app-card border-0 shadow-sm app-list-filters mb-2">
+    <div class="card app-card border-0 shadow-sm app-list-filters mb-3">
       <div class="card-body">
         <form method="get" class="row g-2 align-items-end">
-          <div class="col-12 col-md-4">
-            <label class="form-label small text-muted mb-0">Mes</label>
-            <select name="mes" class="form-select form-select-sm">
-              <option value="" {% if not f.mes %}selected{% endif %}>— Todos —</option>
-              {% for m in meses_opciones %}
-                <option value="{{ m.key }}" {% if f.mes == m.key %}selected{% endif %}>{{ m.label }}</option>
-              {% endfor %}
+          <div class="col-6 col-md-2">
+            <label class="form-label small text-muted mb-0">Período rápido</label>
+            <select name="periodo" class="form-select form-select-sm">
+              <option value="" {% if not f.periodo %}selected{% endif %}>Personalizado / todos</option>
+              <option value="7d" {% if f.periodo == "7d" %}selected{% endif %}>Últimos 7 días</option>
+              <option value="30d" {% if f.periodo == "30d" %}selected{% endif %}>Últimos 30 días</option>
+              <option value="mes" {% if f.periodo == "mes" %}selected{% endif %}>Mes actual</option>
+              <option value="mes_ant" {% if f.periodo == "mes_ant" %}selected{% endif %}>Mes anterior</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label small text-muted mb-0">Estado pedido</label>
+            <select name="estado" class="form-select form-select-sm">
+              <option value="" {% if not f.estado %}selected{% endif %}>Todos</option>
+              <option value="PEN" {% if f.estado == "PEN" %}selected{% endif %}>Pendiente de pago</option>
+              <option value="PAG" {% if f.estado == "PAG" %}selected{% endif %}>Pagada</option>
             </select>
           </div>
           <div class="col-6 col-md-3">
@@ -31,7 +44,7 @@
             <label class="form-label small text-muted mb-0">Hasta</label>
             <input type="date" name="fecha_hasta" class="form-control form-control-sm" value="{{ f.fecha_hasta }}" />
           </div>
-          <div class="col-12 col-md-3 d-flex gap-2 flex-wrap">
+          <div class="col-12 col-md-2 d-flex gap-2 flex-wrap">
             <button type="submit" class="btn btn-sm btn-outline-dark rounded-pill">Filtrar</button>
             <a class="btn btn-sm btn-outline-secondary rounded-pill" href="{% url 'ventas_comisiones' %}">Limpiar</a>
           </div>
@@ -39,121 +52,144 @@
       </div>
     </div>
 
-    {% if liquidacion_mes %}
+    {% if pendiente_liquidar_global %}
       <div class="card app-card border-0 shadow-sm mb-3">
         <div class="card-body">
-          <h2 class="h6 mb-2">Liquidación del mes seleccionado</h2>
+          <h2 class="h6 mb-2">Comisiones al vendedor pendientes de liquidar</h2>
           <p class="small text-muted mb-3">
-            Descargá el PDF con el detalle por vendedor (pedido, fecha, neto y comisión). El botón <strong>Pagar</strong> registra un <strong>egreso en caja</strong> por el total pendiente de comisiones de ese vendedor en el mes.
+            Suma de comisiones de pedidos <strong>ya cobrados al cliente</strong> y aún <strong>no pagados al vendedor</strong>. Al liquidar se registra el egreso en caja y se genera la constancia en PDF.
           </p>
-          <div class="d-flex flex-wrap gap-2 mb-3">
-            <a
-              class="btn btn-sm btn-outline-danger rounded-pill"
-              href="{% url 'ventas_comision_liquidacion_pdf' %}?mes={{ liquidacion_mes|urlencode }}"
-            >
-              Liquidar comisiones (PDF)
-            </a>
-          </div>
-
-          {% if pendiente_liquidar %}
-            <div class="table-responsive presu-lista-table-wrap">
-              <table class="modern-table">
-                <thead>
+          <div class="table-responsive presu-lista-table-wrap">
+            <table class="modern-table">
+              <thead>
+                <tr>
+                  <th scope="col">Vendedor</th>
+                  <th scope="col" class="text-end col-money">Total pendiente</th>
+                  <th scope="col" class="text-end">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in pendiente_liquidar_global %}
                   <tr>
-                    <th scope="col">Vendedor</th>
-                    <th scope="col" class="text-end col-money">Comisión pendiente</th>
-                    <th scope="col" class="text-end">Acciones</th>
+                    <td class="presu-col-ellipsis" title="{{ r.vendedor__apellido }}, {{ r.vendedor__nombre }}">
+                      <div class="fw-semibold">{{ r.vendedor__apellido }}, {{ r.vendedor__nombre }}</div>
+                      <div class="small text-muted">Código {{ r.vendedor__codigo }}</div>
+                    </td>
+                    <td class="text-end col-money">{{ r.pendiente|ars }}</td>
+                    <td class="text-end">
+                      <form method="post" action="{% url 'ventas_comision_liquidacion_pagar' %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="vendedor" value="{{ r.vendedor_id }}" />
+                        {% for key, val in request.GET.items %}
+                          {% if key != "vendedor" %}
+                            <input type="hidden" name="{{ key }}" value="{{ val }}" />
+                          {% endif %}
+                        {% endfor %}
+                        <button type="submit" class="btn btn-sm btn-primary rounded-pill">Liquidar comisiones</button>
+                      </form>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {% for r in pendiente_liquidar %}
-                    <tr>
-                      <td class="presu-col-ellipsis" title="{{ r.vendedor__apellido }}, {{ r.vendedor__nombre }}">
-                        <div class="fw-semibold">{{ r.vendedor__apellido }}, {{ r.vendedor__nombre }}</div>
-                        <div class="small text-muted">Código {{ r.vendedor__codigo }}</div>
-                      </td>
-                      <td class="text-end col-money">{{ r.pendiente|ars }}</td>
-                      <td class="text-end text-nowrap">
-                        <a
-                          class="btn btn-sm btn-outline-secondary rounded-pill me-1"
-                          href="{% url 'ventas_comision_liquidacion_pdf' %}?mes={{ liquidacion_mes|urlencode }}&amp;vendedor={{ r.vendedor_id }}"
-                        >
-                          PDF
-                        </a>
-                        <form method="post" action="{% url 'ventas_comision_liquidacion_pagar' %}" class="d-inline">
-                          {% csrf_token %}
-                          <input type="hidden" name="mes" value="{{ liquidacion_mes }}" />
-                          <input type="hidden" name="vendedor" value="{{ r.vendedor_id }}" />
-                          <button type="submit" class="btn btn-sm btn-primary rounded-pill">Pagar</button>
-                        </form>
-                      </td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <h2 class="h6 mb-2">Comisiones por mes (detalle por pedido y vendedor)</h2>
+    <p class="small text-muted mb-2">El encabezado de cada mes muestra solo el total; desplegá para ver vendedores y pedidos.</p>
+
+    {% if meses_detalle %}
+      <div class="accordion comisiones-meses-accordion mb-3" id="accComisionesMeses">
+        {% for mes in meses_detalle %}
+          <div class="accordion-item border-0 shadow-sm mb-2">
+            <h3 class="accordion-header" id="hMes{{ forloop.counter }}">
+              <button
+                class="accordion-button collapsed rounded py-2 px-3"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#cMes{{ forloop.counter }}"
+                aria-expanded="false"
+                aria-controls="cMes{{ forloop.counter }}"
+              >
+                <span class="me-auto fw-semibold">{{ mes.label }}</span>
+                <span class="text-end col-money ms-2">{{ mes.total_mes|ars }}</span>
+              </button>
+            </h3>
+            <div id="cMes{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="hMes{{ forloop.counter }}" data-bs-parent="#accComisionesMeses">
+              <div class="accordion-body pt-2 pb-3">
+                {% for bloque in mes.por_vendedor %}
+                  <div class="mb-4 pb-3 border-bottom border-light">
+                    <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
+                      <div>
+                        <div class="fw-semibold">{{ bloque.vendedor.apellido }}, {{ bloque.vendedor.nombre }}</div>
+                        <div class="small text-muted">Código {{ bloque.vendedor.codigo }} · Subtotal mes {{ bloque.subtotal_mes_vendedor|ars }}</div>
+                      </div>
+                    </div>
+                    <div class="table-responsive presu-lista-table-wrap">
+                      <table class="modern-table table-sm">
+                        <thead>
+                          <tr>
+                            <th scope="col">Pedido</th>
+                            <th scope="col">Fecha</th>
+                            <th scope="col" class="text-end">Neto</th>
+                            <th scope="col" class="text-end">% com.</th>
+                            <th scope="col" class="text-end col-money">Comisión</th>
+                            <th scope="col">Estado</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for sale in bloque.pedidos %}
+                            <tr
+                              class="{% if sale.estado == 'PAG' and sale.comision_liquidacion_pago_id %}opacity-50{% endif %}"
+                            >
+                              <td>
+                                <a href="{% url 'venta_detalle' sale.pk %}">#{{ sale.pk }}</a>
+                              </td>
+                              <td class="col-muted small">{{ sale.creado_en|date:"d/m/Y H:i" }}</td>
+                              <td class="text-end">{{ sale.neto|ars }}</td>
+                              <td class="text-end">{{ sale.comision_porcentaje }}</td>
+                              <td
+                                class="text-end col-money fw-semibold {% if sale.estado == 'PAG' %}{% if sale.comision_liquidacion_pago_id %}text-muted text-decoration-line-through{% else %}text-success{% endif %}{% else %}text-body{% endif %}"
+                              >
+                                {{ sale.monto_comision|ars }}
+                              </td>
+                              <td class="small">
+                                {% if sale.estado == 'PAG' %}
+                                  {% if sale.comision_liquidacion_pago_id %}
+                                    <span class="text-muted">Liquidada (#{{ sale.comision_liquidacion_pago_id }})</span>
+                                  {% else %}
+                                    <span class="text-success">Pago cliente · pendiente liquidar</span>
+                                  {% endif %}
+                                {% else %}
+                                  <span class="text-body">Pendiente cobro cliente</span>
+                                {% endif %}
+                              </td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                    <form method="post" action="{% url 'ventas_comision_liquidacion_pagar' %}" class="mt-2">
+                      {% csrf_token %}
+                      <input type="hidden" name="vendedor" value="{{ bloque.vendedor.pk }}" />
+                      {% for key, val in request.GET.items %}
+                        {% if key != "vendedor" %}
+                          <input type="hidden" name="{{ key }}" value="{{ val }}" />
+                        {% endif %}
+                      {% endfor %}
+                      <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill">Liquidar comisiones</button>
+                    </form>
+                  </div>
+                {% endfor %}
+              </div>
             </div>
-          {% else %}
-            <div class="alert alert-light border small mb-0">No hay comisiones pendientes de liquidar para este mes (o ya fueron pagadas).</div>
-          {% endif %}
-        </div>
+          </div>
+        {% endfor %}
       </div>
     {% else %}
-      <div class="alert alert-light border small mb-3">
-        Elegí un <strong>mes</strong> en el filtro para ver la liquidación, exportar el PDF y pagar comisiones a cada vendedor.
-      </div>
-    {% endif %}
-
-    {% if comisiones_por_mes %}
-      <div class="table-card presu-lista-modern comisiones-resumen mb-2">
-        <div class="table-card-header">
-          <h2 class="table-card-title">Comisiones por mes (pedidos cobrados)</h2>
-        </div>
-        <div class="table-responsive presu-lista-table-wrap">
-          <table class="modern-table comisiones-mes-tabla">
-            <tbody>
-              {% for r in comisiones_por_mes %}
-                <tr>
-                  <td class="col-muted text-capitalize">{{ r.mes_nombre }} {{ r.anio }}</td>
-                  <td class="text-end col-money">{{ r.total|ars }}</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    {% else %}
-      <div class="alert alert-light border text-muted small mb-2">No hay comisiones con los filtros actuales.</div>
-    {% endif %}
-
-    {% if comisiones_por_vendedor %}
-      <div class="table-card presu-lista-modern comisiones-resumen">
-        <div class="table-card-header">
-          <h2 class="table-card-title">Desglose por vendedor</h2>
-          <span class="table-card-count small text-muted">Solo totales &gt; 0 · incluye comisión por grupo si corresponde</span>
-        </div>
-        <div class="table-responsive presu-lista-table-wrap">
-          <table class="modern-table comisiones-vend-tabla">
-            <tbody>
-              {% for r in comisiones_por_vendedor %}
-                <tr>
-                  <td class="col-muted presu-col-ellipsis" title="{{ r.vendedor__apellido }}, {{ r.vendedor__nombre }}">
-                    <div class="fw-semibold">{{ r.vendedor__apellido }}, {{ r.vendedor__nombre }}</div>
-                    {% if r.grupo and r.grupo > 0 %}
-                      <div class="small text-muted mt-1">
-                        Comisión por ventas: <span class="text-body">{{ r.propias|ars }}</span>
-                      </div>
-                      <div class="small text-muted">
-                        Comisión por ventas del grupo: <span class="text-body">{{ r.grupo|ars }}</span>
-                      </div>
-                    {% endif %}
-                  </td>
-                  <td class="text-end col-money">{{ r.total|ars }}</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <div class="alert alert-light border text-muted small">No hay pedidos con comisión y los filtros actuales.</div>
     {% endif %}
   </div>
 {% endblock %}

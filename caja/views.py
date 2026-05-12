@@ -1,5 +1,4 @@
-from collections import defaultdict
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal
 
 from django.contrib import messages
@@ -16,6 +15,7 @@ from core.export_utils import parse_export, pdf_response, xlsx_response
 from core.money_decimal import q2
 from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_param
 from personas.models import Vendedor
+from ventas.models import Venta
 from ventas.servicios import revertir_cobro_pedido_desde_movimiento_caja
 
 from .forms import MovimientoCajaForm
@@ -78,7 +78,7 @@ def _resumen_caja_dashboard(hoy: date) -> dict:
 
 @login_required
 def caja_list(request):
-    qs = MovimientoCaja.objects.select_related("vendedor", "cuenta_bancaria").all()
+    qs = MovimientoCaja.objects.select_related("vendedor", "cuenta_bancaria", "venta").all()
 
     q_operacion = (request.GET.get("operacion") or "").strip()
     tipo = (request.GET.get("tipo") or "").strip()
@@ -101,12 +101,6 @@ def caja_list(request):
     d_desde = parse_fecha_param(desde) if desde else None
     d_hasta = parse_fecha_param(hasta) if hasta else None
     exp = parse_export(request)
-    auto_limitado = False
-    if not exp:
-        # Si no hay filtros, limitar por defecto a 90 días para evitar cargar todo el histórico.
-        if not any([q_operacion, tipo, medio_pago, vendedor, d_desde, d_hasta]):
-            d_desde = date.today() - timedelta(days=90)
-            auto_limitado = True
     if d_desde:
         qs = qs.filter(fecha__gte=d_desde)
     if d_hasta:
@@ -119,11 +113,17 @@ def caja_list(request):
         output_field=DecimalField(max_digits=14, decimal_places=2),
     )
 
-    # Saldo previo al rango (si hay desde)
+    movimientos_qs = qs.order_by("fecha", "id")
+    page = (request.GET.get("page") or "").strip()
+    paginator = Paginator(movimientos_qs, 200)
+    page_obj = paginator.get_page(page or 1)
+    movimientos = list(page_obj)
+
     saldo_previo = Decimal("0.00")
-    if d_desde:
+    if movimientos:
+        first = movimientos[0]
         saldo_previo = (
-            MovimientoCaja.objects.filter(fecha__lt=d_desde)
+            qs.filter(Q(fecha__lt=first.fecha) | Q(fecha=first.fecha, id__lt=first.id))
             .aggregate(
                 s=Coalesce(
                     Sum(delta_expr),
@@ -137,30 +137,18 @@ def caja_list(request):
             or Decimal("0.00")
         )
 
-    movimientos_qs = qs.order_by("fecha", "id")
-    page = (request.GET.get("page") or "").strip()
-    paginator = Paginator(movimientos_qs, 200)
-    page_obj = paginator.get_page(page or 1)
-    movimientos = list(page_obj)
-
-    # saldo acumulado
     saldo = q2(saldo_previo)
     rows = []
     for m in movimientos:
         saldo = q2(saldo + m.delta)
         rows.append({"m": m, "saldo": saldo})
 
-    # agrupar por periodo (YYYY-MM)
-    grupos = defaultdict(list)
-    for r in rows:
-        key = r["m"].fecha.strftime("%Y-%m")
-        grupos[key].append(r)
-
-    periodos = []
-    for key in sorted(grupos.keys()):
-        items = grupos[key]
-        total_periodo = q2(sum((it["m"].delta for it in items), Decimal("0.00")))
-        periodos.append({"periodo": key, "items": items, "total": total_periodo})
+    ids_page = [r["m"].pk for r in rows]
+    mov_ids_cobro_pedido: set[int] = set()
+    if ids_page:
+        mov_ids_cobro_pedido = set(
+            Venta.objects.filter(pago_movimiento_id__in=ids_page).values_list("pago_movimiento_id", flat=True)
+        )
 
     totales = qs.aggregate(total_ingreso=Sum("monto", filter=Q(tipo=MovimientoCaja.Tipo.INGRESO)),
                            total_egreso=Sum("monto", filter=Q(tipo=MovimientoCaja.Tipo.EGRESO)))
@@ -221,16 +209,15 @@ def caja_list(request):
         request,
         "caja/list.html",
         {
-            "periodos": periodos,
+            "rows": rows,
             "page_obj": page_obj,
             "querystring": querystring,
-            "auto_limitado": auto_limitado,
             "f": {
                 "operacion": q_operacion,
                 "tipo": tipo,
                 "medio_pago": medio_pago,
                 "vendedor": vendedor,
-                "desde": (d_desde.isoformat() if d_desde and auto_limitado else fecha_filtro_value_iso(request.GET.get("desde"))),
+                "desde": fecha_filtro_value_iso(request.GET.get("desde")),
                 "hasta": fecha_filtro_value_iso(request.GET.get("hasta")),
             },
             "tipos": MovimientoCaja.Tipo.choices,
@@ -239,6 +226,7 @@ def caja_list(request):
             "totales": totales,
             "resumen_caja": resumen_caja,
             "filtros_activos": filtros_activos,
+            "mov_ids_cobro_pedido": mov_ids_cobro_pedido,
         },
     )
 
@@ -320,6 +308,44 @@ def caja_create(request):
 
     tpl = "caja/form_fragment.html" if modal else "caja/form.html"
     return render(request, tpl, {"form": form, "modo": "nuevo"})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def caja_edit(request, pk: int):
+    mov = get_object_or_404(
+        MovimientoCaja.objects.select_related("vendedor", "venta", "cuenta_bancaria"),
+        pk=pk,
+    )
+    venta_cobro = Venta.objects.filter(pago_movimiento_id=mov.pk).select_related("vendedor").first()
+
+    if request.method == "POST":
+        form = MovimientoCajaForm(request.POST, instance=mov)
+        if form.is_valid():
+            if venta_cobro and form.cleaned_data.get("tipo") != MovimientoCaja.Tipo.INGRESO:
+                form.add_error(
+                    "tipo",
+                    "Este movimiento es el cobro registrado de un pedido; debe seguir siendo un ingreso.",
+                )
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.actualizado_por = request.user
+            obj.save()
+            messages.success(request, "Movimiento actualizado.")
+            return redirect("caja_detail", pk=obj.pk)
+    else:
+        form = MovimientoCajaForm(instance=mov)
+
+    return render(
+        request,
+        "caja/form.html",
+        {
+            "form": form,
+            "modo": "editar",
+            "mov": mov,
+            "venta_cobro": venta_cobro,
+        },
+    )
 
 
 @login_required

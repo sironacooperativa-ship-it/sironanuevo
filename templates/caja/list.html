@@ -52,15 +52,10 @@
     >
       Filtrar
     </button>
-    {% if filtros_activos %}
-      <span class="badge text-bg-secondary">Filtros activos</span>
-    {% endif %}
-  </p>
-  {% if auto_limitado %}
-    <div class="alert alert-info py-2 small">
-      Mostrando por defecto los <strong>últimos 90 días</strong> para que cargue rápido. Si necesitás más histórico, usá el filtro “Desde/Hasta”.
-    </div>
+  {% if filtros_activos %}
+    <span class="badge text-bg-secondary">Filtros activos</span>
   {% endif %}
+  </p>
 
   <div class="collapse {% if filtros_activos %}show{% endif %}" id="cajaFiltros">
     <div class="card app-card border-0 shadow-sm app-list-filters mb-3">
@@ -119,63 +114,73 @@
     </div>
   </div>
 
-  {% for g in periodos %}
-    <div class="table-card ui-force-productos presu-lista-modern caja-libro-periodo mb-3">
-      <div class="table-card-header">
-        <h2 class="table-card-title">Periodo: {{ g.periodo }}</h2>
-        <span class="table-card-count">Resultado del periodo: {{ g.total|ars }}</span>
-      </div>
-      <div class="table-responsive presu-lista-table-wrap">
-        <table class="modern-table caja-libro-tabla">
-          <thead>
-            <tr>
-              <th scope="col">Fecha</th>
-              <th scope="col">Operación</th>
-              <th scope="col">Tipo</th>
-              <th scope="col">Medio</th>
-              <th scope="col" class="presu-col-ellipsis th-vend">Vendedor</th>
-              <th scope="col" class="text-end col-money">Monto</th>
-              <th scope="col" class="text-end col-money">Saldo</th>
-              <th scope="col" class="text-end presu-th-acciones col-presu-acciones">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for r in g.items %}
-              <tr>
-                <td class="col-muted table-fecha">{{ r.m.fecha|date:"d/m/y" }}</td>
-                <td class="col-muted">{{ r.m.operacion }}</td>
-                <td class="col-muted">{{ r.m.get_tipo_display }}</td>
-                <td class="col-muted">{{ r.m.get_medio_pago_display }}</td>
-                <td class="col-muted presu-col-ellipsis" title="{% if r.m.vendedor %}{{ r.m.vendedor.apellido }}, {{ r.m.vendedor.nombre }}{% endif %}">{% if r.m.vendedor %}{{ r.m.vendedor.apellido }}, {{ r.m.vendedor.nombre }}{% else %}—{% endif %}</td>
-                <td class="text-end col-money">{{ r.m.delta|ars }}</td>
-                <td class="text-end col-money">{{ r.saldo|ars }}</td>
-                <td class="col-presu-acciones text-end table-actions-cell">
-                  <div class="table-actions presu-row-actions d-flex">
-                    <a class="btn-icon btn-view" href="{% url 'caja_detail' r.m.id %}" title="Detalles" aria-label="Detalles">
-                      <i data-lucide="eye" aria-hidden="true"></i>
-                    </a>
-                    <form
-                        class="d-inline m-0 presu-accion-form"
-                        method="post"
-                        action="{% url 'caja_delete' r.m.id %}"
-                        onsubmit="return confirm('¿Eliminar este movimiento de caja?{% if r.m.venta_id and r.m.tipo == 'IN' %} Si es el cobro de un pedido, el pedido volverá a pendiente de pago.{% endif %}');"
-                      >
-                        {% csrf_token %}
-                        <button class="btn-icon btn-delete" type="submit" title="Eliminar" aria-label="Eliminar">
-                          <i data-lucide="trash-2" aria-hidden="true"></i>
-                        </button>
-                      </form>
-                  </div>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+  <div class="table-card ui-force-productos presu-lista-modern caja-libro-diario mb-3">
+    <div class="table-card-header">
+      <h2 class="table-card-title">Libro diario</h2>
+      <span class="table-card-count small text-muted">Orden cronológico · saldo acumulado</span>
     </div>
-  {% empty %}
-    <div class="table-empty">No hay movimientos.</div>
-  {% endfor %}
+    <div class="table-responsive presu-lista-table-wrap">
+      <table class="modern-table caja-libro-tabla">
+        <thead>
+          <tr>
+            <th scope="col">Fecha</th>
+            <th scope="col">Operación</th>
+            <th scope="col">Tipo</th>
+            <th scope="col">Medio</th>
+            <th scope="col" class="presu-col-ellipsis th-vend">Vendedor</th>
+            <th scope="col" class="text-end col-money">Monto</th>
+            <th scope="col" class="text-end col-money">Saldo</th>
+            <th scope="col" class="text-end presu-th-acciones col-presu-acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+            <tr>
+              <td class="col-muted table-fecha">{{ r.m.fecha|date:"d/m/y" }}</td>
+              <td class="col-muted">{{ r.m.operacion }}</td>
+              <td class="col-muted">{{ r.m.get_tipo_display }}</td>
+              <td class="col-muted">{{ r.m.get_medio_pago_display }}</td>
+              <td class="col-muted presu-col-ellipsis" title="{% if r.m.vendedor %}{{ r.m.vendedor.apellido }}, {{ r.m.vendedor.nombre }}{% endif %}">{% if r.m.vendedor %}{{ r.m.vendedor.apellido }}, {{ r.m.vendedor.nombre }}{% else %}—{% endif %}</td>
+              <td class="text-end col-money">{{ r.m.delta|ars }}</td>
+              <td class="text-end col-money">{{ r.saldo|ars }}</td>
+              <td class="col-presu-acciones text-end table-actions-cell">
+                <div class="table-actions presu-row-actions d-flex">
+                  {% if r.m.venta_id or r.m.id in mov_ids_cobro_pedido %}
+                    <a
+                      class="btn-icon btn-edit"
+                      href="{% url 'caja_edit' r.m.id %}"
+                      title="{% if r.m.venta_id %}Editar cobro en caja (pedido #{{ r.m.venta_id }}){% else %}Editar cobro en caja (pedido vinculado){% endif %}"
+                      aria-label="Editar movimiento de pedido"
+                    >
+                      <i data-lucide="pencil" aria-hidden="true"></i>
+                    </a>
+                  {% endif %}
+                  <a class="btn-icon btn-view" href="{% url 'caja_detail' r.m.id %}" title="Detalles" aria-label="Detalles">
+                    <i data-lucide="eye" aria-hidden="true"></i>
+                  </a>
+                  <form
+                      class="d-inline m-0 presu-accion-form"
+                      method="post"
+                      action="{% url 'caja_delete' r.m.id %}"
+                      onsubmit="return confirm('¿Eliminar este movimiento de caja?{% if r.m.venta_id and r.m.tipo == 'IN' %} Si es el cobro de un pedido, el pedido volverá a pendiente de pago.{% endif %}');"
+                    >
+                      {% csrf_token %}
+                      <button class="btn-icon btn-delete" type="submit" title="Eliminar" aria-label="Eliminar">
+                        <i data-lucide="trash-2" aria-hidden="true"></i>
+                      </button>
+                    </form>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-muted text-center py-4">No hay movimientos con los filtros actuales.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 
   {% if page_obj and page_obj.paginator.num_pages > 1 %}
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 small mt-2">

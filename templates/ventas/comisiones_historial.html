@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Historial comisiones{% endblock %}
+{% block content %}
+  <div class="app-page-header mb-3">
+    <h1 class="app-page-title mb-1">Historial de comisiones</h1>
+    <p class="text-muted small mb-2">Por vendedor: liquidaciones realizadas (fecha y detalle) y comisiones de pedidos ya cobrados que siguen pendientes de liquidar al vendedor.</p>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'ventas_comisiones' %}">Volver a comisiones</a>
+      <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'ventas_historial' %}">Historial de ventas</a>
+    </div>
+  </div>
+
+  {% if filas %}
+    {% for fila in filas %}
+      <div class="card app-card border-0 shadow-sm mb-3">
+        <div class="card-body">
+          <h2 class="h6 mb-3">
+            {{ fila.vendedor.apellido }}, {{ fila.vendedor.nombre }}
+            <span class="text-muted small">({{ fila.vendedor.codigo }})</span>
+          </h2>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <div class="small text-muted">Total liquidado (hist.)</div>
+              <div class="fw-semibold">{{ fila.total_liquidado|ars }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="small text-muted">Pendiente de liquidar al vendedor</div>
+              <div class="fw-semibold">{{ fila.total_pendiente_liquidar|ars }}</div>
+            </div>
+          </div>
+
+          {% if fila.liquidaciones %}
+            <h3 class="h6 text-muted mb-2">Liquidaciones</h3>
+            <div class="table-responsive presu-lista-table-wrap mb-3">
+              <table class="modern-table table-sm">
+                <thead>
+                  <tr>
+                    <th scope="col"># Liq.</th>
+                    <th scope="col">Fecha</th>
+                    <th scope="col" class="text-end col-money">Monto</th>
+                    <th scope="col">Caja</th>
+                    <th scope="col" class="text-end">Constancia</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in fila.liquidaciones %}
+                    {% with liq=item.liq %}
+                      <tr>
+                        <td>{{ liq.pk }}</td>
+                        <td>
+                          {% if liq.fecha_liquidacion %}
+                            {{ liq.fecha_liquidacion|date:"d/m/Y" }}
+                          {% else %}
+                            {{ liq.creado_en|date:"d/m/Y" }}
+                          {% endif %}
+                        </td>
+                        <td class="text-end col-money">{{ liq.total|ars }}</td>
+                        <td class="small">
+                          {% if liq.movimiento_caja_id %}
+                            <a href="{% url 'caja_detail' liq.movimiento_caja_id %}">Mov. #{{ liq.movimiento_caja_id }}</a>
+                          {% else %}
+                            —
+                          {% endif %}
+                        </td>
+                        <td class="text-end">
+                          <a class="btn btn-sm btn-outline-secondary rounded-pill" href="{% url 'ventas_comision_constancia_pdf' liq.pk %}">PDF</a>
+                        </td>
+                      </tr>
+                      {% if item.ventas %}
+                        <tr>
+                          <td colspan="5" class="bg-light small py-2">
+                            Pedidos:
+                            {% for v in item.ventas %}
+                              <a href="{% url 'venta_detalle' v.pk %}">#{{ v.pk }}</a> ({{ v.monto_comision|ars }}){% if not forloop.last %},{% endif %}
+                            {% endfor %}
+                          </td>
+                        </tr>
+                      {% endif %}
+                    {% endwith %}
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+
+          {% if fila.pendientes %}
+            <h3 class="h6 text-muted mb-2">Pedidos cobrados — comisión aún no liquidada</h3>
+            <div class="table-responsive presu-lista-table-wrap">
+              <table class="modern-table table-sm">
+                <thead>
+                  <tr>
+                    <th scope="col">Pedido</th>
+                    <th scope="col">Fecha</th>
+                    <th scope="col" class="text-end col-money">Comisión</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for v in fila.pendientes %}
+                    <tr>
+                      <td><a href="{% url 'venta_detalle' v.pk %}">#{{ v.pk }}</a></td>
+                      <td class="col-muted small">{{ v.creado_en|date:"d/m/Y" }}</td>
+                      <td class="text-end col-money text-success">{{ v.monto_comision|ars }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="alert alert-light border">No hay datos de liquidaciones ni pendientes para mostrar.</div>
+  {% endif %}
+{% endblock %}

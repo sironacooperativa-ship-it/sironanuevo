@@ -1,10 +1,25 @@
 {% extends "base.html" %}
-{% block title %}Nuevo movimiento{% endblock %}
+{% load money %}
+{% block title %}{% if modo == "editar" %}Editar movimiento{% else %}Nuevo movimiento{% endif %}{% endblock %}
 {% block content %}
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-    <h1 class="h3 mb-0">Nuevo movimiento</h1>
-    <a class="btn btn-outline-secondary" href="{% url 'caja_list' %}">Volver</a>
+    <h1 class="h3 mb-0">{% if modo == "editar" %}Editar movimiento{% else %}Nuevo movimiento{% endif %}</h1>
+    {% if modo == "editar" and mov %}
+      <a class="btn btn-outline-secondary" href="{% url 'caja_detail' mov.pk %}">Detalle</a>
+    {% endif %}
+    <a class="btn btn-outline-secondary" href="{% url 'caja_list' %}">Volver a caja</a>
   </div>
+
+  {% if venta_cobro %}
+    <div class="alert alert-light border small mb-3">
+      Movimiento vinculado al cobro del
+      <a href="{% url 'venta_detalle' venta_cobro.pk %}">pedido #{{ venta_cobro.pk }}</a>
+      (neto actual {{ venta_cobro.neto|ars }}; ingreso esperado en caja al cobrar: {{ venta_cobro.monto_ingreso_caja|ars }}).
+      Podés corregir el monto registrado en caja; el tipo debe seguir siendo <strong>ingreso</strong>.
+      Para cambiar comisión del pedido usá
+      <a href="{% url 'venta_detalle' venta_cobro.pk %}">detalle del pedido</a>.
+    </div>
+  {% endif %}
 
   <div class="card shadow-sm">
     <div class="card-body">
@@ -73,8 +88,12 @@
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-4">
-          <a class="btn btn-outline-secondary" href="{% url 'caja_list' %}">Cancelar</a>
-          <button class="btn btn-primary" type="submit">Guardar</button>
+          {% if modo == "editar" and mov %}
+            <a class="btn btn-outline-secondary" href="{% url 'caja_detail' mov.pk %}">Cancelar</a>
+          {% else %}
+            <a class="btn btn-outline-secondary" href="{% url 'caja_list' %}">Cancelar</a>
+          {% endif %}
+          <button class="btn btn-primary" type="submit">{% if modo == "editar" %}Guardar cambios{% else %}Guardar{% endif %}</button>
         </div>
       </form>
     </div>

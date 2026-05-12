@@ -17,7 +17,6 @@ from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.http import require_http_methods
 
 from core.authz import staff_required
-from core.comision_agg import comisiones_acumuladas_por_mes
 from core.export_utils import parse_export, pdf_response, xlsx_response
 from core.money_decimal import (
     COMISION_PORCENTAJE_DEFECTO,
@@ -360,175 +359,130 @@ def _filtrar_ventas_queryset(request, *, historial_pestana: bool = False):
     return qs, filtros
 
 
-def _parse_ym(raw: str) -> tuple[int, int] | None:
-    s = (raw or "").strip()
-    if len(s) != 7 or s[4] != "-":
-        return None
-    y, m = s.split("-", 1)
-    if not (y.isdigit() and m.isdigit()):
-        return None
-    yi = int(y)
-    mi = int(m)
-    if yi < 2000 or yi > 2100 or mi < 1 or mi > 12:
-        return None
-    return yi, mi
-
-
 @login_required
 @require_http_methods(["GET"])
 def venta_comisiones(request):
     """
-    Comisiones sobre ventas **cobradas** (estado pagada). La liquidación en caja es aparte del cobro del cliente.
+    Comisiones por pedido (pagadas en verde, pendientes en negro), agrupadas por mes calendario del pedido.
+    La liquidación al vendedor suma todos los pedidos pagos aún no liquidados (sin atar a un mes).
     """
-    ventas, _ = _filtrar_ventas_queryset(request)
+    ventas_qs, filtros_base = _comisiones_ventas_base_queryset(request)
+    ventas_list = list(ventas_qs.order_by("-creado_en", "-id"))
 
-    mes = (request.GET.get("mes") or "").strip()
-    ym = _parse_ym(mes) if mes else None
-    if ym:
-        y, m = ym
-        ventas = ventas.filter(creado_en__year=y, creado_en__month=m)
+    nest: dict[tuple[int, int], dict[int, list[Venta]]] = defaultdict(lambda: defaultdict(list))
+    for v in ventas_list:
+        t = v.creado_en
+        nest[(t.year, t.month)][int(v.vendedor_id)].append(v)
 
-    ventas_com = ventas.filter(
-        estado=Venta.Estado.PAGADA,
-        aplica_comision=True,
-        comision_porcentaje__gt=0,
+    _meses_es = (
+        "enero",
+        "febrero",
+        "marzo",
+        "abril",
+        "mayo",
+        "junio",
+        "julio",
+        "agosto",
+        "septiembre",
+        "octubre",
+        "noviembre",
+        "diciembre",
     )
-
-    comisiones_por_mes = comisiones_acumuladas_por_mes(ventas_com)
-
-    totales_por_vendedor: dict[int, dict[str, object]] = {}
-
-    member_to_chiefs: dict[int, list[tuple[int, Decimal]]] = {}
-    try:
-        jefes = (
-            Vendedor.objects.filter(es_jefe_grupo=True, comision_grupo_porcentaje__gt=0, habilitado=True)
-            .prefetch_related("vendedores_a_cargo")
-            .only("id", "comision_grupo_porcentaje")
-        )
-        for jefe in jefes:
-            pct = Decimal(str(jefe.comision_grupo_porcentaje or 0))
-            if pct <= 0:
-                continue
-            for m in jefe.vendedores_a_cargo.all():
-                member_to_chiefs.setdefault(int(m.pk), []).append((int(jefe.pk), pct))
-    except Exception:
-        member_to_chiefs = {}
-
-    for v in ventas_com.select_related("vendedor").iterator(chunk_size=500):
-        vid = int(v.vendedor_id)
-
-        cur = totales_por_vendedor.get(vid)
-        if not cur:
-            cur = {
-                "vendedor_id": vid,
-                "vendedor__codigo": v.vendedor.codigo,
-                "vendedor__apellido": v.vendedor.apellido,
-                "vendedor__nombre": v.vendedor.nombre,
-                "propias": Decimal("0.00"),
-                "grupo": Decimal("0.00"),
-                "total": Decimal("0.00"),
-            }
-            totales_por_vendedor[vid] = cur
-        cur["propias"] = q2(cur["propias"] + v.monto_comision)  # type: ignore[operator]
-
-        chiefs = member_to_chiefs.get(vid) or []
-        if chiefs:
-            neto = (v.subtotal_lineas - v.descuento_monto) if v.subtotal_lineas is not None else Decimal("0.00")
-            if neto < 0:
-                neto = Decimal("0.00")
-            for jefe_id, pct in chiefs:
-                jefe = totales_por_vendedor.get(jefe_id)
-                if not jefe:
-                    jefe_obj = (
-                        Vendedor.objects.filter(pk=jefe_id)
-                        .values("id", "codigo", "apellido", "nombre")
-                        .first()
-                    )
-                    if not jefe_obj:
-                        continue
-                    jefe = {
-                        "vendedor_id": int(jefe_obj["id"]),
-                        "vendedor__codigo": jefe_obj["codigo"],
-                        "vendedor__apellido": jefe_obj["apellido"],
-                        "vendedor__nombre": jefe_obj["nombre"],
-                        "propias": Decimal("0.00"),
-                        "grupo": Decimal("0.00"),
-                        "total": Decimal("0.00"),
-                    }
-                    totales_por_vendedor[jefe_id] = jefe
-                jefe["grupo"] = q2(jefe["grupo"] + q2(neto * (pct / Decimal("100"))))  # type: ignore[operator]
-
-    for row in totales_por_vendedor.values():
-        row["propias"] = q2(row.get("propias") or Decimal("0.00"))
-        row["grupo"] = q2(row.get("grupo") or Decimal("0.00"))
-        row["total"] = q2(Decimal(str(row["propias"])) + Decimal(str(row["grupo"])))
-
-    por_vendedor = sorted(
-        (r for r in totales_por_vendedor.values() if (r.get("total") or Decimal("0.00")) > 0),
-        key=lambda r: (r["total"], r["vendedor__apellido"], r["vendedor__nombre"]),
-        reverse=True,
-    )
-
-    pendiente_liquidar: list[dict[str, object]] = []
-    if ym:
-        pend_map: dict[int, Decimal] = defaultdict(lambda: Decimal("0.00"))
-        for v in ventas_com.filter(comision_liquidacion_pago_id__isnull=True).select_related("vendedor"):
-            pend_map[int(v.vendedor_id)] = q2(pend_map[int(v.vendedor_id)] + v.monto_comision)
-        for vid, total in sorted(pend_map.items(), key=lambda x: (-x[1], x[0])):
-            if total <= 0:
-                continue
-            vo = Vendedor.objects.filter(pk=vid).values("codigo", "apellido", "nombre").first()
-            if not vo:
-                continue
-            pendiente_liquidar.append(
+    meses_detalle: list[dict[str, object]] = []
+    for y, m in sorted(nest.keys(), reverse=True):
+        por_vid = nest[(y, m)]
+        pedidos_mes_total = q2(sum(x.monto_comision for ls in por_vid.values() for x in ls))
+        por_vendedor: list[dict[str, object]] = []
+        for vid in sorted(
+            por_vid.keys(),
+            key=lambda i: (
+                (por_vid[i][0].vendedor.apellido or "").lower(),
+                (por_vid[i][0].vendedor.nombre or "").lower(),
+            ),
+        ):
+            lst = sorted(por_vid[vid], key=lambda s: (-s.pk,))
+            ven = lst[0].vendedor
+            por_vendedor.append(
                 {
-                    "vendedor_id": vid,
-                    "vendedor__codigo": vo["codigo"],
-                    "vendedor__apellido": vo["apellido"],
-                    "vendedor__nombre": vo["nombre"],
-                    "pendiente": total,
+                    "vendedor": ven,
+                    "pedidos": lst,
+                    "subtotal_mes_vendedor": q2(sum(s.monto_comision for s in lst)),
                 }
             )
+        meses_detalle.append(
+            {
+                "label": f"{_meses_es[m - 1].capitalize()} {y}",
+                "total_mes": pedidos_mes_total,
+                "por_vendedor": por_vendedor,
+            }
+        )
 
-    meses_opciones = []
-    seen = set()
-    for row in comisiones_acumuladas_por_mes(
-        _filtrar_ventas_queryset(request)[0].filter(
+    base_liq, _ = _ventas_lista_base_queryset(request)
+    pend_map: dict[int, Decimal] = defaultdict(lambda: Decimal("0.00"))
+    for v in (
+        base_liq.filter(
             estado=Venta.Estado.PAGADA,
             aplica_comision=True,
             comision_porcentaje__gt=0,
+            comision_liquidacion_pago_id__isnull=True,
         )
+        .select_related("vendedor")
+        .iterator(chunk_size=500)
     ):
-        key = f"{row['anio']}-{int(row['mes']):02d}"
-        if key in seen:
+        pend_map[int(v.vendedor_id)] = q2(pend_map[int(v.vendedor_id)] + v.monto_comision)
+
+    pendiente_liquidar_global: list[dict[str, object]] = []
+    for vid, total in sorted(pend_map.items(), key=lambda x: (-x[1], x[0])):
+        if total <= 0:
             continue
-        seen.add(key)
-        meses_opciones.append({"key": key, "label": f"{row['mes_nombre'].capitalize()} {row['anio']}"})
+        vo = Vendedor.objects.filter(pk=vid).values("codigo", "apellido", "nombre").first()
+        if not vo:
+            continue
+        pendiente_liquidar_global.append(
+            {
+                "vendedor_id": vid,
+                "vendedor__codigo": vo["codigo"],
+                "vendedor__apellido": vo["apellido"],
+                "vendedor__nombre": vo["nombre"],
+                "pendiente": total,
+            }
+        )
 
     return render(
         request,
         "ventas/comisiones.html",
         {
             "f": {
-                "mes": mes,
                 "fecha_desde": fecha_filtro_value_iso(request.GET.get("fecha_desde")),
                 "fecha_hasta": fecha_filtro_value_iso(request.GET.get("fecha_hasta")),
                 "periodo": (request.GET.get("periodo") or "").strip(),
+                "estado": (request.GET.get("estado") or "").strip().upper(),
             },
-            "meses_opciones": meses_opciones,
-            "comisiones_por_mes": comisiones_por_mes,
-            "comisiones_por_vendedor": por_vendedor,
-            "pendiente_liquidar": pendiente_liquidar,
-            "liquidacion_mes": mes if ym else "",
+            "filtros_base": filtros_base,
+            "meses_detalle": meses_detalle,
+            "pendiente_liquidar_global": pendiente_liquidar_global,
         },
     )
 
 
-def _ventas_comision_liquidables_por_mes(request, y: int, month: int):
-    ventas, _ = _filtrar_ventas_queryset(request)
+def _comisiones_ventas_base_queryset(request):
+    """Pedidos con comisión aplicable, con filtros de listado (fechas, vendedor, etc.) sin pestaña historial."""
+    qs, filtros = _ventas_lista_base_queryset(request)
+    estado = (request.GET.get("estado") or "").strip().upper()
+    if estado in (Venta.Estado.PENDIENTE, Venta.Estado.PAGADA):
+        qs = qs.filter(estado=estado)
+    return (
+        qs.filter(aplica_comision=True, comision_porcentaje__gt=0).select_related(
+            "vendedor", "comision_liquidacion_pago"
+        ),
+        filtros,
+    )
+
+
+def _ventas_comision_liquidables_vendedor(request, vid: int):
+    ventas, _ = _ventas_lista_base_queryset(request)
     return ventas.filter(
-        creado_en__year=y,
-        creado_en__month=month,
+        vendedor_id=vid,
         estado=Venta.Estado.PAGADA,
         aplica_comision=True,
         comision_porcentaje__gt=0,
@@ -538,91 +492,79 @@ def _ventas_comision_liquidables_por_mes(request, y: int, month: int):
 
 @login_required
 @require_http_methods(["GET"])
-def comision_liquidacion_pdf(request):
-    mes = (request.GET.get("mes") or "").strip()
-    ym = _parse_ym(mes)
-    if not ym:
-        messages.error(request, "Elegí un mes (YYYY-MM) para exportar la liquidación.")
-        return redirect("ventas_comisiones")
-    y, month = ym
-    vid_raw = (request.GET.get("vendedor") or "").strip()
-    vid = int(vid_raw) if vid_raw.isdigit() else None
-
-    base = _ventas_comision_liquidables_por_mes(request, y, month).select_related("vendedor").order_by(
-        "vendedor__apellido", "vendedor__nombre", "id"
+def comision_constancia_pdf(request, pk: int):
+    liq = get_object_or_404(
+        ComisionLiquidacionPago.objects.select_related("vendedor", "movimiento_caja", "creado_por"),
+        pk=pk,
     )
-    if vid is not None:
-        base = base.filter(vendedor_id=vid)
+    ventas_qs = (
+        Venta.objects.filter(comision_liquidacion_pago_id=liq.pk)
+        .select_related("vendedor")
+        .order_by("id")
+    )
+    sales = list(ventas_qs)
+    if not sales:
+        messages.warning(request, "No hay pedidos asociados a esta liquidación.")
+        return redirect("ventas_comisiones_historial")
 
-    by_v: dict[int, list[Venta]] = defaultdict(list)
-    for sale in base:
-        by_v[int(sale.vendedor_id)].append(sale)
-
-    sections: list[tuple[str, list[str], list[list[object]]]] = []
-    titulo = f"Liquidación comisiones {y}-{month:02d}"
-    grand = Decimal("0.00")
-
+    vend = liq.vendedor
+    titulo = f"Constancia liquidación comisiones — {vend.apellido}, {vend.nombre}"
     headers = ["Pedido", "Fecha registro", "Neto", "% comisión", "Comisión"]
-    for v_id in sorted(by_v.keys(), key=lambda i: (by_v[i][0].vendedor.apellido, by_v[i][0].vendedor.nombre)):
-        sales = by_v[v_id]
-        vend = sales[0].vendedor
-        rows: list[list[object]] = []
-        sub = Decimal("0.00")
-        for s in sales:
-            com = s.monto_comision
-            sub = q2(sub + com)
-            rows.append(
-                [
-                    s.pk,
-                    s.creado_en.strftime("%d/%m/%Y %H:%M"),
-                    str(q2(s.neto)),
-                    str(s.comision_porcentaje),
-                    str(q2(com)),
-                ]
-            )
-        rows.append(["", "", "", "Subtotal vendedor", str(q2(sub))])
-        grand = q2(grand + sub)
-        label = f"{vend.apellido}, {vend.nombre} ({vend.codigo})"
-        sections.append((label, headers, rows))
+    rows: list[list[object]] = []
+    sub = Decimal("0.00")
+    for s in sales:
+        com = s.monto_comision
+        sub = q2(sub + com)
+        rows.append(
+            [
+                s.pk,
+                s.creado_en.strftime("%d/%m/%Y %H:%M"),
+                str(q2(s.neto)),
+                str(s.comision_porcentaje),
+                str(q2(com)),
+            ]
+        )
+    rows.append(["", "", "", "Subtotal pedidos", str(q2(sub))])
 
-    if not sections:
-        messages.warning(request, "No hay comisiones pendientes de liquidar en ese período.")
-        return redirect(reverse("ventas_comisiones") + (f"?mes={mes}" if mes else ""))
+    fecha_liq = liq.fecha_liquidacion or (liq.creado_en.date() if liq.creado_en else timezone.localdate())
+    meta = [
+        ["Vendedor", f"{vend.apellido}, {vend.nombre} ({vend.codigo})"],
+        ["Fecha liquidación", fecha_liq.strftime("%d/%m/%Y")],
+        ["Registrado", liq.creado_en.strftime("%d/%m/%Y %H:%M") if liq.creado_en else ""],
+        ["Total liquidado", str(q2(liq.total))],
+        ["Pedidos incluidos", str(len(sales))],
+    ]
+    if liq.movimiento_caja_id:
+        meta.append(["Movimiento caja", f"#{liq.movimiento_caja_id}"])
 
-    sections.append(("Total general", ["Concepto", "Monto"], [["Comisiones pendientes de pago", str(q2(grand))]]))
-    safe = f"liquidacion_comisiones_{y}_{month:02d}"
-    if vid is not None:
-        safe += f"_v{vid}"
+    sections: list[tuple[str, list[str], list[list[object]]]] = [
+        ("Datos de la liquidación", ["Campo", "Valor"], meta),
+        ("Detalle por pedido", headers, rows),
+    ]
+    safe = f"constancia_comisiones_{liq.pk}"
     return pdf_response(safe, titulo, sections)
 
 
 @login_required
 @require_http_methods(["POST"])
 def comision_liquidacion_pagar(request):
-    mes = (request.POST.get("mes") or "").strip()
-    ym = _parse_ym(mes)
     vid_raw = (request.POST.get("vendedor") or "").strip()
-    redir = reverse("ventas_comisiones") + (f"?mes={mes}" if mes else "")
-    if not ym or not vid_raw.isdigit():
+    redir = reverse("ventas_comisiones")
+    if not vid_raw.isdigit():
         messages.error(request, "Datos inválidos para el pago de comisiones.")
         return redirect(redir)
-    y, month = ym
     vid = int(vid_raw)
 
     try:
         with transaction.atomic():
-            qs = (
-                _ventas_comision_liquidables_por_mes(request, y, month)
-                .filter(vendedor_id=vid)
-                .select_related("vendedor")
-            )
+            qs = _ventas_comision_liquidables_vendedor(request, vid).select_related("vendedor")
             try:
                 qs = qs.select_for_update(of=("self",))
             except TypeError:
                 qs = qs.select_for_update()
             ventas_list = list(qs)
             if not ventas_list:
-                messages.warning(request, "No hay comisiones pendientes para ese vendedor y mes.")
+                messages.warning(request, "No hay comisiones pagadas pendientes de liquidar para ese vendedor.")
                 return redirect(redir)
             total = q2(sum(v.monto_comision for v in ventas_list))
             if total <= 0:
@@ -630,16 +572,18 @@ def comision_liquidacion_pagar(request):
                 return redirect(redir)
 
             vend = ventas_list[0].vendedor
+            hoy = timezone.localdate()
             liq = ComisionLiquidacionPago.objects.create(
                 vendedor=vend,
-                anio=y,
-                mes=month,
+                anio=None,
+                mes=None,
+                fecha_liquidacion=hoy,
                 total=total,
                 creado_por=request.user,
             )
             mov = MovimientoCaja(
-                fecha=timezone.localdate(),
-                operacion=f"Pago comisiones {vend.apellido}, {vend.nombre} — {y}-{month:02d} ({len(ventas_list)} pedidos)",
+                fecha=hoy,
+                operacion=f"Pago comisiones {vend.apellido}, {vend.nombre} — {len(ventas_list)} pedidos (liq. #{liq.pk})",
                 tipo=MovimientoCaja.Tipo.EGRESO,
                 monto=total,
                 medio_pago=MovimientoCaja.MedioPago.EFECTIVO,
@@ -655,6 +599,7 @@ def comision_liquidacion_pagar(request):
                 v.comision_liquidacion_pago = liq
                 v.save(update_fields=["comision_liquidacion_pago"])
         messages.success(request, f"Pago de comisiones registrado en caja: {format_monto_ars(total)}.")
+        return redirect("ventas_comision_constancia_pdf", pk=liq.pk)
     except ValidationError as e:
         if getattr(e, "error_dict", None):
             for msgs in e.error_dict.values():
@@ -668,6 +613,80 @@ def comision_liquidacion_pagar(request):
         messages.error(request, "No se pudo registrar el pago." + det)
 
     return redirect(redir)
+
+
+@login_required
+@require_http_methods(["GET"])
+def venta_comisiones_historial(request):
+    liquidaciones = list(
+        ComisionLiquidacionPago.objects.select_related("vendedor", "movimiento_caja")
+        .order_by("-creado_en", "-id")[:500]
+    )
+    liq_ids = [x.pk for x in liquidaciones]
+    ventas_por_liq: dict[int, list[Venta]] = defaultdict(list)
+    if liq_ids:
+        for v in (
+            Venta.objects.filter(comision_liquidacion_pago_id__in=liq_ids)
+            .select_related("vendedor")
+            .order_by("comision_liquidacion_pago_id", "id")
+        ):
+            ventas_por_liq[int(v.comision_liquidacion_pago_id)].append(v)
+
+    base_liq, _ = _ventas_lista_base_queryset(request)
+    pendientes = list(
+        base_liq.filter(
+            estado=Venta.Estado.PAGADA,
+            aplica_comision=True,
+            comision_porcentaje__gt=0,
+            comision_liquidacion_pago_id__isnull=True,
+        )
+        .select_related("vendedor")
+        .order_by("vendedor__apellido", "vendedor__nombre", "-id")
+    )
+
+    por_vendedor_hist: dict[int, dict[str, object]] = {}
+    for liq in liquidaciones:
+        vid = int(liq.vendedor_id)
+        bucket = por_vendedor_hist.get(vid)
+        if not bucket:
+            bucket = {
+                "vendedor": liq.vendedor,
+                "liquidaciones": [],
+                "total_liquidado": Decimal("0.00"),
+            }
+            por_vendedor_hist[vid] = bucket
+        ventas_li = ventas_por_liq.get(liq.pk, [])
+        bucket["liquidaciones"].append({"liq": liq, "ventas": ventas_li})
+        bucket["total_liquidado"] = q2(bucket["total_liquidado"] + liq.total)
+
+    por_vendedor_pend: dict[int, list[Venta]] = defaultdict(list)
+    for v in pendientes:
+        por_vendedor_pend[int(v.vendedor_id)].append(v)
+
+    vendedores_ids = sorted(set(por_vendedor_hist.keys()) | set(por_vendedor_pend.keys()))
+    filas: list[dict[str, object]] = []
+    for vid in vendedores_ids:
+        hist = por_vendedor_hist.get(vid)
+        pend_ls = por_vendedor_pend.get(vid, [])
+        ven = (hist["vendedor"] if hist else (pend_ls[0].vendedor if pend_ls else None))
+        if not ven:
+            continue
+        filas.append(
+            {
+                "vendedor": ven,
+                "liquidaciones": (hist["liquidaciones"] if hist else []),
+                "total_liquidado": q2(hist["total_liquidado"]) if hist else Decimal("0.00"),
+                "pendientes": pend_ls,
+                "total_pendiente_liquidar": q2(sum(x.monto_comision for x in pend_ls)),
+            }
+        )
+    filas.sort(key=lambda r: (r["vendedor"].apellido or "", r["vendedor"].nombre or ""))
+
+    return render(
+        request,
+        "ventas/comisiones_historial.html",
+        {"filas": filas},
+    )
 
 
 @login_required

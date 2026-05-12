@@ -8,15 +8,20 @@ from core.money_decimal import q2 as _q2
 
 
 class ComisionLiquidacionPago(models.Model):
-    """Pago de comisiones del vendedor por mes calendario (egreso de caja). Agrupa pedidos ya cobrados."""
+    """Pago de comisiones al vendedor (egreso de caja). Agrupa pedidos ya cobrados incluidos en esa liquidación."""
 
     vendedor = models.ForeignKey(
         "personas.Vendedor",
         on_delete=models.PROTECT,
         related_name="liquidaciones_comision_pago",
     )
-    anio = models.PositiveIntegerField()
-    mes = models.PositiveSmallIntegerField()
+    anio = models.PositiveIntegerField(null=True, blank=True)
+    mes = models.PositiveSmallIntegerField(null=True, blank=True)
+    fecha_liquidacion = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Fecha en que se registró el pago al vendedor (egreso en caja).",
+    )
     total = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0.00"))
     movimiento_caja = models.OneToOneField(
         "caja.MovimientoCaja",
@@ -35,10 +40,12 @@ class ComisionLiquidacionPago(models.Model):
     )
 
     class Meta:
-        ordering = ["-anio", "-mes", "-id"]
+        ordering = ["-creado_en", "-id"]
 
     def __str__(self) -> str:
-        return f"Liq. com. {self.vendedor_id} {self.anio}-{self.mes:02d} ${self.total}"
+        if self.anio and self.mes:
+            return f"Liq. com. {self.vendedor_id} {self.anio}-{self.mes:02d} ${self.total}"
+        return f"Liq. com. #{self.pk} v{self.vendedor_id} ${self.total}"
 
 
 class Venta(models.Model):
@@ -68,7 +75,7 @@ class Venta(models.Model):
     )
     aplica_comision = models.BooleanField(
         default=False,
-        help_text="Si aplica, la comisión se calcula sobre el neto y se liquida por mes desde Comisiones (egreso de caja).",
+        help_text="Si aplica, la comisión se calcula sobre el neto y se liquida desde Comisiones al pagar al vendedor (egreso de caja).",
     )
     creado_por = models.ForeignKey(
         "auth.User",
