@@ -3,6 +3,8 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from itertools import zip_longest
 
+from urllib.parse import urlencode
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
@@ -37,6 +39,7 @@ from productos.models import ListaPrecios, Producto
 
 from .forms import VentaCabeceraEditForm, VentaPagoForm
 from .models import ComisionLiquidacionPago, Venta, VentaLinea
+from .comision_constancia_pdf_sirona import comision_constancia_pdf_response
 from .remito_pdf import remito_venta_pdf_response
 from .servicios import (
     crear_venta_confirmada,
@@ -364,7 +367,8 @@ def _filtrar_ventas_queryset(request, *, historial_pestana: bool = False):
 def venta_comisiones(request):
     """
     Comisiones por pedido (pagadas en verde, pendientes en negro), agrupadas por mes calendario del pedido.
-    La liquidación al vendedor suma todos los pedidos pagos aún no liquidados (sin atar a un mes).
+    La liquidación puede incluir todas las comisiones pendientes del vendedor (pedidos pagos, filtros actuales)
+    o solo las pedidos marcados; la constancia PDF replica el estilo de pedidos Sirona.
     """
     ventas_qs, filtros_base = _comisiones_ventas_base_queryset(request)
     ventas_list = list(ventas_qs.order_by("-creado_en", "-id"))
@@ -418,33 +422,34 @@ def venta_comisiones(request):
         )
 
     base_liq, _ = _ventas_lista_base_queryset(request)
-    pend_map: dict[int, Decimal] = defaultdict(lambda: Decimal("0.00"))
-    for v in (
-        base_liq.filter(
-            estado=Venta.Estado.PAGADA,
-            aplica_comision=True,
-            comision_porcentaje__gt=0,
-            comision_liquidacion_pago_id__isnull=True,
-        )
-        .select_related("vendedor")
-        .iterator(chunk_size=500)
-    ):
-        pend_map[int(v.vendedor_id)] = q2(pend_map[int(v.vendedor_id)] + v.monto_comision)
+    liq_base_qs = base_liq.filter(
+        estado=Venta.Estado.PAGADA,
+        aplica_comision=True,
+        comision_porcentaje__gt=0,
+        comision_liquidacion_pago_id__isnull=True,
+    ).select_related("vendedor", "comprador")
+
+    by_vid: dict[int, list[Venta]] = defaultdict(list)
+    for v in liq_base_qs.order_by("-creado_en", "-id"):
+        by_vid[int(v.vendedor_id)].append(v)
 
     pendiente_liquidar_global: list[dict[str, object]] = []
-    for vid, total in sorted(pend_map.items(), key=lambda x: (-x[1], x[0])):
+    for vid, ventas_liquidables in sorted(
+        by_vid.items(),
+        key=lambda kv: (-q2(sum(s.monto_comision for s in kv[1])), kv[0]),
+    ):
+        total = q2(sum(s.monto_comision for s in ventas_liquidables))
         if total <= 0:
             continue
-        vo = Vendedor.objects.filter(pk=vid).values("codigo", "apellido", "nombre").first()
-        if not vo:
-            continue
+        ven = ventas_liquidables[0].vendedor
         pendiente_liquidar_global.append(
             {
                 "vendedor_id": vid,
-                "vendedor__codigo": vo["codigo"],
-                "vendedor__apellido": vo["apellido"],
-                "vendedor__nombre": vo["nombre"],
+                "vendedor__codigo": ven.codigo,
+                "vendedor__apellido": ven.apellido,
+                "vendedor__nombre": ven.nombre,
                 "pendiente": total,
+                "ventas_liquidables": ventas_liquidables,
             }
         )
 
@@ -457,10 +462,14 @@ def venta_comisiones(request):
                 "fecha_hasta": fecha_filtro_value_iso(request.GET.get("fecha_hasta")),
                 "periodo": (request.GET.get("periodo") or "").strip(),
                 "estado": (request.GET.get("estado") or "").strip().upper(),
+                "vendedor": (filtros_base.get("vendedor") or "").strip(),
             },
             "filtros_base": filtros_base,
             "meses_detalle": meses_detalle,
             "pendiente_liquidar_global": pendiente_liquidar_global,
+            "vendedores_opciones": Vendedor.objects.filter(habilitado=True).order_by(
+                "apellido", "nombre", "codigo"
+            ),
         },
     )
 
@@ -497,52 +506,20 @@ def comision_constancia_pdf(request, pk: int):
         ComisionLiquidacionPago.objects.select_related("vendedor", "movimiento_caja", "creado_por"),
         pk=pk,
     )
+    agrupar = (request.GET.get("agrupar_periodo") or "ninguno").strip().lower()
+    if agrupar not in ("ninguno", "mes", "semana"):
+        agrupar = "ninguno"
     ventas_qs = (
         Venta.objects.filter(comision_liquidacion_pago_id=liq.pk)
-        .select_related("vendedor")
-        .order_by("id")
+        .select_related("vendedor", "comprador")
+        .order_by("creado_en", "id")
     )
     sales = list(ventas_qs)
     if not sales:
         messages.warning(request, "No hay pedidos asociados a esta liquidación.")
         return redirect("ventas_comisiones_historial")
 
-    vend = liq.vendedor
-    titulo = f"Constancia liquidación comisiones — {vend.apellido}, {vend.nombre}"
-    headers = ["Pedido", "Fecha registro", "Neto", "% comisión", "Comisión"]
-    rows: list[list[object]] = []
-    sub = Decimal("0.00")
-    for s in sales:
-        com = s.monto_comision
-        sub = q2(sub + com)
-        rows.append(
-            [
-                s.pk,
-                s.creado_en.strftime("%d/%m/%Y %H:%M"),
-                str(q2(s.neto)),
-                str(s.comision_porcentaje),
-                str(q2(com)),
-            ]
-        )
-    rows.append(["", "", "", "Subtotal pedidos", str(q2(sub))])
-
-    fecha_liq = liq.fecha_liquidacion or (liq.creado_en.date() if liq.creado_en else timezone.localdate())
-    meta = [
-        ["Vendedor", f"{vend.apellido}, {vend.nombre} ({vend.codigo})"],
-        ["Fecha liquidación", fecha_liq.strftime("%d/%m/%Y")],
-        ["Registrado", liq.creado_en.strftime("%d/%m/%Y %H:%M") if liq.creado_en else ""],
-        ["Total liquidado", str(q2(liq.total))],
-        ["Pedidos incluidos", str(len(sales))],
-    ]
-    if liq.movimiento_caja_id:
-        meta.append(["Movimiento caja", f"#{liq.movimiento_caja_id}"])
-
-    sections: list[tuple[str, list[str], list[list[object]]]] = [
-        ("Datos de la liquidación", ["Campo", "Valor"], meta),
-        ("Detalle por pedido", headers, rows),
-    ]
-    safe = f"constancia_comisiones_{liq.pk}"
-    return pdf_response(safe, titulo, sections)
+    return comision_constancia_pdf_response(liq, sales, agrupar_periodo=agrupar)
 
 
 @login_required
@@ -555,14 +532,45 @@ def comision_liquidacion_pagar(request):
         return redirect(redir)
     vid = int(vid_raw)
 
+    agrupar = (request.POST.get("agrupar_periodo") or "ninguno").strip().lower()
+    if agrupar not in ("ninguno", "mes", "semana"):
+        agrupar = "ninguno"
+
+    modo = (request.POST.get("liquidar_modo") or "").strip().lower()
+    if modo not in ("todos", "seleccion"):
+        modo = "todos" if not request.POST.getlist("venta_id") else "seleccion"
+
     try:
         with transaction.atomic():
-            qs = _ventas_comision_liquidables_vendedor(request, vid).select_related("vendedor")
+            qs = (
+                _ventas_comision_liquidables_vendedor(request, vid)
+                .select_related("vendedor", "comprador")
+                .order_by("creado_en", "id")
+            )
             try:
                 qs = qs.select_for_update(of=("self",))
             except TypeError:
                 qs = qs.select_for_update()
-            ventas_list = list(qs)
+
+            if modo == "seleccion":
+                wanted = {int(x) for x in request.POST.getlist("venta_id") if str(x).strip().isdigit()}
+                if not wanted:
+                    messages.error(
+                        request,
+                        "Elegí “Liquidar todas” o marcá al menos un pedido pagado con comisión pendiente.",
+                    )
+                    return redirect(redir)
+                ventas_list = list(qs.filter(pk__in=wanted))
+                got = {v.pk for v in ventas_list}
+                if got != wanted:
+                    messages.error(
+                        request,
+                        "Algunos pedidos no se pueden liquidar: deben ser pagos, con comisión aplicable y aún sin liquidar.",
+                    )
+                    return redirect(redir)
+            else:
+                ventas_list = list(qs)
+
             if not ventas_list:
                 messages.warning(request, "No hay comisiones pagadas pendientes de liquidar para ese vendedor.")
                 return redirect(redir)
@@ -599,7 +607,8 @@ def comision_liquidacion_pagar(request):
                 v.comision_liquidacion_pago = liq
                 v.save(update_fields=["comision_liquidacion_pago"])
         messages.success(request, f"Pago de comisiones registrado en caja: {format_monto_ars(total)}.")
-        return redirect("ventas_comision_constancia_pdf", pk=liq.pk)
+        base = reverse("ventas_comision_constancia_pdf", kwargs={"pk": liq.pk})
+        return redirect(f"{base}?{urlencode({'agrupar_periodo': agrupar})}")
     except ValidationError as e:
         if getattr(e, "error_dict", None):
             for msgs in e.error_dict.values():
@@ -618,10 +627,13 @@ def comision_liquidacion_pagar(request):
 @login_required
 @require_http_methods(["GET"])
 def venta_comisiones_historial(request):
-    liquidaciones = list(
-        ComisionLiquidacionPago.objects.select_related("vendedor", "movimiento_caja")
-        .order_by("-creado_en", "-id")[:500]
+    liq_qs = ComisionLiquidacionPago.objects.select_related("vendedor", "movimiento_caja").order_by(
+        "-creado_en", "-id"
     )
+    vid_f = (request.GET.get("vendedor") or "").strip()
+    if vid_f.isdigit():
+        liq_qs = liq_qs.filter(vendedor_id=int(vid_f))
+    liquidaciones = list(liq_qs[:500])
     liq_ids = [x.pk for x in liquidaciones]
     ventas_por_liq: dict[int, list[Venta]] = defaultdict(list)
     if liq_ids:
@@ -685,7 +697,13 @@ def venta_comisiones_historial(request):
     return render(
         request,
         "ventas/comisiones_historial.html",
-        {"filas": filas},
+        {
+            "filas": filas,
+            "f": {"vendedor": vid_f},
+            "vendedores_opciones": Vendedor.objects.filter(habilitado=True).order_by(
+                "apellido", "nombre", "codigo"
+            ),
+        },
     )
 
 

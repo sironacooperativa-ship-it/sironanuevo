@@ -37,6 +37,40 @@ _MESES_ES = (
     "diciembre",
 )
 
+# Libro diario (listado): filas por “hoja” en pantalla y en exportación.
+_LIBRO_CAJA_FILAS_POR_HOJA = 30
+
+
+def _libro_diario_rows_con_saldo(qs, delta_expr, movimientos_orden_visual: list[MovimientoCaja]) -> list[dict]:
+    """
+    `movimientos_orden_visual`: orden en pantalla (ej. más reciente primero).
+    Cada fila lleva el saldo **después** de aplicar ese movimiento en el orden cronológico real.
+    """
+    if not movimientos_orden_visual:
+        return []
+    chrono = sorted(movimientos_orden_visual, key=lambda m: (m.fecha, m.pk))
+    first = chrono[0]
+    saldo_previo = (
+        qs.filter(Q(fecha__lt=first.fecha) | Q(fecha=first.fecha, pk__lt=first.pk))
+        .aggregate(
+            s=Coalesce(
+                Sum(delta_expr),
+                Value(
+                    Decimal("0.00"),
+                    output_field=DecimalField(max_digits=14, decimal_places=2),
+                ),
+            )
+        )
+        .get("s")
+        or Decimal("0.00")
+    )
+    saldo = q2(saldo_previo)
+    by_id: dict[int, Decimal] = {}
+    for m in chrono:
+        saldo = q2(saldo + m.delta)
+        by_id[m.pk] = saldo
+    return [{"m": m, "saldo": by_id[m.pk]} for m in movimientos_orden_visual]
+
 
 def _resumen_caja_dashboard(hoy: date) -> dict:
     """Saldo acumulado hasta hoy e ingresos/egresos del mes calendario (del 1.º al día indicado)."""
@@ -113,35 +147,13 @@ def caja_list(request):
         output_field=DecimalField(max_digits=14, decimal_places=2),
     )
 
-    movimientos_qs = qs.order_by("fecha", "id")
+    movimientos_qs = qs.order_by("-fecha", "-id")
     page = (request.GET.get("page") or "").strip()
-    paginator = Paginator(movimientos_qs, 200)
+    paginator = Paginator(movimientos_qs, _LIBRO_CAJA_FILAS_POR_HOJA)
     page_obj = paginator.get_page(page or 1)
     movimientos = list(page_obj)
 
-    saldo_previo = Decimal("0.00")
-    if movimientos:
-        first = movimientos[0]
-        saldo_previo = (
-            qs.filter(Q(fecha__lt=first.fecha) | Q(fecha=first.fecha, id__lt=first.id))
-            .aggregate(
-                s=Coalesce(
-                    Sum(delta_expr),
-                    Value(
-                        Decimal("0.00"),
-                        output_field=DecimalField(max_digits=14, decimal_places=2),
-                    ),
-                )
-            )
-            .get("s")
-            or Decimal("0.00")
-        )
-
-    saldo = q2(saldo_previo)
-    rows = []
-    for m in movimientos:
-        saldo = q2(saldo + m.delta)
-        rows.append({"m": m, "saldo": saldo})
+    rows = _libro_diario_rows_con_saldo(qs, delta_expr, movimientos)
 
     ids_page = [r["m"].pk for r in rows]
     mov_ids_cobro_pedido: set[int] = set()
@@ -165,8 +177,13 @@ def caja_list(request):
     )
 
     if exp in ("xlsx", "pdf"):
-        movs = list(qs.order_by("fecha", "id"))
+        movs_chrono = list(qs.order_by("fecha", "id"))
         saldo = Decimal("0.00")
+        saldos_by_id: dict[int, Decimal] = {}
+        for m in movs_chrono:
+            saldo = q2(saldo + m.delta)
+            saldos_by_id[m.pk] = saldo
+        movs_recientes = list(reversed(movs_chrono))
         headers = [
             "Fecha",
             "Operación",
@@ -178,13 +195,12 @@ def caja_list(request):
             "Vendedor",
             "Saldo acumulado",
         ]
-        rows = []
-        for m in movs:
-            saldo = q2(saldo + m.delta)
+        flat_rows: list[list] = []
+        for m in movs_recientes:
             cb = ""
             if m.cuenta_bancaria_id:
                 cb = f"{m.cuenta_bancaria.banco} — {m.cuenta_bancaria.cuenta}"
-            rows.append(
+            flat_rows.append(
                 [
                     m.fecha.strftime("%d/%m/%Y"),
                     m.operacion,
@@ -194,12 +210,21 @@ def caja_list(request):
                     m.banco or "",
                     cb,
                     str(m.vendedor) if m.vendedor else "",
-                    str(saldo),
+                    str(saldos_by_id[m.pk]),
                 ]
             )
+        sheets: list[tuple[str, list[str], list[list]]] = []
+        n = len(flat_rows)
+        if n == 0:
+            sheets.append(("Libro 1", headers, []))
+        else:
+            for i in range(0, n, _LIBRO_CAJA_FILAS_POR_HOJA):
+                hoja = i // _LIBRO_CAJA_FILAS_POR_HOJA + 1
+                chunk = flat_rows[i : i + _LIBRO_CAJA_FILAS_POR_HOJA]
+                sheets.append((f"Libro hoja {hoja}", headers, chunk))
         if exp == "xlsx":
-            return xlsx_response("caja_movimientos", [("Movimientos", headers, rows)])
-        return pdf_response("caja_movimientos", "Movimientos de caja", [("Movimientos", headers, rows)])
+            return xlsx_response("caja_movimientos", sheets)
+        return pdf_response("caja_movimientos", "Movimientos de caja (más reciente primero)", sheets)
 
     qcopy = request.GET.copy()
     qcopy.pop("page", None)
@@ -294,14 +319,10 @@ def caja_create(request):
     if request.method == "POST":
         form = MovimientoCajaForm(request.POST)
         if form.is_valid():
-            mov = form.save()
-            messages.success(request, f"Movimiento cargado: {mov.id}")
-            if modal:
-                return render(
-                    request,
-                    "caja/form_fragment.html",
-                    {"form": MovimientoCajaForm(initial={"fecha": date.today().strftime("%Y-%m-%d")}), "modo": "nuevo", "guardado": True},
-                )
+            mov = form.save(commit=False)
+            mov.creado_por = request.user
+            mov.save()
+            messages.success(request, f"Movimiento de caja guardado (#{mov.pk}).")
             return redirect("caja_list")
     else:
         form = MovimientoCajaForm(initial={"fecha": date.today().strftime("%Y-%m-%d")})

@@ -9,7 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import connections, transaction
 from django.db.utils import OperationalError
 from django.http import HttpResponse, JsonResponse
-from django.db.models import Case, Count, DecimalField, ExpressionWrapper, F, Q, Sum, Value, When
+from django.db.models import Count, Q, Sum, Value
 from django.db.models.functions import Coalesce
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -25,6 +25,7 @@ from caja.models import MovimientoCaja
 from compras.models import Compra
 from productos.models import Producto
 from ventas.models import Venta
+from ventas.sql_metrics import venta_neto_nonneg_expr
 
 from administrador.models import RegistroActividad
 from personas.models import Vendedor
@@ -86,15 +87,7 @@ def home(request):
             today = timezone.localdate()
             ult_30 = today - timedelta(days=29)
 
-            neto_expr = ExpressionWrapper(
-                F("subtotal_lineas") - F("descuento_monto"),
-                output_field=DecimalField(max_digits=14, decimal_places=2),
-            )
-            neto_nonneg = Case(
-                When(subtotal_lineas__gte=F("descuento_monto"), then=neto_expr),
-                default=Value(Decimal("0.00")),
-                output_field=DecimalField(max_digits=14, decimal_places=2),
-            )
+            neto_nonneg = venta_neto_nonneg_expr()
             ventas_30 = Venta.objects.filter(vendedor_id=v.pk, creado_en__date__gte=ult_30)
             kpis = ventas_30.aggregate(
                 pedidos=Count("id"),
@@ -128,15 +121,7 @@ def home(request):
     ventas_pendientes_total = pendientes_qs.count()
     pendientes = list(pendientes_qs.order_by("-creado_en", "-id")[:80])
 
-    neto_expr = ExpressionWrapper(
-        F("subtotal_lineas") - F("descuento_monto"),
-        output_field=DecimalField(max_digits=14, decimal_places=2),
-    )
-    neto_nonneg = Case(
-        When(subtotal_lineas__gte=F("descuento_monto"), then=neto_expr),
-        default=Value(Decimal("0.00")),
-        output_field=DecimalField(max_digits=14, decimal_places=2),
-    )
+    neto_nonneg = venta_neto_nonneg_expr()
     ventas_30 = Venta.objects.filter(creado_en__date__gte=ult_30)
     kpis_ventas = ventas_30.aggregate(
         pedidos=Count("id"),

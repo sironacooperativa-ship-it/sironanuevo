@@ -2,11 +2,12 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 from django.db import models
-from django.db.models import Case, Count, DecimalField, ExpressionWrapper, F, Sum, Value, When
+from django.db.models import Count, Sum, Value
 from django.db.models.functions import Coalesce, TruncMonth
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 from datetime import timedelta
+from decimal import Decimal
 
 from django.utils import timezone
 
@@ -18,6 +19,7 @@ from core.authz import is_staff_user
 from caja.models import MovimientoCaja
 from presupuestos.models import Presupuesto
 from ventas.models import Venta
+from ventas.sql_metrics import venta_comision_expr, venta_neto_nonneg_expr
 
 from .forms import CompradorForm, ProveedorForm, VendedorForm
 from .models import Comprador, Proveedor, Vendedor
@@ -163,28 +165,17 @@ def vendedor_actividad(request, pk: int):
     # Resumen gráfico: últimos 12 meses (incluye mes actual).
     now = timezone.localtime()
     start_month = (now.replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=365)).replace(day=1)
-    dec14_2 = DecimalField(max_digits=14, decimal_places=2)
-    neto_expr = ExpressionWrapper(
-        F("subtotal_lineas") - F("descuento_monto") + Coalesce(F("envio"), Value(0), output_field=dec14_2),
-        output_field=dec14_2,
-    )
-    comision_expr = ExpressionWrapper(
-        neto_expr * (F("comision_porcentaje") / Value(100.0)),
-        output_field=dec14_2,
-    )
-    comision_si_aplica = Case(
-        When(aplica_comision=True, then=comision_expr),
-        default=Value(0),
-        output_field=dec14_2,
-    )
+    neto_nonneg = venta_neto_nonneg_expr()
+    comision_si_aplica = venta_comision_expr(neto_nonneg)
+    dec14_2 = models.DecimalField(max_digits=14, decimal_places=2)
     agg = (
         ventas_qs.filter(creado_en__gte=start_month)
         .annotate(mes=TruncMonth("creado_en"))
         .values("mes")
         .annotate(
             n=Count("id"),
-            neto=Coalesce(Sum(neto_expr), Value(0), output_field=dec14_2),
-            comision=Coalesce(Sum(comision_si_aplica), Value(0), output_field=dec14_2),
+            neto=Coalesce(Sum(neto_nonneg), Value(Decimal("0.00")), output_field=dec14_2),
+            comision=Coalesce(Sum(comision_si_aplica), Value(Decimal("0.00")), output_field=dec14_2),
         )
         .order_by("mes")
     )

@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Q
-from django.db.models import Case, Count, DecimalField, ExpressionWrapper, F, Sum, Value, When
+from django.db.models import Count, Q, Sum, Value
 from django.db.models.functions import Coalesce
 from django.db.models.functions import TruncDay, TruncMonth, TruncWeek
 from django.http import FileResponse, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
@@ -32,6 +32,7 @@ from productos.lista_precios_pdf import (
 from productos.models import ListaPrecioItem, ListaPrecios, Producto
 from core.money_decimal import format_monto_ars
 from ventas.models import Venta
+from ventas.sql_metrics import venta_neto_nonneg_expr
 from ventas.servicios import unpack_linea_spec
 from caja.models import MovimientoCaja
 
@@ -533,15 +534,6 @@ def vendedor_lista_png(request, slug: str):
     )
 
 
-def _venta_neto_sql():
-    """Replica `Venta.neto` en SQL para agregaciones."""
-    return Case(
-        When(subtotal_lineas__gt=F("descuento_monto"), then=F("subtotal_lineas") - F("descuento_monto")),
-        default=Value(0),
-        output_field=DecimalField(max_digits=14, decimal_places=2),
-    )
-
-
 @login_required
 def vendedor_cuenta_corriente(request):
     vendedor = _get_vendedor_from_user(request.user)
@@ -549,7 +541,7 @@ def vendedor_cuenta_corriente(request):
         return HttpResponseForbidden("Este usuario no tiene perfil de vendedor.")
 
     hoy = timezone.localdate()
-    neto_expr = _venta_neto_sql()
+    neto_expr = venta_neto_nonneg_expr()
     pendientes = Venta.objects.filter(vendedor_id=vendedor.pk, estado=Venta.Estado.PENDIENTE)
     # Imputado al saldo: sin fecha de vencimiento o fecha ya vencida (incluye el día de hoy).
     saldo_pendiente = pendientes.filter(
@@ -597,15 +589,7 @@ def vendedor_reportes(request):
         return HttpResponseForbidden("Este usuario no tiene perfil de vendedor.")
 
     # Actividad propia
-    neto_expr = ExpressionWrapper(
-        F("subtotal_lineas") - F("descuento_monto"),
-        output_field=DecimalField(max_digits=14, decimal_places=2),
-    )
-    neto_nonneg = Case(
-        When(subtotal_lineas__gte=F("descuento_monto"), then=neto_expr),
-        default=Value(Decimal("0.00")),
-        output_field=DecimalField(max_digits=14, decimal_places=2),
-    )
+    neto_nonneg = venta_neto_nonneg_expr()
     mis_ventas = Venta.objects.filter(vendedor_id=vendedor.pk)
     actividad = mis_ventas.aggregate(
         pedidos=Count("id"),

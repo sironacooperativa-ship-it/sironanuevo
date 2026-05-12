@@ -6,8 +6,30 @@
     <h1 class="app-page-title mb-1">Historial de comisiones</h1>
     <p class="text-muted small mb-2">Por vendedor: liquidaciones realizadas (fecha y detalle) y comisiones de pedidos ya cobrados que siguen pendientes de liquidar al vendedor.</p>
     <div class="d-flex flex-wrap gap-2">
-      <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'ventas_comisiones' %}">Volver a comisiones</a>
+      <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'ventas_comisiones' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}">Volver a comisiones</a>
       <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'ventas_historial' %}">Historial de ventas</a>
+    </div>
+  </div>
+
+  <div class="card app-card border-0 shadow-sm app-list-filters mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-12 col-md-6 col-lg-4">
+          <label class="form-label small text-muted mb-0">Vendedor</label>
+          <select name="vendedor" class="form-select form-select-sm">
+            <option value="" {% if not f.vendedor %}selected{% endif %}>Todos</option>
+            {% for ven in vendedores_opciones %}
+              <option value="{{ ven.pk }}" {% if f.vendedor == ven.pk|stringformat:"s" %}selected{% endif %}>
+                {{ ven.codigo }} — {{ ven.apellido }}, {{ ven.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-6 d-flex gap-2 flex-wrap">
+          <button type="submit" class="btn btn-sm btn-outline-dark rounded-pill">Filtrar</button>
+          <a class="btn btn-sm btn-outline-secondary rounded-pill" href="{% url 'ventas_comisiones_historial' %}">Limpiar</a>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -65,7 +87,11 @@
                           {% endif %}
                         </td>
                         <td class="text-end">
-                          <a class="btn btn-sm btn-outline-secondary rounded-pill" href="{% url 'ventas_comision_constancia_pdf' liq.pk %}">PDF</a>
+                          <div class="d-flex flex-wrap justify-content-end gap-1 align-items-center">
+                            <a class="btn btn-sm btn-outline-secondary rounded-pill" href="{% url 'ventas_comision_constancia_pdf' liq.pk %}">PDF</a>
+                            <a class="btn btn-sm btn-link text-muted py-0 px-1 small" href="{% url 'ventas_comision_constancia_pdf' liq.pk %}?agrupar_periodo=mes" title="Constancia agrupada por mes">Mes</a>
+                            <a class="btn btn-sm btn-link text-muted py-0 px-1 small" href="{% url 'ventas_comision_constancia_pdf' liq.pk %}?agrupar_periodo=semana" title="Constancia por semana ISO">Sem.</a>
+                          </div>
                         </td>
                       </tr>
                       {% if item.ventas %}

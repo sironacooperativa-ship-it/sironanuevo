@@ -929,18 +929,12 @@ def presupuesto_eliminar(request, pk: int):
 @require_http_methods(["POST"])
 def presupuesto_aprobar(request, pk: int):
     presupuesto = get_object_or_404(Presupuesto, pk=pk)
-    if not is_staff_user(request.user):
-        messages.error(
-            request,
-            "No tenés permiso para aprobar presupuestos (solo personal autorizado).",
-        )
-        return redirect("presupuesto_detalle", pk=pk)
     if not _usuario_puede_gestionar_presupuesto(request.user, presupuesto):
         messages.error(
             request,
-            "No tenés permiso para aprobar este presupuesto (solo el vendedor asignado o un administrador).",
+            "No tenés permiso para aprobar este presupuesto (solo el vendedor asignado o personal autorizado).",
         )
-        return redirect("presupuesto_lista")
+        return redirect("presupuesto_detalle", pk=pk)
     if presupuesto.estado != Presupuesto.Estado.ACTIVO:
         messages.warning(request, "Este presupuesto ya fue aprobado.")
         return redirect("presupuesto_lista")

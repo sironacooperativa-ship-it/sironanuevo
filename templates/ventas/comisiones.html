@@ -6,18 +6,30 @@
     <div class="app-page-header mb-2">
       <h1 class="app-page-title mb-1">Comisiones</h1>
       <p class="text-muted small mb-2">
-        Por <strong>pedido</strong>: en <span class="text-success">verde</span> el cliente ya pagó (la comisión puede liquidarse al vendedor); en negro sigue pendiente el cobro al cliente.
-        La liquidación suma <strong>todos</strong> los pedidos pagos aún no liquidados de ese vendedor (no depende del mes del desplegable).
+        Por <strong>pedido</strong>: en <span class="text-success">verde</span> el cliente ya pagó (podés liquidar al vendedor). Podés
+        <strong>liquidar todas</strong> las comisiones pendientes de ese vendedor o <strong>elegir pedidos</strong> con la casilla.
+        Los filtros de arriba aplican también a la liquidación. La <strong>agrupación en PDF</strong> solo ordena la constancia (mes o semana ISO).
       </p>
       <div class="d-flex flex-wrap gap-2">
         <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'ventas_historial' %}">Volver al historial de ventas</a>
-        <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'ventas_comisiones_historial' %}">Historial de liquidaciones</a>
+        <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'ventas_comisiones_historial' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}">Historial de liquidaciones</a>
       </div>
     </div>
 
     <div class="card app-card border-0 shadow-sm app-list-filters mb-3">
       <div class="card-body">
         <form method="get" class="row g-2 align-items-end">
+          <div class="col-12 col-md-3">
+            <label class="form-label small text-muted mb-0">Vendedor</label>
+            <select name="vendedor" class="form-select form-select-sm">
+              <option value="" {% if not f.vendedor %}selected{% endif %}>Todos</option>
+              {% for ven in vendedores_opciones %}
+                <option value="{{ ven.pk }}" {% if f.vendedor == ven.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ ven.codigo }} — {{ ven.apellido }}, {{ ven.nombre }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
           <div class="col-6 col-md-2">
             <label class="form-label small text-muted mb-0">Período rápido</label>
             <select name="periodo" class="form-select form-select-sm">
@@ -57,7 +69,8 @@
         <div class="card-body">
           <h2 class="h6 mb-2">Comisiones al vendedor pendientes de liquidar</h2>
           <p class="small text-muted mb-3">
-            Suma de comisiones de pedidos <strong>ya cobrados al cliente</strong> y aún <strong>no pagados al vendedor</strong>. Al liquidar se registra el egreso en caja y se genera la constancia en PDF.
+            Suma de comisiones de pedidos <strong>ya cobrados al cliente</strong> y aún <strong>no pagados al vendedor</strong>.
+            <strong>Liquidar todo</strong> incluye todos los pedidos pendientes de liquidar de ese vendedor (según filtros). <strong>Elegir pedidos</strong> despliega la lista para marcar solo algunos.
           </p>
           <div class="table-responsive presu-lista-table-wrap">
             <table class="modern-table">
@@ -73,20 +86,124 @@
                   <tr>
                     <td class="presu-col-ellipsis" title="{{ r.vendedor__apellido }}, {{ r.vendedor__nombre }}">
                       <div class="fw-semibold">{{ r.vendedor__apellido }}, {{ r.vendedor__nombre }}</div>
-                      <div class="small text-muted">Código {{ r.vendedor__codigo }}</div>
+                      <div class="small text-muted">Código {{ r.vendedor__codigo }} · {{ r.ventas_liquidables|length }} pedido{% if r.ventas_liquidables|length != 1 %}s{% endif %}</div>
                     </td>
                     <td class="text-end col-money">{{ r.pendiente|ars }}</td>
                     <td class="text-end">
-                      <form method="post" action="{% url 'ventas_comision_liquidacion_pagar' %}" class="d-inline">
-                        {% csrf_token %}
-                        <input type="hidden" name="vendedor" value="{{ r.vendedor_id }}" />
-                        {% for key, val in request.GET.items %}
-                          {% if key != "vendedor" %}
-                            <input type="hidden" name="{{ key }}" value="{{ val }}" />
-                          {% endif %}
-                        {% endfor %}
-                        <button type="submit" class="btn btn-sm btn-primary rounded-pill">Liquidar comisiones</button>
-                      </form>
+                      <div class="d-flex flex-wrap justify-content-end gap-2 align-items-center">
+                        <form method="post" action="{% url 'ventas_comision_liquidacion_pagar' %}" class="comision-liquidacion-form d-inline">
+                          {% csrf_token %}
+                          <input type="hidden" name="vendedor" value="{{ r.vendedor_id }}" />
+                          <input type="hidden" name="liquidar_modo" value="todos" />
+                          {% for key, val in request.GET.items %}
+                            {% if key != "vendedor" %}
+                              <input type="hidden" name="{{ key }}" value="{{ val }}" />
+                            {% endif %}
+                          {% endfor %}
+                          <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
+                            <select name="agrupar_periodo" class="form-select form-select-sm" style="max-width: 10rem" title="Agrupación en la constancia PDF">
+                              <option value="ninguno">PDF: sin agrupar</option>
+                              <option value="mes">PDF: por mes</option>
+                              <option value="semana">PDF: por semana</option>
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-primary rounded-pill">Liquidar todo</button>
+                          </div>
+                        </form>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-secondary rounded-pill"
+                          data-bs-toggle="collapse"
+                          data-bs-target="#pendGlob{{ r.vendedor_id }}"
+                          aria-expanded="false"
+                          aria-controls="pendGlob{{ r.vendedor_id }}"
+                        >
+                          Elegir pedidos
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="border-top-0">
+                    <td colspan="3" class="p-0 bg-light">
+                      <div id="pendGlob{{ r.vendedor_id }}" class="collapse">
+                        <div class="p-3 border-top">
+                          <form method="post" action="{% url 'ventas_comision_liquidacion_pagar' %}" class="comision-liquidacion-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="vendedor" value="{{ r.vendedor_id }}" />
+                            {% for key, val in request.GET.items %}
+                              {% if key != "vendedor" %}
+                                <input type="hidden" name="{{ key }}" value="{{ val }}" />
+                              {% endif %}
+                            {% endfor %}
+                            <div class="row g-2 align-items-end mb-2">
+                              <div class="col-12 col-md-5">
+                                <label class="form-label small text-muted mb-0">Agrupación en PDF</label>
+                                <select name="agrupar_periodo" class="form-select form-select-sm">
+                                  <option value="ninguno">Sin agrupar (orden cronológico)</option>
+                                  <option value="mes">Por mes calendario</option>
+                                  <option value="semana">Por semana ISO</option>
+                                </select>
+                              </div>
+                              <div class="col-12 col-md-7">
+                                <span class="small text-muted d-block mb-1">Liquidar</span>
+                                <div class="d-flex flex-wrap gap-3 align-items-center">
+                                  <div class="form-check m-0">
+                                    <input
+                                      class="form-check-input"
+                                      type="radio"
+                                      name="liquidar_modo"
+                                      id="lm-glob-todos-{{ r.vendedor_id }}"
+                                      value="todos"
+                                      checked
+                                    />
+                                    <label class="form-check-label small" for="lm-glob-todos-{{ r.vendedor_id }}">Todas las pendientes (filtros actuales)</label>
+                                  </div>
+                                  <div class="form-check m-0">
+                                    <input
+                                      class="form-check-input"
+                                      type="radio"
+                                      name="liquidar_modo"
+                                      id="lm-glob-sel-{{ r.vendedor_id }}"
+                                      value="seleccion"
+                                    />
+                                    <label class="form-check-label small" for="lm-glob-sel-{{ r.vendedor_id }}">Solo marcadas</label>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="table-responsive presu-lista-table-wrap mb-2">
+                              <table class="modern-table table-sm mb-0">
+                                <thead>
+                                  <tr>
+                                    <th scope="col" class="text-center" style="width: 2.5rem">✓</th>
+                                    <th scope="col">Pedido</th>
+                                    <th scope="col">Fecha</th>
+                                    <th scope="col" class="text-end">Neto</th>
+                                    <th scope="col" class="text-end">% com.</th>
+                                    <th scope="col" class="text-end col-money">Comisión</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {% for sale in r.ventas_liquidables %}
+                                    <tr>
+                                      <td class="text-center align-middle">
+                                        <input type="checkbox" class="form-check-input m-0" name="venta_id" value="{{ sale.pk }}" title="Incluir en liquidación" />
+                                      </td>
+                                      <td><a href="{% url 'venta_detalle' sale.pk %}">#{{ sale.pk }}</a></td>
+                                      <td class="col-muted small">{{ sale.creado_en|date:"d/m/Y H:i" }}</td>
+                                      <td class="text-end">{{ sale.neto|ars }}</td>
+                                      <td class="text-end">{{ sale.comision_porcentaje }}</td>
+                                      <td class="text-end col-money fw-semibold text-success">{{ sale.monto_comision|ars }}</td>
+                                    </tr>
+                                  {% endfor %}
+                                </tbody>
+                              </table>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                              <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill">Liquidar comisiones</button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 {% endfor %}
@@ -127,51 +244,7 @@
                         <div class="small text-muted">Código {{ bloque.vendedor.codigo }} · Subtotal mes {{ bloque.subtotal_mes_vendedor|ars }}</div>
                       </div>
                     </div>
-                    <div class="table-responsive presu-lista-table-wrap">
-                      <table class="modern-table table-sm">
-                        <thead>
-                          <tr>
-                            <th scope="col">Pedido</th>
-                            <th scope="col">Fecha</th>
-                            <th scope="col" class="text-end">Neto</th>
-                            <th scope="col" class="text-end">% com.</th>
-                            <th scope="col" class="text-end col-money">Comisión</th>
-                            <th scope="col">Estado</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {% for sale in bloque.pedidos %}
-                            <tr
-                              class="{% if sale.estado == 'PAG' and sale.comision_liquidacion_pago_id %}opacity-50{% endif %}"
-                            >
-                              <td>
-                                <a href="{% url 'venta_detalle' sale.pk %}">#{{ sale.pk }}</a>
-                              </td>
-                              <td class="col-muted small">{{ sale.creado_en|date:"d/m/Y H:i" }}</td>
-                              <td class="text-end">{{ sale.neto|ars }}</td>
-                              <td class="text-end">{{ sale.comision_porcentaje }}</td>
-                              <td
-                                class="text-end col-money fw-semibold {% if sale.estado == 'PAG' %}{% if sale.comision_liquidacion_pago_id %}text-muted text-decoration-line-through{% else %}text-success{% endif %}{% else %}text-body{% endif %}"
-                              >
-                                {{ sale.monto_comision|ars }}
-                              </td>
-                              <td class="small">
-                                {% if sale.estado == 'PAG' %}
-                                  {% if sale.comision_liquidacion_pago_id %}
-                                    <span class="text-muted">Liquidada (#{{ sale.comision_liquidacion_pago_id }})</span>
-                                  {% else %}
-                                    <span class="text-success">Pago cliente · pendiente liquidar</span>
-                                  {% endif %}
-                                {% else %}
-                                  <span class="text-body">Pendiente cobro cliente</span>
-                                {% endif %}
-                              </td>
-                            </tr>
-                          {% endfor %}
-                        </tbody>
-                      </table>
-                    </div>
-                    <form method="post" action="{% url 'ventas_comision_liquidacion_pagar' %}" class="mt-2">
+                    <form method="post" action="{% url 'ventas_comision_liquidacion_pagar' %}" class="comision-liquidacion-form">
                       {% csrf_token %}
                       <input type="hidden" name="vendedor" value="{{ bloque.vendedor.pk }}" />
                       {% for key, val in request.GET.items %}
@@ -179,7 +252,101 @@
                           <input type="hidden" name="{{ key }}" value="{{ val }}" />
                         {% endif %}
                       {% endfor %}
-                      <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill">Liquidar comisiones</button>
+                      <div class="row g-2 align-items-end mb-2">
+                        <div class="col-12 col-md-5">
+                          <label class="form-label small text-muted mb-0">Agrupación en PDF</label>
+                          <select name="agrupar_periodo" class="form-select form-select-sm">
+                            <option value="ninguno">Sin agrupar (orden cronológico)</option>
+                            <option value="mes">Por mes calendario</option>
+                            <option value="semana">Por semana ISO</option>
+                          </select>
+                        </div>
+                        <div class="col-12 col-md-7">
+                          <span class="small text-muted d-block mb-1">Liquidar</span>
+                          <div class="d-flex flex-wrap gap-3 align-items-center">
+                            <div class="form-check m-0">
+                              <input
+                                class="form-check-input"
+                                type="radio"
+                                name="liquidar_modo"
+                                id="lm-todos-{{ forloop.parentloop.counter }}-{{ forloop.counter }}-{{ bloque.vendedor.pk }}"
+                                value="todos"
+                                checked
+                              />
+                              <label class="form-check-label small" for="lm-todos-{{ forloop.parentloop.counter }}-{{ forloop.counter }}-{{ bloque.vendedor.pk }}">
+                                Todas las pendientes (según filtros)
+                              </label>
+                            </div>
+                            <div class="form-check m-0">
+                              <input
+                                class="form-check-input"
+                                type="radio"
+                                name="liquidar_modo"
+                                id="lm-sel-{{ forloop.parentloop.counter }}-{{ forloop.counter }}-{{ bloque.vendedor.pk }}"
+                                value="seleccion"
+                              />
+                              <label class="form-check-label small" for="lm-sel-{{ forloop.parentloop.counter }}-{{ forloop.counter }}-{{ bloque.vendedor.pk }}">
+                                Solo pedidos marcados
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="table-responsive presu-lista-table-wrap">
+                        <table class="modern-table table-sm">
+                          <thead>
+                            <tr>
+                              <th scope="col" class="text-center" style="width: 2.5rem" title="Solo pedidos pagos y sin liquidar">✓</th>
+                              <th scope="col">Pedido</th>
+                              <th scope="col">Fecha</th>
+                              <th scope="col" class="text-end">Neto</th>
+                              <th scope="col" class="text-end">% com.</th>
+                              <th scope="col" class="text-end col-money">Comisión</th>
+                              <th scope="col">Estado</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for sale in bloque.pedidos %}
+                              <tr
+                                class="{% if sale.estado == 'PAG' and sale.comision_liquidacion_pago_id %}opacity-50{% endif %}"
+                              >
+                                <td class="text-center align-middle">
+                                  {% if sale.estado == 'PAG' and not sale.comision_liquidacion_pago_id %}
+                                    <input type="checkbox" class="form-check-input m-0" name="venta_id" value="{{ sale.pk }}" title="Incluir en liquidación" />
+                                  {% else %}
+                                    <span class="text-muted small">—</span>
+                                  {% endif %}
+                                </td>
+                                <td>
+                                  <a href="{% url 'venta_detalle' sale.pk %}">#{{ sale.pk }}</a>
+                                </td>
+                                <td class="col-muted small">{{ sale.creado_en|date:"d/m/Y H:i" }}</td>
+                                <td class="text-end">{{ sale.neto|ars }}</td>
+                                <td class="text-end">{{ sale.comision_porcentaje }}</td>
+                                <td
+                                  class="text-end col-money fw-semibold {% if sale.estado == 'PAG' %}{% if sale.comision_liquidacion_pago_id %}text-muted text-decoration-line-through{% else %}text-success{% endif %}{% else %}text-body{% endif %}"
+                                >
+                                  {{ sale.monto_comision|ars }}
+                                </td>
+                                <td class="small">
+                                  {% if sale.estado == 'PAG' %}
+                                    {% if sale.comision_liquidacion_pago_id %}
+                                      <span class="text-muted">Liquidada (#{{ sale.comision_liquidacion_pago_id }})</span>
+                                    {% else %}
+                                      <span class="text-success">Pago cliente · pendiente liquidar</span>
+                                    {% endif %}
+                                  {% else %}
+                                    <span class="text-body">Pendiente cobro cliente</span>
+                                  {% endif %}
+                                </td>
+                              </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div class="mt-2 d-flex flex-wrap justify-content-end gap-2">
+                        <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill">Liquidar comisiones</button>
+                      </div>
                     </form>
                   </div>
                 {% endfor %}
@@ -191,5 +358,22 @@
     {% else %}
       <div class="alert alert-light border text-muted small">No hay pedidos con comisión y los filtros actuales.</div>
     {% endif %}
+
+    <script>
+      (function () {
+        document.querySelectorAll("form.comision-liquidacion-form").forEach(function (form) {
+          form.addEventListener("submit", function (ev) {
+            var modo = form.querySelector('input[name="liquidar_modo"]:checked');
+            if (modo && modo.value === "seleccion") {
+              var n = form.querySelectorAll('input[name="venta_id"]:checked').length;
+              if (!n) {
+                ev.preventDefault();
+                alert("Elegí al menos un pedido para liquidar, o cambiá a “Todas las pendientes”.");
+              }
+            }
+          });
+        });
+      })();
+    </script>
   </div>
 {% endblock %}

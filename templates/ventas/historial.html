@@ -248,16 +248,7 @@
                   >
                     <i data-lucide="pencil" aria-hidden="true"></i>
                   </a>
-                  {% if v.estado == "PEN" %}
-                    <a
-                      class="btn-icon btn-approve"
-                      href="{% url 'venta_registrar_pago' v.pk %}"
-                      title="Aprobar pago"
-                      aria-label="Aprobar pago"
-                    >
-                      <i data-lucide="check" aria-hidden="true"></i>
-                    </a>
-                  {% elif v.pago_movimiento %}
+                  {% if v.estado != "PEN" and v.pago_movimiento %}
                     <a
                       class="btn-icon btn-view"
                       href="{% url 'caja_detail' v.pago_movimiento.pk %}"
@@ -298,13 +289,12 @@
     </div>
     <div class="ventas-hist-legend" aria-label="Leyenda">
       <div class="ventas-hist-legend-row">
-        <span class="ventas-hist-legend-item"><span class="btn-icon btn-approve" aria-hidden="true"><i data-lucide="badge-dollar-sign"></i></span> Pendiente</span>
+        <span class="ventas-hist-legend-item"><span class="btn-icon btn-approve" aria-hidden="true"><i data-lucide="badge-dollar-sign"></i></span> Pagar</span>
         <span class="ventas-hist-legend-item"><span class="estado-ico estado-ico--approved" title="Aprobado"><i data-lucide="check-circle-2"></i></span> Aprobado</span>
         <span class="ventas-hist-legend-item"><span class="estado-ico estado-ico--cancel" title="Cancelado"><i data-lucide="x-circle"></i></span> Cancelado</span>
         <span class="ventas-hist-legend-sep"></span>
         <span class="ventas-hist-legend-item"><span class="btn-icon btn-view" aria-hidden="true"><i data-lucide="eye"></i></span> Ver detalle</span>
         <span class="ventas-hist-legend-item"><span class="btn-icon btn-edit" aria-hidden="true"><i data-lucide="pencil"></i></span> Editar</span>
-        <span class="ventas-hist-legend-item"><span class="btn-icon btn-approve" aria-hidden="true"><i data-lucide="badge-dollar-sign"></i></span> Pagar</span>
         <span class="ventas-hist-legend-item"><span class="btn-icon btn-delete" aria-hidden="true"><i data-lucide="trash-2"></i></span> Eliminar</span>
       </div>
     </div>

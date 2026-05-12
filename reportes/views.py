@@ -3,17 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import (
-    Case,
-    Count,
-    DecimalField,
-    ExpressionWrapper,
-    F,
-    Q,
-    Sum,
-    Value,
-    When,
-)
+from django.db.models import Count, Q, Sum, Value
 from django.db.models.functions import Coalesce, TruncDate, TruncMonth
 from django.shortcuts import render
 
@@ -22,7 +12,8 @@ from core.money_decimal import q2
 from personas.models import Comprador, Vendedor
 from productos.models import Producto
 from compras.models import Compra
-from ventas.models import Venta
+from ventas.models import Venta, VentaLinea
+from ventas.sql_metrics import venta_comision_expr, venta_linea_margen_bruto_expr, venta_neto_nonneg_expr
 
 
 def _chart_label_producto(row: dict) -> str:
@@ -82,24 +73,8 @@ def reportes_dashboard(request):
         ventas = ventas.filter(lineas__producto_id=int(pid)).distinct()
         compras = compras.filter(producto_id=int(pid))
 
-    neto_expr = ExpressionWrapper(
-        F("subtotal_lineas") - F("descuento_monto"),
-        output_field=DecimalField(max_digits=14, decimal_places=2),
-    )
-    neto_nonneg = Case(
-        When(subtotal_lineas__gte=F("descuento_monto"), then=neto_expr),
-        default=Value(Decimal("0.00")),
-        output_field=DecimalField(max_digits=14, decimal_places=2),
-    )
-    comision_bruta = ExpressionWrapper(
-        neto_nonneg * (F("comision_porcentaje") / Value(Decimal("100.00"))),
-        output_field=DecimalField(max_digits=14, decimal_places=2),
-    )
-    comision_expr = Case(
-        When(aplica_comision=True, then=comision_bruta),
-        default=Value(Decimal("0.00")),
-        output_field=DecimalField(max_digits=14, decimal_places=2),
-    )
+    neto_nonneg = venta_neto_nonneg_expr()
+    comision_expr = venta_comision_expr(neto_nonneg)
 
     kpis = ventas.aggregate(
         pedidos=Count("id"),
@@ -108,14 +83,27 @@ def reportes_dashboard(request):
         pagadas=Count("id", filter=Q(estado=Venta.Estado.PAGADA)),
         pendientes=Count("id", filter=Q(estado=Venta.Estado.PENDIENTE)),
     )
+    margen_line_expr = venta_linea_margen_bruto_expr()
+    margen_pedidos_bruto = (
+        VentaLinea.objects.filter(venta__in=ventas)
+        .aggregate(m=Coalesce(Sum(margen_line_expr), Value(Decimal("0.00"))))
+        .get("m")
+        or Decimal("0.00")
+    )
+    comision_dec = kpis["comision_total"] or Decimal("0.00")
+    ganancia_dec = (margen_pedidos_bruto or Decimal("0.00")) - comision_dec
+
     kpis["neto_total"] = q2(kpis["neto_total"])
     kpis["comision_total"] = q2(kpis["comision_total"])
     compras_kpis = compras.aggregate(
         compras=Count("id"),
         compras_total=Coalesce(Sum("monto"), Value(Decimal("0.00"))),
     )
-    compras_kpis["compras_total"] = q2(compras_kpis["compras_total"])
-    margen = q2((kpis["neto_total"] or Decimal("0.00")) - (compras_kpis["compras_total"] or Decimal("0.00")))
+    compras_dec = compras_kpis["compras_total"] or Decimal("0.00")
+    compras_kpis["compras_total"] = q2(compras_dec)
+    margen_pedidos = q2(margen_pedidos_bruto)
+    ganancia = q2(ganancia_dec)
+    egresos_operativos = q2(compras_dec + comision_dec)
 
     ventas_por_dia = (
         ventas.annotate(dia=TruncDate("creado_en"))
@@ -215,7 +203,9 @@ def reportes_dashboard(request):
         },
         "kpis": kpis,
         "compras_kpis": compras_kpis,
-        "margen": margen,
+        "margen_pedidos": margen_pedidos,
+        "ganancia": ganancia,
+        "egresos_operativos": egresos_operativos,
         "clientes_activos": clientes_activos,
         "ticket_promedio": ticket_promedio,
         "productos_vendidos": productos_vendidos,

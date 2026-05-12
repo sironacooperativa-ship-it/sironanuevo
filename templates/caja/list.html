@@ -1,6 +1,31 @@
 {% extends "base.html" %}
 {% load money %}
 {% block title %}Caja{% endblock %}
+{% block extra_head %}
+  <style>
+    .caja-libro-diario .caja-libro-tabla.modern-table th,
+    .caja-libro-diario .caja-libro-tabla.modern-table td {
+      padding: 0.18rem 0.35rem;
+      font-size: 0.8125rem;
+      line-height: 1.12;
+      vertical-align: middle;
+    }
+    .caja-libro-diario .caja-libro-tabla.modern-table thead th {
+      padding: 0.22rem 0.35rem;
+      font-weight: 600;
+    }
+    .caja-libro-diario .table-actions-cell {
+      padding-top: 0.12rem !important;
+      padding-bottom: 0.12rem !important;
+    }
+    .caja-libro-diario .presu-row-actions {
+      gap: 0.15rem;
+    }
+    .caja-libro-diario .btn-icon {
+      padding: 0.12rem;
+    }
+  </style>
+{% endblock %}
 {% block content %}
   <div class="app-page-header mb-3 d-flex flex-wrap align-items-center gap-2">
     <h1 class="app-page-title mb-0">Caja (Libro diario)</h1>
@@ -117,7 +142,7 @@
   <div class="table-card ui-force-productos presu-lista-modern caja-libro-diario mb-3">
     <div class="table-card-header">
       <h2 class="table-card-title">Libro diario</h2>
-      <span class="table-card-count small text-muted">Orden cronológico · saldo acumulado</span>
+      <span class="table-card-count small text-muted">Más reciente primero · 30 filas por hoja · saldo después de cada operación</span>
     </div>
     <div class="table-responsive presu-lista-table-wrap">
       <table class="modern-table caja-libro-tabla">
@@ -174,7 +199,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="8" class="text-muted text-center py-4">No hay movimientos con los filtros actuales.</td>
+              <td colspan="8" class="text-muted text-center py-2">No hay movimientos con los filtros actuales.</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -184,16 +209,18 @@
 
   {% if page_obj and page_obj.paginator.num_pages > 1 %}
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 small mt-2">
-      <span class="text-muted">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+      <span class="text-muted">Hoja {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} mov.)</span>
       <div class="d-flex gap-2">
         {% if page_obj.has_previous %}
-          <a class="btn btn-sm btn-outline-secondary" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>
+          <a class="btn btn-sm btn-outline-secondary" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Hoja más reciente</a>
         {% endif %}
         {% if page_obj.has_next %}
-          <a class="btn btn-sm btn-outline-secondary" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>
+          <a class="btn btn-sm btn-outline-secondary" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Hoja más antigua</a>
         {% endif %}
       </div>
     </div>
+  {% elif page_obj and page_obj.paginator.count %}
+    <p class="text-muted small mt-2 mb-0">Hoja 1 · {{ page_obj.paginator.count }} movimiento{% if page_obj.paginator.count != 1 %}s{% endif %}</p>
   {% endif %}
 
   <div class="d-flex flex-wrap align-items-center gap-2 mt-3 mb-2">

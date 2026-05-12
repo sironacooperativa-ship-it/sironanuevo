@@ -95,12 +95,12 @@
     <section class="stats-grid" aria-label="KPIs">
       <article class="metric-card" data-metric="ventas_neto">
         <div class="metric-top">
-          <div class="metric-title">Ventas netas</div>
+          <div class="metric-title">Ingresos (neto pedidos)</div>
           <span class="metric-icon"><i data-lucide="badge-dollar-sign"></i></span>
         </div>
         <div class="metric-value">{{ kpis.neto_total|ars }}</div>
         <div class="d-flex align-items-center justify-content-between gap-2">
-          <div class="metric-sub">{{ kpis.pagadas }} pagadas · {{ kpis.pendientes }} pendientes</div>
+          <div class="metric-sub">Subtotal − descuento + envío (no neg.) · {{ kpis.pagadas }} pagadas · {{ kpis.pendientes }} pendientes</div>
           <span class="metric-delta" data-delta-for="ventas_neto">—</span>
         </div>
       </article>
@@ -133,6 +133,17 @@
 
       <article class="metric-card">
         <div class="metric-top">
+          <div class="metric-title">Egresos estimados</div>
+          <span class="metric-icon" style="background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); color: #ef4444;">
+            <i data-lucide="arrow-down-circle"></i>
+          </span>
+        </div>
+        <div class="metric-value">{{ egresos_operativos|ars }}</div>
+        <div class="metric-sub">Compras registradas + comisiones (período)</div>
+      </article>
+
+      <article class="metric-card">
+        <div class="metric-top">
           <div class="metric-title">Clientes activos</div>
           <span class="metric-icon" style="background: rgba(168,85,247,0.1); border-color: rgba(168,85,247,0.18); color: #a855f7;">
             <i data-lucide="users"></i>
@@ -153,13 +164,24 @@
 
       <article class="metric-card">
         <div class="metric-top">
-          <div class="metric-title">Margen</div>
+          <div class="metric-title">Margen pedidos</div>
           <span class="metric-icon" style="background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); color: #22c55e;">
             <i data-lucide="trending-up"></i>
           </span>
         </div>
-        <div class="metric-value">{{ margen|ars }}</div>
-        <div class="metric-sub">Ventas − compras</div>
+        <div class="metric-value">{{ margen_pedidos|ars }}</div>
+        <div class="metric-sub">Σ líneas: subtotal − cantidad × costo producto</div>
+      </article>
+
+      <article class="metric-card">
+        <div class="metric-top">
+          <div class="metric-title">Ganancia estimada</div>
+          <span class="metric-icon" style="background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.2); color: #2563eb;">
+            <i data-lucide="piggy-bank"></i>
+          </span>
+        </div>
+        <div class="metric-value">{{ ganancia|ars }}</div>
+        <div class="metric-sub">Margen pedidos − comisiones</div>
       </article>
 
       <article class="metric-card">
@@ -170,7 +192,7 @@
           </span>
         </div>
         <div class="metric-value">{{ kpis.comision_total|ars }}</div>
-        <div class="metric-sub">Según aplica comisión</div>
+        <div class="metric-sub">% sobre neto pedido, si aplica comisión</div>
       </article>
 
       <article class="metric-card">

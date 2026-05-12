@@ -23,7 +23,7 @@
 
   <div class="card shadow-sm">
     <div class="card-body">
-      <form method="post" novalidate>
+      <form method="post" action="{% if modo == 'editar' %}{% url 'caja_edit' mov.pk %}{% else %}{% url 'caja_create' %}{% endif %}" novalidate>
         {% csrf_token %}
         <div class="row g-3">
           <div class="col-12 col-md-3">

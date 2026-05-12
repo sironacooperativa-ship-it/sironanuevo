@@ -31,12 +31,18 @@ def _comisiones_por_mes(qs, *, porcentaje: Decimal | None = None):
     qs = qs.order_by().distinct()
     by_month: dict[tuple[int, int], Decimal] = defaultdict(lambda: Decimal("0.00"))
     for row in qs.values(
-        "creado_en", "subtotal_lineas", "descuento_monto", "comision_porcentaje", "aplica_comision"
+        "creado_en",
+        "subtotal_lineas",
+        "descuento_monto",
+        "envio",
+        "comision_porcentaje",
+        "aplica_comision",
     ):
         if not row["aplica_comision"]:
             continue
         ce = row["creado_en"]
-        neto = row["subtotal_lineas"] - row["descuento_monto"]
+        envio = row.get("envio") or Decimal("0")
+        neto = row["subtotal_lineas"] - row["descuento_monto"] + envio
         if neto < 0:
             neto = Decimal("0")
         pct = porcentaje if porcentaje is not None else (row["comision_porcentaje"] or Decimal("0"))

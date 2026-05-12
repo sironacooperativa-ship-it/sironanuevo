@@ -7,19 +7,17 @@
 </div>
 
 <div class="modal-body pt-0 px-3 px-md-4">
-  {% if guardado %}
-    <div class="alert alert-success py-2 small mb-3">
-      Movimiento guardado. Actualizando lista…
-    </div>
-  {% endif %}
-
   <form
     method="post"
+    action="{% url 'caja_create' %}?modal=1"
     novalidate
     data-sirona-dialog-class="sirona-modal-dialog--caja-mov"
     data-sirona-dialog-centered="1"
   >
     {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger py-2 small mb-3">{{ form.non_field_errors }}</div>
+    {% endif %}
     <div class="row g-3 sirona-caja-mov-form">
       <div class="col-12 col-md-3">
         <label class="form-label sirona-form-label">Fecha</label>
@@ -115,16 +113,6 @@
       medio.addEventListener("change", refresh);
       refresh();
     }
-
-    {% if guardado %}
-      // Cerrar modal y refrescar la lista de movimientos.
-      try {
-        const el = document.getElementById("sironaModal");
-        const inst = el ? bootstrap.Modal.getInstance(el) : null;
-        if (inst) inst.hide();
-      } catch (e) {}
-      try { window.location.reload(); } catch (e) {}
-    {% endif %}
 
     if (typeof lucide !== "undefined") {
       try { lucide.createIcons(); } catch (e) {}
