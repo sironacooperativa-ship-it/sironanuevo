@@ -101,7 +101,7 @@
               </thead>
               <tbody>
                 {% for p in productos %}
-                  <tr>
+                  <tr class="{% if p.deshabilitado_por_stock %}table-danger{% endif %}">
                     <td>
                       <div class="name">{{ p.descripcion }}</div>
                       <div class="stock-prod-sub">
@@ -134,7 +134,9 @@
                         {% else %}
                           <span class="status-badge status-badge--success">En stock</span>
                         {% endif %}
-                        {% if p.habilitado %}
+                        {% if p.deshabilitado_por_stock %}
+                          <span class="status-badge bg-danger text-white">Desh. por stock</span>
+                        {% elif p.habilitado %}
                           <span class="status-badge status-badge--primary">Activo</span>
                         {% endif %}
                       </div>

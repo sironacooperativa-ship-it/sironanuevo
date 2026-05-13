@@ -1,6 +1,8 @@
 """Lógica compartida para confirmar un pedido (venta) con stock y calendario."""
 from __future__ import annotations
 
+import json
+from collections import defaultdict
 from datetime import date
 from decimal import Decimal
 from typing import Optional
@@ -112,6 +114,76 @@ def revertir_cobro_pedido_desde_movimiento_caja(mov: MovimientoCaja, user) -> bo
     return True
 
 
+def parse_stock_venta_json_from_post(post) -> dict[int, tuple[bool, bool]] | None:
+    """
+    Lee `stock_venta_json` del POST: { "producto_id": { "neg": bool, "desh": bool } }.
+    neg = permitir vender por encima del stock (saldo negativo). desh = si queda en 0, deshabilitar producto.
+    """
+    raw = (post.get("stock_venta_json") or "").strip()
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValidationError("El formato de confirmación de stock no es válido.") from exc
+    if not isinstance(data, dict):
+        raise ValidationError("El formato de confirmación de stock no es válido.")
+    out: dict[int, tuple[bool, bool]] = {}
+    for k, v in data.items():
+        try:
+            pid = int(k)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(v, dict):
+            out[pid] = (bool(v.get("neg")), bool(v.get("desh", True)))
+        elif isinstance(v, (list, tuple)) and len(v) >= 2:
+            out[pid] = (bool(v[0]), bool(v[1]))
+    return out or None
+
+
+def demanda_por_producto_desde_specs(line_specs: list[tuple]) -> dict[int, int]:
+    d: defaultdict[int, int] = defaultdict(int)
+    for spec in line_specs:
+        prod, qty, *_ = unpack_linea_spec(spec)
+        d[int(prod.pk)] += int(qty)
+    return dict(d)
+
+
+def merge_stock_confirmacion_venta_locked(
+    line_specs: list[tuple],
+    stock_confirmacion: dict[int, tuple[bool, bool]] | None,
+) -> dict[int, tuple[bool, bool]]:
+    """
+    Bloquea productos involucrados, valida saldos y devuelve la tabla definitiva
+    producto_id -> (permitir_negativo, deshabilitar_si_queda_en_cero).
+    """
+    demanda = demanda_por_producto_desde_specs(line_specs)
+    if not demanda:
+        return {}
+    pids = sorted(demanda.keys())
+    productos = list(Producto.objects.select_for_update().filter(pk__in=pids).order_by("pk"))
+    if len(productos) != len(pids):
+        raise ValidationError("Uno o más productos de la venta ya no existen.")
+    stock_map = {int(p.pk): int(p.stock) for p in productos}
+    merged: dict[int, tuple[bool, bool]] = {}
+    for pid, qsum in demanda.items():
+        avail = int(stock_map.get(pid, 0))
+        permitir_neg = False
+        desh_cero = True
+        if stock_confirmacion is not None and pid in stock_confirmacion:
+            permitir_neg, desh_cero = stock_confirmacion[pid]
+        if qsum > avail and not permitir_neg:
+            codigo = (
+                Producto.objects.filter(pk=pid).values_list("codigo", flat=True).first() or str(pid)
+            )
+            raise ValidationError(
+                f"Stock insuficiente para {codigo} (pedido: {qsum}, disponible: {avail}). "
+                "Confirmá en el cartel si permitís saldo negativo o ajustá las cantidades."
+            )
+        merged[pid] = (permitir_neg, desh_cero)
+    return merged
+
+
 def unpack_linea_spec(spec: tuple) -> tuple:
     """
     Línea de pedido/presupuesto: (prod, qty, pu, st) o
@@ -166,14 +238,19 @@ def crear_venta_confirmada(
     *,
     aplica_comision: bool = False,
     envio: Decimal = Decimal("0.00"),
+    stock_confirmacion: dict[int, tuple[bool, bool]] | None = None,
 ) -> Venta:
     """
     Crea Venta + líneas, descuenta stock y genera evento en calendario.
     line_specs: tuplas (Producto, cantidad, precio_unitario, subtotal)
     o con texto congelado: (..., codigo_snapshot, descripcion_snapshot).
+
+    stock_confirmacion: por producto_id, (permitir_negativo, deshabilitar_si_queda_en_cero).
+    Si es None, no se permite vender por encima del stock y, si queda en 0, se deshabilita (comportamiento previo).
     """
     subtotal = sum((t[3] for t in line_specs), Decimal("0.00"))
     with transaction.atomic():
+        merged = merge_stock_confirmacion_venta_locked(line_specs, stock_confirmacion)
         venta = Venta.objects.create(
             vendedor_id=vendedor_id,
             comprador_id=comprador_id,
@@ -186,7 +263,6 @@ def crear_venta_confirmada(
             creado_por_id=creado_por_id,
             actualizado_por_id=creado_por_id,
         )
-        pids_afectados: list[int] = []
         for spec in line_specs:
             prod, qty, pu, st, cod_snap, desc_snap = unpack_linea_spec(spec)
             VentaLinea.objects.create(
@@ -199,9 +275,8 @@ def crear_venta_confirmada(
                 descripcion_snapshot=(desc_snap or "")[:255],
             )
             Producto.objects.filter(pk=prod.pk).update(stock=F("stock") - qty)
-            pids_afectados.append(prod.pk)
 
-        Producto.deshabilitar_sin_stock(pids_afectados)
+        Producto.aplicar_deshabilitado_si_queda_en_cero(merged)
 
         sync_evento_pedido_pendiente(venta)
     return venta

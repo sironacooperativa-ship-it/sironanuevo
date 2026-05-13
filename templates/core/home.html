@@ -99,11 +99,11 @@
         <div class="col-6 d-flex align-items-stretch">
           <div class="stat-card w-100 h-100">
             <div class="stat-row">
-              <div class="stat-label">Alertas</div>
+              <div class="stat-label">Alertas stock</div>
               <span class="stat-ico stat-ico--danger"><i data-lucide="alert-triangle"></i></span>
             </div>
-            <div class="stat-value">{{ stock_critico|length }}</div>
-            <div class="text-muted small">stock ≤ 0</div>
+            <div class="stat-value">{{ stock_critico|length }}{% if deshabilitados_por_stock_count %}<span class="text-muted fs-6 fw-normal"> / </span><span class="text-danger">{{ deshabilitados_por_stock_count }}</span>{% endif %}</div>
+            <div class="text-muted small">Activos ≤0{% if deshabilitados_por_stock_count %} · <span class="text-danger">desh. por stock</span>{% endif %}</div>
           </div>
         </div>
       </div>
@@ -443,9 +443,43 @@
     </div>
   </div>
 
+  {% if deshabilitados_por_stock %}
+    <div class="card shadow-sm presu-lista-modern border-danger mb-3">
+      <div class="card-header fw-semibold bg-danger bg-opacity-10 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span>Deshabilitados por falta de stock</span>
+        <a class="btn btn-sm btn-outline-danger" href="{% url 'productos_list' %}?estado=stock">Ver en productos</a>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive presu-lista-table-wrap">
+          <table class="modern-table home-stock-desh-tabla">
+            <thead>
+              <tr>
+                <th scope="col" class="th-cod">Código</th>
+                <th scope="col">Producto</th>
+                <th scope="col" class="text-end col-money">Stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in deshabilitados_por_stock %}
+                <tr>
+                  <td class="col-muted"><span class="persona-cod">{{ p.codigo }}</span></td>
+                  <td class="col-muted">{{ p.descripcion }}</td>
+                  <td class="text-end col-money fw-semibold text-danger">{{ p.stock }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-body border-top d-flex justify-content-end gap-2 flex-wrap">
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'stock_home' %}">Ir a stock</a>
+      </div>
+    </div>
+  {% endif %}
+
   {% if stock_critico %}
     <div class="card shadow-sm presu-lista-modern border-danger mb-3">
-      <div class="card-header fw-semibold bg-danger bg-opacity-10">Stock crítico</div>
+      <div class="card-header fw-semibold bg-danger bg-opacity-10">Stock crítico (habilitados sin saldo)</div>
       <div class="card-body p-0">
         <div class="table-responsive presu-lista-table-wrap">
           <table class="modern-table home-stock-critico-tabla">

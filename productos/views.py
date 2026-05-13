@@ -15,6 +15,7 @@ from django.db.models import (
     CharField,
     Count,
     DecimalField,
+    Exists,
     ExpressionWrapper,
     F,
     OuterRef,
@@ -199,6 +200,29 @@ def _redirect_productos_con_filtros(request):
     return redirect(url)
 
 
+def _get_param_last_nonempty(request, key: str) -> str:
+    """
+    Lee un parámetro GET evitando el caso en que la misma clave aparece dos veces
+    (p. ej. estado=0&estado=) y QueryDict.get() devuelve solo el último valor vacío.
+    """
+    for x in reversed(request.GET.getlist(key)):
+        s = (x or "").strip()
+        if s != "":
+            return s
+    return ""
+
+
+def _get_lista_param_get(request) -> str:
+    """Valor de ?lista=… priorizando 'all' si aparece en cualquier posición."""
+    parts = [(x or "").strip() for x in request.GET.getlist("lista")]
+    non = [p for p in parts if p != ""]
+    if not non:
+        return ""
+    if "all" in non:
+        return "all"
+    return non[-1]
+
+
 def _filtrar_productos_queryset(request, *, use_post: bool = False):
     """Filtra por búsqueda, tipo y proveedor (productos con al menos una compra a ese proveedor)."""
     if use_post:
@@ -207,13 +231,13 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
         proveedor = (request.POST.get("filtro_proveedor") or "").strip()
         lista = (request.POST.get("filtro_lista") or "").strip()
     else:
-        q = (request.GET.get("q") or "").strip()
-        tipo = (request.GET.get("tipo") or "").strip()
-        proveedor = (request.GET.get("proveedor") or "").strip()
-        lista = (request.GET.get("lista") or "").strip()
+        q = _get_param_last_nonempty(request, "q")
+        tipo = _get_param_last_nonempty(request, "tipo")
+        proveedor = _get_param_last_nonempty(request, "proveedor")
+        lista = _get_lista_param_get(request)
 
-    estado = (request.GET.get("estado") or "").strip()
-    ingreso = (request.GET.get("ingreso") or "").strip()
+    estado = _get_param_last_nonempty(request, "estado")
+    ingreso = _get_param_last_nonempty(request, "ingreso")
 
     farmacia = _lista_precios_farmacia()
     if lista == "" and farmacia is not None:
@@ -246,6 +270,27 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
                     habilitado=True,
                     items_lista_precio__lista_id=lid,
                 ).distinct()
+
+    if estado == "1":
+        productos = productos.filter(habilitado=True)
+    elif estado == "0":
+        productos = productos.filter(habilitado=False)
+    elif estado == "stock":
+        productos = productos.filter(deshabilitado_por_stock=True)
+    elif estado == "manual":
+        productos = productos.filter(habilitado=False, deshabilitado_por_stock=False)
+    elif estado == "sin_lista":
+        # Sin lista Farmacia (PDF) ni ítems en listas por rubro.
+        en_lista_rubro = ListaPrecioItem.objects.filter(producto_id=OuterRef("pk")).exclude(
+            lista__es_farmacia=True
+        )
+        productos = productos.filter(en_lista_precios=False).annotate(
+            _en_lista_rubro=Exists(en_lista_rubro)
+        ).filter(_en_lista_rubro=False)
+
+    if ingreso == "nuevos":
+        desde = timezone.now() - timedelta(days=30)
+        productos = productos.filter(creado_en__gte=desde)
 
     productos = _annotate_precio_lista_vista(productos, lista_modo, lista_obj)
     sort_merge = dict(PRODUCTOS_SORT_FIELDS)
@@ -561,8 +606,8 @@ def _aplicar_snapshot_excel_a_producto(producto: Producto, snap: dict) -> None:
 @login_required
 def productos_list(request):
     farmacia = _lista_precios_farmacia()
-    raw_lista = request.GET.get("lista")
-    if farmacia is not None and (raw_lista is None or raw_lista == ""):
+    raw_lista = _get_lista_param_get(request)
+    if farmacia is not None and raw_lista == "":
         q = request.GET.copy()
         q["lista"] = str(farmacia.pk)
         return redirect(reverse("productos_list") + "?" + q.urlencode())
@@ -1080,6 +1125,8 @@ def producto_toggle_habilitado(request, pk: int):
     producto.habilitado = not producto.habilitado
     if not producto.habilitado:
         producto.en_lista_precios = False
+        producto.deshabilitado_por_stock = False
+        producto.listas_stock_snapshot = None
     producto.save()
     return _redirect_productos_con_filtros(request)
 
@@ -1114,7 +1161,12 @@ def productos_acciones_masa(request):
 
     if accion == "habilitar":
         sin_stock = Producto.objects.filter(pk__in=ids, habilitado=False, stock__lte=0).count()
-        n = Producto.objects.filter(pk__in=ids, habilitado=False, stock__gt=0).update(habilitado=True)
+        n = 0
+        with transaction.atomic():
+            for p in Producto.objects.filter(pk__in=ids, habilitado=False, stock__gt=0).select_for_update():
+                p.habilitado = True
+                p.save()
+                n += 1
         if n:
             messages.success(request, f"Se habilitaron {n} producto(s).")
         if sin_stock:
@@ -1125,7 +1177,12 @@ def productos_acciones_masa(request):
         if not n and not sin_stock:
             messages.info(request, "Los productos elegidos ya estaban habilitados.")
     elif accion == "deshabilitar":
-        n = Producto.objects.filter(pk__in=ids).update(habilitado=False, en_lista_precios=False)
+        n = Producto.objects.filter(pk__in=ids).update(
+            habilitado=False,
+            en_lista_precios=False,
+            deshabilitado_por_stock=False,
+            listas_stock_snapshot=None,
+        )
         messages.success(request, f"Se deshabilitaron {n} producto(s).")
     elif accion == "lista_precio":
         raw_lista = (request.POST.get("lista_id") or "").strip()

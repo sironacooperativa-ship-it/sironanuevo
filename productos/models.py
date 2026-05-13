@@ -1,6 +1,8 @@
 import re
+from collections.abc import Iterable
 from decimal import Decimal
 
+from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils.text import slugify
@@ -27,6 +29,8 @@ class Producto(models.Model):
     precio_venta_editado = models.BooleanField(default=False)
     habilitado = models.BooleanField(default=True)
     en_lista_precios = models.BooleanField(default=False)
+    deshabilitado_por_stock = models.BooleanField(default=False, db_index=True)
+    listas_stock_snapshot = models.JSONField(null=True, blank=True)
 
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
@@ -60,8 +64,6 @@ class Producto(models.Model):
         super().clean()
         if self.costo is not None and self.costo < 0:
             raise ValidationError({"costo": "El costo no puede ser negativo."})
-        if self.stock is not None and self.stock < 0:
-            raise ValidationError({"stock": "El stock no puede ser negativo."})
         if self.porcentaje_ganancia is not None and self.porcentaje_ganancia < 0:
             raise ValidationError(
                 {"porcentaje_ganancia": "El porcentaje no puede ser negativo."}
@@ -92,6 +94,38 @@ class Producto(models.Model):
         n = int(m.group(1)) + 1
         return f"{prefijo}{n:04d}"
 
+    def _snapshot_listas_stock_actual(self) -> dict:
+        """Estado de listas antes de apagar por stock (Farmacia + rubros)."""
+        if not self.pk:
+            return {"en_lista_precios": bool(self.en_lista_precios), "lista_rubro_ids": []}
+        ListaPrecioItem = apps.get_model("productos", "ListaPrecioItem")
+        ids = list(
+            ListaPrecioItem.objects.filter(producto_id=self.pk)
+            .exclude(lista__es_farmacia=True)
+            .values_list("lista_id", flat=True)
+            .distinct()
+        )
+        return {"en_lista_precios": bool(self.en_lista_precios), "lista_rubro_ids": ids}
+
+    def _restaurar_listas_desde_snapshot(self) -> None:
+        """Vuelve a poner el producto en las mismas listas que tenía antes del apagado por stock."""
+        snap = self.listas_stock_snapshot
+        if not snap:
+            return
+        ListaPrecioItem = apps.get_model("productos", "ListaPrecioItem")
+        ListaPrecios = apps.get_model("productos", "ListaPrecios")
+        self.en_lista_precios = bool(snap.get("en_lista_precios"))
+        for lid in snap.get("lista_rubro_ids") or []:
+            if not ListaPrecios.objects.filter(pk=lid, es_farmacia=False).exists():
+                continue
+            ListaPrecioItem.objects.update_or_create(
+                lista_id=lid,
+                producto_id=self.pk,
+                defaults={"precio_venta": self.precio_venta},
+            )
+        self.listas_stock_snapshot = None
+        self.deshabilitado_por_stock = False
+
     def save(self, *args, **kwargs):
         if not self.codigo:
             with transaction.atomic():
@@ -103,11 +137,25 @@ class Producto(models.Model):
             self.precio_venta = self.calcular_precio_venta()
 
         if self.stock is not None and self.stock == 0:
+            snap = self._snapshot_listas_stock_actual()
             self.habilitado = False
             self.en_lista_precios = False
+            self.deshabilitado_por_stock = True
+            self.listas_stock_snapshot = snap
             uf = kwargs.get("update_fields")
             if uf is not None:
-                kwargs["update_fields"] = sorted(set(uf) | {"habilitado", "en_lista_precios"})
+                kwargs["update_fields"] = sorted(
+                    set(uf)
+                    | {
+                        "habilitado",
+                        "en_lista_precios",
+                        "deshabilitado_por_stock",
+                        "listas_stock_snapshot",
+                    }
+                )
+        elif self.stock is not None and self.stock < 0:
+            # Stock negativo (p. ej. mercadería externa): no forzar habilitado/listas desde acá.
+            pass
         elif self.stock is not None and self.stock > 0:
             # Al pasar de sin stock a con stock, queda habilitado para venta (lista Farmacia/PDF es aparte).
             paso_a_positivo = False
@@ -125,15 +173,78 @@ class Producto(models.Model):
                 if uf is not None:
                     kwargs["update_fields"] = sorted(set(uf) | {"habilitado"})
 
+        if self.habilitado and self.listas_stock_snapshot:
+            self._restaurar_listas_desde_snapshot()
+            uf = kwargs.get("update_fields")
+            if uf is not None:
+                kwargs["update_fields"] = sorted(
+                    set(uf)
+                    | {
+                        "en_lista_precios",
+                        "listas_stock_snapshot",
+                        "deshabilitado_por_stock",
+                    }
+                )
+
         super().save(*args, **kwargs)
 
     @classmethod
+    def registrar_deshabilitacion_por_stock(cls, producto_ids: Iterable[int]) -> None:
+        """Tras F() en stock: apaga venta y conserva snapshot de listas para rehabilitar luego."""
+        ListaPrecioItem = apps.get_model("productos", "ListaPrecioItem")
+        seen: list[int] = []
+        for x in producto_ids:
+            try:
+                ix = int(x)
+            except (TypeError, ValueError):
+                continue
+            if ix not in seen:
+                seen.append(ix)
+        for pk in seen:
+            with transaction.atomic():
+                row = (
+                    cls.objects.select_for_update()
+                    .filter(pk=pk, stock=0, habilitado=True)
+                    .values("pk", "en_lista_precios")
+                    .first()
+                )
+                if row is None:
+                    continue
+                ids = list(
+                    ListaPrecioItem.objects.filter(producto_id=pk)
+                    .exclude(lista__es_farmacia=True)
+                    .values_list("lista_id", flat=True)
+                    .distinct()
+                )
+                snap = {"en_lista_precios": bool(row["en_lista_precios"]), "lista_rubro_ids": ids}
+                cls.objects.filter(pk=pk).update(
+                    habilitado=False,
+                    en_lista_precios=False,
+                    deshabilitado_por_stock=True,
+                    listas_stock_snapshot=snap,
+                )
+
+    @classmethod
+    def aplicar_deshabilitado_si_queda_en_cero(
+        cls, opciones_por_producto: dict[int, tuple[bool, bool]]
+    ) -> None:
+        """
+        Tras descontar stock con F(), deshabilita productos que quedaron en stock 0.
+        opciones_por_producto: producto_id -> (permitir_negativo_ignorado_aquí, deshabilitar_si_stock_es_cero).
+        """
+        ids: list[int] = []
+        for pid, (_neg, desh) in opciones_por_producto.items():
+            if desh:
+                ids.append(int(pid))
+        cls.registrar_deshabilitacion_por_stock(ids)
+
+    @classmethod
     def deshabilitar_sin_stock(cls, producto_ids: list[int] | None = None) -> None:
-        """Tras actualizar stock con F() u otro SQL, pone habilitado=False donde stock = 0."""
-        qs = cls.objects.filter(stock=0)
+        """Tras actualizar stock con F() u otro SQL, deshabilita por stock donde corresponde."""
+        qs = cls.objects.filter(stock=0, habilitado=True)
         if producto_ids is not None:
             qs = qs.filter(pk__in=producto_ids)
-        qs.update(habilitado=False, en_lista_precios=False)
+        cls.registrar_deshabilitacion_por_stock(list(qs.values_list("pk", flat=True)))
 
 
 class ListaPrecios(models.Model):

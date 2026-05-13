@@ -44,6 +44,8 @@ from .remito_pdf import remito_venta_pdf_response
 from .servicios import (
     crear_venta_confirmada,
     eliminar_venta_admin,
+    merge_stock_confirmacion_venta_locked,
+    parse_stock_venta_json_from_post,
     sincronizar_productos_lista_elegida_en_venta,
     sync_evento_pedido_pendiente,
     venta_aplicar_snapshot_ganancia_cobro,
@@ -214,9 +216,6 @@ def venta_nueva(request):
                     if prod is None:
                         err = "Un producto seleccionado no existe o está deshabilitado."
                         break
-                if prod.stock < qty:
-                    err = f"Stock insuficiente para {prod.codigo} (disponible: {prod.stock})."
-                    break
                 pu = _precio_producto_para_lista(lista_venta, prod) if lista_venta else q2(prod.precio_venta)
                 st = (pu * qty).quantize(Decimal("0.01"))
                 subtotal += st
@@ -231,19 +230,31 @@ def venta_nueva(request):
 
             if err is None:
                 aplica_comision = request.POST.get("aplica_comision") == "1"
-                venta = crear_venta_confirmada(
-                    int(vid),
-                    fecha_v,
-                    descuento,
-                    comision_pct,
-                    line_specs,
-                    comprador_id=comprador_id,
-                    creado_por_id=request.user.id,
-                    aplica_comision=aplica_comision,
-                )
-                sincronizar_productos_lista_elegida_en_venta(lista_venta, line_specs)
-                messages.success(request, f"Venta #{venta.pk} registrada. Orden de pago y evento en calendario.")
-                return redirect("ventas_historial")
+                try:
+                    stock_conf = parse_stock_venta_json_from_post(request.POST)
+                except ValidationError as exc:
+                    err = "; ".join(getattr(exc, "messages", [str(exc)]))
+                    stock_conf = None
+                if err is None:
+                    try:
+                        venta = crear_venta_confirmada(
+                            int(vid),
+                            fecha_v,
+                            descuento,
+                            comision_pct,
+                            line_specs,
+                            comprador_id=comprador_id,
+                            creado_por_id=request.user.id,
+                            aplica_comision=aplica_comision,
+                            stock_confirmacion=stock_conf,
+                        )
+                    except ValidationError as exc:
+                        err = "; ".join(getattr(exc, "messages", [str(exc)]))
+                        venta = None
+                    if err is None:
+                        sincronizar_productos_lista_elegida_en_venta(lista_venta, line_specs)
+                        messages.success(request, f"Venta #{venta.pk} registrada. Orden de pago y evento en calendario.")
+                        return redirect("ventas_historial")
 
         if err:
             messages.error(request, err)
@@ -1312,9 +1323,6 @@ def venta_editar(request, pk: int):
                     if prod is None:
                         err = "Un producto seleccionado no existe o está deshabilitado."
                         break
-                # Para edición: permitir guardar aunque el stock justo no alcance, pero controlamos igual para no quedar negativo.
-                # Reponemos stock viejo más abajo dentro de la transacción; acá validamos contra stock "actual" + lo que ya está en la venta.
-                # Validación conservadora: se ajusta con lock y recomputo en transacción.
                 if praw:
                     try:
                         pu = q2(parse_decimal_from_input(praw))
@@ -1334,6 +1342,13 @@ def venta_editar(request, pk: int):
             err = "Agregá al menos un producto."
         if err is None and descuento > subtotal:
             err = "El descuento no puede superar el subtotal de las líneas."
+
+        stock_conf = None
+        if err is None and not pedido_pagado:
+            try:
+                stock_conf = parse_stock_venta_json_from_post(request.POST)
+            except ValidationError as exc:
+                err = "; ".join(getattr(exc, "messages", [str(exc)]))
 
         if err is None:
             try:
@@ -1357,7 +1372,7 @@ def venta_editar(request, pk: int):
                         for ln in old_lines:
                             Producto.objects.filter(pk=ln.producto_id).update(stock=F("stock") + ln.cantidad)
                         VentaLinea.objects.filter(venta_id=v_locked.pk).delete()
-                        pids_afectados: list[int] = []
+                        merged = merge_stock_confirmacion_venta_locked(line_specs, stock_conf)
                         for spec in line_specs:
                             prod, qty, pu, st, cod, desc = spec
                             VentaLinea.objects.create(
@@ -1370,8 +1385,7 @@ def venta_editar(request, pk: int):
                                 descripcion_snapshot=(desc or "")[:255],
                             )
                             Producto.objects.filter(pk=prod.pk).update(stock=F("stock") - qty)
-                            pids_afectados.append(prod.pk)
-                        Producto.deshabilitar_sin_stock(pids_afectados)
+                        Producto.aplicar_deshabilitado_si_queda_en_cero(merged)
 
                     v_locked.vendedor_id = vid
                     v_locked.comprador_id = comprador_id
@@ -1401,6 +1415,8 @@ def venta_editar(request, pk: int):
                     else "Pedido actualizado.",
                 )
                 return redirect("venta_detalle", pk=venta.pk)
+            except ValidationError as exc:
+                messages.error(request, "; ".join(getattr(exc, "messages", [str(exc)])))
             except Exception as exc:
                 det = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
                 messages.error(request, "No se pudo actualizar el pedido." + det)

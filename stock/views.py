@@ -3,7 +3,7 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import Count, DecimalField, ExpressionWrapper, F, Q, Sum, Value
+from django.db.models import Case, Count, DecimalField, ExpressionWrapper, F, IntegerField, Q, Sum, Value, When
 from django.db.models.functions import Cast, Coalesce
 from django.core.paginator import Paginator
 from django.shortcuts import redirect, render
@@ -27,7 +27,7 @@ def _stock_productos_queryset(request):
     proveedor = (request.GET.get("proveedor") or "").strip()
     estado = (request.GET.get("estado") or "").strip()
     # Prefetch proveedor (vía compras) para mostrar "Marca" sin N+1.
-    qs = Producto.objects.all().prefetch_related("compras_origen__proveedor").order_by("descripcion", "codigo")
+    qs = Producto.objects.all().prefetch_related("compras_origen__proveedor")
     if q:
         qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
     if tipo:
@@ -38,6 +38,15 @@ def _stock_productos_queryset(request):
         qs = qs.filter(habilitado=True)
     elif estado == "0":
         qs = qs.filter(habilitado=False)
+    elif estado == "stock":
+        qs = qs.filter(deshabilitado_por_stock=True)
+    qs = qs.annotate(
+        _ord_desh_stock=Case(
+            When(deshabilitado_por_stock=True, then=Value(0)),
+            default=Value(1),
+            output_field=IntegerField(),
+        )
+    ).order_by("_ord_desh_stock", "descripcion", "codigo")
     return qs, {"q": q, "tipo": tipo, "proveedor": proveedor, "estado": estado}
 
 
@@ -62,9 +71,6 @@ def stock_ajuste_inline(request):
         new_stock = int(float(raw_stock))
     except (ValueError, TypeError, OverflowError):
         messages.error(request, "El stock indicado no es válido.")
-        return _redirect_stock()
-    if new_stock < 0:
-        messages.error(request, "El stock no puede ser negativo.")
         return _redirect_stock()
 
     try:
@@ -101,31 +107,25 @@ def stock_home(request):
                 # Lock row to prevent races
                 p = Producto.objects.select_for_update().get(pk=producto.pk)
 
-                if tipo == MovimientoStock.Tipo.SALIDA and p.stock - cantidad < 0:
-                    form.add_error("cantidad", "No hay stock suficiente para quitar esa cantidad.")
-                else:
-                    mov = MovimientoStock.objects.create(
-                        producto=p,
-                        tipo=tipo,
-                        cantidad=cantidad,
-                        numero_boleta=(form.cleaned_data.get("numero_boleta") or "").strip(),
-                        proveedor=(form.cleaned_data.get("proveedor") or "").strip(),
-                        numero_factura=(form.cleaned_data.get("numero_factura") or "").strip(),
-                        destinatario=(form.cleaned_data.get("destinatario") or "").strip(),
-                        usuario=request.user if request.user.is_authenticated else None,
-                    )
+                mov = MovimientoStock.objects.create(
+                    producto=p,
+                    tipo=tipo,
+                    cantidad=cantidad,
+                    numero_boleta=(form.cleaned_data.get("numero_boleta") or "").strip(),
+                    proveedor=(form.cleaned_data.get("proveedor") or "").strip(),
+                    numero_factura=(form.cleaned_data.get("numero_factura") or "").strip(),
+                    destinatario=(form.cleaned_data.get("destinatario") or "").strip(),
+                    usuario=request.user if request.user.is_authenticated else None,
+                )
 
-                    delta = cantidad if tipo == MovimientoStock.Tipo.ENTRADA else -cantidad
-                    stock_antes = p.stock
-                    Producto.objects.filter(pk=p.pk).update(stock=F("stock") + delta)
-                    stock_despues = stock_antes + delta
-                    if stock_despues > 0 and stock_antes <= 0:
-                        # Solo rehabilitamos venta; la lista Farmacia (PDF) se marca a mano en el producto.
-                        Producto.objects.filter(pk=p.pk, stock__gt=0).update(habilitado=True)
-                    Producto.deshabilitar_sin_stock([p.pk])
+                delta = cantidad if tipo == MovimientoStock.Tipo.ENTRADA else -cantidad
+                Producto.objects.filter(pk=p.pk).update(stock=F("stock") + delta)
+                p = Producto.objects.select_for_update().get(pk=p.pk)
+                p.save()
+                Producto.deshabilitar_sin_stock([p.pk])
 
-                    messages.success(request, f"Stock actualizado ({mov.get_tipo_display()}): {p.codigo} ({delta:+d})")
-                    return redirect("stock_home")
+                messages.success(request, f"Stock actualizado ({mov.get_tipo_display()}): {p.codigo} ({delta:+d})")
+                return redirect("stock_home")
     else:
         form = MovimientoStockForm()
 

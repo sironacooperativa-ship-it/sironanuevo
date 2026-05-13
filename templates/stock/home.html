@@ -176,6 +176,7 @@
             <option value="" {% if not estado %}selected{% endif %}>Todos</option>
             <option value="1" {% if estado == "1" %}selected{% endif %}>Activos</option>
             <option value="0" {% if estado == "0" %}selected{% endif %}>Inactivos</option>
+            <option value="stock" {% if estado == "stock" %}selected{% endif %}>Solo desh. por stock</option>
           </select>
         </div>
         <div class="stock-filter-actions">
@@ -188,6 +189,7 @@
       </div>
       <p class="stock-filter-hint text-muted mb-0">
         En <strong>Stock disponible</strong> podés corregir el saldo a mano; se guarda en el producto y se refleja en Productos, presupuestos y ventas.
+        Los productos <strong class="text-danger">deshabilitados automáticamente por stock</strong> aparecen primero en la tabla (fila roja).
       </p>
     </form>
   </section>
@@ -220,7 +222,7 @@
           </thead>
           <tbody>
             {% for p in productos %}
-              <tr>
+              <tr class="{% if p.deshabilitado_por_stock %}table-danger{% endif %}">
                 <td>
                   <div class="name">{{ p.descripcion }}</div>
                   <div class="stock-prod-sub">
@@ -257,7 +259,9 @@
                     {% else %}
                       <span class="status-badge status-badge--success">En stock</span>
                     {% endif %}
-                    {% if p.habilitado %}
+                    {% if p.deshabilitado_por_stock %}
+                      <span class="status-badge bg-danger text-white">Desh. por stock</span>
+                    {% elif p.habilitado %}
                       <span class="status-badge status-badge--primary">Activo</span>
                     {% endif %}
                   </div>

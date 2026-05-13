@@ -176,6 +176,11 @@ def home(request):
     )
 
     stock_critico = Producto.objects.filter(habilitado=True, stock__lte=0).order_by("descripcion", "codigo")[:30]
+    deshabilitados_por_stock_qs = Producto.objects.filter(deshabilitado_por_stock=True).order_by(
+        "-actualizado_en", "-id"
+    )
+    deshabilitados_por_stock = list(deshabilitados_por_stock_qs[:30])
+    deshabilitados_por_stock_count = deshabilitados_por_stock_qs.count()
     vencimientos_prod = (
         Producto.objects.filter(habilitado=True, fecha_vencimiento__isnull=False, fecha_vencimiento__lte=prox_30)
         .order_by("fecha_vencimiento", "descripcion", "codigo")[:30]
@@ -234,6 +239,8 @@ def home(request):
             "cheques_proximos": cheques,
             "cheques_a_pagar": cheques_a_pagar,
             "stock_critico": stock_critico,
+            "deshabilitados_por_stock": deshabilitados_por_stock,
+            "deshabilitados_por_stock_count": deshabilitados_por_stock_count,
             "vencimientos_prod": vencimientos_prod,
             "meds_venc_90": meds_venc_90,
             "meds_venc_180": meds_venc_180,

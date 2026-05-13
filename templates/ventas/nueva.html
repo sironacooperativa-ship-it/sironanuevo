@@ -1,11 +1,12 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Nueva venta{% endblock %}
 {% block content %}
   <div class="venta-nueva-page">
     <header class="venta-nueva-head">
       <div class="venta-nueva-head-text">
         <h1 class="venta-nueva-title">Nueva venta</h1>
-        <p class="venta-nueva-lead text-muted">Armá el pedido con lista de precios, líneas y totales. El stock se descuenta al confirmar.</p>
+        <p class="venta-nueva-lead text-muted">Armá el pedido con lista de precios, líneas y totales. El stock se descuenta al confirmar; si no alcanza, el sistema te pedirá cómo proceder (incluido saldo negativo).</p>
       </div>
       <div class="venta-nueva-head-actions">
         <a class="action-button" href="{% url 'ventas_historial' %}">Historial</a>
@@ -18,6 +19,7 @@
 
     <form method="post" novalidate id="ventaForm" class="venta-nueva-form">
       {% csrf_token %}
+      <input type="hidden" name="stock_venta_json" id="id_stock_venta_json" value="" autocomplete="off" />
 
       <div class="row g-3 venta-nueva-grid">
         <div class="col-12 col-xl-8 venta-nueva-col-main">
@@ -197,6 +199,7 @@
     </form>
   </div>
 
+  <script src="{% static 'js/venta-stock-confirmar.js' %}?v=1"></script>
   <script>
     (function () {
       const catalogoPreciosUrl = "{% url 'venta_catalogo_precios' %}";
@@ -591,6 +594,17 @@
           document.head.appendChild(st);
         } catch (e) {}
       })();
+
+      if (typeof SironaVentaStockConfirm !== "undefined") {
+        SironaVentaStockConfirm.bind({
+          form: document.getElementById("ventaForm"),
+          tbody: tbody,
+          getProduct: function (pid) {
+            return byId[String(pid)];
+          },
+          hiddenId: "id_stock_venta_json",
+        });
+      }
     })();
   </script>
 {% endblock %}

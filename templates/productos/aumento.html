@@ -131,9 +131,12 @@
           <div class="col-12 col-md-4">
             <label class="form-label small text-muted mb-1">Estado</label>
             <select class="form-select form-select-sm rounded-3" name="estado">
-              <option value="" {% if not estado %}selected{% endif %}>Todos</option>
+              <option value="" {% if estado == "" %}selected{% endif %}>Todos</option>
               <option value="1" {% if estado == "1" %}selected{% endif %}>Habilitados</option>
               <option value="0" {% if estado == "0" %}selected{% endif %}>Deshabilitados</option>
+              <option value="stock" {% if estado == "stock" %}selected{% endif %}>Deshabilitados por stock</option>
+              <option value="manual" {% if estado == "manual" %}selected{% endif %}>Deshabilitados manualmente</option>
+              <option value="sin_lista" {% if estado == "sin_lista" %}selected{% endif %}>Productos no asignados</option>
             </select>
           </div>
           <div class="col-12 col-md-4">

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Editar pedido #{{ venta.pk }}{% endblock %}
 {% block content %}
   <span id="sidebarCurrentNode" class="d-none" data-parent-url="{% url 'ventas_historial' %}">Editar pedido #{{ venta.pk }}</span>
@@ -11,8 +12,14 @@
   {{ productos_catalogo|json_script:"ventas-productos" }}
   {{ lineas_iniciales|json_script:"ventas-lineas-iniciales" }}
 
-  <form method="post" novalidate id="ventaEditForm">
+  <form
+    method="post"
+    novalidate
+    id="ventaEditForm"
+    data-pedido-pagado="{% if pedido_pagado %}1{% else %}0{% endif %}"
+  >
     {% csrf_token %}
+    <input type="hidden" name="stock_venta_json" id="id_stock_venta_json" value="" autocomplete="off" />
     {% if pedido_pagado %}
       <div class="alert alert-warning small mb-3">
         Este pedido ya está <strong>cobrado</strong>. Podés corregir montos y comisión en el registro; al guardar líneas
@@ -142,6 +149,7 @@
     </div>
   </form>
 
+  <script src="{% static 'js/venta-stock-confirmar.js' %}?v=1"></script>
   <script>
     (function () {
       const el = document.getElementById("ventas-productos");
@@ -335,6 +343,18 @@
         totals();
       } else {
         addRow();
+      }
+
+      if (typeof SironaVentaStockConfirm !== "undefined") {
+        const vf = document.getElementById("ventaEditForm");
+        SironaVentaStockConfirm.bind({
+          form: vf,
+          tbody: tbody,
+          getProduct: function (pid) {
+            return byId[String(pid)];
+          },
+          hiddenId: "id_stock_venta_json",
+        });
       }
     })();
   </script>

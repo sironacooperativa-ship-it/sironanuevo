@@ -19,8 +19,9 @@ class ProductoForm(forms.ModelForm):
         model = Producto
         help_texts = {
             "stock": (
-                "Si el stock pasa a 0, el producto se deshabilita solo. "
-                "Si pasa de 0 a un valor mayor, se habilita para la venta."
+                "Puede ser negativo si usás mercadería de otro depósito. "
+                "Si el stock pasa a 0, el producto se deshabilita solo al guardar. "
+                "Si pasa de 0 o negativo a un valor mayor, se habilita para la venta."
             ),
         }
         fields = [
@@ -40,7 +41,7 @@ class ProductoForm(forms.ModelForm):
                 attrs={"class": "form-control form-control-sm rounded-3", "step": "0.01"}
             ),
             "stock": forms.NumberInput(
-                attrs={"class": "form-control form-control-sm rounded-3", "step": "1", "min": "0"}
+                attrs={"class": "form-control form-control-sm rounded-3", "step": "1"}
             ),
             "porcentaje_ganancia": forms.NumberInput(
                 attrs={"class": "form-control form-control-sm rounded-3", "step": "1", "min": "0"}

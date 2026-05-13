@@ -3,6 +3,7 @@ from itertools import zip_longest
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import F
 from django.http import Http404, JsonResponse
@@ -19,7 +20,12 @@ from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_param, parse_
 from core.repoblar_lineas import repoblar_campos_cabecera_desde_post
 from personas.models import Comprador, Vendedor
 from productos.models import ListaPrecios, Producto
-from ventas.servicios import crear_venta_confirmada, eliminar_venta_admin, unpack_linea_spec
+from ventas.servicios import (
+    crear_venta_confirmada,
+    eliminar_venta_admin,
+    parse_stock_venta_json_from_post,
+    unpack_linea_spec,
+)
 from ventas.models import Venta, VentaLinea
 from calendario.models import Evento
 
@@ -43,7 +49,13 @@ def _usuario_puede_gestionar_presupuesto(user, pr: Presupuesto) -> bool:
     return v is not None and int(v.pk) == int(pr.vendedor_id)
 
 
-def _ejecutar_aprobar_presupuesto_core(request, pr: Presupuesto, resolver: str) -> Venta:
+def _ejecutar_aprobar_presupuesto_core(
+    request,
+    pr: Presupuesto,
+    resolver: str,
+    *,
+    stock_confirmacion: dict[int, tuple[bool, bool]] | None = None,
+) -> Venta:
     """
     `pr` debe estar bloqueada (select_for_update) y en ACT.
     `resolver` si hay alerta de catálogo: "actualizar" o "conservar".
@@ -59,11 +71,6 @@ def _ejecutar_aprobar_presupuesto_core(request, pr: Presupuesto, resolver: str) 
         prod = ln.producto
         if not prod.habilitado:
             raise ValueError(f"El producto {prod.codigo} ya no está habilitado.")
-        if prod.stock < ln.cantidad:
-            raise ValueError(
-                f"Stock insuficiente para {prod.codigo} al aprobar (necesario: {ln.cantidad}, "
-                f"disponible: {prod.stock})."
-            )
 
     if presupuesto_tiene_alerta_catalogo(pr):
         if resolver == "actualizar":
@@ -105,6 +112,7 @@ def _ejecutar_aprobar_presupuesto_core(request, pr: Presupuesto, resolver: str) 
         creado_por_id=request.user.id,
         aplica_comision=pr.aplica_comision,
         envio=pr.envio,
+        stock_confirmacion=stock_confirmacion,
     )
     pr.estado = Presupuesto.Estado.APROBADO
     pr.venta = venta
@@ -331,9 +339,6 @@ def _validar_lineas_post(request):
             if prod is None:
                 err = "Un producto seleccionado no existe o está deshabilitado."
                 break
-        if prod.stock < qty:
-            err = f"Stock insuficiente para {prod.codigo} (disponible: {prod.stock})."
-            break
         raw_pu = praw_s
         if raw_pu:
             try:
@@ -951,14 +956,22 @@ def presupuesto_aprobar(request, pk: int):
 
     venta = None
     try:
+        stock_conf = parse_stock_venta_json_from_post(request.POST)
+    except ValidationError as exc:
+        messages.error(request, "; ".join(getattr(exc, "messages", [str(exc)])))
+        return redirect("presupuesto_detalle", pk=pk)
+    try:
         with transaction.atomic():
             pr = Presupuesto.objects.select_for_update().get(pk=pk)
             if pr.estado != Presupuesto.Estado.ACTIVO:
                 messages.warning(request, "Este presupuesto ya fue aprobado.")
                 return redirect("presupuesto_lista")
-            venta = _ejecutar_aprobar_presupuesto_core(request, pr, resolver)
+            venta = _ejecutar_aprobar_presupuesto_core(request, pr, resolver, stock_confirmacion=stock_conf)
     except ValueError as exc:
         messages.error(request, str(exc))
+        return redirect("presupuesto_detalle", pk=pk)
+    except ValidationError as exc:
+        messages.error(request, "; ".join(getattr(exc, "messages", [str(exc)])))
         return redirect("presupuesto_detalle", pk=pk)
     except Exception as exc:
         detalle = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
@@ -1114,7 +1127,9 @@ def presupuestos_aprobar_masivo(request):
                 if bloqueado.estado != Presupuesto.Estado.ACTIVO:
                     fallos.append(f"#{pid} ya aprobado")
                     continue
-                venta_creada = _ejecutar_aprobar_presupuesto_core(request, bloqueado, res)
+                venta_creada = _ejecutar_aprobar_presupuesto_core(
+                    request, bloqueado, res, stock_confirmacion=None
+                )
                 ok.append((pid, venta_creada.pk))
         except ValueError as e:
             fallos.append(f"#{pid}: {e}")
