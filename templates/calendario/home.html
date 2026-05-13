@@ -109,6 +109,42 @@
           </div>
         </div>
 
+        <div class="agenda-card vencimientos-card presu-lista-modern calen-ev-90">
+          <h2 class="agenda-card-title">Eventos / pedidos (90 días)</h2>
+          <p class="agenda-table-meta text-muted">Misma búsqueda y ventana que el calendario y la lista.</p>
+          <div class="table-responsive presu-lista-table-wrap">
+            <table class="modern-table calen-ev-tabla">
+              <thead>
+                <tr>
+                  <th scope="col">Fecha</th>
+                  <th scope="col">Título</th>
+                  <th scope="col">Tipo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for e in eventos %}
+                  <tr>
+                    <td class="col-muted">{{ e.fecha|date:"d/m/y" }}</td>
+                    <td class="col-muted calen-ev-title">{{ e.titulo }}</td>
+                    <td class="col-muted">
+                      <span
+                        class="calen-ev-badge
+                          {% if e.tipo == 'PED' %}calen-ev-badge--pedido{% elif e.tipo == 'COM' %}calen-ev-badge--compra{% elif e.tipo == 'VEN' %}calen-ev-badge--vencimiento{% elif e.tipo == 'COB' %}calen-ev-badge--cobro{% elif e.tipo == 'PAG' %}calen-ev-badge--pago{% elif e.tipo == 'ENT' %}calen-ev-badge--entrega{% else %}calen-ev-badge--manual{% endif %}"
+                      >
+                        {{ e.get_tipo_display }}
+                      </span>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="3" class="table-empty">Sin eventos.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="agenda-card vencimientos-card presu-lista-modern calen-ch-90">
           <h2 class="agenda-card-title">Vencimientos de cheques (90 días)</h2>
           <p class="agenda-table-meta text-muted">Próximos vencimientos de cheques en la ventana del calendario.</p>
@@ -171,44 +207,19 @@
           </div>
         </div>
 
-        <div class="agenda-card vencimientos-card presu-lista-modern calen-ev-90">
-          <h2 class="agenda-card-title">Eventos / pedidos (90 días)</h2>
-          <p class="agenda-table-meta text-muted">Misma búsqueda y ventana que el calendario y la lista.</p>
-          <div class="table-responsive presu-lista-table-wrap">
-            <table class="modern-table calen-ev-tabla">
-              <thead>
-                <tr>
-                  <th scope="col">Fecha</th>
-                  <th scope="col">Título</th>
-                  <th scope="col">Tipo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for e in eventos %}
-                  <tr>
-                    <td class="col-muted">{{ e.fecha|date:"d/m/y" }}</td>
-                    <td class="col-muted calen-ev-title">{{ e.titulo }}</td>
-                    <td class="col-muted">
-                      <span
-                        class="calen-ev-badge
-                          {% if e.tipo == 'PED' %}calen-ev-badge--pedido{% elif e.tipo == 'COM' %}calen-ev-badge--compra{% elif e.tipo == 'VEN' %}calen-ev-badge--vencimiento{% elif e.tipo == 'COB' %}calen-ev-badge--cobro{% elif e.tipo == 'PAG' %}calen-ev-badge--pago{% elif e.tipo == 'ENT' %}calen-ev-badge--entrega{% else %}calen-ev-badge--manual{% endif %}"
-                      >
-                        {{ e.get_tipo_display }}
-                      </span>
-                    </td>
-                  </tr>
-                {% empty %}
-                  <tr>
-                    <td colspan="3" class="table-empty">Sin eventos.</td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+        <div class="agenda-export card border-0 shadow-sm mb-3 p-3">
+          <span class="agenda-export-label text-muted d-block mb-2">Exportar</span>
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <a class="btn btn-sm btn-outline-danger rounded-pill" href="{% url 'calendario_export_pdf' %}">PDF por meses…</a>
+            <form class="d-inline-flex flex-wrap align-items-center gap-2" method="get" action="{% url 'calendario_home' %}">
+              <input type="hidden" name="export" value="xlsx" />
+              <input type="hidden" name="w" value="{{ window_days }}" />
+              {% if q %}<input type="hidden" name="q" value="{{ q }}" />{% endif %}
+              {% if tipo %}<input type="hidden" name="tipo" value="{{ tipo }}" />{% endif %}
+              <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill">Excel (esta vista)</button>
+            </form>
           </div>
-          <div class="agenda-export">
-            <span class="agenda-export-label text-muted">Exportar tablas de esta vista</span>
-            <div class="d-flex flex-wrap align-items-center gap-2">{% include "includes/export_buttons.html" %}</div>
-          </div>
+          <p class="small text-muted mb-0 mt-2">El PDF permite elegir uno o más meses calendario (eventos, cheques y vencimientos de productos por mes).</p>
         </div>
       </div>
     </div>

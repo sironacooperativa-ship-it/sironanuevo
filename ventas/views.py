@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Prefetch
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -46,6 +46,8 @@ from .servicios import (
     eliminar_venta_admin,
     sincronizar_productos_lista_elegida_en_venta,
     sync_evento_pedido_pendiente,
+    venta_aplicar_snapshot_ganancia_cobro,
+    venta_costo_mercaderia_actual,
 )
 
 
@@ -326,6 +328,92 @@ def _venta_historial_querystring_pestana(request, pestana: str) -> str:
     return q.urlencode()
 
 
+_MES_NOMBRE_ES = (
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre",
+)
+
+
+def _venta_costo_neto_ganancia_historial(v: Venta) -> tuple[Decimal, Decimal, Decimal]:
+    """
+    Costo, neto y ganancia para listados.
+    Pedidos pagados: solo valores congelados (al cobrar o rellenados en migración 0012); no se recalcula con costos vivos.
+    Pendientes: costo según costo actual del producto.
+    """
+    if v.estado == Venta.Estado.PAGADA and v.ganancia_cobro is not None:
+        return (
+            q2(v.costo_mercaderia_cobro or Decimal("0.00")),
+            q2(v.neto_cobro if v.neto_cobro is not None else v.neto),
+            q2(v.ganancia_cobro),
+        )
+    if v.estado == Venta.Estado.PAGADA:
+        # Sin snapshot (p. ej. antes de aplicar migración 0012): una vez alineado con costos del maestro vigente al cobrar histórico.
+        cm = venta_costo_mercaderia_actual(v)
+        net = q2(v.neto)
+        return cm, net, q2(net - cm)
+    cm = venta_costo_mercaderia_actual(v)
+    net = q2(v.neto)
+    return cm, net, q2(net - cm)
+
+
+def _historial_ganancia_meses_desde_ventas(ventas_list: list[Venta]) -> tuple[list[dict[str, object]], dict[str, object]]:
+    """
+    Agrupa pedidos por mes calendario (fecha local de registro), con costo de mercadería y ganancia por fila.
+    Pedidos pagados: costo y ganancia congelados (al cobrar o al migrar datos históricos); pendientes: estimación con costo actual del producto.
+    """
+    nest: dict[tuple[int, int], list[Venta]] = defaultdict(list)
+    for v in ventas_list:
+        t = timezone.localtime(v.creado_en)
+        nest[(t.year, t.month)].append(v)
+
+    meses_detalle: list[dict[str, object]] = []
+    sum_costo = sum_neto = sum_gan = Decimal("0.00")
+    for y, m in sorted(nest.keys(), reverse=True):
+        lst = nest[(y, m)]
+        lst.sort(key=lambda x: (x.creado_en, x.pk), reverse=True)
+        filas: list[dict[str, object]] = []
+        mc_mes = Decimal("0.00")
+        nc_mes = Decimal("0.00")
+        gc_mes = Decimal("0.00")
+        for v in lst:
+            cm, net, gn = _venta_costo_neto_ganancia_historial(v)
+            filas.append({"venta": v, "costo_mercaderia": cm, "neto": net, "ganancia": gn})
+            mc_mes = q2(mc_mes + cm)
+            nc_mes = q2(nc_mes + net)
+            gc_mes = q2(gc_mes + gn)
+        meses_detalle.append(
+            {
+                "label": f"{_MES_NOMBRE_ES[m - 1].capitalize()} {y}",
+                "filas": filas,
+                "total_mes_costo": mc_mes,
+                "total_mes_neto": nc_mes,
+                "total_mes_ganancia": gc_mes,
+                "n_pedidos": len(filas),
+            }
+        )
+        sum_costo = q2(sum_costo + mc_mes)
+        sum_neto = q2(sum_neto + nc_mes)
+        sum_gan = q2(sum_gan + gc_mes)
+
+    totales = {
+        "costo": sum_costo,
+        "neto": sum_neto,
+        "ganancia": sum_gan,
+        "n_pedidos": len(ventas_list),
+    }
+    return meses_detalle, totales
+
+
 def _filtrar_ventas_queryset(request, *, historial_pestana: bool = False):
     qs, filtros = _ventas_lista_base_queryset(request)
     pestana = ""
@@ -340,6 +428,9 @@ def _filtrar_ventas_queryset(request, *, historial_pestana: bool = False):
         elif pestana_raw == "a_pagar":
             pestana = "a_pagar"
             qs = qs.filter(estado=Venta.Estado.PENDIENTE)
+        elif pestana_raw == "ganancia":
+            pestana = "ganancia"
+            qs = qs.filter(estado__in=[Venta.Estado.PENDIENTE, Venta.Estado.PAGADA])
         elif estado_legacy == "PAG":
             pestana = "pagos"
             qs = qs.filter(estado=Venta.Estado.PAGADA)
@@ -713,8 +804,123 @@ def venta_historial(request):
     base_qs, _ = _ventas_lista_base_queryset(request)
     n_ventas_a_pagar = base_qs.filter(estado=Venta.Estado.PENDIENTE).count()
     n_ventas_pagos = base_qs.filter(estado=Venta.Estado.PAGADA).count()
+    n_ventas_ganancia = n_ventas_a_pagar + n_ventas_pagos
 
+    pestana = filtros_ctx.get("pestana") or ""
     exp = parse_export(request)
+
+    if exp in ("xlsx", "pdf") and pestana == "ganancia":
+        ventas_g = list(
+            ventas.order_by("-creado_en", "-id").prefetch_related(
+                Prefetch("lineas", queryset=VentaLinea.objects.select_related("producto"))
+            )
+        )
+        meses_detalle, totales = _historial_ganancia_meses_desde_ventas(ventas_g)
+        headers = [
+            "Pedido",
+            "Fecha registro",
+            "Vendedor",
+            "Comprador",
+            "Estado",
+            "Costo mercadería",
+            "Neto",
+            "Ganancia",
+        ]
+        if exp == "xlsx":
+            h_x = ["Mes calendario", *headers]
+            rows_x: list[list[object]] = []
+            for mes in meses_detalle:
+                for fila in mes["filas"]:
+                    v = fila["venta"]
+                    rows_x.append(
+                        [
+                            mes["label"],
+                            v.pk,
+                            timezone.localtime(v.creado_en).strftime("%d/%m/%Y %H:%M"),
+                            str(v.vendedor),
+                            str(v.comprador) if v.comprador_id else "",
+                            v.get_estado_display(),
+                            str(q2(fila["costo_mercaderia"])),
+                            str(q2(fila["neto"])),
+                            str(q2(fila["ganancia"])),
+                        ]
+                    )
+            res_h = ["Mes calendario", "Pedidos", "Costo mercadería", "Neto", "Ganancia"]
+            res_rows: list[list[object]] = []
+            for mes in meses_detalle:
+                res_rows.append(
+                    [
+                        mes["label"],
+                        mes["n_pedidos"],
+                        str(q2(mes["total_mes_costo"])),
+                        str(q2(mes["total_mes_neto"])),
+                        str(q2(mes["total_mes_ganancia"])),
+                    ]
+                )
+            res_rows.append(
+                [
+                    "TOTAL",
+                    totales["n_pedidos"],
+                    str(q2(totales["costo"])),
+                    str(q2(totales["neto"])),
+                    str(q2(totales["ganancia"])),
+                ]
+            )
+            return xlsx_response(
+                "ganancia_pedidos",
+                [
+                    ("Detalle", h_x, rows_x),
+                    ("Resumen mensual", res_h, res_rows),
+                ],
+            )
+
+        sections: list[tuple[str, list[str], list[list[object]]]] = []
+        for mes in meses_detalle:
+            rows_m: list[list[object]] = []
+            for fila in mes["filas"]:
+                v = fila["venta"]
+                rows_m.append(
+                    [
+                        v.pk,
+                        timezone.localtime(v.creado_en).strftime("%d/%m/%Y %H:%M"),
+                        str(v.vendedor),
+                        str(v.comprador) if v.comprador_id else "",
+                        v.get_estado_display(),
+                        str(q2(fila["costo_mercaderia"])),
+                        str(q2(fila["neto"])),
+                        str(q2(fila["ganancia"])),
+                    ]
+                )
+            sections.append((str(mes["label"]), headers, rows_m))
+        res_h2 = ["Mes calendario", "Pedidos", "Costo mercadería", "Neto", "Ganancia"]
+        res_rows2: list[list[object]] = []
+        for mes in meses_detalle:
+            res_rows2.append(
+                [
+                    mes["label"],
+                    str(mes["n_pedidos"]),
+                    str(q2(mes["total_mes_costo"])),
+                    str(q2(mes["total_mes_neto"])),
+                    str(q2(mes["total_mes_ganancia"])),
+                ]
+            )
+        res_rows2.append(
+            [
+                "TOTAL",
+                str(totales["n_pedidos"]),
+                str(q2(totales["costo"])),
+                str(q2(totales["neto"])),
+                str(q2(totales["ganancia"])),
+            ]
+        )
+        sections.append(("Resumen por mes", res_h2, res_rows2))
+        return pdf_response(
+            "ganancia_pedidos",
+            "Ganancia por pedido",
+            sections,
+            body_fontsize=8,
+        )
+
     if exp in ("xlsx", "pdf"):
         headers = [
             "Pedido",
@@ -754,10 +960,23 @@ def venta_historial(request):
             return xlsx_response("ventas", [("Ventas", headers, rows)])
         return pdf_response("ventas", "Historial de ventas", [("Ventas", headers, rows)])
 
-    page = (request.GET.get("page") or "").strip()
-    paginator = Paginator(ventas, 80)
-    page_obj = paginator.get_page(page or 1)
-    ventas_page = list(page_obj)
+    meses_ganancia: list[dict[str, object]] = []
+    totales_ganancia: dict[str, object] | None = None
+    page_obj = None
+    ventas_page: list[Venta] = []
+
+    if pestana == "ganancia":
+        ventas_g = list(
+            ventas.order_by("-creado_en", "-id").prefetch_related(
+                Prefetch("lineas", queryset=VentaLinea.objects.select_related("producto"))
+            )
+        )
+        meses_ganancia, totales_ganancia = _historial_ganancia_meses_desde_ventas(ventas_g)
+    else:
+        page = (request.GET.get("page") or "").strip()
+        paginator = Paginator(ventas, 80)
+        page_obj = paginator.get_page(page or 1)
+        ventas_page = list(page_obj)
 
     qcopy = request.GET.copy()
     qcopy.pop("page", None)
@@ -771,6 +990,8 @@ def venta_historial(request):
         "ventas/historial.html",
         {
             "ventas": ventas_page,
+            "meses_ganancia": meses_ganancia,
+            "totales_ganancia": totales_ganancia,
             "filtros": filtros_ctx,
             "productos_filtro": productos,
             "vendedores_filtro": vendedores,
@@ -779,8 +1000,10 @@ def venta_historial(request):
             "querystring": querystring,
             "n_ventas_a_pagar": n_ventas_a_pagar,
             "n_ventas_pagos": n_ventas_pagos,
+            "n_ventas_ganancia": n_ventas_ganancia,
             "querystring_a_pagar": _venta_historial_querystring_pestana(request, "a_pagar"),
             "querystring_pagos": _venta_historial_querystring_pestana(request, "pagos"),
+            "querystring_ganancia": _venta_historial_querystring_pestana(request, "ganancia"),
         },
     )
 
@@ -1243,7 +1466,11 @@ def venta_actualizar_comision(request, pk: int):
 @require_http_methods(["GET", "POST"])
 def venta_registrar_pago(request, pk: int):
     venta = get_object_or_404(
-        Venta.objects.select_related("vendedor", "comprador", "pago_movimiento"), pk=pk
+        Venta.objects.select_related("vendedor", "comprador", "pago_movimiento")
+        .prefetch_related(
+            Prefetch("lineas", queryset=VentaLinea.objects.select_related("producto"))
+        ),
+        pk=pk,
     )
     if venta.estado != Venta.Estado.PENDIENTE:
         messages.warning(request, "Esta venta ya fue marcada como pagada.")
@@ -1280,7 +1507,17 @@ def venta_registrar_pago(request, pk: int):
                 venta.estado = Venta.Estado.PAGADA
                 venta.pago_movimiento = mov
                 venta.actualizado_por = request.user
-                venta.save(update_fields=["estado", "pago_movimiento", "actualizado_por"])
+                venta_aplicar_snapshot_ganancia_cobro(venta)
+                venta.save(
+                    update_fields=[
+                        "estado",
+                        "pago_movimiento",
+                        "actualizado_por",
+                        "neto_cobro",
+                        "costo_mercaderia_cobro",
+                        "ganancia_cobro",
+                    ]
+                )
             messages.success(request, "Pago registrado en caja.")
             return redirect("venta_detalle", pk=venta.pk)
     else:

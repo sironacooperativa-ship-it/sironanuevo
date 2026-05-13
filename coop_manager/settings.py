@@ -145,14 +145,17 @@ LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "login"
 
-# Sesión: no se cierra por inactividad; solo termina al salir explícitamente o al cerrar el navegador.
+# Sesión: permanece mientras la pestaña siga abierta (SESSION_COOKIE_AGE), sin cierre por inactividad.
+# Al cerrar la pestaña/ventana, el cliente envía un POST (sendBeacon) a sesion/cerrar-al-cerrar-ventana/.
+# SESSION_SAVE_EVERY_REQUEST=True actualiza la caducidad deslizante en cada petición (cuesta un guardado
+# de sesión en BD por request); dejarlo en True salvo que midas el impacto y aceptes otro esquema.
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_AGE = int(os.environ.get("SESSION_COOKIE_AGE", str(14 * 24 * 60 * 60)))
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 
-# Caché en memoria (proceso): suficiente para rate-limit de login; en varios workers cada uno tiene su contador.
+# Caché en memoria (proceso): rate-limit de login, conteos del layout (vendor_mode), etc.
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",

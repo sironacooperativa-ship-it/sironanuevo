@@ -55,6 +55,8 @@ def pdf_response(
     filename_base: str,
     doc_title: str,
     sections: list[tuple[str, list[str], list[list[Any]]]],
+    *,
+    body_fontsize: int = 7,
 ) -> HttpResponse:
     buf = BytesIO()
     doc = SimpleDocTemplate(
@@ -84,7 +86,7 @@ def pdf_response(
                     ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0097B2")),
                     ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
                     ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                    ("FONTSIZE", (0, 0), (-1, -1), 7),
+                    ("FONTSIZE", (0, 0), (-1, -1), body_fontsize),
                     ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cccccc")),
                     ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f0f9fb")]),
                     ("VALIGN", (0, 0), (-1, -1), "TOP"),

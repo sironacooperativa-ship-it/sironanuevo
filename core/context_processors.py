@@ -1,12 +1,62 @@
 from __future__ import annotations
 
-from django.core.exceptions import ObjectDoesNotExist
+import os
 
+from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F, Q
 
 from core.models import NotaAdmin
 from personas.models import Vendedor
 from presupuestos.models import Presupuesto
+
+# Conteos del layout (badges): TTL corto; usuarios "recibe_notas_admin" no cachean (badge de bandeja).
+_VENDOR_CTX_CACHE_TTL = int(os.environ.get("SIRONA_VENDOR_CONTEXT_CACHE_SECONDS", "20"))
+
+
+def _user_recibe_notas_admin(user) -> bool:
+    return bool(
+        getattr(user, "is_superuser", False)
+        or (getattr(user, "username", "") or "").strip().lower() == "admin"
+    )
+
+
+def _presupuestos_alerta_count(*, vendedor_perfil, limitar_alerta_a_mi_vendedor: bool) -> int:
+    try:
+        base_qs = Presupuesto.objects.filter(estado=Presupuesto.Estado.ACTIVO)
+        if limitar_alerta_a_mi_vendedor:
+            if isinstance(vendedor_perfil, Vendedor):
+                base_qs = base_qs.filter(vendedor_id=vendedor_perfil.pk)
+            else:
+                base_qs = base_qs.none()
+        alerta_q = Q(lineas__producto_capturado_en__isnull=True) | Q(
+            lineas__producto__actualizado_en__gt=F("lineas__producto_capturado_en")
+        )
+        return int(base_qs.filter(alerta_q).distinct().count())
+    except Exception:
+        return 0
+
+
+def invalidate_vendor_sidebar_cache_for_user(user) -> None:
+    """
+    Limpia conteos cacheados del layout para este usuario (tras enviar/marcar notas, etc.).
+    No aplica a perfiles con bandeja de administración (no usan este caché).
+    """
+    if _VENDOR_CTX_CACHE_TTL <= 0 or user is None or not getattr(user, "is_authenticated", False):
+        return
+    if _user_recibe_notas_admin(user):
+        return
+    vp_ids = {0}
+    try:
+        v = user.vendedor_perfil
+        if isinstance(v, Vendedor):
+            vp_ids.add(int(v.pk))
+    except ObjectDoesNotExist:
+        pass
+    is_st = int(getattr(user, "is_staff", False))
+    for lim in (0, 1):
+        for vp in vp_ids:
+            cache.delete(f"sirona:vendor_cc:v1:{user.pk}:{is_st}:{lim}:{vp}")
 
 
 def vendor_mode(request):
@@ -30,8 +80,10 @@ def vendor_mode(request):
     can_switch_to_vendor_mode = False
     can_switch_to_full_mode = False
     vendedor_perfil_pk = None
+    vendedor_perfil = None
     notas_admin_no_leidas = 0
     notas_usuario_no_leidas = 0
+    presupuestos_alerta_count = 0
     recibe_notas_admin = False
     user = getattr(request, "user", None)
     if user is not None and getattr(user, "is_authenticated", False):
@@ -40,43 +92,47 @@ def vendor_mode(request):
             if isinstance(v, Vendedor):
                 has_vendedor_perfil = True
                 vendedor_perfil_pk = v.pk
+                vendedor_perfil = v
         except ObjectDoesNotExist:
             has_vendedor_perfil = False
         can_switch_to_vendor_mode = bool(not solo_vendedor)
-        recibe_notas_admin = bool(
-            getattr(user, "is_superuser", False)
-            or (getattr(user, "username", "") or "").strip().lower() == "admin"
-        )
+        recibe_notas_admin = _user_recibe_notas_admin(user)
+        is_staff = getattr(user, "is_staff", False)
+        limitar_alerta_a_mi_vendedor = False
+        if not is_staff:
+            limitar_alerta_a_mi_vendedor = True
+        elif vendedor_perfil is not None and (solo_vendedor or session_flag or in_portal):
+            limitar_alerta_a_mi_vendedor = True
+        vp_pk = int(vendedor_perfil.pk) if isinstance(vendedor_perfil, Vendedor) else 0
+
         if recibe_notas_admin:
             notas_admin_no_leidas = NotaAdmin.objects.filter(es_staff=False, leida=False).count()
-        else:
-            notas_usuario_no_leidas = NotaAdmin.objects.filter(
-                usuario=user, es_staff=True, leida_usuario=False
-            ).count()
-
-    presupuestos_alerta_count = 0
-    if user is not None and getattr(user, "is_authenticated", False):
-        try:
-            base_qs = Presupuesto.objects.filter(estado=Presupuesto.Estado.ACTIVO)
-            # Si no es staff, limitar al vendedor del usuario si existe.
-            if not getattr(user, "is_staff", False):
-                try:
-                    v = user.vendedor_perfil
-                except ObjectDoesNotExist:
-                    v = None
-                if isinstance(v, Vendedor):
-                    base_qs = base_qs.filter(vendedor_id=v.pk)
-                else:
-                    base_qs = base_qs.none()
-
-            # Alerta: alguna línea capturada antes de la última actualización del producto,
-            # o bien sin producto_capturado_en.
-            alerta_q = Q(lineas__producto_capturado_en__isnull=True) | Q(
-                lineas__producto__actualizado_en__gt=F("lineas__producto_capturado_en")
+            presupuestos_alerta_count = _presupuestos_alerta_count(
+                vendedor_perfil=vendedor_perfil,
+                limitar_alerta_a_mi_vendedor=limitar_alerta_a_mi_vendedor,
             )
-            presupuestos_alerta_count = int(base_qs.filter(alerta_q).distinct().count())
-        except Exception:
-            presupuestos_alerta_count = 0
+        else:
+            counts_cache_key = (
+                f"sirona:vendor_cc:v1:{user.pk}:{int(is_staff)}:"
+                f"{int(limitar_alerta_a_mi_vendedor)}:{vp_pk}"
+            )
+            cached_pair = cache.get(counts_cache_key) if _VENDOR_CTX_CACHE_TTL > 0 else None
+            if cached_pair is not None:
+                notas_usuario_no_leidas, presupuestos_alerta_count = cached_pair
+            else:
+                notas_usuario_no_leidas = NotaAdmin.objects.filter(
+                    usuario=user, es_staff=True, leida_usuario=False
+                ).count()
+                presupuestos_alerta_count = _presupuestos_alerta_count(
+                    vendedor_perfil=vendedor_perfil,
+                    limitar_alerta_a_mi_vendedor=limitar_alerta_a_mi_vendedor,
+                )
+                if _VENDOR_CTX_CACHE_TTL > 0:
+                    cache.set(
+                        counts_cache_key,
+                        (notas_usuario_no_leidas, presupuestos_alerta_count),
+                        _VENDOR_CTX_CACHE_TTL,
+                    )
 
     pa = getattr(user, "perfil_acceso", None) if user is not None and getattr(user, "is_authenticated", False) else None
     solo_vendedor_profile = bool(getattr(pa, "solo_vendedor", False)) if pa is not None else False
@@ -97,4 +153,3 @@ def vendor_mode(request):
         "presupuestos_alerta_count": presupuestos_alerta_count,
         "presupuestos_alerta": presupuestos_alerta_count > 0,
     }
-

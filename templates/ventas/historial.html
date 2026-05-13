@@ -81,7 +81,12 @@
         </div>
       </form>
       <p class="small text-muted mb-0 mt-2">
-        Fechas según <strong>fecha de registro</strong> del pedido. Las pestañas separan pendientes de cobro y pedidos ya pagados.
+        Fechas según <strong>fecha de registro</strong> del pedido.
+        {% if filtros.pestana == "ganancia" %}
+          En <strong>Ganancia por pedido</strong>: los <strong>pagados</strong> usan costo y ganancia <strong>fijados al cobrar</strong> (no cambian si actualizás costos en productos). Los <strong>pendientes</strong> se estiman con el costo actual. Los presupuestos se editan en su flujo propio.
+        {% else %}
+          Las pestañas separan pendientes de cobro y pedidos ya pagados.
+        {% endif %}
         Si elegís un período predefinido, reemplaza desde/hasta al aplicar el filtro.
       </p>
     </div>
@@ -91,9 +96,23 @@
     <div class="table-card-header flex-column align-items-stretch gap-0 pb-0">
       <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2 w-100">
         <h2 class="table-card-title mb-0">
-          {% if filtros.pestana == "pagos" %}Pedidos pagos{% else %}Pedidos a pagar{% endif %}
+          {% if filtros.pestana == "pagos" %}
+            Pedidos pagos
+          {% elif filtros.pestana == "ganancia" %}
+            Ganancia por pedido
+          {% else %}
+            Pedidos a pagar
+          {% endif %}
         </h2>
-        <span class="table-card-count text-nowrap">{{ page_obj.paginator.count }} resultado(s)</span>
+        <span class="table-card-count text-nowrap">
+          {% if filtros.pestana == "ganancia" and totales_ganancia %}
+            {{ totales_ganancia.n_pedidos }} pedido(s)
+          {% elif page_obj %}
+            {{ page_obj.paginator.count }} resultado(s)
+          {% else %}
+            0 resultado(s)
+          {% endif %}
+        </span>
       </div>
       <ul class="nav nav-tabs ventas-hist-tabs px-2 border-bottom-0 gap-1 flex-nowrap" role="tablist">
         <li class="nav-item text-nowrap" role="presentation">
@@ -118,8 +137,108 @@
             <span class="badge rounded-pill text-bg-secondary ms-1">{{ n_ventas_pagos }}</span>
           </a>
         </li>
+        <li class="nav-item text-nowrap" role="presentation">
+          <a
+            class="nav-link py-2 px-3 {% if filtros.pestana == 'ganancia' %}active{% endif %}"
+            href="?{{ querystring_ganancia }}"
+            role="tab"
+            {% if filtros.pestana == "ganancia" %}aria-current="page"{% endif %}
+          >
+            Ganancia por pedido
+            <span class="badge rounded-pill text-bg-secondary ms-1">{{ n_ventas_ganancia }}</span>
+          </a>
+        </li>
       </ul>
     </div>
+    {% if filtros.pestana == "ganancia" %}
+      {% if totales_ganancia %}
+        <div class="ventas-hist-ganancia-totales px-2 py-2 border-bottom small d-flex flex-wrap gap-3 justify-content-between align-items-baseline">
+          <span class="text-muted">Totales (filtros actuales)</span>
+          <span>
+            <span class="text-muted">Costo mercadería:</span>
+            <strong class="tabular-nums">{{ totales_ganancia.costo|ars }}</strong>
+          </span>
+          <span>
+            <span class="text-muted">Neto:</span>
+            <strong class="tabular-nums">{{ totales_ganancia.neto|ars }}</strong>
+          </span>
+          <span>
+            <span class="text-muted">Ganancia:</span>
+            <strong class="tabular-nums {% if totales_ganancia.ganancia < 0 %}text-danger{% else %}text-success{% endif %}">{{ totales_ganancia.ganancia|ars }}</strong>
+          </span>
+        </div>
+      {% endif %}
+      <div class="ventas-hist-ganancia-meses px-1 pb-2 pt-1">
+        {% for mes in meses_ganancia %}
+          <div class="ventas-hist-ganancia-mes card border-0 shadow-sm mb-2">
+            <div
+              class="ventas-hist-ganancia-mes-head px-2 py-1 d-flex flex-wrap justify-content-between align-items-baseline gap-2 border-bottom"
+            >
+              <span class="fw-semibold small mb-0">{{ mes.label }}</span>
+              <span class="small text-muted text-nowrap">
+                {{ mes.n_pedidos }} ped.
+                <span class="mx-1">·</span>
+                Costo {{ mes.total_mes_costo|ars }}
+                <span class="mx-1">·</span>
+                Neto {{ mes.total_mes_neto|ars }}
+                <span class="mx-1">·</span>
+                <strong class="tabular-nums {% if mes.total_mes_ganancia < 0 %}text-danger{% else %}text-success{% endif %}">Gan. {{ mes.total_mes_ganancia|ars }}</strong>
+              </span>
+            </div>
+            <div class="table-responsive presu-lista-table-wrap venta-hist-table-wrap">
+              <table class="modern-table table-sm ventas-hist-ganancia-table mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col" class="th-ped">Pedido</th>
+                    <th scope="col">Fecha</th>
+                    <th scope="col" class="presu-col-ellipsis">Vendedor</th>
+                    <th scope="col" class="presu-col-ellipsis d-none d-md-table-cell">Comprador</th>
+                    <th scope="col" class="text-center">Estado</th>
+                    <th scope="col" class="text-end col-money">Costo merc.</th>
+                    <th scope="col" class="text-end col-money">Neto</th>
+                    <th scope="col" class="text-end col-money">Ganancia</th>
+                    <th scope="col" class="text-end presu-th-acciones" style="width: 3rem" aria-label="Ver"> </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for fila in mes.filas %}
+                    {% with v=fila.venta %}
+                      <tr>
+                        <td class="tabular-nums">
+                          <a href="{% url 'venta_detalle' v.pk %}">#{{ v.pk }}</a>
+                        </td>
+                        <td class="col-muted">{{ v.creado_en|date:"d/m/Y H:i" }}</td>
+                        <td class="presu-col-ellipsis small" title="{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}">
+                          {{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}
+                        </td>
+                        <td class="presu-col-ellipsis small d-none d-md-table-cell" title="{% if v.comprador %}{{ v.comprador.apellido }}, {{ v.comprador.nombre }}{% endif %}">
+                          {% if v.comprador %}
+                            {{ v.comprador.apellido }}, {{ v.comprador.nombre }}
+                          {% else %}
+                            —
+                          {% endif %}
+                        </td>
+                        <td class="text-center small">{{ v.get_estado_display }}</td>
+                        <td class="text-end col-money small tabular-nums">{{ fila.costo_mercaderia|ars }}</td>
+                        <td class="text-end col-money small tabular-nums">{{ fila.neto|ars }}</td>
+                        <td class="text-end col-money small fw-semibold tabular-nums {% if fila.ganancia < 0 %}text-danger{% else %}text-success{% endif %}">{{ fila.ganancia|ars }}</td>
+                        <td class="text-end py-0">
+                          <a class="btn-icon btn-view btn-sm" href="{% url 'venta_detalle' v.pk %}" title="Ver pedido" aria-label="Ver pedido">
+                            <i data-lucide="eye" aria-hidden="true"></i>
+                          </a>
+                        </td>
+                      </tr>
+                    {% endwith %}
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {% empty %}
+          <div class="px-3 py-4 text-muted small text-center">No hay pedidos con los filtros actuales.</div>
+        {% endfor %}
+      </div>
+    {% else %}
     <div class="table-responsive presu-lista-table-wrap venta-hist-table-wrap">
       <table class="modern-table ventas-historial-tabla" id="venta-hist-tabla">
         <colgroup>
@@ -298,7 +417,10 @@
         <span class="ventas-hist-legend-item"><span class="btn-icon btn-delete" aria-hidden="true"><i data-lucide="trash-2"></i></span> Eliminar</span>
       </div>
     </div>
-    {% include "includes/pagination_footer.html" %}
+    {% if page_obj %}
+      {% include "includes/pagination_footer.html" %}
+    {% endif %}
+    {% endif %}
   </div>
 
   <div class="d-flex flex-wrap align-items-center gap-2 mt-3 mb-2">

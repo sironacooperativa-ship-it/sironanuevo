@@ -4279,15 +4279,32 @@ h2.h6 {
   }
 }
 
-/* —— Mensajes / notas admin (topbar + modal chat) —— */
+/* —— Mensajes / notas admin (topbar + modal chat): aviso nuevo —— */
 .sirona-notif-dot {
-  display: block;
-  width: 0.52rem;
-  height: 0.52rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  min-height: 14px;
   border-radius: 50%;
   background: #dc2626;
-  border: 2px solid #fff;
-  box-sizing: content-box;
+  color: #fff;
+  border: 2px solid var(--bs-body-bg, #fff);
+  box-sizing: border-box;
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.35);
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  pointer-events: none;
+}
+
+.sirona-notif-dot::after {
+  content: "!";
+  display: block;
+  margin-top: -1px;
 }
 
 .sirona-notas-hilo-bar {

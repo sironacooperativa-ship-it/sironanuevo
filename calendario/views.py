@@ -1,8 +1,9 @@
 from datetime import date, datetime, timedelta
+import calendar
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Min, Q
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
@@ -14,6 +15,118 @@ from productos.models import Producto
 
 from .forms import EventoForm
 from .models import Evento
+
+_CAL_MESES = (
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre",
+)
+
+
+def _add_months(d: date, n: int) -> date:
+    m0 = d.month - 1 + n
+    y = d.year + m0 // 12
+    m = m0 % 12 + 1
+    return date(y, m, 1)
+
+
+def _meses_export_opciones() -> list[dict[str, str]]:
+    """Lista de meses calendario (desde primer evento o 2020 hasta +24 meses desde hoy)."""
+    lo = Evento.objects.aggregate(m=Min("fecha"))["m"]
+    start = date(2020, 1, 1)
+    if lo:
+        start = min(start, lo.replace(day=1))
+    end = _add_months(date.today().replace(day=1), 24)
+    opts: list[dict[str, str]] = []
+    cur = start
+    while cur <= end:
+        opts.append(
+            {
+                "key": f"{cur.year}-{cur.month}",
+                "label": f"{_CAL_MESES[cur.month - 1].capitalize()} {cur.year}",
+            }
+        )
+        cur = _add_months(cur, 1)
+    return opts
+
+
+def _parse_mes_keys(post_list: list[str]) -> list[tuple[int, int]]:
+    out: list[tuple[int, int]] = []
+    for raw in post_list:
+        parts = (raw or "").strip().split("-", 2)
+        if len(parts) != 2:
+            continue
+        if not parts[0].isdigit() or not parts[1].isdigit():
+            continue
+        y, mo = int(parts[0]), int(parts[1])
+        if 2000 <= y <= 2100 and 1 <= mo <= 12:
+            out.append((y, mo))
+    return sorted(set(out))
+
+
+def _build_calendario_pdf_sections(meses: list[tuple[int, int]]) -> list[tuple[str, list[str], list[list]]]:
+    sections: list[tuple[str, list[str], list[list]]] = []
+    h_ev = ["Fecha", "Título", "Tipo", "Descripción"]
+    h_ch = ["Vencimiento cheque", "Operación", "Nº cheque", "Monto", "Fecha mov."]
+    h_ve = ["Vencimiento", "Código", "Producto", "Stock"]
+    for y, mo in meses:
+        fd = date(y, mo, 1)
+        ld = date(y, mo, calendar.monthrange(y, mo)[1])
+        label = f"{_CAL_MESES[mo - 1].capitalize()} {y}"
+        eventos = Evento.objects.filter(fecha__range=(fd, ld)).order_by("fecha", "id")
+        r_ev = [
+            [
+                e.fecha.strftime("%d/%m/%Y"),
+                e.titulo,
+                e.get_tipo_display(),
+                (e.descripcion or "").replace("\n", " ")[:500],
+            ]
+            for e in eventos
+        ]
+        sections.append((f"{label} — Eventos", h_ev, r_ev))
+        cheques = (
+            MovimientoCaja.objects.filter(
+                medio_pago=MovimientoCaja.MedioPago.CHEQUE,
+                fecha_vencimiento_cheque__isnull=False,
+                fecha_vencimiento_cheque__range=(fd, ld),
+            )
+            .select_related("vendedor")
+            .order_by("fecha_vencimiento_cheque", "id")
+        )
+        r_ch = [
+            [
+                m.fecha_vencimiento_cheque.strftime("%d/%m/%Y") if m.fecha_vencimiento_cheque else "",
+                m.operacion,
+                m.numero_cheque,
+                str(m.monto),
+                m.fecha.strftime("%d/%m/%Y"),
+            ]
+            for m in cheques
+        ]
+        sections.append((f"{label} — Vencimientos de cheques", h_ch, r_ch))
+        vencimientos = Producto.objects.filter(
+            fecha_vencimiento__isnull=False, fecha_vencimiento__range=(fd, ld)
+        ).order_by("fecha_vencimiento", "descripcion", "codigo")
+        r_ve = [
+            [
+                p.fecha_vencimiento.strftime("%d/%m/%Y") if p.fecha_vencimiento else "",
+                p.codigo,
+                p.descripcion,
+                p.stock,
+            ]
+            for p in vencimientos
+        ]
+        sections.append((f"{label} — Vencimientos de medicamentos", h_ve, r_ve))
+    return sections
 
 
 def _parse_iso_date(raw: str) -> date | None:
@@ -88,7 +201,10 @@ def calendario_home(request):
         eventos = eventos.filter(tipo=tipo)
 
     exp = parse_export(request)
-    if exp in ("xlsx", "pdf"):
+    if exp == "pdf":
+        messages.info(request, "Elegí uno o más meses para armar el PDF del calendario.")
+        return redirect("calendario_export_pdf")
+    if exp == "xlsx":
         h_ch = ["Vencimiento cheque", "Operación", "Nº cheque", "Monto", "Fecha mov."]
         r_ch = [
             [
@@ -121,14 +237,12 @@ def calendario_home(request):
             for e in eventos
         ]
         sheets = [
+            ("Eventos", h_ev, r_ev),
             ("Cheques", h_ch, r_ch),
             ("Venc. productos", h_ve, r_ve),
-            ("Eventos", h_ev, r_ev),
         ]
         title = f"Calendario ({desde.strftime('%d/%m/%Y')} — {hasta.strftime('%d/%m/%Y')})"
-        if exp == "xlsx":
-            return xlsx_response("calendario", sheets)
-        return pdf_response("calendario", title, sheets)
+        return xlsx_response("calendario", sheets)
 
     calendario_mes = {
         "hoy": date.today().isoformat(),
@@ -249,4 +363,21 @@ def calendario_agenda_dia(request, iso: str):
 
     # Modal fragment only
     return render(request, "calendario/agenda_day_fragment.html", ctx)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def calendario_export_pdf(request):
+    if request.method == "POST":
+        meses = _parse_mes_keys(request.POST.getlist("mes"))
+        if not meses:
+            messages.warning(request, "Elegí al menos un mes para exportar.")
+            return redirect("calendario_export_pdf")
+        sections = _build_calendario_pdf_sections(meses)
+        return pdf_response("calendario_sirona", "Calendario Sirona", sections, body_fontsize=7)
+    return render(
+        request,
+        "calendario/exportar_pdf.html",
+        {"meses_opciones": _meses_export_opciones()},
+    )
 

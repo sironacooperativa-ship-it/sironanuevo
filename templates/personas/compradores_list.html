@@ -68,14 +68,14 @@
         <tbody>
           {% for c in compradores %}
             <tr>
-              <td class="col-muted presu-col-ellipsis" title="{{ c.apellido }}, {{ c.nombre }}">
+              <td class="col-muted presu-col-ellipsis cli-td-stack" title="{{ c.apellido }}, {{ c.nombre }}">
                 <div class="cli-cell-title">{{ c.apellido }}, {{ c.nombre }}</div>
-                <div class="cli-cell-sub small">Código: {{ c.codigo }}</div>
+                <div class="cli-cell-sub"><span class="persona-cod">{{ c.codigo }}</span></div>
               </td>
-              <td class="col-muted small presu-col-ellipsis" title="{% if c.vendedor_asignado %}{{ c.vendedor_asignado.apellido }}, {{ c.vendedor_asignado.nombre }}{% endif %}">
+              <td class="col-muted small presu-col-ellipsis cli-td-stack" title="{% if c.vendedor_asignado %}{{ c.vendedor_asignado.apellido }}, {{ c.vendedor_asignado.nombre }}{% endif %}">
                 {% if c.vendedor_asignado %}
                   <div class="cli-cell-title">{{ c.vendedor_asignado.apellido }}, {{ c.vendedor_asignado.nombre }}</div>
-                  <div class="cli-cell-sub small">Código: {{ c.vendedor_asignado.codigo }}</div>
+                  <div class="cli-cell-sub"><span class="persona-cod">{{ c.vendedor_asignado.codigo }}</span></div>
                 {% else %}
                   <span class="text-muted">—</span>
                 {% endif %}

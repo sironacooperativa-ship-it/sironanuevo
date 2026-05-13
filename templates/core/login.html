@@ -21,6 +21,11 @@
               Tu sesión expiró por inactividad o al cerrar el navegador. Volvé a ingresar.
             </div>
           {% endif %}
+          {% if request.GET.admin_reauth %}
+            <div class="alert alert-info small mb-3">
+              Ingresá de nuevo con tu usuario y contraseña para continuar a <strong>administración</strong>.
+            </div>
+          {% endif %}
           {% if error %}
             <div class="alert alert-danger">{{ error }}</div>
           {% endif %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Caja — Histórico mensual{% endblock %}
+{% block content %}
+  <div class="app-page-header mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <div>
+      <h1 class="app-page-title mb-1">Histórico de caja</h1>
+      <p class="text-muted small mb-0">
+        Sirona · mes a mes: ingresos por cobros de pedidos, egresos totales y ganancia neta de ventas cobradas (fecha del ingreso en caja).
+      </p>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'caja_list' %}">Volver a caja</a>
+  </div>
+
+  <div class="table-card ui-force-productos presu-lista-modern mb-3">
+    <div class="table-card-header">
+      <h2 class="table-card-title">Resumen por mes calendario</h2>
+      <span class="table-card-count small text-muted">Del más reciente al más antiguo</span>
+    </div>
+    <div class="table-responsive presu-lista-table-wrap">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th scope="col">Mes</th>
+            <th scope="col" class="text-end col-money">Ingresos por ventas</th>
+            <th scope="col" class="text-end col-money">Egresos</th>
+            <th scope="col" class="text-end col-money">Ganancia neta</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in filas %}
+            <tr>
+              <td class="fw-semibold">{{ r.etiqueta }}</td>
+              <td class="text-end col-money text-success">{{ r.ingresos_ventas|ars }}</td>
+              <td class="text-end col-money text-danger">{{ r.egresos|ars }}</td>
+              <td class="text-end col-money fw-semibold {% if r.ganancia_neta < 0 %}text-danger{% else %}text-success{% endif %}">
+                {{ r.ganancia_neta|ars }}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="text-muted text-center py-4">Todavía no hay movimientos de caja ni cobros registrados.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

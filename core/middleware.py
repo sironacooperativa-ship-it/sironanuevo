@@ -25,6 +25,7 @@ class VendedorAccessMiddleware:
                 path.startswith("/static/")
                 or path.startswith("/login/")
                 or path.startswith("/logout/")
+                or path.startswith("/sesion/")
                 or path.startswith("/admin/")
                 or path.startswith("/health/")
                 or path.startswith("/warmup/")

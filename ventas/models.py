@@ -108,6 +108,27 @@ class Venta(models.Model):
         related_name="ventas",
         help_text="Liquidación de comisión en la que se incluyó este pedido (si ya se pagó al vendedor).",
     )
+    neto_cobro = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Neto del pedido al momento del cobro (congelado).",
+    )
+    costo_mercaderia_cobro = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Costo de mercadería (Σ cantidad × costo producto) al momento del cobro (congelado).",
+    )
+    ganancia_cobro = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Ganancia al cobrar: neto − costo de mercadería (congelada; no se recalcula si cambian costos).",
+    )
 
     class Meta:
         ordering = ["-creado_en", "-id"]

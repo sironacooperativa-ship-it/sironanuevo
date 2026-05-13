@@ -2972,6 +2972,30 @@ button.btn-icon.btn-ink,
   flex-wrap: nowrap;
 }
 
+/* Ganancia por pedido (historial): tablas muy compactas por mes */
+.ventas-historial-modern .ventas-hist-ganancia-table.modern-table th,
+.ventas-historial-modern .ventas-hist-ganancia-table.modern-table td {
+  padding: 2px 6px !important;
+  line-height: 1.12 !important;
+  font-size: 0.78rem !important;
+  vertical-align: middle;
+}
+
+.ventas-historial-modern .ventas-hist-ganancia-table.modern-table thead th {
+  font-size: 0.65rem !important;
+  letter-spacing: 0.04em !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+
+.ventas-hist-ganancia-mes-head {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.ventas-hist-ganancia-totales {
+  background: rgba(0, 151, 178, 0.06);
+}
+
 .ventas-hist-cell-title {
   font-weight: 650;
   color: var(--s-ink);
@@ -5341,9 +5365,17 @@ button.btn-icon.btn-ink,
 
 .personas-lista-modern .personas-compradores-tabla th,
 .personas-lista-modern .personas-compradores-tabla td {
-  padding: 8px 10px !important;
+  padding: 6px 10px !important;
   font-size: 0.88rem;
+  vertical-align: top !important;
+}
+
+.personas-lista-modern .personas-compradores-tabla td.col-center {
   vertical-align: middle !important;
+}
+
+.personas-lista-modern .personas-compradores-tabla .cli-td-stack {
+  line-height: 1.2;
 }
 
 .personas-lista-modern .personas-vendedores-tabla th,
@@ -5373,10 +5405,10 @@ button.btn-icon.btn-ink,
 }
 
 .personas-lista-modern .cli-cell-sub {
-  margin-top: 2px;
-  font-size: 0.75rem;
-  line-height: 1.1;
-  color: rgba(37, 99, 235, 0.85); /* gris/azulado sutil */
+  margin-top: 1px;
+  font-size: 0.72rem;
+  line-height: 1.15;
+  color: rgba(100, 116, 139, 0.95);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -19,6 +19,24 @@ from presupuestos.models import Presupuesto
 from .models import Venta, VentaLinea
 
 
+def venta_costo_mercaderia_actual(venta: Venta) -> Decimal:
+    """Suma cantidad × costo vigente del producto por línea (requiere líneas con producto cargado)."""
+    total = Decimal("0.00")
+    for ln in venta.lineas.all():
+        cu = q2(ln.producto.costo or Decimal("0.00"))
+        total += q2(Decimal(ln.cantidad) * cu)
+    return q2(total)
+
+
+def venta_aplicar_snapshot_ganancia_cobro(venta: Venta) -> None:
+    """Congela neto, costo de mercadería y ganancia en el objeto (guardar con save)."""
+    net = q2(venta.neto)
+    cm = venta_costo_mercaderia_actual(venta)
+    venta.neto_cobro = net
+    venta.costo_mercaderia_cobro = cm
+    venta.ganancia_cobro = q2(net - cm)
+
+
 def sync_evento_pedido_pendiente(venta: Venta) -> None:
     """Crea, actualiza o elimina el evento de calendario según la fecha de vencimiento del pedido."""
     titulo = f"Pago pendiente — Pedido #{venta.pk}"
@@ -75,8 +93,20 @@ def revertir_cobro_pedido_desde_movimiento_caja(mov: MovimientoCaja, user) -> bo
         )
     venta.estado = Venta.Estado.PENDIENTE
     venta.pago_movimiento = None
+    venta.neto_cobro = None
+    venta.costo_mercaderia_cobro = None
+    venta.ganancia_cobro = None
     venta.actualizado_por = user
-    venta.save(update_fields=["estado", "pago_movimiento", "actualizado_por"])
+    venta.save(
+        update_fields=[
+            "estado",
+            "pago_movimiento",
+            "actualizado_por",
+            "neto_cobro",
+            "costo_mercaderia_cobro",
+            "ganancia_cobro",
+        ]
+    )
     sync_evento_pedido_pendiente(venta)
     mov.delete()
     return True

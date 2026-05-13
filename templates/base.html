@@ -110,6 +110,7 @@
     {% if request.user.is_authenticated %}
       data-logout-url="{% url 'logout' %}"
       data-login-url="{% url 'login' %}"
+      data-sirona-sesion-cerrar-ventana-url="{% url 'sesion_cerrar_al_cerrar_ventana' %}"
     {% endif %}
   >
     {% if request.user.is_authenticated %}
@@ -220,7 +221,7 @@
                     {% endif %}
                     {% if request.user.is_staff %}
                       <li>
-                        <a class="dropdown-item" href="{% url 'switch_to_admin_mode' %}">Cambiar a admin</a>
+                        <a class="dropdown-item" href="{% url 'switch_to_admin_mode' %}">Administración (pedir login)</a>
                       </li>
                       <li><hr class="dropdown-divider" /></li>
                     {% endif %}
@@ -372,7 +373,7 @@
                     {% endif %}
                     {% if request.user.is_staff %}
                       <li>
-                        <a class="dropdown-item" href="{% url 'switch_to_admin_mode' %}">Cambiar a admin</a>
+                        <a class="dropdown-item" href="{% url 'switch_to_admin_mode' %}">Administración (pedir login)</a>
                       </li>
                       <li><hr class="dropdown-divider" /></li>
                     {% endif %}
@@ -994,6 +995,7 @@
           aria-labelledby="sironaQuickMsgLabel"
           aria-hidden="true"
           data-send-url="{% url 'nota_admin_enviar' %}"
+          data-notas-chat-url="{% url 'notas_chat_json' %}"
         >
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
@@ -1114,6 +1116,17 @@
 
         const STORAGE_KEY = "sironaNotasHiloId";
         let nuevoModo = false;
+
+        function sanitizeHiloStorageVsHilos(hilos) {
+          try {
+            const raw = sessionStorage.getItem(STORAGE_KEY) || "";
+            if (!raw || raw === "nuevo" || !/^\d+$/.test(raw)) return;
+            const ok = (hilos || []).some(function (x) {
+              return Number(x.id) === Number(raw);
+            });
+            if (!ok) sessionStorage.removeItem(STORAGE_KEY);
+          } catch (e) {}
+        }
 
         function readStoragePreference() {
           try {
@@ -1266,6 +1279,7 @@
               return r.json();
             })
             .then(function (data) {
+              sanitizeHiloStorageVsHilos(data.hilos || []);
               renderMensajes(data.mensajes || [], nuevoModo);
               fillHiloSelect(data.hilos || [], nuevoModo ? null : data.hilo_id);
               if (!nuevoModo && data.hilo_id != null) writeStoragePreference(String(data.hilo_id));
@@ -1351,6 +1365,7 @@
 
         form.addEventListener("submit", function (ev) {
           ev.preventDefault();
+          syncParentInput();
           const tx = (textarea.value || "").trim();
           if (!tx) return;
           const csrf = form.querySelector("[name=csrfmiddlewaretoken]").value;
@@ -1408,9 +1423,21 @@
           const chkNuevo = document.getElementById("sironaQuickMsgNuevoHilo");
           const btnVerChat = document.getElementById("sironaQuickMsgVerChatBtn");
           const sendUrl = qm.getAttribute("data-send-url");
+          const chatUrlSanitize = qm.getAttribute("data-notas-chat-url");
           if (!form || !textarea || !parentIn || !btnSend || !sendUrl) return;
 
           const STORAGE_KEY = "sironaNotasHiloId";
+
+          function sanitizeHiloFromServer(hilos) {
+            try {
+              const raw = sessionStorage.getItem(STORAGE_KEY) || "";
+              if (!raw || raw === "nuevo" || !/^\d+$/.test(raw)) return;
+              const ok = (hilos || []).some(function (x) {
+                return Number(x.id) === Number(raw);
+              });
+              if (!ok) sessionStorage.removeItem(STORAGE_KEY);
+            } catch (e) {}
+          }
 
           function readThreadPref() {
             try {
@@ -1429,10 +1456,27 @@
           }
 
           qm.addEventListener("shown.bs.modal", function () {
-            syncParentId();
-            try {
-              textarea.focus();
-            } catch (e) {}
+            function afterSanitize() {
+              syncParentId();
+              try {
+                textarea.focus();
+              } catch (e) {}
+            }
+            if (chatUrlSanitize) {
+              fetch(chatUrlSanitize, { credentials: "same-origin" })
+                .then(function (r) {
+                  return r.json();
+                })
+                .then(function (data) {
+                  sanitizeHiloFromServer(data.hilos || []);
+                  afterSanitize();
+                })
+                .catch(function () {
+                  afterSanitize();
+                });
+            } else {
+              afterSanitize();
+            }
           });
 
           if (chkNuevo) chkNuevo.addEventListener("change", syncParentId);
@@ -1454,6 +1498,7 @@
 
           form.addEventListener("submit", function (ev) {
             ev.preventDefault();
+            syncParentId();
             const tx = (textarea.value || "").trim();
             if (!tx) return;
             const csrfIn = form.querySelector("[name=csrfmiddlewaretoken]");
@@ -1929,6 +1974,7 @@
     {% if request.user.is_authenticated %}
       <script src="{% static 'js/sirona-calc.js' %}?v=4"></script>
       <script src="{% static 'js/sirona-scroll-restore.js' %}?v=1"></script>
+      <script src="{% static 'js/sirona-sesion-cerrar-ventana.js' %}?v=2"></script>
     {% endif %}
     {% block page_scripts %}{% endblock %}
   </body>

@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 from django.contrib import messages
@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q, Sum, Case, When, F, Value, DecimalField, ExpressionWrapper
-from django.db.models.functions import Coalesce
+from django.db.models.functions import Coalesce, TruncMonth
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
@@ -73,7 +73,7 @@ def _libro_diario_rows_con_saldo(qs, delta_expr, movimientos_orden_visual: list[
 
 
 def _resumen_caja_dashboard(hoy: date) -> dict:
-    """Saldo acumulado hasta hoy e ingresos/egresos del mes calendario (del 1.º al día indicado)."""
+    """Saldo acumulado hasta hoy; ingresos/egresos del mes; ganancia neta por ventas cobradas en el mes (fecha del cobro en caja)."""
     ing_hasta = (
         MovimientoCaja.objects.filter(fecha__lte=hoy, tipo=MovimientoCaja.Tipo.INGRESO).aggregate(
             s=Sum("monto")
@@ -101,13 +101,114 @@ def _resumen_caja_dashboard(hoy: date) -> dict:
         ).aggregate(s=Sum("monto"))["s"]
         or Decimal("0.00")
     )
+    dec14 = DecimalField(max_digits=14, decimal_places=2)
+    gan_mes = (
+        Venta.objects.filter(
+            estado=Venta.Estado.PAGADA,
+            pago_movimiento__isnull=False,
+            pago_movimiento__fecha__gte=inicio_mes,
+            pago_movimiento__fecha__lte=hoy,
+        ).aggregate(
+            s=Sum(
+                Coalesce(
+                    "ganancia_cobro",
+                    Value(Decimal("0.00"), output_field=dec14),
+                    output_field=dec14,
+                )
+            )
+        )["s"]
+        or Decimal("0.00")
+    )
     return {
         "saldo_al_dia": saldo_al_dia,
         "ingresos_mes": q2(ing_mes),
         "egresos_mes": q2(egr_mes),
+        "ganancia_neta_mes": q2(gan_mes),
         "fecha_resumen": hoy,
         "mes_etiqueta": f"{_MESES_ES[hoy.month - 1]} {hoy.year}",
     }
+
+
+def _caja_historico_mensual_rows() -> list[dict[str, object]]:
+    """
+    Mes a mes: ingresos por cobros de pedidos (movimiento con venta vinculada),
+    egresos totales, ganancia neta (ventas cobradas en ese mes según fecha del ingreso en caja).
+    """
+    dec14 = DecimalField(max_digits=14, decimal_places=2)
+    zero = Value(Decimal("0.00"), output_field=dec14)
+
+    ing_por_mes = {
+        r["mes"]: q2(r["total"] or Decimal("0.00"))
+        for r in MovimientoCaja.objects.filter(
+            tipo=MovimientoCaja.Tipo.INGRESO,
+            venta_id__isnull=False,
+        )
+        .annotate(mes=TruncMonth("fecha"))
+        .values("mes")
+        .annotate(total=Sum("monto"))
+    }
+    egr_por_mes = {
+        r["mes"]: q2(r["total"] or Decimal("0.00"))
+        for r in MovimientoCaja.objects.filter(tipo=MovimientoCaja.Tipo.EGRESO)
+        .annotate(mes=TruncMonth("fecha"))
+        .values("mes")
+        .annotate(total=Sum("monto"))
+    }
+    gan_por_mes = {
+        r["mes"]: q2(r["total"] or Decimal("0.00"))
+        for r in Venta.objects.filter(
+            estado=Venta.Estado.PAGADA,
+            pago_movimiento__isnull=False,
+        )
+        .annotate(mes=TruncMonth("pago_movimiento__fecha"))
+        .values("mes")
+        .annotate(
+            total=Sum(
+                Coalesce(
+                    "ganancia_cobro",
+                    zero,
+                    output_field=dec14,
+                )
+            )
+        )
+    }
+
+    claves = (
+        set(r["mes"] for r in MovimientoCaja.objects.annotate(mes=TruncMonth("fecha")).values("mes").distinct())
+        | set(gan_por_mes.keys())
+    )
+    if not claves:
+        return []
+
+    def _clave_orden(m) -> tuple[int, int]:
+        return (m.year, m.month)
+
+    filas: list[dict[str, object]] = []
+    for mes in sorted(claves, key=_clave_orden, reverse=True):
+        d = mes.date() if isinstance(mes, datetime) else mes
+        filas.append(
+            {
+                "mes": mes,
+                "etiqueta": f"{_MESES_ES[d.month - 1].capitalize()} {d.year}",
+                "ingresos_ventas": ing_por_mes.get(mes, Decimal("0.00")),
+                "egresos": egr_por_mes.get(mes, Decimal("0.00")),
+                "ganancia_neta": gan_por_mes.get(mes, Decimal("0.00")),
+            }
+        )
+    return filas
+
+
+@login_required
+@require_http_methods(["GET"])
+def caja_historico(request):
+    filas = _caja_historico_mensual_rows()
+    return render(
+        request,
+        "caja/historico.html",
+        {
+            "filas": filas,
+        },
+    )
 
 
 @login_required

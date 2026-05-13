@@ -12,9 +12,12 @@ from django.http import HttpResponse, JsonResponse
 from django.db.models import Count, Q, Sum, Value
 from django.db.models.functions import Coalesce
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods
 
+from .context_processors import invalidate_vendor_sidebar_cache_for_user
 from .forms import SironaPasswordChangeForm
 from .models import NotaAdmin
 from .money_decimal import q2
@@ -346,6 +349,26 @@ def logout_view(request):
     return redirect("login")
 
 
+@csrf_protect
+@require_http_methods(["POST"])
+def sesion_cerrar_al_cerrar_ventana(request):
+    """
+    Cerrar sesión al cerrar la pestaña o ventana (sendBeacon / fetch keepalive).
+    No redirige: responde 204 para que un cierre normal de página no dependa de un GET.
+    """
+    if request.user.is_authenticated:
+        try:
+            RegistroActividad.registrar_cierre_sesion(request.user, request)
+        except Exception:
+            pass
+        logout(request)
+        try:
+            request.session.pop("modo_vendedor", None)
+        except Exception:
+            pass
+    return HttpResponse(status=204)
+
+
 @login_required
 @require_http_methods(["GET"])
 def switch_to_vendor_mode(request):
@@ -379,16 +402,21 @@ def switch_to_full_mode(request):
 @require_http_methods(["GET"])
 def switch_to_admin_mode(request):
     """
-    Atajo para usuarios staff: salir de modo vendedor (si estaba) y entrar al panel de administración del sistema.
+    Staff: cierra sesión y envía al login con destino administración, para revalidar credenciales antes del panel admin.
     """
+    from urllib.parse import quote
+
     if not getattr(request.user, "is_staff", False):
+        messages.warning(request, "No tenés permisos para administración.")
         return redirect("home")
     try:
         request.session["modo_vendedor"] = False
         request.session.pop("modo_vendedor", None)
     except Exception:
         pass
-    return redirect("admin_usuarios_list")
+    destino = safe_internal_path(reverse("admin_usuarios_list")) or reverse("admin_usuarios_list")
+    logout(request)
+    return redirect(f"{reverse('login')}?admin_reauth=1&next={quote(destino, safe='/')}")
 
 
 @login_required
@@ -438,11 +466,8 @@ def nota_admin_enviar(request):
             .select_related("vendedor")
             .first()
         )
-        if parent is None:
-            if _notas_es_ajax(request):
-                return JsonResponse({"ok": False, "error": "Hilo no válido."}, status=400)
-            messages.error(request, "No se pudo responder en ese hilo.")
-            return redirect(safe_internal_path(request.POST.get("next") or "") or "home")
+        # Si parent_id no corresponde a una raíz del usuario (hilo borrado, id viejo en el navegador),
+        # parent queda None y el mensaje se crea como nuevo hilo.
 
     nota = NotaAdmin.objects.create(
         usuario=request.user,
@@ -455,6 +480,8 @@ def nota_admin_enviar(request):
         leida_usuario=True,
         creado_por=None,
     )
+
+    invalidate_vendor_sidebar_cache_for_user(request.user)
 
     if _notas_es_ajax(request):
         return JsonResponse(
@@ -579,5 +606,6 @@ def notas_marcar_leidas_usuario(request):
     sin_leer = NotaAdmin.objects.filter(
         usuario=user, es_staff=True, leida_usuario=False
     ).count()
+    invalidate_vendor_sidebar_cache_for_user(user)
     return JsonResponse({"ok": True, "sin_leer": sin_leer})
 

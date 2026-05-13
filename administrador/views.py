@@ -21,6 +21,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_param
+from core.context_processors import invalidate_vendor_sidebar_cache_for_user
 from core.models import NotaAdmin
 
 from .forms import UsuarioCrearForm, UsuarioEditarForm, UsuarioPasswordForm
@@ -121,6 +122,7 @@ def notas_list(request):
                 creado_por=request.user,
             )
             messages.success(request, "Respuesta enviada.")
+            invalidate_vendor_sidebar_cache_for_user(root.usuario)
             return redirect("admin_notas_list")
 
         nota_id = (request.POST.get("nota_id") or "").strip()
