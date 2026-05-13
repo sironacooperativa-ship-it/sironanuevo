@@ -150,7 +150,7 @@
                       name="aplica_comision"
                       value="1"
                       id="id_aplica_comision"
-                      {% if repoblar and repoblar.aplica_comision %}checked{% endif %}
+                      {% if not repoblar or repoblar.aplica_comision %}checked{% endif %}
                     />
                     <label class="form-check-label venta-nueva-check-label" for="id_aplica_comision">Aplicar comisión del vendedor (liquidación mensual)</label>
                   </div>
@@ -577,6 +577,7 @@
       } else {
         addRow();
       }
+      totals();
 
       // styles (scoped)
       (function () {

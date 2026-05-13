@@ -5367,7 +5367,7 @@ button.btn-icon.btn-ink,
 .personas-lista-modern .personas-compradores-tabla td {
   padding: 6px 10px !important;
   font-size: 0.88rem;
-  vertical-align: top !important;
+  vertical-align: middle !important;
 }
 
 .personas-lista-modern .personas-compradores-tabla td.col-center {
@@ -5445,14 +5445,12 @@ button.btn-icon.btn-ink,
 }
 
 .personas-lista-modern .cli-dir-cell {
+  display: block;
   white-space: normal;
   overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
   line-height: 1.25;
+  max-height: calc(1.25em * 2);
+  word-break: break-word;
 }
 
 /* Acciones más compactas y sin wrap */

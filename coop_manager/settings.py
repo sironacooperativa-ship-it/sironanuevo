@@ -145,15 +145,18 @@ LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "login"
 
-# Sesión: permanece mientras la pestaña siga abierta (SESSION_COOKIE_AGE), sin cierre por inactividad.
-# Al cerrar la pestaña/ventana, el cliente envía un POST (sendBeacon) a sesion/cerrar-al-cerrar-ventana/.
-# SESSION_SAVE_EVERY_REQUEST=True actualiza la caducidad deslizante en cada petición (cuesta un guardado
-# de sesión en BD por request); dejarlo en True salvo que midas el impacto y aceptes otro esquema.
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+# Sesión en cookie: SESSION_COOKIE_AGE (deslizante si SESSION_SAVE_EVERY_REQUEST).
+# SESSION_EXPIRE_AT_BROWSER_CLOSE: cookie de sesión del navegador (sin Max-Age); al cerrar el
+# proceso del navegador suele borrarse. En producción se puede forzar con env SESSION_EXPIRE_AT_BROWSER_CLOSE=0
+# para que la sesión sobreviva al cerrar el navegador (menos re-logins; menos "cierre" estricto).
+SESSION_EXPIRE_AT_BROWSER_CLOSE = os.environ.get("SESSION_EXPIRE_AT_BROWSER_CLOSE", "1") == "1"
 SESSION_COOKIE_AGE = int(os.environ.get("SESSION_COOKIE_AGE", str(14 * 24 * 60 * 60)))
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
+
+# Cierre explícito al cerrar pestaña: sendBeacon → sesion/cerrar-al-cerrar-ventana/ (ver static/js).
+# Comportamiento sensible: no debe dispararse en atrás/adelante ni en submit por Enter; el JS lo filtra.
 
 # Caché en memoria (proceso): rate-limit de login, conteos del layout (vendor_mode), etc.
 CACHES = {

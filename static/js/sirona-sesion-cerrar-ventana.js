@@ -1,7 +1,8 @@
 /**
  * Cierra la sesión en el servidor al cerrar la pestaña o ventana del navegador.
- * No interrumpe navegación interna, recargas (F5) ni restauración desde caché (atrás).
- * La sesión sigue vigente con la pestaña abierta aunque no haya actividad (SESSION_COOKIE_AGE).
+ * No interrumpe: navegación interna (clic/enlace), envío de formularios (GET/POST),
+ * recargas (F5), historial atrás/adelante ni restauración desde caché (bfcache).
+ * La caducidad deslizante sigue en SESSION_COOKIE_AGE + SESSION_SAVE_EVERY_REQUEST.
  */
 (function () {
   try {
@@ -47,6 +48,17 @@
       return false;
     }
 
+    function isBackForwardNavigation() {
+      try {
+        var nav = performance.getEntriesByType("navigation")[0];
+        if (nav && nav.type === "back_forward") return true;
+      } catch (e3) {}
+      try {
+        if (performance.navigation && performance.navigation.type === 2) return true;
+      } catch (e4) {}
+      return false;
+    }
+
     document.addEventListener(
       "click",
       function (e) {
@@ -74,6 +86,16 @@
       true
     );
 
+    document.addEventListener(
+      "submit",
+      function (e) {
+        var form = e.target;
+        if (!form || form.tagName !== "FORM") return;
+        if (formActionIsSameOrigin(form)) markInternalNavigation();
+      },
+      true
+    );
+
     window.addEventListener("pageshow", function () {
       try {
         sessionStorage.removeItem(STORAGE_TS);
@@ -83,6 +105,7 @@
     window.addEventListener("pagehide", function (ev) {
       if (ev.persisted) return;
       if (isReloadNavigation()) return;
+      if (isBackForwardNavigation()) return;
       var ts = null;
       try {
         ts = sessionStorage.getItem(STORAGE_TS);

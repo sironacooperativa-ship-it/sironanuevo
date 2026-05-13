@@ -2589,7 +2589,7 @@ h2.h6 {
 }
 
 .presu-lista-modern .modern-table th {
-  padding: 14px 16px;
+  padding: 9px 12px;
   text-align: left;
   font-size: 11px;
   font-weight: 500;
@@ -2621,7 +2621,7 @@ h2.h6 {
 }
 
 .presu-lista-modern .modern-table td {
-  padding: 15px 16px;
+  padding: 8px 12px;
   color: #0f172a;
   font-weight: 400;
   border: 0;
@@ -2720,8 +2720,8 @@ h2.h6 {
 .presu-lista-modern .col-presu-acciones.table-actions-cell,
 .presu-lista-modern td.text-end.col-presu-acciones {
   width: 1%;
-  min-width: 160px;
-  max-width: none;
+  min-width: 148px;
+  max-width: 220px;
   text-align: right;
   white-space: nowrap;
 }
@@ -2734,9 +2734,10 @@ h2.h6 {
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  width: 100%;
+  width: auto;
+  max-width: 100%;
   min-width: 0;
-  margin: 0;
+  margin: 0 0 0 auto;
   padding: 0;
   white-space: nowrap;
 }
@@ -2756,9 +2757,9 @@ h2.h6 {
 /* Icon buttons (no reglas .table-action-btn globales: usan :not(.btn-icon)) */
 .presu-lista-modern a.btn-icon,
 .presu-lista-modern button.btn-icon {
-  width: 34px;
-  min-width: 34px;
-  height: 34px;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
   border-radius: 10px;
   border: 1px solid #e2e8f0;
   background: #ffffff;
@@ -3048,7 +3049,7 @@ h2.h6 {
    Usar agregando la clase .ui-force-productos al contenedor (table-card/card)
    ========================================================================== */
 .ui-force-productos .modern-table th {
-  padding: 14px 16px !important;
+  padding: 9px 12px !important;
   font-size: 11px !important;
   font-weight: 500 !important;
   letter-spacing: 0.06em !important;
@@ -3059,7 +3060,7 @@ h2.h6 {
 }
 
 .ui-force-productos .modern-table td {
-  padding: 14px 16px !important;
+  padding: 8px 12px !important;
   border-bottom: 1px solid rgba(15, 23, 42, 0.055) !important;
 }
 

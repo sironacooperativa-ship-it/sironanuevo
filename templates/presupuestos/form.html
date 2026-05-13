@@ -69,7 +69,13 @@
               name="aplica_comision"
               id="id_aplica_comision"
               value="1"
-              {% if repoblar %}{% if repoblar.aplica_comision %}checked{% endif %}{% elif presupuesto %}{% if presupuesto.aplica_comision %}checked{% endif %}{% endif %}
+              {% if repoblar %}
+                {% if repoblar.aplica_comision %}checked{% endif %}
+              {% elif presupuesto %}
+                {% if presupuesto.aplica_comision %}checked{% endif %}
+              {% else %}
+                checked
+              {% endif %}
             />
             <label class="form-check-label" for="id_aplica_comision">Aplicar comisión al vendedor</label>
           </div>
