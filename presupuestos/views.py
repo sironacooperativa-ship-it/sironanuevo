@@ -318,8 +318,7 @@ def _validar_lineas_post(request):
             err = "Hay una línea sin producto (elegí el producto o borrá la fila vacía)."
             break
         if not qraw:
-            err = "Indicá la cantidad en cada línea con producto."
-            break
+            qraw = "1"
         try:
             qty = int(qraw)
         except ValueError:

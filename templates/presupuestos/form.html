@@ -208,6 +208,19 @@
         return Number.isFinite(v) ? v : 0;
       }
 
+      function closeFloatingProductMenus() {
+        document.querySelectorAll(".sirona-select-search-menu").forEach(function (menu) {
+          menu.hidden = true;
+          try {
+            if (menu.parentNode && menu.parentNode !== document.body) return;
+            if (menu.parentNode) menu.parentNode.removeChild(menu);
+          } catch (e) {}
+        });
+        document.querySelectorAll(".sirona-select-search > button.form-select").forEach(function (btn) {
+          btn.setAttribute("aria-expanded", "false");
+        });
+      }
+
       /** Igual que en servidor: acepta `$ 1.234,56`, `1234,56`, `1234.56` (precio / descuento). */
       function parseMontoArsInput(s) {
         let t = String(s || "").trim();
@@ -431,6 +444,8 @@
           const p = sel.value ? byId[sel.value] : null;
           if (p && qIn && !String(qIn.value || "").trim()) {
             qIn.value = "1";
+          } else if (!p && qIn) {
+            qIn.value = "";
           }
           if (inpPu) {
             if (p) {
@@ -527,6 +542,7 @@
           totals();
         });
         tr.querySelector(".js-remove").addEventListener("click", () => {
+          closeFloatingProductMenus();
           tr.remove();
           totals();
         });
@@ -590,15 +606,19 @@
       }
 
       document.getElementById("presupuestoForm").addEventListener("submit", function () {
+        closeFloatingProductMenus();
         tbody.querySelectorAll("tr").forEach((tr) => {
           const sel = tr.querySelector('select[name="linea_producto"]');
           const qIn = tr.querySelector('input[name="linea_cantidad"]');
           const puIn = tr.querySelector('input[name="linea_precio_unitario"]');
           const noProd = !sel || !String(sel.value || "").trim();
           const noQty = !qIn || !String(qIn.value || "").trim();
-          const noPu = !puIn || !String(puIn.value || "").trim();
-          if (noProd && noQty && noPu) {
+          if (noProd) {
             tr.remove();
+            return;
+          }
+          if (noQty && qIn) {
+            qIn.value = "1";
           }
         });
       });

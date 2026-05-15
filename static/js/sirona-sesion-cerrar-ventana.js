@@ -1,8 +1,8 @@
 /**
- * Cierra la sesión en el servidor al cerrar la pestaña o ventana del navegador.
- * No interrumpe: navegación interna (clic/enlace), envío de formularios (GET/POST),
- * recargas (F5), historial atrás/adelante ni restauración desde caché (bfcache).
- * La caducidad deslizante sigue en SESSION_COOKIE_AGE + SESSION_SAVE_EVERY_REQUEST.
+ * Coordina varias pestañas abiertas del sistema.
+ *
+ * Solo marca la sesión como "pendiente de cierre" cuando se cierra la última pestaña.
+ * Si una pestaña se recarga o se vuelve a abrir enseguida, cancela ese cierre pendiente.
  */
 (function () {
   try {
@@ -11,6 +11,10 @@
     if (!url) return;
 
     var STORAGE_TS = "sirona_internal_nav_ts";
+    var TABS_KEY = "sirona_open_tabs_v1";
+    var TAB_ID = String(Date.now()) + "-" + Math.random().toString(36).slice(2);
+    var HEARTBEAT_MS = 4000;
+    var STALE_MS = 120000;
 
     function getCookie(name) {
       var parts = ("; " + document.cookie).split("; " + name + "=");
@@ -18,6 +22,67 @@
         return parts.pop().split(";").shift() || "";
       }
       return "";
+    }
+
+    function postSessionAction(action) {
+      var token = getCookie("csrftoken");
+      if (!token) return;
+      var payload = "csrfmiddlewaretoken=" + encodeURIComponent(token) + "&action=" + encodeURIComponent(action);
+      var blob = new Blob([payload], { type: "application/x-www-form-urlencoded" });
+
+      if (typeof navigator.sendBeacon === "function") {
+        try {
+          if (navigator.sendBeacon(url, blob)) return;
+        } catch (e1) {}
+      }
+
+      try {
+        fetch(url, {
+          method: "POST",
+          credentials: "same-origin",
+          keepalive: true,
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: payload,
+        });
+      } catch (e2) {}
+    }
+
+    function readTabs() {
+      try {
+        return JSON.parse(localStorage.getItem(TABS_KEY) || "{}") || {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function writeTabs(tabs) {
+      try {
+        localStorage.setItem(TABS_KEY, JSON.stringify(tabs || {}));
+      } catch (e) {}
+    }
+
+    function pruneTabs(tabs, now) {
+      var out = {};
+      Object.keys(tabs || {}).forEach(function (id) {
+        var ts = parseInt(tabs[id], 10);
+        if (Number.isFinite(ts) && now - ts <= STALE_MS) out[id] = ts;
+      });
+      return out;
+    }
+
+    function registerTab() {
+      var now = Date.now();
+      var tabs = pruneTabs(readTabs(), now);
+      tabs[TAB_ID] = now;
+      writeTabs(tabs);
+    }
+
+    function unregisterTab() {
+      var now = Date.now();
+      var tabs = pruneTabs(readTabs(), now);
+      delete tabs[TAB_ID];
+      writeTabs(tabs);
+      return Object.keys(tabs).length;
     }
 
     function markInternalNavigation() {
@@ -35,28 +100,6 @@
       } catch (err) {
         return false;
       }
-    }
-
-    function isReloadNavigation() {
-      try {
-        var nav = performance.getEntriesByType("navigation")[0];
-        if (nav && nav.type === "reload") return true;
-      } catch (e1) {}
-      try {
-        if (performance.navigation && performance.navigation.type === 1) return true;
-      } catch (e2) {}
-      return false;
-    }
-
-    function isBackForwardNavigation() {
-      try {
-        var nav = performance.getEntriesByType("navigation")[0];
-        if (nav && nav.type === "back_forward") return true;
-      } catch (e3) {}
-      try {
-        if (performance.navigation && performance.navigation.type === 2) return true;
-      } catch (e4) {}
-      return false;
     }
 
     document.addEventListener(
@@ -87,6 +130,16 @@
     );
 
     document.addEventListener(
+      "keydown",
+      function (e) {
+        if (e.key === "F5" || ((e.ctrlKey || e.metaKey) && String(e.key || "").toLowerCase() === "r")) {
+          markInternalNavigation();
+        }
+      },
+      true
+    );
+
+    document.addEventListener(
       "submit",
       function (e) {
         var form = e.target;
@@ -96,45 +149,33 @@
       true
     );
 
+    registerTab();
+    postSessionAction("cancel");
+    var heartbeat = window.setInterval(registerTab, HEARTBEAT_MS);
+
     window.addEventListener("pageshow", function () {
       try {
         sessionStorage.removeItem(STORAGE_TS);
       } catch (e) {}
+      registerTab();
+      postSessionAction("cancel");
     });
 
     window.addEventListener("pagehide", function (ev) {
       if (ev.persisted) return;
-      if (isReloadNavigation()) return;
-      if (isBackForwardNavigation()) return;
       var ts = null;
       try {
         ts = sessionStorage.getItem(STORAGE_TS);
       } catch (e3) {
         ts = null;
       }
-      if (ts && Date.now() - parseInt(ts, 10) < 20000) return;
-
-      var token = getCookie("csrftoken");
-      if (!token) return;
-
-      var payload = "csrfmiddlewaretoken=" + encodeURIComponent(token);
-      var blob = new Blob([payload], { type: "application/x-www-form-urlencoded" });
-
-      if (typeof navigator.sendBeacon === "function") {
-        try {
-          if (navigator.sendBeacon(url, blob)) return;
-        } catch (e4) {}
-      }
-
       try {
-        fetch(url, {
-          method: "POST",
-          credentials: "same-origin",
-          keepalive: true,
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: payload,
-        });
-      } catch (e5) {}
+        window.clearInterval(heartbeat);
+      } catch (e4) {}
+
+      var activeAfterClose = unregisterTab();
+      if (ts && Date.now() - parseInt(ts, 10) < 20000) return;
+      if (activeAfterClose <= 0) postSessionAction("pending");
     });
   } catch (e) {}
 })();

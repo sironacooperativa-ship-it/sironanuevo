@@ -6,6 +6,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import resolve_url
 
 from core.models import PerfilAcceso
+from core.views import cerrar_sesion_pendiente_si_corresponde
 
 
 class VendedorAccessMiddleware:
@@ -19,6 +20,19 @@ class VendedorAccessMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        if request.user.is_authenticated:
+            path = request.path or "/"
+            if not (
+                path.startswith("/static/")
+                or path.startswith("/login/")
+                or path.startswith("/logout/")
+                or path.startswith("/sesion/")
+                or path.startswith("/health/")
+                or path.startswith("/warmup/")
+            ):
+                if cerrar_sesion_pendiente_si_corresponde(request):
+                    return HttpResponseRedirect(resolve_url("login"))
+
         if request.user.is_authenticated and not getattr(request.user, "is_staff", False):
             path = request.path or "/"
             if (

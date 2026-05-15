@@ -155,8 +155,10 @@ SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 
-# Cierre explícito al cerrar pestaña: sendBeacon → sesion/cerrar-al-cerrar-ventana/ (ver static/js).
-# Comportamiento sensible: no debe dispararse en atrás/adelante ni en submit por Enter; el JS lo filtra.
+# Cierre explícito al cerrar la última pestaña del sistema.
+# El navegador avisa "pendiente de cierre" y una pestaña nueva/recargada lo cancela enseguida.
+SIRONA_LOGOUT_ON_TAB_CLOSE = os.environ.get("SIRONA_LOGOUT_ON_TAB_CLOSE", "1") == "1"
+SIRONA_LOGOUT_PENDING_GRACE_SECONDS = int(os.environ.get("SIRONA_LOGOUT_PENDING_GRACE_SECONDS", "3"))
 
 # Caché en memoria (proceso): rate-limit de login, conteos del layout (vendor_mode), etc.
 CACHES = {

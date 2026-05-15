@@ -5,6 +5,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}SIRONA{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'img/sirona-logo.png' %}?v=1" />
+    <link rel="shortcut icon" type="image/png" href="{% static 'img/sirona-logo.png' %}?v=1" />
+    <link rel="apple-touch-icon" href="{% static 'img/sirona-logo.png' %}?v=1" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -110,7 +113,9 @@
     {% if request.user.is_authenticated %}
       data-logout-url="{% url 'logout' %}"
       data-login-url="{% url 'login' %}"
-      data-sirona-sesion-cerrar-ventana-url="{% url 'sesion_cerrar_al_cerrar_ventana' %}"
+      {% if logout_on_tab_close_enabled %}
+        data-sirona-sesion-cerrar-ventana-url="{% url 'sesion_cerrar_al_cerrar_ventana' %}"
+      {% endif %}
     {% endif %}
   >
     {% if request.user.is_authenticated %}
@@ -1974,7 +1979,9 @@
     {% if request.user.is_authenticated %}
       <script src="{% static 'js/sirona-calc.js' %}?v=4"></script>
       <script src="{% static 'js/sirona-scroll-restore.js' %}?v=1"></script>
-      <script src="{% static 'js/sirona-sesion-cerrar-ventana.js' %}?v=3"></script>
+      {% if logout_on_tab_close_enabled %}
+        <script src="{% static 'js/sirona-sesion-cerrar-ventana.js' %}?v=4"></script>
+      {% endif %}
     {% endif %}
     {% block page_scripts %}{% endblock %}
   </body>

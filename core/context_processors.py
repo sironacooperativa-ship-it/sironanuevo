@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 
+from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F, Q
@@ -15,10 +16,7 @@ _VENDOR_CTX_CACHE_TTL = int(os.environ.get("SIRONA_VENDOR_CONTEXT_CACHE_SECONDS"
 
 
 def _user_recibe_notas_admin(user) -> bool:
-    return bool(
-        getattr(user, "is_superuser", False)
-        or (getattr(user, "username", "") or "").strip().lower() == "admin"
-    )
+    return bool(user and getattr(user, "is_authenticated", False) and getattr(user, "is_staff", False))
 
 
 def _presupuestos_alerta_count(*, vendedor_perfil, limitar_alerta_a_mi_vendedor: bool) -> int:
@@ -152,4 +150,5 @@ def vendor_mode(request):
         "recibe_notas_admin": recibe_notas_admin,
         "presupuestos_alerta_count": presupuestos_alerta_count,
         "presupuestos_alerta": presupuestos_alerta_count > 0,
+        "logout_on_tab_close_enabled": bool(getattr(settings, "SIRONA_LOGOUT_ON_TAB_CLOSE", False)),
     }

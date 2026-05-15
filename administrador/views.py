@@ -36,11 +36,7 @@ def _es_admin(user) -> bool:
 
 
 def _recibe_notas_admin(user) -> bool:
-    return bool(
-        user
-        and user.is_authenticated
-        and (user.is_superuser or (getattr(user, "username", "") or "").strip().lower() == "admin")
-    )
+    return bool(user and user.is_authenticated and user.is_staff)
 
 
 def admin_required(view):

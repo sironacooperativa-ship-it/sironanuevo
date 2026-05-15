@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from django.contrib import messages
@@ -360,20 +360,56 @@ def logout_view(request):
 @require_http_methods(["POST"])
 def sesion_cerrar_al_cerrar_ventana(request):
     """
-    Cerrar sesión al cerrar la pestaña o ventana (sendBeacon / fetch keepalive).
-    No redirige: responde 204 para que un cierre normal de página no dependa de un GET.
+    Coordina el cierre de sesión al cerrar la última pestaña.
+
+    - action=cancel: una pestaña abierta/recargada cancela un cierre pendiente.
+    - action=pending: la última pestaña visible avisa que ya no quedan pestañas.
+
+    El logout real se aplica en middleware cuando el usuario vuelve después del margen de gracia.
+    Eso evita cerrar sesión durante recargas o navegaciones internas.
     """
+    if request.user.is_authenticated:
+        action = (request.POST.get("action") or "pending").strip().lower()
+        if action == "cancel":
+            request.session.pop("logout_pending_at", None)
+            request.session.modified = True
+            return HttpResponse(status=204)
+        request.session["logout_pending_at"] = timezone.now().isoformat()
+        request.session.modified = True
+    return HttpResponse(status=204)
+
+
+def cerrar_sesion_pendiente_si_corresponde(request) -> bool:
+    raw = request.session.get("logout_pending_at")
+    if not raw:
+        return False
+    try:
+        pending_at = datetime.fromisoformat(str(raw))
+        if timezone.is_naive(pending_at):
+            pending_at = timezone.make_aware(pending_at, timezone.get_current_timezone())
+    except Exception:
+        request.session.pop("logout_pending_at", None)
+        request.session.modified = True
+        return False
+
+    from django.conf import settings
+
+    grace = int(getattr(settings, "SIRONA_LOGOUT_PENDING_GRACE_SECONDS", 3) or 0)
+    if timezone.now() - pending_at < timedelta(seconds=grace):
+        return False
+
     if request.user.is_authenticated:
         try:
             RegistroActividad.registrar_cierre_sesion(request.user, request)
         except Exception:
             pass
         logout(request)
-        try:
-            request.session.pop("modo_vendedor", None)
-        except Exception:
-            pass
-    return HttpResponse(status=204)
+    try:
+        request.session.pop("modo_vendedor", None)
+        request.session.pop("logout_pending_at", None)
+    except Exception:
+        pass
+    return True
 
 
 @login_required
