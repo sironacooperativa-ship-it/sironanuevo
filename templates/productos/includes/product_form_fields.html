@@ -12,6 +12,12 @@
   </div>
 
   <div class="col-12 col-sm-6">
+    <label class="form-label small text-muted mb-1">Laboratorio</label>
+    {{ form.laboratorio }}
+    {% if form.laboratorio.errors %}<div class="text-danger small">{{ form.laboratorio.errors }}</div>{% endif %}
+  </div>
+
+  <div class="col-12 col-sm-6">
     <label class="form-label small text-muted mb-1">Tipo</label>
     {{ form.tipo }}
     {% if form.tipo.errors %}<div class="text-danger small">{{ form.tipo.errors }}</div>{% endif %}

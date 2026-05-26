@@ -28,17 +28,39 @@ from core.pdf_membrete import platypus_membrete
 from .models import ListaPrecioItem, ListaPrecios, Producto
 
 
-def filas_lista_precios(lista: ListaPrecios) -> list[tuple[Producto, Decimal]]:
+LISTA_PRECIOS_ORDEN_DEFAULT = "tipo"
+LISTA_PRECIOS_ORDEN_LABORATORIO = "laboratorio"
+
+
+def normalizar_orden_lista_precios(orden: str | None) -> str:
+    return LISTA_PRECIOS_ORDEN_LABORATORIO if orden == LISTA_PRECIOS_ORDEN_LABORATORIO else LISTA_PRECIOS_ORDEN_DEFAULT
+
+
+def _order_by_lista_precios(orden: str | None, producto_prefix: str = "") -> list[str]:
+    if normalizar_orden_lista_precios(orden) == LISTA_PRECIOS_ORDEN_LABORATORIO:
+        return [
+            f"{producto_prefix}laboratorio",
+            f"{producto_prefix}descripcion",
+            f"{producto_prefix}codigo",
+        ]
+    return [
+        f"{producto_prefix}tipo",
+        f"{producto_prefix}descripcion",
+        f"{producto_prefix}codigo",
+    ]
+
+
+def filas_lista_precios(lista: ListaPrecios, *, orden: str | None = None) -> list[tuple[Producto, Decimal]]:
     # Farmacia/PDF: solo productos marcados en lista (igual que export y ficha).
     if lista.es_farmacia:
         qs = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
-            "tipo", "descripcion", "codigo"
+            *_order_by_lista_precios(orden)
         )
         return [(p, p.precio_venta) for p in qs]
     items = (
         ListaPrecioItem.objects.filter(lista=lista, producto__habilitado=True)
         .select_related("producto")
-        .order_by("producto__tipo", "producto__descripcion", "producto__codigo")
+        .order_by(*_order_by_lista_precios(orden, "producto__"))
     )
     return [(i.producto, i.precio_venta) for i in items]
 
@@ -84,17 +106,18 @@ def balanced_chunks(items: list[Any], max_per_chunk: int) -> list[list[Any]]:
     return out
 
 
-def _payload_producto_png(p: Producto, precio: Decimal) -> dict[str, Any]:
+def _payload_producto_png(p: Producto, precio: Decimal, *, incluir_laboratorio: bool = False) -> dict[str, Any]:
     return {
         "codigo": p.codigo,
         "tipo": p.get_tipo_display(),
         "descripcion": p.descripcion,
+        "laboratorio": p.laboratorio if incluir_laboratorio else "",
         "precio": format_monto_ars(precio),
         "stock": int(p.stock or 0),
     }
 
 
-def build_png_export_payload(filas: list[tuple[Producto, Decimal]]) -> dict[str, Any]:
+def build_png_export_payload(filas: list[tuple[Producto, Decimal]], *, incluir_laboratorio: bool = False) -> dict[str, Any]:
     """
     Estructura para exportar PNG: modo único (lista corta) o por categoría con hojas balanceadas.
     """
@@ -106,7 +129,7 @@ def build_png_export_payload(filas: list[tuple[Producto, Decimal]]) -> dict[str,
                 {
                     "titulo_suffix": "",
                     "filename_suffix": "",
-                    "productos": [_payload_producto_png(p, pr) for p, pr in filas],
+                    "productos": [_payload_producto_png(p, pr, incluir_laboratorio=incluir_laboratorio) for p, pr in filas],
                     "hoja_num": 1,
                     "hojas_total": 1,
                 }
@@ -142,7 +165,7 @@ def build_png_export_payload(filas: list[tuple[Producto, Decimal]]) -> dict[str,
                 {
                     "titulo_suffix": titulo_suffix,
                     "filename_suffix": fname,
-                    "productos": [_payload_producto_png(p, pr) for p, pr in chunk],
+                    "productos": [_payload_producto_png(p, pr, incluir_laboratorio=incluir_laboratorio) for p, pr in chunk],
                     "hoja_num": ci + 1,
                     "hojas_total": nh,
                 }
@@ -204,9 +227,9 @@ def _safe_filename(value: str, max_len: int = 60) -> str:
     return "".join(c if c.isalnum() or c in "-_" else "_" for c in value)[:max_len]
 
 
-def lista_precios_pdf_file_response(*, lista: ListaPrecios) -> FileResponse:
+def lista_precios_pdf_file_response(*, lista: ListaPrecios, incluir_laboratorio: bool = False, orden: str | None = None) -> FileResponse:
     titulo = f"Lista de precios — {lista.nombre}"
-    filas = filas_lista_precios(lista)
+    filas = filas_lista_precios(lista, orden=orden)
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -220,23 +243,30 @@ def lista_precios_pdf_file_response(*, lista: ListaPrecios) -> FileResponse:
     story = platypus_membrete(titulo, doc.width, styles)
 
     tw = doc.width
-    col_w = [tw * 0.15, tw * 0.18, tw * 0.45, tw * 0.22]
+    if incluir_laboratorio:
+        col_w = [tw * 0.13, tw * 0.16, tw * 0.34, tw * 0.19, tw * 0.18]
+        headers = ["Código", "Tipo", "Descripción", "Laboratorio", "Precio"]
+    else:
+        col_w = [tw * 0.15, tw * 0.18, tw * 0.45, tw * 0.22]
+        headers = ["Código", "Tipo", "Descripción", "Precio"]
     cell_inner_w = [max(0, w - 12) for w in col_w]
 
-    headers = ["Código", "Tipo", "Descripción", "Precio"]
     data = [headers]
     for p, precio in filas:
-        data.append(
-            [
-                _truncate_text_to_width(p.codigo, cell_inner_w[0]),
-                _truncate_text_to_width(p.get_tipo_display(), cell_inner_w[1]),
-                _truncate_text_to_width(p.descripcion, cell_inner_w[2]),
-                _truncate_text_to_width(format_monto_ars(precio), cell_inner_w[3]),
-            ]
-        )
+        row = [
+            _truncate_text_to_width(p.codigo, cell_inner_w[0]),
+            _truncate_text_to_width(p.get_tipo_display(), cell_inner_w[1]),
+            _truncate_text_to_width(p.descripcion, cell_inner_w[2]),
+        ]
+        if incluir_laboratorio:
+            row.append(_truncate_text_to_width(p.laboratorio, cell_inner_w[3]))
+            row.append(_truncate_text_to_width(format_monto_ars(precio), cell_inner_w[4]))
+        else:
+            row.append(_truncate_text_to_width(format_monto_ars(precio), cell_inner_w[3]))
+        data.append(row)
 
     if len(data) == 1:
-        data.append(["—", "—", "—", "—"])
+        data.append(["—"] * len(headers))
 
     t = Table(data, colWidths=col_w, repeatRows=1)
     # Minimalista (sin "dashboard"): solo tabla limpia con encabezado sutil.
@@ -270,9 +300,9 @@ def lista_precios_pdf_file_response(*, lista: ListaPrecios) -> FileResponse:
     return FileResponse(buffer, as_attachment=True, filename=filename, content_type="application/pdf")
 
 
-def lista_precios_xlsx_response(*, lista: ListaPrecios) -> HttpResponse:
+def lista_precios_xlsx_response(*, lista: ListaPrecios, incluir_laboratorio: bool = False, orden: str | None = None) -> HttpResponse:
     titulo = f"Lista de precios — {lista.nombre}"
-    filas = filas_lista_precios(lista)
+    filas = filas_lista_precios(lista, orden=orden)
     emitido = timezone.localtime()
 
     wb = Workbook()
@@ -294,19 +324,30 @@ def lista_precios_xlsx_response(*, lista: ListaPrecios) -> HttpResponse:
         bottom=Side(style="thin", color=border_color),
     )
 
+    headers = ["Código", "Tipo", "Descripción"]
+    if incluir_laboratorio:
+        headers.append("Laboratorio")
+    headers.append("Precio")
+    last_col = len(headers)
+    last_col_letter = get_column_letter(last_col)
+
     ws.column_dimensions["A"].width = 16
     ws.column_dimensions["B"].width = 20
-    ws.column_dimensions["C"].width = 54
-    ws.column_dimensions["D"].width = 18
+    ws.column_dimensions["C"].width = 48 if incluir_laboratorio else 54
+    if incluir_laboratorio:
+        ws.column_dimensions["D"].width = 28
+        ws.column_dimensions["E"].width = 18
+    else:
+        ws.column_dimensions["D"].width = 18
 
     for row in range(1, 5):
         ws.row_dimensions[row].height = 24
-        for col in range(1, 5):
+        for col in range(1, last_col + 1):
             cell = ws.cell(row=row, column=col)
             cell.fill = title_fill
             cell.font = Font(color="FFFFFF")
 
-    ws.merge_cells("A1:D4")
+    ws.merge_cells(f"A1:{last_col_letter}4")
     title_cell = ws["A1"]
     title_cell.value = titulo
     title_cell.font = Font(bold=True, size=18, color="FFFFFF")
@@ -324,50 +365,49 @@ def lista_precios_xlsx_response(*, lista: ListaPrecios) -> HttpResponse:
         except Exception:
             pass
 
-    ws.merge_cells("A5:D5")
+    ws.merge_cells(f"A5:{last_col_letter}5")
     ws["A5"] = f"Emitido: {emitido.strftime('%d/%m/%Y %H:%M')} · Activa"
     ws["A5"].fill = soft_fill
     ws["A5"].font = Font(color="64748B", italic=True)
     ws["A5"].alignment = Alignment(horizontal="center")
 
-    headers = ["Código", "Tipo", "Descripción", "Precio"]
     header_row = 7
     for idx, label in enumerate(headers, start=1):
         cell = ws.cell(row=header_row, column=idx, value=label)
         cell.fill = header_fill
         cell.font = Font(bold=True, color="FFFFFF")
-        cell.alignment = Alignment(horizontal="right" if idx == 4 else "left")
+        cell.alignment = Alignment(horizontal="right" if idx == last_col else "left")
         cell.border = thin_border
 
     row = header_row + 1
     if filas:
         for p, precio in filas:
-            values = [p.codigo, p.get_tipo_display(), p.descripcion, Decimal(precio or 0)]
+            values = [p.codigo, p.get_tipo_display(), p.descripcion]
+            if incluir_laboratorio:
+                values.append(p.laboratorio)
+            values.append(Decimal(precio or 0))
             for col, value in enumerate(values, start=1):
                 cell = ws.cell(row=row, column=col, value=value)
                 cell.border = thin_border
                 cell.alignment = Alignment(
-                    horizontal="right" if col == 4 else "left",
+                    horizontal="right" if col == last_col else "left",
                     vertical="center",
                     wrap_text=False,
                     shrink_to_fit=True,
                 )
                 if row % 2 == 1:
                     cell.fill = zebra_fill
-                if col == 4:
+                if col == last_col:
                     cell.number_format = '"$" #,##0.00'
                     cell.font = Font(bold=True, color="0F172A")
             row += 1
     else:
-        ws.cell(row=row, column=1, value="—")
-        ws.cell(row=row, column=2, value="—")
-        ws.cell(row=row, column=3, value="Sin productos")
-        ws.cell(row=row, column=4, value="—")
-        for col in range(1, 5):
+        for col in range(1, last_col + 1):
+            ws.cell(row=row, column=col, value="Sin productos" if col == 3 else "—")
             ws.cell(row=row, column=col).border = thin_border
 
     ws.freeze_panes = "A8"
-    ws.auto_filter.ref = f"A{header_row}:D{max(header_row + 1, row - 1)}"
+    ws.auto_filter.ref = f"A{header_row}:{last_col_letter}{max(header_row + 1, row - 1)}"
     ws.page_setup.orientation = "landscape"
     ws.page_setup.fitToWidth = 1
     ws.page_setup.fitToHeight = 0
@@ -377,7 +417,7 @@ def lista_precios_xlsx_response(*, lista: ListaPrecios) -> HttpResponse:
     ws.page_margins.top = 0.5
     ws.page_margins.bottom = 0.5
 
-    for col in range(1, 5):
+    for col in range(1, last_col + 1):
         ws.cell(row=header_row, column=col).border = thin_border
         ws.column_dimensions[get_column_letter(col)].bestFit = True
 

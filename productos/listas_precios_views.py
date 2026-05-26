@@ -23,6 +23,7 @@ from .lista_precios_pdf import (
     filas_lista_precios,
     lista_precios_pdf_file_response,
     lista_precios_xlsx_response,
+    normalizar_orden_lista_precios,
 )
 from .models import ListaPrecioItem, ListaPrecios, Producto
 
@@ -102,6 +103,13 @@ def _parse_precio(raw: str) -> Decimal | None:
     if d < 0:
         return None
     return q2(d)
+
+
+def _export_lista_params(request) -> dict:
+    return {
+        "incluir_laboratorio": request.GET.get("laboratorio") == "1",
+        "orden": normalizar_orden_lista_precios(request.GET.get("orden")),
+    }
 
 
 @login_required
@@ -220,7 +228,7 @@ def lista_precios_trabajar(request, pk: int):
         )
         qs = qs_all
         if q:
-            qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
+            qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q) | Q(laboratorio__icontains=q))
         paginator = Paginator(qs, 120)
         page_obj = paginator.get_page(page or 1)
         productos = list(page_obj)
@@ -326,7 +334,7 @@ def lista_precios_trabajar(request, pk: int):
     items = items_all
     if q:
         items = items.filter(
-            Q(producto__descripcion__icontains=q) | Q(producto__codigo__icontains=q)
+            Q(producto__descripcion__icontains=q) | Q(producto__codigo__icontains=q) | Q(producto__laboratorio__icontains=q)
         )
     paginator = Paginator(items, 120)
     page_obj = paginator.get_page(page or 1)
@@ -364,16 +372,22 @@ def lista_precios_ver(request, pk: int):
     lista = get_object_or_404(ListaPrecios, pk=pk)
     q = (request.GET.get("q") or "").strip()
     page = (request.GET.get("page") or "").strip()
+    orden = normalizar_orden_lista_precios(request.GET.get("orden"))
     emitido_en = timezone.localtime()
 
     if lista.es_farmacia:
-        qs_all = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
-            "tipo", "descripcion", "codigo"
-        )
+        if orden == "laboratorio":
+            qs_all = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
+                "laboratorio", "descripcion", "codigo"
+            )
+        else:
+            qs_all = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
+                "tipo", "descripcion", "codigo"
+            )
         productos_picker = list(qs_all.values("codigo", "descripcion")[:3000])
         qs = qs_all
         if q:
-            qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
+            qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q) | Q(laboratorio__icontains=q))
         kpi = qs.aggregate(
             productos=Count("id"),
             activos=Count("id", filter=Q(habilitado=True)),
@@ -416,14 +430,18 @@ def lista_precios_ver(request, pk: int):
                 "kpi": kpi,
                 "productos_picker": productos_picker,
                 "url_publica_cliente": url_publica_cliente,
+                "orden": orden,
             },
         )
 
     items_all = (
         ListaPrecioItem.objects.filter(lista=lista)
         .select_related("producto")
-        .order_by("producto__tipo", "producto__descripcion", "producto__codigo")
     )
+    if orden == "laboratorio":
+        items_all = items_all.order_by("producto__laboratorio", "producto__descripcion", "producto__codigo")
+    else:
+        items_all = items_all.order_by("producto__tipo", "producto__descripcion", "producto__codigo")
     productos_picker = [
         {"codigo": r["producto__codigo"], "descripcion": r["producto__descripcion"]}
         for r in items_all.values("producto__codigo", "producto__descripcion")[:3000]
@@ -431,7 +449,7 @@ def lista_precios_ver(request, pk: int):
     items = items_all
     if q:
         items = items.filter(
-            Q(producto__descripcion__icontains=q) | Q(producto__codigo__icontains=q)
+            Q(producto__descripcion__icontains=q) | Q(producto__codigo__icontains=q) | Q(producto__laboratorio__icontains=q)
         )
     kpi = items.aggregate(
         productos=Count("id"),
@@ -465,6 +483,7 @@ def lista_precios_ver(request, pk: int):
             "kpi": kpi,
             "productos_picker": productos_picker,
             "url_publica_cliente": url_publica_cliente,
+            "orden": orden,
         },
     )
 
@@ -532,14 +551,14 @@ def lista_precios_public_cliente(request, slug: str):
 @require_http_methods(["GET"])
 def lista_precios_export_pdf(request, pk: int):
     lista = get_object_or_404(ListaPrecios, pk=pk)
-    return lista_precios_pdf_file_response(lista=lista)
+    return lista_precios_pdf_file_response(lista=lista, **_export_lista_params(request))
 
 
 @login_required
 @require_http_methods(["GET"])
 def lista_precios_export_excel(request, pk: int):
     lista = get_object_or_404(ListaPrecios, pk=pk)
-    return lista_precios_xlsx_response(lista=lista)
+    return lista_precios_xlsx_response(lista=lista, **_export_lista_params(request))
 
 
 @login_required
@@ -548,10 +567,11 @@ def lista_precios_export_png(request, pk: int):
     lista = get_object_or_404(ListaPrecios, pk=pk)
     # Misma base que PDF/Excel: lista completa. (El filtro ?q de la pantalla «Ver» hacía que
     # el PNG mostrara solo los ítems de la búsqueda; el PDF siempre traía todo → incoherencia.)
-    filas = filas_lista_precios(lista)
+    export_params = _export_lista_params(request)
+    filas = filas_lista_precios(lista, orden=export_params["orden"])
     q = (request.GET.get("q") or "").strip()
 
-    png_export = build_png_export_payload(filas)
+    png_export = build_png_export_payload(filas, incluir_laboratorio=export_params["incluir_laboratorio"])
 
     total_valor = Decimal("0.00")
     for _, precio in filas:
@@ -572,6 +592,7 @@ def lista_precios_export_png(request, pk: int):
             "png_export": png_export,
             "q": q,
             "kpi": kpi,
+            "export_params": export_params,
         },
     )
 
@@ -593,7 +614,9 @@ def lista_precios_public_farmacia_png(request):
         filas = [
             (p, precio)
             for (p, precio) in filas
-            if ql in (p.descripcion or "").lower() or ql in (p.codigo or "").lower()
+            if ql in (p.descripcion or "").lower()
+            or ql in (p.codigo or "").lower()
+            or ql in (p.laboratorio or "").lower()
         ]
 
     png_export = build_png_export_payload(filas)

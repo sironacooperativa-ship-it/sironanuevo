@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Cancelar deuda{% endblock %}
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <div class="me-auto">
+      <h1 class="h3 mb-0">Registrar cancelación</h1>
+      <p class="text-muted mb-0">
+        {{ deuda.deudor.nombre }} le debe a {{ deuda.operacion.pagador.nombre }} por {{ deuda.operacion.concepto }}.
+      </p>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_dashboard' %}">Volver</a>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-lg-4">
+      <div class="stat-card h-100">
+        <div class="stat-row">
+          <div class="stat-label">Saldo pendiente</div>
+          <span class="stat-ico"><i data-lucide="circle-dollar-sign"></i></span>
+        </div>
+        <div class="stat-value">{{ deuda.pendiente|ars }}</div>
+        <div class="text-muted small">Vence {{ deuda.vencimiento|date:"d/m/Y" }}</div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-12 col-md-4">
+                <label class="form-label">Fecha</label>
+                {{ form.fecha }}
+                {% if form.fecha.errors %}<div class="text-danger small">{{ form.fecha.errors }}</div>{% endif %}
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label">Monto</label>
+                {{ form.monto }}
+                {% if form.monto.errors %}<div class="text-danger small">{{ form.monto.errors }}</div>{% endif %}
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label">Medio</label>
+                {{ form.medio }}
+                {% if form.medio.errors %}<div class="text-danger small">{{ form.medio.errors }}</div>{% endif %}
+              </div>
+              <div class="col-12">
+                <label class="form-label">Detalle</label>
+                {{ form.detalle }}
+                {% if form.detalle.errors %}<div class="text-danger small">{{ form.detalle.errors }}</div>{% endif %}
+              </div>
+            </div>
+            <div class="mt-4 d-flex justify-content-end gap-2">
+              <a class="btn btn-outline-secondary" href="{% url 'cuentas_dashboard' %}">Cancelar</a>
+              <button type="submit" class="btn btn-primary">Registrar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

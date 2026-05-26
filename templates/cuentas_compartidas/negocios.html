@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Negocios{% endblock %}
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <div class="me-auto">
+      <h1 class="h3 mb-0">Negocios</h1>
+      <p class="text-muted mb-0">Alta de los negocios que participan en las cuentas compartidas.</p>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_dashboard' %}">Volver</a>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-lg-5">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="h5">Agregar negocio</h2>
+          <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label">Nombre</label>
+              {{ form.nombre }}
+              {% if form.nombre.errors %}<div class="text-danger small">{{ form.nombre.errors }}</div>{% endif %}
+            </div>
+            <div class="form-check mb-3">
+              {{ form.activo }}
+              <label class="form-check-label" for="{{ form.activo.id_for_label }}">Activo</label>
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-7">
+      <div class="table-card ui-force-productos">
+        <div class="table-card-header">
+          <h2 class="table-card-title">Negocios cargados</h2>
+          <span class="table-card-count">{{ negocios|length }}</span>
+        </div>
+        <div class="table-responsive">
+          <table class="modern-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for negocio in negocios %}
+                <tr>
+                  <td>{{ negocio.nombre }}</td>
+                  <td>
+                    {% if negocio.activo %}
+                      <span class="badge text-bg-success rounded-pill">Activo</span>
+                    {% else %}
+                      <span class="badge text-bg-secondary rounded-pill">Inactivo</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="2" class="table-empty">No hay negocios cargados.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

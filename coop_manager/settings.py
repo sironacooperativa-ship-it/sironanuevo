@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "ventas",
     "presupuestos",
     "reportes",
+    "cuentas_compartidas",
     "administrador",
     "vendedor_portal",
 ]

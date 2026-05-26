@@ -26,6 +26,7 @@ class ProductoForm(forms.ModelForm):
         }
         fields = [
             "descripcion",
+            "laboratorio",
             "tipo",
             "costo",
             "stock",
@@ -37,6 +38,12 @@ class ProductoForm(forms.ModelForm):
         widgets = {
             "tipo": forms.Select(attrs={"class": "form-select form-select-sm rounded-3"}),
             "descripcion": forms.TextInput(attrs={"class": "form-control form-control-sm rounded-3"}),
+            "laboratorio": forms.TextInput(
+                attrs={
+                    "class": "form-control form-control-sm rounded-3",
+                    "placeholder": "Marca / laboratorio",
+                }
+            ),
             "costo": forms.NumberInput(
                 attrs={"class": "form-control form-control-sm rounded-3", "step": "0.01"}
             ),

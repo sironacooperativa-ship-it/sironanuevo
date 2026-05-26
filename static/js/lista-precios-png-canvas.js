@@ -21,12 +21,17 @@
     var w = BASE_WIDTH;
     var pad = PAD;
     var tableRight = w - pad;
+    var showLaboratorio = chunk.some(function (p) {
+      return p && String(p.laboratorio || "").trim();
+    });
     var colCodigo = { x: pad, width: 172 };
-    var colTipo = { x: colCodigo.x + colCodigo.width + COL_GAP, width: 224 };
     var colPrecio = { width: 248, x: tableRight - 248 };
+    var colTipo = { x: colCodigo.x + colCodigo.width + COL_GAP, width: showLaboratorio ? 176 : 224 };
+    var colLab = showLaboratorio ? { width: 220, x: colPrecio.x - COL_GAP - 220 } : null;
+    var descRight = showLaboratorio ? colLab.x : colPrecio.x;
     var colDesc = {
       x: colTipo.x + colTipo.width + COL_GAP,
-      width: Math.max(180, colPrecio.x - COL_GAP - (colTipo.x + colTipo.width + COL_GAP)),
+      width: Math.max(180, descRight - COL_GAP - (colTipo.x + colTipo.width + COL_GAP)),
     };
 
     var headerH = 176;
@@ -131,6 +136,9 @@
     drawClippedText("Código", colCodigo, y + 24, { height: 38, top: y - 4 });
     drawClippedText("Tipo", colTipo, y + 24, { height: 38, top: y - 4 });
     drawClippedText("Descripción", colDesc, y + 24, { height: 38, top: y - 4 });
+    if (showLaboratorio && colLab) {
+      drawClippedText("Laboratorio", colLab, y + 24, { height: 38, top: y - 4 });
+    }
     drawClippedText("Precio", colPrecio, y + 24, { align: "right", height: 38, top: y - 4 });
     y += 44;
     ctx.strokeStyle = "#dcdcdc";
@@ -153,6 +161,9 @@
       drawClippedText(p.codigo, colCodigo, textBaseline, { top: y - 8, height: rowH });
       drawClippedText(p.tipo, colTipo, textBaseline, { top: y - 8, height: rowH });
       drawClippedText(p.descripcion, colDesc, textBaseline, { top: y - 8, height: rowH });
+      if (showLaboratorio && colLab) {
+        drawClippedText(p.laboratorio, colLab, textBaseline, { top: y - 8, height: rowH });
+      }
       drawClippedText(p.precio, colPrecio, textBaseline, { align: "right", top: y - 8, height: rowH });
       y += rowH;
     }

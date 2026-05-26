@@ -75,6 +75,14 @@
           {% if form.vendedor.help_text %}<div class="form-text">{{ form.vendedor.help_text }}</div>{% endif %}
         </div>
         <div class="col-12 col-md-6">
+          <div class="form-check">
+            {{ form.acceso_cuentas_compartidas }}
+            <label class="form-check-label" for="{{ form.acceso_cuentas_compartidas.id_for_label }}">{{ form.acceso_cuentas_compartidas.label }}</label>
+          </div>
+          {% if form.acceso_cuentas_compartidas.errors %}<div class="text-danger small">{{ form.acceso_cuentas_compartidas.errors }}</div>{% endif %}
+          {% if form.acceso_cuentas_compartidas.help_text %}<div class="form-text">{{ form.acceso_cuentas_compartidas.help_text }}</div>{% endif %}
+        </div>
+        <div class="col-12 col-md-6">
           <label class="form-label" for="{{ form.vinculo_vendedor.id_for_label }}">{{ form.vinculo_vendedor.label }}</label>
           {{ form.vinculo_vendedor }}
           {% if form.vinculo_vendedor.errors %}<div class="text-danger small">{{ form.vinculo_vendedor.errors }}</div>{% endif %}

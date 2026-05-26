@@ -109,7 +109,7 @@
                   <tr>
                     <td>
                       <div class="lp-cli-desc">{{ p.descripcion }}</div>
-                      <div class="lp-cli-sub font-monospace">Código {{ p.codigo }}</div>
+                      <div class="lp-cli-sub font-monospace">Código {{ p.codigo }}{% if p.laboratorio %} · {{ p.laboratorio }}{% endif %}</div>
                     </td>
                     <td class="text-end lp-cli-price">{{ p.precio_venta|ars }}</td>
                   </tr>
@@ -123,7 +123,7 @@
                   <tr>
                     <td>
                       <div class="lp-cli-desc">{{ it.producto.descripcion }}</div>
-                      <div class="lp-cli-sub font-monospace">Código {{ it.producto.codigo }}</div>
+                      <div class="lp-cli-sub font-monospace">Código {{ it.producto.codigo }}{% if it.producto.laboratorio %} · {{ it.producto.laboratorio }}{% endif %}</div>
                     </td>
                     <td class="text-end lp-cli-price">{{ it.precio_venta|ars }}</td>
                   </tr>

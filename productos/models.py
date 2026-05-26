@@ -18,6 +18,7 @@ class Producto(models.Model):
 
     codigo = models.CharField(max_length=6, unique=True, db_index=True)
     descripcion = models.CharField(max_length=255)
+    laboratorio = models.CharField(max_length=120, blank=True, db_index=True)
     tipo = models.CharField(max_length=3, choices=Tipo.choices)
     costo = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     stock = models.IntegerField(default=0)

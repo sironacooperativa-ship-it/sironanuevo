@@ -91,6 +91,7 @@ _REDIR_PRODUCTOS_LIST_KEYS = frozenset(
 PRODUCTOS_SORT_FIELDS = {
     "codigo": "codigo",
     "descripcion": "descripcion",
+    "laboratorio": "laboratorio",
     "tipo": "tipo",
     "costo": "costo",
     "stock": "stock",
@@ -248,7 +249,7 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
 
     productos = Producto.objects.all()
     if q:
-        productos = productos.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
+        productos = productos.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q) | Q(laboratorio__icontains=q))
     if tipo:
         productos = productos.filter(tipo=tipo)
     if proveedor.isdigit():
@@ -461,11 +462,13 @@ _IMPORT_COL_FIXED = {
     "precio_venta": 5,
     "stock": 6,
     "fecha_vencimiento": 7,
+    "laboratorio": 8,
 }
 
 _COLUMN_ALIAS_ORDER: list[tuple[str, frozenset[str]]] = [
     ("codigo", frozenset({"codigo", "code"})),
     ("descripcion", frozenset({"descripcion", "desc", "producto", "nombre"})),
+    ("laboratorio", frozenset({"laboratorio", "marca", "lab"})),
     ("tipo", frozenset({"tipo", "type", "categoria", "rubro"})),
     ("costo", frozenset({"costo", "cost"})),
     (
@@ -571,6 +574,7 @@ def _excel_snapshot_for_session(
     """Valores serializables (JSON) para la sesión y para reaplicar si el usuario elige Excel."""
     snap: dict = {
         "descripcion": defaults["descripcion"],
+        "laboratorio": defaults.get("laboratorio", ""),
         "tipo": defaults["tipo"],
         "tipo_label": _tipo_label_producto(defaults["tipo"]),
         "costo": str(defaults["costo"]),
@@ -589,6 +593,7 @@ def _excel_snapshot_for_session(
 
 def _aplicar_snapshot_excel_a_producto(producto: Producto, snap: dict) -> None:
     producto.descripcion = (snap.get("descripcion") or "")[:255]
+    producto.laboratorio = (snap.get("laboratorio") or "")[:120]
     producto.tipo = snap["tipo"]
     producto.costo = Decimal(snap["costo"])
     producto.stock = int(snap["stock"])
@@ -635,6 +640,7 @@ def productos_list(request):
         headers = [
             "Código",
             "Descripción",
+            "Laboratorio",
             "Tipo",
             "Costo",
             "Stock",
@@ -650,6 +656,7 @@ def productos_list(request):
                 [
                     p.codigo,
                     p.descripcion,
+                    p.laboratorio,
                     p.get_tipo_display(),
                     str(p.costo),
                     p.stock,
@@ -1373,7 +1380,7 @@ def productos_import_excel(request):
         colmap = _construir_mapa_columnas_import(row1)
         data_start_row = 2
 
-    # Columnas: codigo(opcional), descripcion, tipo, costo, porcentaje_ganancia(opcional), precio_venta(opcional), stock(opcional), fecha_vencimiento(opcional)
+    # Columnas: codigo(opcional), descripcion, tipo, costo, porcentaje_ganancia(opcional), precio_venta(opcional), stock(opcional), fecha_vencimiento(opcional), laboratorio(opcional)
     # Si la fila 1 tiene encabezados reconocidos, las columnas se ubican por título (orden libre).
     # Tipo: flexible — ver _resolver_tipo_producto
     #
@@ -1394,6 +1401,7 @@ def productos_import_excel(request):
 
                 codigo = _codigo_desde_celda(_celda_import(row, "codigo", colmap))
                 descripcion = _celda_texto(_celda_import(row, "descripcion", colmap))
+                laboratorio = _celda_texto(_celda_import(row, "laboratorio", colmap))[:120]
                 tipo_raw = _celda_texto(_celda_import(row, "tipo", colmap))
 
                 costo = _parse_decimal_celda(_celda_import(row, "costo", colmap), default=Decimal("0"))
@@ -1446,6 +1454,7 @@ def productos_import_excel(request):
 
                 defaults = {
                     "descripcion": descripcion,
+                    "laboratorio": laboratorio,
                     "tipo": tipo,
                     "costo": costo,
                     "stock": stock,
@@ -1553,6 +1562,7 @@ def productos_import_excel_modelo(request):
     headers = [
         "codigo",
         "descripcion",
+        "laboratorio",
         "tipo",
         "costo",
         "porcentaje_ganancia",
@@ -1564,6 +1574,7 @@ def productos_import_excel_modelo(request):
         [
             "",
             "Paracetamol 500mg",
+            "Laboratorio ejemplo",
             "MED",
             "100.00",
             "30.00",

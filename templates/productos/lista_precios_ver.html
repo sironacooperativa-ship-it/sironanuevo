@@ -59,18 +59,28 @@
           <i data-lucide="pencil" aria-hidden="true"></i>
           Editar
         </a>
-        <a class="action-pill action-pill--pdf flex-shrink-0" href="{% url 'lista_precios_export_pdf' lista.pk %}">
-          <i data-lucide="file-down" aria-hidden="true"></i>
-          Exportar PDF
-        </a>
-        <a class="action-pill action-pill--excel flex-shrink-0" href="{% url 'lista_precios_export_excel' lista.pk %}">
-          <i data-lucide="download" aria-hidden="true"></i>
-          Exportar Excel
-        </a>
-        <a class="action-pill action-pill--whatsapp flex-shrink-0" href="{% url 'lista_precios_export_png' lista.pk %}">
-          <i data-lucide="image" aria-hidden="true"></i>
-          Exportar PNG
-        </a>
+        <form class="d-flex flex-wrap align-items-center gap-2 flex-shrink-0" method="get">
+          <label class="form-check form-switch sirona-switch mb-0">
+            <input class="form-check-input" type="checkbox" name="laboratorio" value="1" />
+            <span class="form-check-label small">Indicar laboratorio</span>
+          </label>
+          <select class="form-select form-select-sm rounded-pill w-auto" name="orden" aria-label="Orden de exportación">
+            <option value="tipo" {% if orden != "laboratorio" %}selected{% endif %}>Orden: rubro</option>
+            <option value="laboratorio" {% if orden == "laboratorio" %}selected{% endif %}>Orden: laboratorio</option>
+          </select>
+          <button class="action-pill action-pill--pdf flex-shrink-0" type="submit" formaction="{% url 'lista_precios_export_pdf' lista.pk %}">
+            <i data-lucide="file-down" aria-hidden="true"></i>
+            PDF
+          </button>
+          <button class="action-pill action-pill--excel flex-shrink-0" type="submit" formaction="{% url 'lista_precios_export_excel' lista.pk %}">
+            <i data-lucide="download" aria-hidden="true"></i>
+            Excel
+          </button>
+          <button class="action-pill action-pill--whatsapp flex-shrink-0" type="submit" formaction="{% url 'lista_precios_export_png' lista.pk %}">
+            <i data-lucide="image" aria-hidden="true"></i>
+            PNG
+          </button>
+        </form>
         <button
           type="button"
           class="btn btn-outline-secondary rounded-circle lp-toolbar-btn-copy flex-shrink-0"
@@ -123,8 +133,9 @@
             </div>
             <div class="filter-field">
               <label>Ordenar</label>
-              <select class="form-select input-modern" disabled>
-                <option>Descripción (A-Z)</option>
+              <select class="form-select input-modern" name="orden">
+                <option value="tipo" {% if orden != "laboratorio" %}selected{% endif %}>Rubro y descripción</option>
+                <option value="laboratorio" {% if orden == "laboratorio" %}selected{% endif %}>Laboratorio y descripción</option>
               </select>
             </div>
           </div>
@@ -137,7 +148,7 @@
               <i data-lucide="rotate-ccw" aria-hidden="true"></i>
               Limpiar filtros
             </a>
-            <span class="text-muted small ms-auto">* Tipo/Proveedor/Categoría/Estado/Orden: UI lista para activar sin romper rutas.</span>
+            <span class="text-muted small ms-auto">El orden también puede usarse al exportar.</span>
           </div>
         </form>
       </section>
@@ -171,7 +182,7 @@
                       <td>
                         <div class="prod-meta">
                           <div class="prod-desc">{{ p.descripcion }}</div>
-                          <div class="prod-sub">Código: <span class="prod-code">{{ p.codigo }}</span>{% if p.proveedor_marca %} • Proveedor: {{ p.proveedor_marca }}{% endif %}</div>
+                          <div class="prod-sub">Código: <span class="prod-code">{{ p.codigo }}</span>{% if p.laboratorio %} • Laboratorio: {{ p.laboratorio }}{% endif %}</div>
                         </div>
                       </td>
                       <td class="num text-end">{{ p.precio_venta|ars }}</td>
@@ -206,7 +217,7 @@
                       <td>
                         <div class="prod-meta">
                           <div class="prod-desc">{{ it.producto.descripcion }}</div>
-                          <div class="prod-sub">Código: <span class="prod-code">{{ it.producto.codigo }}</span>{% if it.producto.proveedor_marca %} • Proveedor: {{ it.producto.proveedor_marca }}{% endif %}</div>
+                          <div class="prod-sub">Código: <span class="prod-code">{{ it.producto.codigo }}</span>{% if it.producto.laboratorio %} • Laboratorio: {{ it.producto.laboratorio }}{% endif %}</div>
                         </div>
                       </td>
                       <td class="num text-end">{{ it.precio_venta|ars }}</td>

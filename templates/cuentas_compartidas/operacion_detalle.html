@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Detalle operación{% endblock %}
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <div class="me-auto">
+      <h1 class="h3 mb-0">{{ operacion.concepto }}</h1>
+      <p class="text-muted mb-0">{{ operacion.fecha|date:"d/m/Y" }} · Pagó {{ operacion.pagador.nombre }} · {{ operacion.get_tipo_display }}</p>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_dashboard' %}">Volver</a>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-md-6">
+      <div class="stat-card h-100">
+        <div class="stat-row">
+          <div class="stat-label">Monto total</div>
+          <span class="stat-ico"><i data-lucide="receipt"></i></span>
+        </div>
+        <div class="stat-value">{{ operacion.monto_total|ars }}</div>
+        <div class="text-muted small">Referencia de la operación</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6">
+      <div class="stat-card h-100">
+        <div class="stat-row">
+          <div class="stat-label">Asignado a terceros</div>
+          <span class="stat-ico"><i data-lucide="users"></i></span>
+        </div>
+        <div class="stat-value">{{ operacion.monto_asignado|ars }}</div>
+        <div class="text-muted small">Suma de partes que deben pagar</div>
+      </div>
+    </div>
+  </div>
+
+  {% if operacion.observaciones %}
+    <div class="alert alert-light border">{{ operacion.observaciones }}</div>
+  {% endif %}
+
+  <div class="table-card ui-force-productos">
+    <div class="table-card-header">
+      <h2 class="table-card-title">Partes y cancelaciones</h2>
+      <span class="table-card-count">Detalle</span>
+    </div>
+    <div class="table-responsive">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>Debe</th>
+            <th>Vence</th>
+            <th class="text-end">Monto</th>
+            <th class="text-end">Pagado</th>
+            <th class="text-end">Pendiente</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for deuda in operacion.deudas.all %}
+            <tr>
+              <td>{{ deuda.deudor.nombre }}</td>
+              <td>{{ deuda.vencimiento|date:"d/m/Y" }}</td>
+              <td class="text-end col-money">{{ deuda.monto|ars }}</td>
+              <td class="text-end col-money">{{ deuda.pagado|ars }}</td>
+              <td class="text-end col-money">{{ deuda.pendiente|ars }}</td>
+              <td class="text-end">
+                {% if not deuda.esta_pagada %}
+                  <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'cuentas_cancelar_deuda' deuda.pk %}">Cancelar</a>
+                {% else %}
+                  <span class="badge text-bg-success rounded-pill">Pagada</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% for cancelacion in deuda.cancelaciones.all %}
+              <tr>
+                <td colspan="2" class="text-muted small ps-4">Cancelación: {{ cancelacion.fecha|date:"d/m/Y" }} · {{ cancelacion.get_medio_display }}{% if cancelacion.detalle %} · {{ cancelacion.detalle }}{% endif %}</td>
+                <td></td>
+                <td class="text-end col-money text-muted small">{{ cancelacion.monto|ars }}</td>
+                <td colspan="2"></td>
+              </tr>
+            {% endfor %}
+          {% empty %}
+            <tr><td colspan="6" class="table-empty">No hay partes cargadas.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

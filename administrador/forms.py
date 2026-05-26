@@ -2,14 +2,31 @@ from __future__ import annotations
 
 from django import forms
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.db import transaction
 
+from cuentas_compartidas.auth import PERMISO_CUENTAS_COMPARTIDAS
 from core.models import PerfilAcceso
 from personas.models import Vendedor
 from productos.models import ListaPrecios
 
 
 User = get_user_model()
+
+
+def _permiso_cuentas_compartidas() -> Permission | None:
+    app_label, codename = PERMISO_CUENTAS_COMPARTIDAS.split(".", 1)
+    return Permission.objects.filter(content_type__app_label=app_label, codename=codename).first()
+
+
+def _guardar_permiso_cuentas_compartidas(user, habilitado: bool) -> None:
+    permiso = _permiso_cuentas_compartidas()
+    if not permiso:
+        return
+    if habilitado:
+        user.user_permissions.add(permiso)
+    else:
+        user.user_permissions.remove(permiso)
 
 
 def _vendedor_del_usuario(user) -> Vendedor | None:
@@ -66,6 +83,11 @@ class UsuarioCrearForm(forms.ModelForm):
             "Si está desactivado y tiene vendedor vinculado, puede alternar entre modo completo y vendedor."
         ),
     )
+    acceso_cuentas_compartidas = forms.BooleanField(
+        label="Acceso a cuentas compartidas",
+        required=False,
+        help_text="Habilita el módulo interno para cargar operaciones, vencimientos y cancelaciones entre negocios.",
+    )
     vinculo_vendedor = forms.ModelChoiceField(
         label="Vendedor existente en el sistema",
         queryset=Vendedor.objects.filter(habilitado=True).order_by("codigo"),
@@ -109,6 +131,10 @@ class UsuarioCrearForm(forms.ModelForm):
             )
             vin = self.cleaned_data.get("vinculo_vendedor")
             with transaction.atomic():
+                _guardar_permiso_cuentas_compartidas(
+                    user,
+                    bool(self.cleaned_data.get("acceso_cuentas_compartidas")),
+                )
                 if vin:
                     _vincular_usuario_a_vendedor(user, vin)
                 elif solo_vendedor:
@@ -124,6 +150,11 @@ class UsuarioEditarForm(forms.ModelForm):
             "Si está activo, el usuario queda limitado al modo reducido. "
             "Si está desactivado y tiene vendedor vinculado, puede alternar entre modo completo y vendedor."
         ),
+    )
+    acceso_cuentas_compartidas = forms.BooleanField(
+        label="Acceso a cuentas compartidas",
+        required=False,
+        help_text="Habilita el módulo interno para cargar operaciones, vencimientos y cancelaciones entre negocios.",
     )
     vinculo_vendedor = forms.ModelChoiceField(
         label="Vendedor existente en el sistema",
@@ -160,6 +191,7 @@ class UsuarioEditarForm(forms.ModelForm):
                 self.fields["listas_precios_bloqueadas"].initial = list(
                     v.listas_precios_bloqueadas.values_list("pk", flat=True)
                 )
+            self.fields["acceso_cuentas_compartidas"].initial = inst.has_perm(PERMISO_CUENTAS_COMPARTIDAS)
         self.fields["vendedor"].initial = solo
 
     def clean(self):
@@ -183,6 +215,10 @@ class UsuarioEditarForm(forms.ModelForm):
             )
             vin = self.cleaned_data.get("vinculo_vendedor")
             with transaction.atomic():
+                _guardar_permiso_cuentas_compartidas(
+                    user,
+                    bool(self.cleaned_data.get("acceso_cuentas_compartidas")),
+                )
                 if vin:
                     _vincular_usuario_a_vendedor(user, vin)
                 elif solo_vendedor and _vendedor_del_usuario(user) is None:

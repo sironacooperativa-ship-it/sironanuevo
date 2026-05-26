@@ -521,6 +521,12 @@
                   <span class="app-sidebar-icon-wrap"><i data-lucide="clock"></i></span>
                   <span class="app-sidebar-label sidebar-label">Deudas</span>
                 </a>
+                {% if perms.cuentas_compartidas.access_cuentas_compartidas %}
+                  <a class="sidebar-link app-sidebar-link" href="{% url 'cuentas_dashboard' %}" title="Cuentas compartidas entre negocios">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="scale"></i></span>
+                    <span class="app-sidebar-label sidebar-label">Cuentas compartidas</span>
+                  </a>
+                {% endif %}
               </div>
             </div>
 

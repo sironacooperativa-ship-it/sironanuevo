@@ -12,6 +12,12 @@
     {% if form.descripcion.errors %}<div class="text-danger small mt-1">{{ form.descripcion.errors }}</div>{% endif %}
   </div>
 
+  <div class="producto-modal-field">
+    <label class="form-label small text-muted mb-1">Laboratorio</label>
+    {{ form.laboratorio }}
+    {% if form.laboratorio.errors %}<div class="text-danger small mt-1">{{ form.laboratorio.errors }}</div>{% endif %}
+  </div>
+
   <div class="producto-modal-field producto-modal-field--tipo">
     <label class="form-label small text-muted mb-1">Tipo</label>
     {{ form.tipo }}

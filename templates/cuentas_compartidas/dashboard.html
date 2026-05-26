@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Cuentas compartidas{% endblock %}
+{% block content %}
+  <div class="app-page-header mb-3 d-flex flex-wrap align-items-center gap-2">
+    <div class="me-auto">
+      <h1 class="app-page-title mb-0">Cuentas compartidas</h1>
+      <p class="text-muted mb-0">Saldos entre negocios, vencimientos y operaciones internas.</p>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_negocios' %}">Negocios</a>
+    <a class="btn btn-primary btn-sm rounded-pill" href="{% url 'cuentas_operacion_nueva' %}">Nueva operación</a>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-md-4">
+      <div class="stat-card h-100">
+        <div class="stat-row">
+          <div class="stat-label">Pendiente total</div>
+          <span class="stat-ico"><i data-lucide="wallet"></i></span>
+        </div>
+        <div class="stat-value">{{ total_pendiente|ars }}</div>
+        <div class="text-muted small">Deudas abiertas entre negocios</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="stat-card h-100">
+        <div class="stat-row">
+          <div class="stat-label">Vencidas</div>
+          <span class="stat-ico stat-ico--danger"><i data-lucide="alert-triangle"></i></span>
+        </div>
+        <div class="stat-value">{{ vencidas|length }}</div>
+        <div class="text-muted small">Requieren revisión</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="stat-card h-100">
+        <div class="stat-row">
+          <div class="stat-label">Próximas</div>
+          <span class="stat-ico"><i data-lucide="calendar-days"></i></span>
+        </div>
+        <div class="stat-value">{{ proximas|length }}</div>
+        <div class="text-muted small">Vencen en 14 días</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-xl-5">
+      <div class="table-card ui-force-productos mb-3">
+        <div class="table-card-header">
+          <h2 class="table-card-title">Saldos netos</h2>
+          <span class="table-card-count">Quién le debe a quién</span>
+        </div>
+        <div class="table-responsive">
+          <table class="modern-table">
+            <thead>
+              <tr>
+                <th>Deudor</th>
+                <th>Acreedor</th>
+                <th class="text-end">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for saldo in saldos %}
+                <tr>
+                  <td>{{ saldo.deudor }}</td>
+                  <td>{{ saldo.acreedor }}</td>
+                  <td class="text-end col-money">{{ saldo.monto|ars }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="3" class="table-empty">No hay saldos pendientes.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-xl-7">
+      <div class="table-card ui-force-productos mb-3">
+        <div class="table-card-header">
+          <h2 class="table-card-title">Calendario de vencimientos</h2>
+          <span class="table-card-count">Pendientes</span>
+        </div>
+        <div class="table-responsive">
+          <table class="modern-table">
+            <thead>
+              <tr>
+                <th>Vence</th>
+                <th>Debe</th>
+                <th>A</th>
+                <th class="text-end">Saldo</th>
+                <th class="text-end">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for deuda in vencimientos %}
+                <tr>
+                  <td>{{ deuda.vencimiento|date:"d/m/Y" }}</td>
+                  <td>{{ deuda.deudor.nombre }}</td>
+                  <td>{{ deuda.operacion.pagador.nombre }}</td>
+                  <td class="text-end col-money">{{ deuda.pendiente_calc|ars }}</td>
+                  <td class="text-end">
+                    <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'cuentas_cancelar_deuda' deuda.pk %}">Cancelar</a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="5" class="table-empty">No hay vencimientos pendientes.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card ui-force-productos">
+    <div class="table-card-header">
+      <h2 class="table-card-title">Últimas operaciones</h2>
+      <span class="table-card-count">Historial</span>
+    </div>
+    <div class="table-responsive">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Concepto</th>
+            <th>Pagó</th>
+            <th class="text-end">Total</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for operacion in operaciones %}
+            <tr>
+              <td>{{ operacion.fecha|date:"d/m/Y" }}</td>
+              <td>{{ operacion.concepto }}</td>
+              <td>{{ operacion.pagador.nombre }}</td>
+              <td class="text-end col-money">{{ operacion.monto_total|ars }}</td>
+              <td class="text-end"><a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_operacion_detalle' operacion.pk %}">Ver</a></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="table-empty">Todavía no hay operaciones.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

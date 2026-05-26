@@ -398,6 +398,8 @@
                 <span class="text-body-tertiary" aria-hidden="true"> · </span>
                 <a class="link-secondary text-decoration-none" href="?{{ sort_links.tipo }}">Tipo{% if sort_ord == "tipo" %}<span class="producto-th-sort-caret">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
                 <span class="text-body-tertiary" aria-hidden="true"> · </span>
+                <a class="link-secondary text-decoration-none" href="?{{ sort_links.laboratorio }}">Laboratorio{% if sort_ord == "laboratorio" %}<span class="producto-th-sort-caret">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+                <span class="text-body-tertiary" aria-hidden="true"> · </span>
                 <a class="link-secondary text-decoration-none" href="?{{ sort_links.costo }}">Costo{% if sort_ord == "costo" %}<span class="producto-th-sort-caret">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
                 <span class="text-body-tertiary" aria-hidden="true"> · </span>
                 <a class="link-secondary text-decoration-none" href="?{{ sort_links.pct }}">%{% if sort_ord == "pct" %}<span class="producto-th-sort-caret">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
@@ -442,6 +444,10 @@
                     <span class="productos-desc-sep" aria-hidden="true"> • </span>
                     <span class="productos-desc-prov">
                       Rubro: {{ p.get_tipo_display }}
+                      {% if p.laboratorio %}
+                        <span class="productos-desc-sep" aria-hidden="true"> • </span>
+                        Laboratorio: {{ p.laboratorio }}
+                      {% endif %}
                       {% if proveedor_sel_label %}
                         <span class="productos-desc-sep" aria-hidden="true"> • </span>
                         Proveedor (filtro): {{ proveedor_sel_label }}
@@ -455,6 +461,16 @@
                     form="producto-inline-{{ p.pk }}"
                     value="{{ p.descripcion }}"
                     maxlength="255"
+                    autocomplete="off"
+                  />
+                  <input
+                    type="text"
+                    name="laboratorio"
+                    class="form-control form-control-sm rounded-3 producto-edit d-none mt-1"
+                    form="producto-inline-{{ p.pk }}"
+                    value="{{ p.laboratorio }}"
+                    maxlength="120"
+                    placeholder="Laboratorio"
                     autocomplete="off"
                   />
                   <div class="producto-edit-inline-fields mt-2 w-100">
