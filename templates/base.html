@@ -20,7 +20,7 @@
     />
     <!-- theme: ios-2026r29 -->
     <link href="{% static 'css/theme.css' %}?v=ios-2026r43" rel="stylesheet" />
-    <link href="{% static 'css/styles.css' %}?v=saas-2026r17" rel="stylesheet" />
+    <link href="{% static 'css/styles.css' %}?v=saas-2026r19" rel="stylesheet" />
     <link href="{% static 'css/ui-force-productos.css' %}?v=3" rel="stylesheet" />
     <link href="{% static 'css/sirona-calc.css' %}" rel="stylesheet" />
     <style>
@@ -521,14 +521,15 @@
                   <span class="app-sidebar-icon-wrap"><i data-lucide="clock"></i></span>
                   <span class="app-sidebar-label sidebar-label">Deudas</span>
                 </a>
-                {% if perms.cuentas_compartidas.access_cuentas_compartidas %}
-                  <a class="sidebar-link app-sidebar-link" href="{% url 'cuentas_dashboard' %}" title="Cuentas compartidas entre negocios">
-                    <span class="app-sidebar-icon-wrap"><i data-lucide="scale"></i></span>
-                    <span class="app-sidebar-label sidebar-label">Cuentas compartidas</span>
-                  </a>
-                {% endif %}
               </div>
             </div>
+
+            {% if request.user.is_staff and perms.cuentas_compartidas.access_cuentas_compartidas %}
+              <a class="sidebar-link app-sidebar-link sidebar-link-primary" href="{% url 'cuentas_dashboard' %}" title="Gastos compartidos entre negocios">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="scale"></i></span>
+                <span class="app-sidebar-label sidebar-label">Gastos compartidos</span>
+              </a>
+            {% endif %}
 
             <div class="sidebar-section-title">Compras</div>
             <div class="sidebar-group" data-group="compras">
@@ -827,6 +828,13 @@
                   </a>
                 </div>
               </div>
+
+              {% if request.user.is_staff and perms.cuentas_compartidas.access_cuentas_compartidas %}
+                <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link sidebar-link-primary" href="{% url 'cuentas_dashboard' %}" title="Gastos compartidos entre negocios">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="scale"></i></span>
+                  <span class="app-sidebar-label">Gastos compartidos</span>
+                </a>
+              {% endif %}
 
               <div class="sidebar-section-title">Compras</div>
               <div class="sidebar-group offcanvas-group" data-group="compras">

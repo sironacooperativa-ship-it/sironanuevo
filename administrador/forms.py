@@ -84,9 +84,9 @@ class UsuarioCrearForm(forms.ModelForm):
         ),
     )
     acceso_cuentas_compartidas = forms.BooleanField(
-        label="Acceso a cuentas compartidas",
+        label="Acceso a Gastos compartidos",
         required=False,
-        help_text="Habilita el módulo interno para cargar operaciones, vencimientos y cancelaciones entre negocios.",
+        help_text="Solo para usuarios staff. Habilita el menú interno de gastos, vencimientos y cancelaciones entre negocios.",
     )
     vinculo_vendedor = forms.ModelChoiceField(
         label="Vendedor existente en el sistema",
@@ -110,6 +110,11 @@ class UsuarioCrearForm(forms.ModelForm):
         p2 = cd.get("password2")
         if p1 and p2 and p1 != p2:
             raise forms.ValidationError("Las contraseñas no coinciden.")
+        if cd.get("acceso_cuentas_compartidas") and not cd.get("is_staff"):
+            self.add_error(
+                "acceso_cuentas_compartidas",
+                "Solo se puede habilitar Gastos compartidos a usuarios staff.",
+            )
         vin = cd.get("vinculo_vendedor")
         if vin and vin.usuario_id:
             self.add_error(
@@ -133,7 +138,7 @@ class UsuarioCrearForm(forms.ModelForm):
             with transaction.atomic():
                 _guardar_permiso_cuentas_compartidas(
                     user,
-                    bool(self.cleaned_data.get("acceso_cuentas_compartidas")),
+                    bool(user.is_staff and self.cleaned_data.get("acceso_cuentas_compartidas")),
                 )
                 if vin:
                     _vincular_usuario_a_vendedor(user, vin)
@@ -152,9 +157,9 @@ class UsuarioEditarForm(forms.ModelForm):
         ),
     )
     acceso_cuentas_compartidas = forms.BooleanField(
-        label="Acceso a cuentas compartidas",
+        label="Acceso a Gastos compartidos",
         required=False,
-        help_text="Habilita el módulo interno para cargar operaciones, vencimientos y cancelaciones entre negocios.",
+        help_text="Solo para usuarios staff. Habilita el menú interno de gastos, vencimientos y cancelaciones entre negocios.",
     )
     vinculo_vendedor = forms.ModelChoiceField(
         label="Vendedor existente en el sistema",
@@ -191,7 +196,9 @@ class UsuarioEditarForm(forms.ModelForm):
                 self.fields["listas_precios_bloqueadas"].initial = list(
                     v.listas_precios_bloqueadas.values_list("pk", flat=True)
                 )
-            self.fields["acceso_cuentas_compartidas"].initial = inst.has_perm(PERMISO_CUENTAS_COMPARTIDAS)
+            self.fields["acceso_cuentas_compartidas"].initial = bool(
+                inst.is_staff and inst.has_perm(PERMISO_CUENTAS_COMPARTIDAS)
+            )
         self.fields["vendedor"].initial = solo
 
     def clean(self):
@@ -202,6 +209,11 @@ class UsuarioEditarForm(forms.ModelForm):
             self.add_error(
                 "vinculo_vendedor",
                 f"Ese vendedor ya está vinculado al usuario «{vin.usuario.username}».",
+            )
+        if cd.get("acceso_cuentas_compartidas") and not cd.get("is_staff"):
+            self.add_error(
+                "acceso_cuentas_compartidas",
+                "Solo se puede habilitar Gastos compartidos a usuarios staff.",
             )
         return cd
 
@@ -217,7 +229,7 @@ class UsuarioEditarForm(forms.ModelForm):
             with transaction.atomic():
                 _guardar_permiso_cuentas_compartidas(
                     user,
-                    bool(self.cleaned_data.get("acceso_cuentas_compartidas")),
+                    bool(user.is_staff and self.cleaned_data.get("acceso_cuentas_compartidas")),
                 )
                 if vin:
                     _vincular_usuario_a_vendedor(user, vin)

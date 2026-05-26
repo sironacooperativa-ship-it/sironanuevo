@@ -141,6 +141,7 @@ def vendor_mode(request):
 
     return {
         "vendor_mode": bool(solo_vendedor or session_flag or in_portal),
+        "admin_mode": bool(session_get("modo_admin", False)) if callable(session_get) else False,
         "has_vendedor_perfil": has_vendedor_perfil,
         "can_switch_to_vendor_mode": can_switch_to_vendor_mode,
         "can_switch_to_full_mode": can_switch_to_full_mode,

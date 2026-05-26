@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Editar negocio{% endblock %}
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <div class="me-auto">
+      <h1 class="h3 mb-0">Editar negocio</h1>
+      <p class="text-muted mb-0">{{ negocio.nombre }}</p>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_negocios' %}">Volver</a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Nombre</label>
+          {{ form.nombre }}
+          {% if form.nombre.errors %}<div class="text-danger small">{{ form.nombre.errors }}</div>{% endif %}
+        </div>
+        <div class="form-check mb-3">
+          {{ form.activo }}
+          <label class="form-check-label" for="{{ form.activo.id_for_label }}">Activo</label>
+        </div>
+        <div class="d-flex justify-content-end gap-2">
+          <a class="btn btn-outline-secondary" href="{% url 'cuentas_negocios' %}">Cancelar</a>
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

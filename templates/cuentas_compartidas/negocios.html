@@ -42,6 +42,7 @@
               <tr>
                 <th>Nombre</th>
                 <th>Estado</th>
+                <th class="text-end">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -55,9 +56,18 @@
                       <span class="badge text-bg-secondary rounded-pill">Inactivo</span>
                     {% endif %}
                   </td>
+                  <td class="text-end">
+                    <div class="d-flex justify-content-end gap-2">
+                      <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'cuentas_negocio_editar' negocio.pk %}">Editar</a>
+                      <form method="post" action="{% url 'cuentas_negocio_eliminar' negocio.pk %}" onsubmit="return confirm('¿Eliminar este negocio? Si tiene movimientos se marcará como inactivo.');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill">Eliminar</button>
+                      </form>
+                    </div>
+                  </td>
                 </tr>
               {% empty %}
-                <tr><td colspan="2" class="table-empty">No hay negocios cargados.</td></tr>
+                <tr><td colspan="3" class="table-empty">No hay negocios cargados.</td></tr>
               {% endfor %}
             </tbody>
           </table>

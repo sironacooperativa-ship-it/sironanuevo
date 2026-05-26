@@ -292,6 +292,7 @@ def login_view(request):
                 cache.delete(fail_key)
                 cache.delete(block_key)
                 login(request, user)
+                request.session["modo_admin"] = bool(next_url and next_url.startswith("/administrador/"))
                 if next_url:
                     return redirect(next_url)
                 try:
@@ -351,6 +352,7 @@ def logout_view(request):
     logout(request)
     try:
         request.session.pop("modo_vendedor", None)
+        request.session.pop("modo_admin", None)
     except Exception:
         pass
     return redirect("login")
@@ -406,6 +408,7 @@ def cerrar_sesion_pendiente_si_corresponde(request) -> bool:
         logout(request)
     try:
         request.session.pop("modo_vendedor", None)
+        request.session.pop("modo_admin", None)
         request.session.pop("logout_pending_at", None)
     except Exception:
         pass
@@ -436,6 +439,7 @@ def switch_to_full_mode(request):
     try:
         request.session["modo_vendedor"] = False
         request.session.pop("modo_vendedor", None)
+        request.session.pop("modo_admin", None)
     except Exception:
         pass
     return redirect("home")
@@ -455,6 +459,7 @@ def switch_to_admin_mode(request):
     try:
         request.session["modo_vendedor"] = False
         request.session.pop("modo_vendedor", None)
+        request.session["modo_admin"] = True
     except Exception:
         pass
     destino = safe_internal_path(reverse("admin_usuarios_list")) or reverse("admin_usuarios_list")

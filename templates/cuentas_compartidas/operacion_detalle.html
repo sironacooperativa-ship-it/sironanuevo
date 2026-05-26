@@ -63,8 +63,10 @@
               <td class="text-end col-money">{{ deuda.pagado|ars }}</td>
               <td class="text-end col-money">{{ deuda.pendiente|ars }}</td>
               <td class="text-end">
-                {% if not deuda.esta_pagada %}
+                {% if not deuda.esta_pagada and puede_editar_gastos_compartidos %}
                   <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'cuentas_cancelar_deuda' deuda.pk %}">Cancelar</a>
+                {% elif not deuda.esta_pagada %}
+                  <span class="text-muted small">Pendiente</span>
                 {% else %}
                   <span class="badge text-bg-success rounded-pill">Pagada</span>
                 {% endif %}

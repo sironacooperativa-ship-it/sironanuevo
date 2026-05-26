@@ -1,14 +1,54 @@
 {% extends "base.html" %}
 {% load money %}
-{% block title %}Cuentas compartidas{% endblock %}
+{% block title %}Gastos compartidos{% endblock %}
 {% block content %}
   <div class="app-page-header mb-3 d-flex flex-wrap align-items-center gap-2">
     <div class="me-auto">
-      <h1 class="app-page-title mb-0">Cuentas compartidas</h1>
+      <h1 class="app-page-title mb-0">Gastos compartidos</h1>
       <p class="text-muted mb-0">Saldos entre negocios, vencimientos y operaciones internas.</p>
     </div>
-    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_negocios' %}">Negocios</a>
-    <a class="btn btn-primary btn-sm rounded-pill" href="{% url 'cuentas_operacion_nueva' %}">Nueva operación</a>
+    {% if puede_editar_gastos_compartidos %}
+      <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_negocios' %}">Negocios</a>
+      <a class="btn btn-primary btn-sm rounded-pill" href="{% url 'cuentas_operacion_nueva' %}">Nueva operación</a>
+    {% else %}
+      <span class="badge text-bg-light border rounded-pill text-muted">Solo lectura</span>
+    {% endif %}
+  </div>
+
+  <div class="modern-filter-card mb-3">
+    <form method="get">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-4">
+          <label class="form-label small text-muted mb-1" for="cc-negocio-a">Negocio 1</label>
+          <select id="cc-negocio-a" class="form-select" name="negocio_a">
+            <option value="">Todos</option>
+            {% for negocio in todos_negocios %}
+              <option value="{{ negocio.pk }}" {% if filtro_negocio_a == negocio.pk|stringformat:"s" %}selected{% endif %}>{{ negocio.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label small text-muted mb-1" for="cc-negocio-b">Negocio 2</label>
+          <select id="cc-negocio-b" class="form-select" name="negocio_b">
+            <option value="">Todos</option>
+            {% for negocio in todos_negocios %}
+              <option value="{{ negocio.pk }}" {% if filtro_negocio_b == negocio.pk|stringformat:"s" %}selected{% endif %}>{{ negocio.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-4 d-flex gap-2">
+          <button class="btn btn-primary rounded-pill px-3" type="submit">Ver par</button>
+          <a class="btn btn-outline-secondary rounded-pill px-3" href="{% url 'cuentas_dashboard' %}">Todos</a>
+        </div>
+      </div>
+      <div class="text-muted small mt-2">
+        {% if filtro_par_activo %}
+          Mostrando sólo las interacciones entre los dos negocios elegidos.
+        {% else %}
+          Elegí dos negocios distintos para ver una cuenta corriente sólo entre ese par.
+        {% endif %}
+      </div>
+    </form>
   </div>
 
   <div class="row g-3 mb-3">
@@ -41,6 +81,73 @@
         <div class="stat-value">{{ proximas|length }}</div>
         <div class="text-muted small">Vencen en 14 días</div>
       </div>
+    </div>
+  </div>
+
+  <div class="table-card ui-force-productos mb-3">
+    <div class="table-card-header">
+      <h2 class="table-card-title">Cuenta corriente</h2>
+      <span class="table-card-count">{% if filtro_par_activo %}Detalle por par{% else %}Movimientos por negocio{% endif %}</span>
+    </div>
+    <div class="table-responsive">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Detalle</th>
+            {% for negocio in negocios %}
+              <th class="text-end">{{ negocio.nombre }}</th>
+            {% endfor %}
+            <th class="text-end">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in cuenta_corriente_rows %}
+            <tr>
+              <td class="text-nowrap">{{ row.fecha|date:"d/m/Y" }}</td>
+              <td>
+                <div class="fw-semibold">{{ row.detalle }}</div>
+                <div class="text-muted small">{{ row.subdetalle }}</div>
+              </td>
+              {% for valor in row.valores %}
+                <td class="text-end col-money">
+                  {% if valor > 0 %}
+                    <span class="text-success">{{ valor|ars }}</span>
+                  {% elif valor < 0 %}
+                    <span class="text-danger">{{ valor|ars }}</span>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+              {% endfor %}
+              <td class="text-end">
+                <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url row.url row.url_pk %}">Ver</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="{{ negocios|length|add:3 }}" class="table-empty">Todavía no hay movimientos.</td></tr>
+          {% endfor %}
+        </tbody>
+        {% if cuenta_corriente_rows %}
+          <tfoot>
+            <tr>
+              <th colspan="2">Saldo</th>
+              {% for total in cuenta_corriente_totales %}
+                <th class="text-end col-money">
+                  {% if total > 0 %}
+                    <span class="text-success">{{ total|ars }}</span>
+                  {% elif total < 0 %}
+                    <span class="text-danger">{{ total|ars }}</span>
+                  {% else %}
+                    <span class="text-muted">{{ total|ars }}</span>
+                  {% endif %}
+                </th>
+              {% endfor %}
+              <th></th>
+            </tr>
+          </tfoot>
+        {% endif %}
+      </table>
     </div>
   </div>
 
@@ -101,7 +208,11 @@
                   <td>{{ deuda.operacion.pagador.nombre }}</td>
                   <td class="text-end col-money">{{ deuda.pendiente_calc|ars }}</td>
                   <td class="text-end">
-                    <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'cuentas_cancelar_deuda' deuda.pk %}">Cancelar</a>
+                    {% if puede_editar_gastos_compartidos %}
+                      <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'cuentas_cancelar_deuda' deuda.pk %}">Cancelar</a>
+                    {% else %}
+                      <span class="text-muted small">—</span>
+                    {% endif %}
                   </td>
                 </tr>
               {% empty %}
@@ -111,39 +222,6 @@
           </table>
         </div>
       </div>
-    </div>
-  </div>
-
-  <div class="table-card ui-force-productos">
-    <div class="table-card-header">
-      <h2 class="table-card-title">Últimas operaciones</h2>
-      <span class="table-card-count">Historial</span>
-    </div>
-    <div class="table-responsive">
-      <table class="modern-table">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Concepto</th>
-            <th>Pagó</th>
-            <th class="text-end">Total</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for operacion in operaciones %}
-            <tr>
-              <td>{{ operacion.fecha|date:"d/m/Y" }}</td>
-              <td>{{ operacion.concepto }}</td>
-              <td>{{ operacion.pagador.nombre }}</td>
-              <td class="text-end col-money">{{ operacion.monto_total|ars }}</td>
-              <td class="text-end"><a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_operacion_detalle' operacion.pk %}">Ver</a></td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="5" class="table-empty">Todavía no hay operaciones.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
     </div>
   </div>
 {% endblock %}

@@ -15,7 +15,7 @@ class Negocio(models.Model):
         verbose_name = "Negocio"
         verbose_name_plural = "Negocios"
         permissions = [
-            ("access_cuentas_compartidas", "Puede acceder a cuentas compartidas"),
+            ("access_cuentas_compartidas", "Puede acceder a Gastos compartidos"),
         ]
 
     def __str__(self) -> str:

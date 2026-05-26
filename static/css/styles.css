@@ -265,6 +265,27 @@ body.sidebar-hidden .sidebar-collapse-btn .sirona-side-ico--close {
   color: #2563eb !important;
 }
 
+.sidebar-link-primary {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff !important;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.2);
+}
+
+.sidebar-link-primary:hover,
+.sidebar-link-primary:focus {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #ffffff !important;
+}
+
+.sidebar-link-primary .app-sidebar-icon-wrap,
+.sidebar-link-primary .app-sidebar-label,
+.sidebar-link-primary .sidebar-label {
+  color: #ffffff !important;
+}
+
 .sidebar-link .sidebar-ico,
 .sidebar-link .app-sidebar-icon-wrap {
   width: 16px;
@@ -1465,6 +1486,18 @@ body.offcanvas-open #btnHamburgerMenu .sirona-hamb-ico--close {
 }
 #sironaMenuDemo .offcanvas-body {
   background: #ffffff;
+}
+
+#sironaMenu .sirona-offcanvas-header .app-icon-btn,
+#sironaMenuDemo .sirona-offcanvas-header .app-icon-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  line-height: 1;
 }
 
 /* ===== Topbar ===== */
