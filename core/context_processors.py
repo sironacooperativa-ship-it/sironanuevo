@@ -92,6 +92,7 @@ def vendor_mode(request):
     notas_usuario_no_leidas = 0
     presupuestos_alerta_count = 0
     recibe_notas_admin = False
+    can_switch_admin_mode = False
     user = getattr(request, "user", None)
     if user is not None and getattr(user, "is_authenticated", False):
         try:
@@ -103,6 +104,11 @@ def vendor_mode(request):
         except ObjectDoesNotExist:
             has_vendedor_perfil = False
         can_switch_to_vendor_mode = bool(not solo_vendedor)
+        can_switch_admin_mode = bool(
+            getattr(user, "is_staff", False)
+            and isinstance(vendedor_perfil, Vendedor)
+            and vendedor_perfil.codigo == "VE0007"
+        )
         recibe_notas_admin = _user_recibe_notas_admin(user)
         is_staff = getattr(user, "is_staff", False)
         limitar_alerta_a_mi_vendedor = False
@@ -164,6 +170,7 @@ def vendor_mode(request):
         "has_vendedor_perfil": has_vendedor_perfil,
         "can_switch_to_vendor_mode": can_switch_to_vendor_mode,
         "can_switch_to_full_mode": can_switch_to_full_mode,
+        "can_switch_admin_mode": can_switch_admin_mode,
         "vendedor_perfil_pk": vendedor_perfil_pk,
         "notas_admin_no_leidas": notas_admin_no_leidas,
         "notas_usuario_no_leidas": notas_usuario_no_leidas,

@@ -261,7 +261,7 @@ body.sidebar-hidden .sidebar-collapse-btn .sirona-side-ico--close {
 
 .sidebar-link.is-active .sidebar-label,
 .sidebar-link.is-active .app-sidebar-label {
-  font-weight: 650;
+  font-weight: 700;
   color: #2563eb !important;
 }
 
@@ -280,7 +280,7 @@ body.sidebar-hidden .sidebar-collapse-btn .sirona-side-ico--close {
   flex: 1 1 auto;
   min-width: 0;
   font-size: 0.8125rem;
-  font-weight: 520;
+  font-weight: 700;
   line-height: 1.12;
   white-space: nowrap;
   overflow: hidden;
@@ -372,6 +372,29 @@ body.sidebar-hidden .sidebar-collapse-btn .sirona-side-ico--close {
   border-radius: 999px;
   background: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+#sironaMenu .app-sidebar-link,
+#sironaMenu .app-sidebar-label,
+#sironaMenu .sidebar-label,
+.sirona-offcanvas-nav .app-sidebar-link,
+.sirona-offcanvas-nav .app-sidebar-label,
+.sirona-offcanvas-nav .sidebar-label {
+  font-weight: 700 !important;
+}
+
+#sironaMenu .app-sidebar-link.is-active,
+.sirona-offcanvas-nav .app-sidebar-link.is-active {
+  background: #eff6ff !important;
+  border-color: rgba(37, 99, 235, 0.16) !important;
+  color: #2563eb !important;
+}
+
+#sironaMenu .app-sidebar-link.is-active .app-sidebar-icon-wrap,
+#sironaMenu .app-sidebar-link.is-active .app-sidebar-label,
+.sirona-offcanvas-nav .app-sidebar-link.is-active .app-sidebar-icon-wrap,
+.sirona-offcanvas-nav .app-sidebar-link.is-active .app-sidebar-label {
+  color: #2563eb !important;
 }
 
 /* Tree-like "current node" under active sidebar item (detail pages) */
@@ -1497,6 +1520,30 @@ body.offcanvas-open #btnHamburgerMenu .sirona-hamb-ico--close {
 #sironaMenuDemo .sirona-offcanvas-header .app-icon-btn svg {
   display: block;
   margin: 0;
+}
+
+.sidebar .sidebar-collapse-btn,
+.sidebar .sidebar-collapse-btn:hover,
+.sidebar .sidebar-collapse-btn:focus,
+.sidebar .sidebar-collapse-btn:active {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  line-height: 0 !important;
+}
+
+.sidebar .sidebar-collapse-btn svg {
+  display: block !important;
+  margin: 0 !important;
 }
 
 /* ===== Topbar ===== */

@@ -20,7 +20,7 @@
     />
     <!-- theme: ios-2026r29 -->
     <link href="{% static 'css/theme.css' %}?v=ios-2026r44" rel="stylesheet" />
-    <link href="{% static 'css/styles.css' %}?v=saas-2026r21" rel="stylesheet" />
+    <link href="{% static 'css/styles.css' %}?v=saas-2026r23" rel="stylesheet" />
     <link href="{% static 'css/ui-force-productos.css' %}?v=3" rel="stylesheet" />
     <link href="{% static 'css/sirona-calc.css' %}" rel="stylesheet" />
     <style>
@@ -220,13 +220,18 @@
                   <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                     <li><h6 class="dropdown-header">{{ request.user.username }}</h6></li>
                     <li><hr class="dropdown-divider" /></li>
-                    {% if can_switch_to_full_mode %}
+                    {% if admin_mode and can_switch_admin_mode %}
+                      <li>
+                        <a class="dropdown-item" href="{% url 'switch_to_full_mode' %}">Volver a sesión staff</a>
+                      </li>
+                      <li><hr class="dropdown-divider" /></li>
+                    {% elif can_switch_to_full_mode %}
                       <li>
                         <a class="dropdown-item" href="{% url 'switch_to_full_mode' %}">Modo completo</a>
                       </li>
                       <li><hr class="dropdown-divider" /></li>
                     {% endif %}
-                    {% if request.user.is_staff %}
+                    {% if can_switch_admin_mode and not admin_mode %}
                       <li>
                         <a class="dropdown-item" href="{% url 'switch_to_admin_mode' %}">Administración (pedir login)</a>
                       </li>
@@ -374,13 +379,18 @@
                   <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                     <li><h6 class="dropdown-header">{{ request.user.username }}</h6></li>
                     <li><hr class="dropdown-divider" /></li>
-                    {% if can_switch_to_vendor_mode %}
+                    {% if admin_mode and can_switch_admin_mode %}
+                      <li>
+                        <a class="dropdown-item" href="{% url 'switch_to_full_mode' %}">Volver a sesión staff</a>
+                      </li>
+                      <li><hr class="dropdown-divider" /></li>
+                    {% elif can_switch_to_vendor_mode %}
                       <li>
                         <a class="dropdown-item" href="{% url 'switch_to_vendor_mode' %}">Modo vendedor</a>
                       </li>
                       <li><hr class="dropdown-divider" /></li>
                     {% endif %}
-                    {% if request.user.is_staff %}
+                    {% if can_switch_admin_mode and not admin_mode %}
                       <li>
                         <a class="dropdown-item" href="{% url 'switch_to_admin_mode' %}">Administración (pedir login)</a>
                       </li>
@@ -1952,7 +1962,6 @@
               if (hasActive) {
                 g.classList.add("is-open");
                 if (trig) {
-                  trig.classList.add("is-active");
                   trig.setAttribute("aria-expanded", "true");
                 }
               }

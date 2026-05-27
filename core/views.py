@@ -459,7 +459,12 @@ def switch_to_admin_mode(request):
     """
     from urllib.parse import quote
 
-    if not getattr(request.user, "is_staff", False):
+    v = _safe_get_vendedor_perfil(request.user)
+    if not (
+        getattr(request.user, "is_staff", False)
+        and v is not None
+        and getattr(v, "codigo", "") == "VE0007"
+    ):
         messages.warning(request, "No tenés permisos para administración.")
         return redirect("home")
     try:
