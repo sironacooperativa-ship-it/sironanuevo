@@ -6,6 +6,7 @@ from . import listas_precios_views, views
 urlpatterns = [
     path("", views.productos_list, name="productos_list"),
     path("aumento/", views.productos_aumento, name="productos_aumento"),
+    path("vencimientos/", views.productos_vencimientos, name="productos_vencimientos"),
     path("nuevo/", views.producto_create, name="producto_create"),
     path("<int:pk>/inline/", views.producto_inline_update, name="producto_inline_update"),
     path("<int:pk>/editar/", views.producto_update, name="producto_update"),

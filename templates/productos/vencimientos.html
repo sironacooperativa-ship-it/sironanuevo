@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Vencimientos de productos{% endblock %}
+{% block content %}
+  <span id="sidebarCurrentNode" class="d-none" data-parent-url="{% url 'productos_vencimientos' %}">Vencimientos</span>
+
+  <div class="page-header">
+    <div class="min-w-0">
+      <h1 class="page-title">Vencimientos</h1>
+      <p class="page-subtitle">Productos con fecha de vencimiento cargada, ordenados de la más próxima a la más lejana.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+      <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'productos_list' %}">Volver a productos</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-md-4">
+      <div class="stat-card h-100">
+        <div class="stat-row">
+          <div class="stat-label">Alerta medicamentos</div>
+          <span class="stat-ico stat-ico--danger"><i data-lucide="alert-triangle"></i></span>
+        </div>
+        <div class="stat-value">{{ total_medicamentos_90 }}</div>
+        <div class="text-muted small">Vencen dentro de 90 días</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="stat-card h-100">
+        <div class="stat-row">
+          <div class="stat-label">Próximos 90 días</div>
+          <span class="stat-ico"><i data-lucide="calendar-days"></i></span>
+        </div>
+        <div class="stat-value">{{ total_proximos_90 }}</div>
+        <div class="text-muted small">Todos los productos con fecha</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="stat-card h-100">
+        <div class="stat-row">
+          <div class="stat-label">Vencidos</div>
+          <span class="stat-ico stat-ico--orange"><i data-lucide="clock-alert"></i></span>
+        </div>
+        <div class="stat-value">{{ total_vencidos }}</div>
+        <div class="text-muted small">Con fecha anterior a hoy</div>
+      </div>
+    </div>
+  </div>
+
+  {% if medicamentos_90 %}
+    <div class="card shadow-sm presu-lista-modern border-danger mb-3">
+      <div class="card-header fw-semibold bg-danger bg-opacity-10">Medicamentos por vencer en los próximos 90 días</div>
+      <div class="card-body p-0">
+        <div class="table-responsive presu-lista-table-wrap">
+          <table class="modern-table">
+            <thead>
+              <tr>
+                <th>Vence</th>
+                <th>Código</th>
+                <th>Medicamento</th>
+                <th class="text-end col-money">Stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in medicamentos_90 %}
+                <tr>
+                  <td class="text-danger fw-semibold text-nowrap">{{ p.fecha_vencimiento|date:"d/m/Y" }}</td>
+                  <td><span class="persona-cod">{{ p.codigo }}</span></td>
+                  <td>{{ p.descripcion }}{% if p.laboratorio %}<span class="text-muted"> · {{ p.laboratorio }}</span>{% endif %}</td>
+                  <td class="text-end col-money">{{ p.stock }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="table-card ui-force-productos">
+    <div class="table-card-header">
+      <h2 class="table-card-title">Todos los vencimientos</h2>
+      <span class="table-card-count">{{ total_con_fecha }} con fecha cargada</span>
+    </div>
+    <div class="table-responsive">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>Vence</th>
+            <th>Código</th>
+            <th>Producto</th>
+            <th>Tipo</th>
+            <th class="text-end col-money">Stock</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in productos %}
+            <tr>
+              <td class="text-nowrap {% if p.fecha_vencimiento < hoy %}text-danger fw-semibold{% endif %}">
+                {{ p.fecha_vencimiento|date:"d/m/Y" }}
+              </td>
+              <td><span class="persona-cod">{{ p.codigo }}</span></td>
+              <td>{{ p.descripcion }}{% if p.laboratorio %}<span class="text-muted"> · {{ p.laboratorio }}</span>{% endif %}</td>
+              <td>{{ p.get_tipo_display }}</td>
+              <td class="text-end col-money">{{ p.stock }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="table-empty">No hay productos con fecha de vencimiento cargada.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% include "includes/pagination_footer.html" %}
+{% endblock %}

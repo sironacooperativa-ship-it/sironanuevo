@@ -748,6 +748,43 @@ def productos_list(request):
 
 
 @login_required
+def productos_vencimientos(request):
+    hoy = date.today()
+    limite_90 = hoy + timedelta(days=90)
+    productos_qs = (
+        Producto.objects.filter(fecha_vencimiento__isnull=False)
+        .order_by("fecha_vencimiento", "descripcion", "codigo")
+    )
+    meds_90_qs = productos_qs.filter(
+        habilitado=True,
+        tipo=Producto.Tipo.MEDICAMENTOS,
+        fecha_vencimiento__gte=hoy,
+        fecha_vencimiento__lte=limite_90,
+    )
+    vencidos_qs = productos_qs.filter(fecha_vencimiento__lt=hoy)
+    proximos_qs = productos_qs.filter(fecha_vencimiento__gte=hoy, fecha_vencimiento__lte=limite_90)
+
+    paginator = Paginator(productos_qs, 100)
+    page_obj = paginator.get_page((request.GET.get("page") or "").strip() or 1)
+
+    return render(
+        request,
+        "productos/vencimientos.html",
+        {
+            "productos": list(page_obj),
+            "page_obj": page_obj,
+            "hoy": hoy,
+            "limite_90": limite_90,
+            "total_con_fecha": productos_qs.count(),
+            "total_medicamentos_90": meds_90_qs.count(),
+            "total_vencidos": vencidos_qs.count(),
+            "total_proximos_90": proximos_qs.count(),
+            "medicamentos_90": list(meds_90_qs[:30]),
+        },
+    )
+
+
+@login_required
 @require_http_methods(["GET", "POST"])
 def productos_aumento(request):
     proveedores_filtro = Proveedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
