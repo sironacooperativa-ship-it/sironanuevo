@@ -39,15 +39,15 @@
     }
   </style>
   <div class="modal-header">
-    <h5 class="modal-title mb-0">Comparativa catálogo · Presupuesto #{{ presupuesto.pk }}</h5>
+    <h5 class="modal-title mb-0">Comparativa de precios · Presupuesto #{{ presupuesto.pk }}</h5>
     <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal" aria-label="Cerrar">
       Cerrar
     </button>
   </div>
   <div class="modal-body sirona-presu-comp-body">
     <p class="text-muted small mb-3">
-      Comparación entre lo <strong>guardado</strong> en el presupuesto y lo <strong>actual</strong> en catálogo (producto).
-      Elegí abajo si querés <strong>actualizar</strong> o <strong>conservar</strong> antes de aprobar.
+      Comparación entre los <strong>precios guardados</strong> en el presupuesto y los <strong>precios actuales</strong> del catálogo.
+      Los cambios de descripción no generan esta alerta.
     </p>
 
     <div class="table-responsive sirona-presu-comp-table-wrap">
@@ -118,7 +118,7 @@
     </div>
 
     <div class="alert alert-info small mb-0">
-      <strong>Tip:</strong> la opción <em>Actualizar</em> recalcula precios y textos desde catálogo; <em>Conservar</em> deja el presupuesto tal cual se cotizó.
+      <strong>Tip:</strong> la opción <em>Actualizar</em> recalcula sólo los precios desde catálogo; <em>Conservar</em> deja los importes tal cual se cotizaron.
     </div>
   </div>
   <div class="modal-footer">
@@ -126,12 +126,12 @@
       method="post"
       action="{% url 'presupuesto_resolver_catalogo' presupuesto.pk %}"
       class="d-inline"
-      onsubmit="return confirm('Se aplicarán precio de venta y datos actuales del catálogo a cada línea. ¿Actualizar el presupuesto?');"
+      onsubmit="return confirm('Se aplicará el precio de venta actual del catálogo a cada línea. ¿Actualizar el presupuesto?');"
       data-presu-comp-form="1"
     >
       {% csrf_token %}
       <input type="hidden" name="resolver_catalogo" value="actualizar" />
-      <button type="submit" class="btn btn-warning btn-sm">Actualizar desde catálogo</button>
+      <button type="submit" class="btn btn-warning btn-sm">Actualizar precios desde catálogo</button>
     </form>
     <form
       method="post"

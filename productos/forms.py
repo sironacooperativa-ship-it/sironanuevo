@@ -41,7 +41,7 @@ class ProductoForm(forms.ModelForm):
             "laboratorio": forms.TextInput(
                 attrs={
                     "class": "form-control form-control-sm rounded-3",
-                    "placeholder": "Marca / laboratorio",
+                    "placeholder": "Marca",
                 }
             ),
             "costo": forms.NumberInput(

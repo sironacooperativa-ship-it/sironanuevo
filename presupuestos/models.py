@@ -124,18 +124,25 @@ class PresupuestoLinea(models.Model):
         blank=True,
         help_text="Valor de producto.actualizado_en al último guardado/aceptación de esta línea (para detectar cambios en catálogo).",
     )
+    precio_catalogo_capturado = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Precio de venta del producto al guardar/aceptar la línea.",
+    )
 
     class Meta:
         ordering = ["id"]
 
     def linea_superada_por_catalogo_producto(self) -> bool:
-        """El producto en catálogo se modificó después de fijar esta línea."""
-        cap = self.producto_capturado_en
-        p = self.producto
-        if cap is None:
+        """La línea quedó desactualizada sólo si cambió el precio de venta del producto."""
+        precio_actual = _q2(self.producto.precio_venta or Decimal("0.00"))
+        if _q2(self.precio_unitario or Decimal("0.00")) == precio_actual:
+            return False
+        if self.precio_catalogo_capturado is None:
             return True
-        # Microsegundos: si son iguales, no hubo edición posterior a la captura.
-        return p.actualizado_en > cap
+        return _q2(self.precio_catalogo_capturado) != precio_actual
 
     @property
     def texto_codigo(self) -> str:
@@ -150,7 +157,7 @@ class PresupuestoLinea(models.Model):
 
 
 def presupuesto_tiene_alerta_catalogo(presupuesto: Presupuesto) -> bool:
-    """Presupuesto activo con al menos una línea desactualizada respecto al producto en catálogo."""
+    """Presupuesto activo con al menos una línea cuyo precio difiere del catálogo."""
     if presupuesto.estado != Presupuesto.Estado.ACTIVO:
         return False
     for ln in presupuesto.lineas.select_related("producto"):

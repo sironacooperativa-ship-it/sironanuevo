@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Nueva operación compartida{% endblock %}
+{% block title %}{% if modo == "editar" %}Editar gasto compartido{% else %}Nueva operación compartida{% endif %}{% endblock %}
 {% block content %}
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <div class="me-auto">
-      <h1 class="h3 mb-0">Nueva operación compartida</h1>
+      <h1 class="h3 mb-0">{% if modo == "editar" %}Editar gasto compartido{% else %}Nueva operación compartida{% endif %}</h1>
       <p class="text-muted mb-0">Cargá quién pagó y cuánto debe cada negocio, siempre valorizado en pesos.</p>
     </div>
     <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_dashboard' %}">Volver</a>
@@ -15,6 +15,11 @@
         {% csrf_token %}
         {% if form.non_field_errors %}
           <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+        {% if tiene_cancelaciones %}
+          <div class="alert alert-info">
+            Este gasto ya tiene cancelaciones. Podés modificar datos generales, pero el reparto queda bloqueado.
+          </div>
         {% endif %}
         <div class="row g-3">
           <div class="col-12 col-md-3">
@@ -81,7 +86,7 @@
 
         <div class="mt-4 d-flex justify-content-end gap-2">
           <a class="btn btn-outline-secondary" href="{% url 'cuentas_dashboard' %}">Cancelar</a>
-          <button type="submit" class="btn btn-primary">Guardar operación</button>
+          <button type="submit" class="btn btn-primary">{% if modo == "editar" %}Guardar cambios{% else %}Guardar operación{% endif %}</button>
         </div>
       </form>
     </div>

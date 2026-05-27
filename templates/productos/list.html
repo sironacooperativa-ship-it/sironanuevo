@@ -316,6 +316,14 @@
             <option value="nuevos" {% if ingreso == "nuevos" %}selected{% endif %}>Nuevos ingresos</option>
           </select>
         </div>
+        <div>
+          <label class="form-label small text-muted mb-1">Vencimiento</label>
+          <select class="form-select form-select-sm rounded-3" name="vencimiento" title="Filtrar por fecha de vencimiento">
+            <option value="" {% if not vencimiento %}selected{% endif %}>Todos</option>
+            <option value="30" {% if vencimiento == "30" %}selected{% endif %}>Próximos 30 días</option>
+            <option value="90" {% if vencimiento == "90" %}selected{% endif %}>Próximos 90 días</option>
+          </select>
+        </div>
         <div class="productos-filtros-actions d-flex gap-2 justify-content-start flex-wrap align-items-end">
           {% if sort_ord %}
             <input type="hidden" name="ord" value="{{ sort_ord }}" />
@@ -398,7 +406,7 @@
                 <span class="text-body-tertiary" aria-hidden="true"> · </span>
                 <a class="link-secondary text-decoration-none" href="?{{ sort_links.tipo }}">Tipo{% if sort_ord == "tipo" %}<span class="producto-th-sort-caret">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
                 <span class="text-body-tertiary" aria-hidden="true"> · </span>
-                <a class="link-secondary text-decoration-none" href="?{{ sort_links.laboratorio }}">Laboratorio{% if sort_ord == "laboratorio" %}<span class="producto-th-sort-caret">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+                <a class="link-secondary text-decoration-none" href="?{{ sort_links.laboratorio }}">Marca{% if sort_ord == "laboratorio" %}<span class="producto-th-sort-caret">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
                 <span class="text-body-tertiary" aria-hidden="true"> · </span>
                 <a class="link-secondary text-decoration-none" href="?{{ sort_links.costo }}">Costo{% if sort_ord == "costo" %}<span class="producto-th-sort-caret">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
                 <span class="text-body-tertiary" aria-hidden="true"> · </span>
@@ -446,7 +454,7 @@
                       Rubro: {{ p.get_tipo_display }}
                       {% if p.laboratorio %}
                         <span class="productos-desc-sep" aria-hidden="true"> • </span>
-                        Laboratorio: {{ p.laboratorio }}
+                        Marca: {{ p.laboratorio }}
                       {% endif %}
                       {% if proveedor_sel_label %}
                         <span class="productos-desc-sep" aria-hidden="true"> • </span>
@@ -470,7 +478,7 @@
                     form="producto-inline-{{ p.pk }}"
                     value="{{ p.laboratorio }}"
                     maxlength="120"
-                    placeholder="Laboratorio"
+                    placeholder="Marca"
                     autocomplete="off"
                   />
                   <div class="producto-edit-inline-fields mt-2 w-100">

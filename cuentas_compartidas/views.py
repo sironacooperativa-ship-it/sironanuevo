@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
 from django.db.models import Sum
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
@@ -26,30 +27,117 @@ def _deudas_con_saldo(queryset):
     return [deuda for deuda in deudas if deuda.pendiente_calc > 0]
 
 
-def _saldos_netos(deudas):
-    dirigidos = defaultdict(Decimal)
+def _saldos_netos(deudas, *, hoy: date, par_ids: set[int] | None = None):
+    dirigidos_hoy = defaultdict(Decimal)
+    dirigidos_futuro = defaultdict(Decimal)
     nombres = {}
     for deuda in deudas:
         acreedor = deuda.operacion.pagador
         deudor = deuda.deudor
+        if par_ids and {acreedor.pk, deudor.pk} != par_ids:
+            continue
+        dirigidos = dirigidos_hoy if deuda.vencimiento <= hoy else dirigidos_futuro
         dirigidos[(deudor.pk, acreedor.pk)] += deuda.pendiente_calc
         nombres[deudor.pk] = deudor.nombre
         nombres[acreedor.pk] = acreedor.nombre
 
+    pares = set(dirigidos_hoy.keys()) | set(dirigidos_futuro.keys())
     procesados = set()
+    def balance_para(neto: Decimal, deudor_id: int, acreedor_id: int):
+        if neto > 0:
+            return {
+                "deudor": nombres[deudor_id],
+                "acreedor": nombres[acreedor_id],
+                "monto": neto,
+            }
+        if neto < 0:
+            return {
+                "deudor": nombres[acreedor_id],
+                "acreedor": nombres[deudor_id],
+                "monto": abs(neto),
+            }
+        return None
+
     saldos = []
-    for (deudor_id, acreedor_id), monto in dirigidos.items():
+    for deudor_id, acreedor_id in pares:
         if (deudor_id, acreedor_id) in procesados:
             continue
-        inverso = dirigidos.get((acreedor_id, deudor_id), Decimal("0.00"))
-        neto = monto - inverso
+        hoy_directo = dirigidos_hoy.get((deudor_id, acreedor_id), Decimal("0.00"))
+        hoy_inverso = dirigidos_hoy.get((acreedor_id, deudor_id), Decimal("0.00"))
+        futuro_directo = dirigidos_futuro.get((deudor_id, acreedor_id), Decimal("0.00"))
+        futuro_inverso = dirigidos_futuro.get((acreedor_id, deudor_id), Decimal("0.00"))
+        neto_hoy = hoy_directo - hoy_inverso
+        neto_futuro = futuro_directo - futuro_inverso
+        neto_total = neto_hoy + neto_futuro
         procesados.add((deudor_id, acreedor_id))
         procesados.add((acreedor_id, deudor_id))
-        if neto > 0:
-            saldos.append({"deudor": nombres[deudor_id], "acreedor": nombres[acreedor_id], "monto": neto})
-        elif neto < 0:
-            saldos.append({"deudor": nombres[acreedor_id], "acreedor": nombres[deudor_id], "monto": abs(neto)})
-    return sorted(saldos, key=lambda item: (item["deudor"], item["acreedor"]))
+
+        saldo_hoy = balance_para(neto_hoy, deudor_id, acreedor_id)
+        saldo_futuro = balance_para(neto_futuro, deudor_id, acreedor_id)
+        saldo_total = balance_para(neto_total, deudor_id, acreedor_id)
+        if not saldo_hoy and not saldo_futuro and not saldo_total:
+            continue
+
+        saldos.append(
+            {
+                "negocio_a": nombres[deudor_id],
+                "negocio_b": nombres[acreedor_id],
+                "saldo_hoy": saldo_hoy,
+                "saldo_futuro": saldo_futuro,
+                "saldo_total": saldo_total,
+            }
+        )
+    return sorted(saldos, key=lambda item: (item["negocio_a"], item["negocio_b"]))
+
+
+def _puede_editar_operacion(request, operacion: OperacionCompartida) -> bool:
+    if request.user.is_staff and request.session.get("modo_admin"):
+        return True
+    return bool(operacion.creado_por_id and operacion.creado_por_id == request.user.pk)
+
+
+def _negocios_para_operacion(operacion: OperacionCompartida | None = None) -> list[Negocio]:
+    qs = Negocio.objects.filter(activo=True)
+    if operacion and operacion.pk:
+        ids = {operacion.pagador_id}
+        ids.update(operacion.deudas.values_list("deudor_id", flat=True))
+        qs = Negocio.objects.filter(pk__in=ids) | qs
+    return list(qs.distinct().order_by("nombre"))
+
+
+def _deudas_cambiaron(operacion: OperacionCompartida, nuevas: list[dict]) -> bool:
+    actuales = {
+        deuda.deudor_id: (Decimal(deuda.monto), deuda.vencimiento)
+        for deuda in operacion.deudas.all()
+    }
+    propuestas = {
+        item["negocio"].pk: (Decimal(item["monto"]), item["vencimiento"])
+        for item in nuevas
+    }
+    return actuales != propuestas
+
+
+def _deuda_rows(form: OperacionCompartidaForm, negocios: list[Negocio]) -> list[dict]:
+    return [
+        {
+            "negocio": negocio,
+            "incluir": form[f"incluir_{negocio.pk}"],
+            "monto": form[f"monto_{negocio.pk}"],
+            "vencimiento": form[f"vencimiento_{negocio.pk}"],
+        }
+        for negocio in negocios
+    ]
+
+
+def _guardar_deudas_operacion(operacion: OperacionCompartida, deudas: list[dict]) -> None:
+    operacion.deudas.all().delete()
+    for item in deudas:
+        DeudaCompartida.objects.create(
+            operacion=operacion,
+            deudor=item["negocio"],
+            monto=item["monto"],
+            vencimiento=item["vencimiento"],
+        )
 
 
 def _cuenta_corriente_rows(negocios: list[Negocio], *, par_ids: set[int] | None = None):
@@ -146,10 +234,18 @@ def cuentas_dashboard(request):
         else:
             par_ids = None
     deudas_pendientes = _deudas_con_saldo(DeudaCompartida.objects.all())
-    vencimientos = sorted(deudas_pendientes, key=lambda deuda: (deuda.vencimiento, deuda.pk))[:12]
-    vencidas = [deuda for deuda in deudas_pendientes if deuda.vencimiento < hoy]
-    proximas = [deuda for deuda in deudas_pendientes if hoy <= deuda.vencimiento <= hoy + timedelta(days=14)]
+    deudas_visibles = [
+        deuda
+        for deuda in deudas_pendientes
+        if not par_ids or {deuda.operacion.pagador_id, deuda.deudor_id} == par_ids
+    ]
+    vencimientos = sorted(deudas_visibles, key=lambda deuda: (deuda.vencimiento, deuda.pk))[:12]
+    vencidas = [deuda for deuda in deudas_visibles if deuda.vencimiento <= hoy]
+    sin_vencer = [deuda for deuda in deudas_visibles if deuda.vencimiento > hoy]
+    proximas = [deuda for deuda in deudas_visibles if hoy < deuda.vencimiento <= hoy + timedelta(days=14)]
     cuenta_corriente_rows, cuenta_corriente_totales = _cuenta_corriente_rows(negocios, par_ids=par_ids)
+    total_al_dia = sum((deuda.pendiente_calc for deuda in vencidas), Decimal("0.00"))
+    total_sin_vencer = sum((deuda.pendiente_calc for deuda in sin_vencer), Decimal("0.00"))
     return render(
         request,
         "cuentas_compartidas/dashboard.html",
@@ -159,22 +255,26 @@ def cuentas_dashboard(request):
             "filtro_negocio_a": negocio_a,
             "filtro_negocio_b": negocio_b,
             "filtro_par_activo": bool(par_ids),
-            "saldos": _saldos_netos(deudas_pendientes),
+            "saldos": _saldos_netos(deudas_pendientes, hoy=hoy, par_ids=par_ids),
             "vencimientos": vencimientos,
             "vencidas": vencidas,
+            "sin_vencer": sin_vencer,
             "proximas": proximas,
             "cuenta_corriente_rows": cuenta_corriente_rows,
             "cuenta_corriente_totales": cuenta_corriente_totales,
-            "total_pendiente": sum((deuda.pendiente_calc for deuda in deudas_pendientes), Decimal("0.00")),
-            "puede_editar_gastos_compartidos": bool(request.user.is_staff and request.session.get("modo_admin")),
+            "total_al_dia": total_al_dia,
+            "total_sin_vencer": total_sin_vencer,
+            "total_pendiente": total_al_dia + total_sin_vencer,
+            "puede_admin_gastos_compartidos": bool(request.user.is_staff and request.session.get("modo_admin")),
+            "puede_cargar_gastos_compartidos": True,
         },
     )
 
 
-@modo_admin_gastos_required
+@cuentas_compartidas_required
 @require_http_methods(["GET", "POST"])
 def operacion_nueva(request):
-    negocios = list(Negocio.objects.filter(activo=True).order_by("nombre"))
+    negocios = _negocios_para_operacion()
     if len(negocios) < 2:
         messages.warning(request, "Cargá al menos dos negocios activos antes de registrar una operación.")
         return redirect("cuentas_negocios")
@@ -183,14 +283,10 @@ def operacion_nueva(request):
         form = OperacionCompartidaForm(request.POST, negocios=negocios)
         if form.is_valid():
             with transaction.atomic():
-                operacion = form.save()
-                for item in form.cleaned_data["deudas"]:
-                    DeudaCompartida.objects.create(
-                        operacion=operacion,
-                        deudor=item["negocio"],
-                        monto=item["monto"],
-                        vencimiento=item["vencimiento"],
-                    )
+                operacion = form.save(commit=False)
+                operacion.creado_por = request.user
+                operacion.save()
+                _guardar_deudas_operacion(operacion, form.cleaned_data["deudas"])
             messages.success(request, "Operación compartida registrada.")
             return redirect("cuentas_dashboard")
     else:
@@ -198,16 +294,51 @@ def operacion_nueva(request):
             negocios=negocios,
             initial={"fecha": date.today(), "tipo": OperacionCompartida.Tipo.COMPRA},
         )
-    deuda_rows = [
+    return render(
+        request,
+        "cuentas_compartidas/operacion_form.html",
+        {"form": form, "deuda_rows": _deuda_rows(form, negocios), "modo": "nuevo"},
+    )
+
+
+@cuentas_compartidas_required
+@require_http_methods(["GET", "POST"])
+def operacion_editar(request, pk: int):
+    operacion = get_object_or_404(
+        OperacionCompartida.objects.prefetch_related("deudas", "deudas__cancelaciones"),
+        pk=pk,
+    )
+    if not _puede_editar_operacion(request, operacion):
+        raise PermissionDenied("Solo puede editar este gasto quien lo cargó.")
+
+    negocios = _negocios_para_operacion(operacion)
+    tiene_cancelaciones = CancelacionDeuda.objects.filter(deuda__operacion=operacion).exists()
+    if request.method == "POST":
+        form = OperacionCompartidaForm(request.POST, instance=operacion, negocios=negocios)
+        if form.is_valid():
+            deudas_cambiaron = _deudas_cambiaron(operacion, form.cleaned_data["deudas"])
+            if tiene_cancelaciones and deudas_cambiaron:
+                form.add_error(None, "Este gasto ya tiene cancelaciones. Podés editar los datos generales, pero no el reparto.")
+            else:
+                with transaction.atomic():
+                    operacion = form.save()
+                    if not tiene_cancelaciones and deudas_cambiaron:
+                        _guardar_deudas_operacion(operacion, form.cleaned_data["deudas"])
+                messages.success(request, "Gasto compartido actualizado.")
+                return redirect("cuentas_operacion_detalle", pk=operacion.pk)
+    else:
+        form = OperacionCompartidaForm(instance=operacion, negocios=negocios)
+    return render(
+        request,
+        "cuentas_compartidas/operacion_form.html",
         {
-            "negocio": negocio,
-            "incluir": form[f"incluir_{negocio.pk}"],
-            "monto": form[f"monto_{negocio.pk}"],
-            "vencimiento": form[f"vencimiento_{negocio.pk}"],
-        }
-        for negocio in negocios
-    ]
-    return render(request, "cuentas_compartidas/operacion_form.html", {"form": form, "deuda_rows": deuda_rows})
+            "form": form,
+            "deuda_rows": _deuda_rows(form, negocios),
+            "modo": "editar",
+            "operacion": operacion,
+            "tiene_cancelaciones": tiene_cancelaciones,
+        },
+    )
 
 
 @cuentas_compartidas_required
@@ -221,7 +352,8 @@ def operacion_detalle(request, pk: int):
         "cuentas_compartidas/operacion_detalle.html",
         {
             "operacion": operacion,
-            "puede_editar_gastos_compartidos": bool(request.user.is_staff and request.session.get("modo_admin")),
+            "puede_admin_gastos_compartidos": bool(request.user.is_staff and request.session.get("modo_admin")),
+            "puede_editar_operacion": _puede_editar_operacion(request, operacion),
         },
     )
 

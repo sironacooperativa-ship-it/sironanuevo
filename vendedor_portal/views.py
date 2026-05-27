@@ -30,7 +30,7 @@ from productos.lista_precios_pdf import (
     lista_precios_xlsx_response,
 )
 from productos.models import ListaPrecioItem, ListaPrecios, Producto
-from core.money_decimal import format_monto_ars
+from core.money_decimal import format_monto_ars, q2
 from ventas.models import Venta
 from ventas.sql_metrics import venta_neto_nonneg_expr
 from ventas.servicios import unpack_linea_spec
@@ -167,6 +167,7 @@ def vendedor_home(request):
                         codigo_snapshot=(cod or "")[:6],
                         descripcion_snapshot=(desc or "")[:255],
                         producto_capturado_en=prod.actualizado_en,
+                        precio_catalogo_capturado=q2(prod.precio_venta),
                     )
             if comprador_id:
                 messages.success(

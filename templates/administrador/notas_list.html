@@ -15,21 +15,13 @@
   <div class="card app-card border-0 shadow-sm app-list-filters mb-3">
     <div class="card-body">
       <form method="get" class="row g-2 align-items-end">
-        <div class="col-12 col-md-4 col-lg-3">
-          <label class="form-label small text-muted mb-0">Estado</label>
-          <select name="estado" class="form-select form-select-sm">
-            <option value="no_leidas" {% if filtros.estado == "no_leidas" %}selected{% endif %}>Con pendientes</option>
-            <option value="todas" {% if filtros.estado == "todas" %}selected{% endif %}>Todas</option>
-            <option value="leidas" {% if filtros.estado == "leidas" %}selected{% endif %}>Sin pendientes</option>
-          </select>
-        </div>
-        <div class="col-12 col-md-6 col-lg-5">
+        <div class="col-12 col-md-8 col-lg-6">
           <label class="form-label small text-muted mb-0">Buscar</label>
           <input
             type="text"
             name="q"
             class="form-control form-control-sm"
-            placeholder="texto, usuario, email o vendedor"
+            placeholder="texto, usuario o email"
             value="{{ filtros.q }}"
           />
         </div>
@@ -42,25 +34,25 @@
   </div>
 
   <div class="admin-notas-hilos d-flex flex-column gap-3 mb-4">
-    {% if page_obj and page_obj.object_list %}
+    {% if conversaciones %}
       <div class="card border-0 shadow-sm overflow-hidden">
         <div class="card-header bg-white border-bottom">
           <ul class="nav nav-tabs card-header-tabs flex-nowrap overflow-auto" role="tablist">
-            {% for root in page_obj %}
+            {% for conv in conversaciones %}
               <li class="nav-item" role="presentation">
                 <button
                   class="nav-link {% if forloop.first %}active{% endif %}"
-                  id="tab-hilo-{{ root.pk }}"
+                  id="tab-user-{{ conv.usuario.pk }}"
                   data-bs-toggle="tab"
-                  data-bs-target="#hilo-{{ root.pk }}"
+                  data-bs-target="#user-{{ conv.usuario.pk }}"
                   type="button"
                   role="tab"
-                  aria-controls="hilo-{{ root.pk }}"
+                  aria-controls="user-{{ conv.usuario.pk }}"
                   aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
                 >
-                  {{ root.usuario.username }}
-                  {% if not root.leida or root.unread_child %}
-                    <span class="badge text-bg-warning text-dark ms-1">!</span>
+                  {{ conv.usuario.username }}
+                  {% if conv.no_leidos %}
+                    <span class="sirona-notif-dot position-static ms-1 align-middle" aria-hidden="true"></span>
                   {% endif %}
                 </button>
               </li>
@@ -69,51 +61,30 @@
         </div>
 
         <div class="tab-content">
-          {% for root in page_obj %}
+          {% for conv in conversaciones %}
             <div
               class="tab-pane fade {% if forloop.first %}show active{% endif %}"
-              id="hilo-{{ root.pk }}"
+              id="user-{{ conv.usuario.pk }}"
               role="tabpanel"
-              aria-labelledby="tab-hilo-{{ root.pk }}"
+              aria-labelledby="tab-user-{{ conv.usuario.pk }}"
               tabindex="0"
             >
               <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-2 bg-light border-bottom">
                 <div class="small">
-                  <span class="fw-semibold">{{ root.usuario.username }}</span>
-                  <span class="text-muted">· {{ root.creado_en|date:"d/m/Y H:i" }}</span>
-                  {% if root.vendedor %}
-                    <span class="text-muted">· {{ root.vendedor }}</span>
+                  <span class="fw-semibold">{{ conv.usuario.username }}</span>
+                  {% if conv.usuario.email %}
+                    <span class="text-muted">· {{ conv.usuario.email }}</span>
                   {% endif %}
                 </div>
-                <div class="d-flex align-items-center gap-1 flex-wrap">
-                  {% if root.leida and not root.unread_child %}
-                    <span class="badge text-bg-secondary rounded-pill">Al día</span>
-                  {% else %}
-                    <span class="badge text-bg-warning text-dark rounded-pill">Pendiente</span>
-                  {% endif %}
-                  <form class="d-inline m-0" method="post">
-                    {% csrf_token %}
-                    <input type="hidden" name="nota_id" value="{{ root.pk }}" />
-                    {% if root.leida and not root.unread_child %}
-                      <button class="btn btn-sm btn-outline-secondary" type="submit" name="accion" value="marcar_no_leida" title="Marcar como pendiente">
-                        Marcar pendiente
-                      </button>
-                    {% else %}
-                      <button class="btn btn-sm btn-outline-success" type="submit" name="accion" value="marcar_leida" title="Marcar mensajes del usuario como leídos">
-                        Marcar leído
-                      </button>
-                    {% endif %}
-                  </form>
-                  <form class="d-inline m-0" method="post" onsubmit="return confirm('¿Eliminar toda la conversación?');">
-                    {% csrf_token %}
-                    <input type="hidden" name="nota_id" value="{{ root.pk }}" />
-                    <button class="btn btn-sm btn-outline-danger" type="submit" name="accion" value="eliminar" title="Eliminar hilo">Eliminar</button>
-                  </form>
-                </div>
+                {% if conv.no_leidos %}
+                  <span class="badge text-bg-warning text-dark rounded-pill">Mensajes nuevos</span>
+                {% else %}
+                  <span class="badge text-bg-secondary rounded-pill">Al día</span>
+                {% endif %}
               </div>
 
               <div class="admin-nota-chat px-3 py-2">
-                {% for m in root.hilo_mensajes %}
+                {% for m in conv.mensajes %}
                   <div class="admin-nota-bubble {% if m.es_staff %}admin-nota-bubble--staff{% else %}admin-nota-bubble--user{% endif %}">
                     <div class="admin-nota-bubble-meta small text-muted">
                       {% if m.es_staff %}
@@ -134,12 +105,11 @@
               <div class="border-top bg-white p-3">
                 <form method="post" class="row g-2 align-items-end">
                   {% csrf_token %}
-                  <input type="hidden" name="accion" value="responder" />
-                  <input type="hidden" name="root_id" value="{{ root.pk }}" />
+                  <input type="hidden" name="usuario_id" value="{{ conv.usuario.pk }}" />
                   <div class="col-12">
-                    <label class="form-label small text-muted mb-0" for="resp-{{ root.pk }}">Responder al usuario</label>
+                    <label class="form-label small text-muted mb-0" for="resp-{{ conv.usuario.pk }}">Responder al usuario</label>
                     <textarea
-                      id="resp-{{ root.pk }}"
+                      id="resp-{{ conv.usuario.pk }}"
                       class="form-control form-control-sm"
                       name="texto_respuesta"
                       rows="2"
@@ -163,6 +133,4 @@
       </div>
     {% endif %}
   </div>
-
-  {% include "includes/pagination_footer.html" %}
 {% endblock %}

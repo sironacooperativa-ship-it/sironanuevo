@@ -152,7 +152,9 @@ LOGOUT_REDIRECT_URL = "login"
 # para que la sesión sobreviva al cerrar el navegador (menos re-logins; menos "cierre" estricto).
 SESSION_EXPIRE_AT_BROWSER_CLOSE = os.environ.get("SESSION_EXPIRE_AT_BROWSER_CLOSE", "1") == "1"
 SESSION_COOKIE_AGE = int(os.environ.get("SESSION_COOKIE_AGE", str(14 * 24 * 60 * 60)))
-SESSION_SAVE_EVERY_REQUEST = True
+# Evita un UPDATE de sesión en cada navegación. Django guarda igual cuando la sesión cambia
+# (login, modo vendedor/admin, mensajes leídos, etc.).
+SESSION_SAVE_EVERY_REQUEST = os.environ.get("SESSION_SAVE_EVERY_REQUEST", "0") == "1"
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 

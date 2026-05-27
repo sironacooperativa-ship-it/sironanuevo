@@ -5,11 +5,11 @@ import os
 from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import F, Q
+from django.db.models import Exists, F, OuterRef, Q
 
 from core.models import NotaAdmin
 from personas.models import Vendedor
-from presupuestos.models import Presupuesto
+from presupuestos.models import Presupuesto, PresupuestoLinea
 
 # Conteos del layout (badges): TTL corto; usuarios "recibe_notas_admin" no cachean (badge de bandeja).
 _VENDOR_CTX_CACHE_TTL = int(os.environ.get("SIRONA_VENDOR_CONTEXT_CACHE_SECONDS", "20"))
@@ -27,10 +27,19 @@ def _presupuestos_alerta_count(*, vendedor_perfil, limitar_alerta_a_mi_vendedor:
                 base_qs = base_qs.filter(vendedor_id=vendedor_perfil.pk)
             else:
                 base_qs = base_qs.none()
-        alerta_q = Q(lineas__producto_capturado_en__isnull=True) | Q(
-            lineas__producto__actualizado_en__gt=F("lineas__producto_capturado_en")
+        alerta_linea = (
+            PresupuestoLinea.objects.filter(presupuesto_id=OuterRef("pk"))
+            .exclude(precio_unitario=F("producto__precio_venta"))
+            .filter(
+                Q(precio_catalogo_capturado__isnull=True)
+                | ~Q(precio_catalogo_capturado=F("producto__precio_venta"))
+            )
         )
-        return int(base_qs.filter(alerta_q).distinct().count())
+        return int(
+            base_qs.annotate(tiene_alerta_precio=Exists(alerta_linea))
+            .filter(tiene_alerta_precio=True)
+            .count()
+        )
     except Exception:
         return 0
 
@@ -105,10 +114,20 @@ def vendor_mode(request):
 
         if recibe_notas_admin:
             notas_admin_no_leidas = NotaAdmin.objects.filter(es_staff=False, leida=False).count()
-            presupuestos_alerta_count = _presupuestos_alerta_count(
-                vendedor_perfil=vendedor_perfil,
-                limitar_alerta_a_mi_vendedor=limitar_alerta_a_mi_vendedor,
+            presu_cache_key = (
+                f"sirona:presu_alert:v1:{int(is_staff)}:"
+                f"{int(limitar_alerta_a_mi_vendedor)}:{vp_pk}"
             )
+            cached_presu = cache.get(presu_cache_key) if _VENDOR_CTX_CACHE_TTL > 0 else None
+            if cached_presu is not None:
+                presupuestos_alerta_count = cached_presu
+            else:
+                presupuestos_alerta_count = _presupuestos_alerta_count(
+                    vendedor_perfil=vendedor_perfil,
+                    limitar_alerta_a_mi_vendedor=limitar_alerta_a_mi_vendedor,
+                )
+                if _VENDOR_CTX_CACHE_TTL > 0:
+                    cache.set(presu_cache_key, presupuestos_alerta_count, _VENDOR_CTX_CACHE_TTL)
         else:
             counts_cache_key = (
                 f"sirona:vendor_cc:v1:{user.pk}:{int(is_staff)}:"

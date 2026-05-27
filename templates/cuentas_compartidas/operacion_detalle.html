@@ -7,6 +7,9 @@
       <h1 class="h3 mb-0">{{ operacion.concepto }}</h1>
       <p class="text-muted mb-0">{{ operacion.fecha|date:"d/m/Y" }} · Pagó {{ operacion.pagador.nombre }} · {{ operacion.get_tipo_display }}</p>
     </div>
+    {% if puede_editar_operacion %}
+      <a class="btn btn-primary btn-sm rounded-pill" href="{% url 'cuentas_operacion_editar' operacion.pk %}">Editar</a>
+    {% endif %}
     <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_dashboard' %}">Volver</a>
   </div>
 
@@ -63,7 +66,7 @@
               <td class="text-end col-money">{{ deuda.pagado|ars }}</td>
               <td class="text-end col-money">{{ deuda.pendiente|ars }}</td>
               <td class="text-end">
-                {% if not deuda.esta_pagada and puede_editar_gastos_compartidos %}
+                {% if not deuda.esta_pagada and puede_admin_gastos_compartidos %}
                   <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'cuentas_cancelar_deuda' deuda.pk %}">Cancelar</a>
                 {% elif not deuda.esta_pagada %}
                   <span class="text-muted small">Pendiente</span>

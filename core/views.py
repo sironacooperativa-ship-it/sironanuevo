@@ -182,7 +182,13 @@ def home(request):
     deshabilitados_por_stock = list(deshabilitados_por_stock_qs[:30])
     deshabilitados_por_stock_count = deshabilitados_por_stock_qs.count()
     vencimientos_prod = (
-        Producto.objects.filter(habilitado=True, fecha_vencimiento__isnull=False, fecha_vencimiento__lte=prox_30)
+        Producto.objects.filter(
+            habilitado=True,
+            tipo=Producto.Tipo.MEDICAMENTOS,
+            fecha_vencimiento__isnull=False,
+            fecha_vencimiento__gte=today,
+            fecha_vencimiento__lte=prox_90,
+        )
         .order_by("fecha_vencimiento", "descripcion", "codigo")[:30]
     )
 
@@ -489,6 +495,14 @@ def _notas_es_ajax(request) -> bool:
     return (request.headers.get("X-Requested-With") or "").strip().lower() == "xmlhttprequest"
 
 
+def _nota_admin_raiz_usuario(user) -> NotaAdmin | None:
+    return (
+        NotaAdmin.objects.filter(usuario=user, parent__isnull=True, es_staff=False)
+        .order_by("creado_en", "id")
+        .first()
+    )
+
+
 @login_required
 @require_http_methods(["POST"])
 def nota_admin_enviar(request):
@@ -501,21 +515,7 @@ def nota_admin_enviar(request):
 
     v = _safe_get_vendedor_perfil(request.user)
     pagina = (request.POST.get("pagina") or "").strip()
-    parent = None
-    parent_raw = (request.POST.get("parent_id") or "").strip()
-    if parent_raw.isdigit():
-        parent = (
-            NotaAdmin.objects.filter(
-                pk=int(parent_raw),
-                parent__isnull=True,
-                usuario=request.user,
-                es_staff=False,
-            )
-            .select_related("vendedor")
-            .first()
-        )
-        # Si parent_id no corresponde a una raíz del usuario (hilo borrado, id viejo en el navegador),
-        # parent queda None y el mensaje se crea como nuevo hilo.
+    parent = _nota_admin_raiz_usuario(request.user)
 
     nota = NotaAdmin.objects.create(
         usuario=request.user,
@@ -535,7 +535,7 @@ def nota_admin_enviar(request):
         return JsonResponse(
             {
                 "ok": True,
-                "nueva_raiz_id": nota.pk if parent is None else None,
+                "raiz_id": nota.pk if parent is None else parent.pk,
                 "mensaje": {
                     "id": nota.pk,
                     "texto": nota.texto,
@@ -556,74 +556,43 @@ def notas_chat_json(request):
     user = request.user
     roots = list(
         NotaAdmin.objects.filter(usuario=user, parent__isnull=True, es_staff=False)
-        .order_by("-creado_en", "-id")
+        .order_by("creado_en", "id")
     )
-    hilos = []
-    for r in roots:
-        raw = (r.texto or "").replace("\n", " ").strip()
-        preview = (raw[:72] + "…") if len(raw) > 72 else (raw or "(sin texto)")
-        no_leidas = NotaAdmin.objects.filter(
-            parent=r, es_staff=True, leida_usuario=False
-        ).count()
-        hilos.append(
-            {
-                "id": r.pk,
-                "preview": preview,
-                "creado_en": r.creado_en.isoformat(),
-                "no_leidas": no_leidas,
-            }
-        )
-
-    if (request.GET.get("nuevo") or "").strip() == "1":
-        return JsonResponse(
-            {
-                "hilos": hilos,
-                "hilo_id": None,
-                "mensajes": [],
-                "ultima_raiz_id": roots[0].pk if roots else None,
-            }
-        )
-
-    hilo_raw = (request.GET.get("hilo") or "").strip()
-    hilo_id = None
-    if hilo_raw.isdigit():
-        cand = next((r.pk for r in roots if r.pk == int(hilo_raw)), None)
-        if cand is not None:
-            hilo_id = cand
-    if hilo_id is None and roots:
-        hilo_id = roots[0].pk
 
     mensajes = []
-    if hilo_id is not None:
-        msg_qs = (
-            NotaAdmin.objects.filter(usuario=user)
-            .filter(Q(pk=hilo_id) | Q(parent_id=hilo_id))
-            .select_related("creado_por", "usuario")
-            .order_by("creado_en", "id")
+    msg_qs = (
+        NotaAdmin.objects.filter(usuario=user)
+        .select_related("creado_por", "usuario")
+        .order_by("creado_en", "id")
+    )
+    for m in msg_qs:
+        autor = "Administración"
+        if not m.es_staff:
+            autor = m.usuario.get_username()
+        elif m.creado_por_id:
+            autor = m.creado_por.get_username()
+        mensajes.append(
+            {
+                "id": m.pk,
+                "texto": m.texto,
+                "creado_en": m.creado_en.isoformat(),
+                "es_staff": m.es_staff,
+                "autor": autor,
+                "parent_id": m.parent_id,
+            }
         )
-        for m in msg_qs:
-            autor = "Administración"
-            if not m.es_staff:
-                autor = m.usuario.get_username()
-            elif m.creado_por_id:
-                autor = m.creado_por.get_username()
-            mensajes.append(
-                {
-                    "id": m.pk,
-                    "texto": m.texto,
-                    "creado_en": m.creado_en.isoformat(),
-                    "es_staff": m.es_staff,
-                    "autor": autor,
-                    "parent_id": m.parent_id,
-                }
-            )
+    NotaAdmin.objects.filter(usuario=user, es_staff=True, leida_usuario=False).update(
+        leida_usuario=True
+    )
+    invalidate_vendor_sidebar_cache_for_user(user)
 
     return JsonResponse(
         {
-            "hilos": hilos,
-            "hilo_id": hilo_id,
+            "hilos": [],
+            "hilo_id": roots[0].pk if roots else None,
             "mensajes": mensajes,
             "ultima_raiz_id": roots[0].pk if roots else None,
+            "sin_leer": 0,
         }
     )
 

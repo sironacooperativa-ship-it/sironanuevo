@@ -53,6 +53,15 @@ def producto_listas_extra_context(
     marcados: set[int] = set()
     if selected_ids is not None:
         marcados = selected_ids
+    elif producto is None:
+        farmacia_id = (
+            ListaPrecios.objects.filter(es_farmacia=True)
+            .order_by("id")
+            .values_list("pk", flat=True)
+            .first()
+        )
+        if farmacia_id:
+            marcados.add(farmacia_id)
     elif producto and producto.pk:
         marcados = set(
             ListaPrecioItem.objects.filter(producto=producto).values_list("lista_id", flat=True)

@@ -58,7 +58,7 @@ def _ejecutar_aprobar_presupuesto_core(
 ) -> Venta:
     """
     `pr` debe estar bloqueada (select_for_update) y en ACT.
-    `resolver` si hay alerta de catálogo: "actualizar" o "conservar".
+    `resolver` si hay alerta de precios: "actualizar" o "conservar".
     """
     if pr.estado != Presupuesto.Estado.ACTIVO:
         raise ValueError("Este presupuesto ya no está pendiente.")
@@ -79,7 +79,7 @@ def _ejecutar_aprobar_presupuesto_core(
             _marcar_lineas_presupuesto_al_dia_con_catalogo(pr)
         else:
             raise ValueError(
-                "Elegí cómo resolver el catálogo: «Actualizar desde catálogo» o «Conservar presupuesto original»."
+                "Elegí cómo resolver los precios: «Actualizar precios desde catálogo» o «Conservar presupuesto original»."
             )
 
     pr.refresh_from_db()
@@ -132,7 +132,7 @@ def _ejecutar_aprobar_presupuesto_core(
 
 
 def _actualizar_presupuesto_lineas_desde_catalogo(presupuesto: Presupuesto) -> None:
-    """Recalcula precios desde el precio de venta actual del producto y actualiza snapshots."""
+    """Recalcula precios desde el precio de venta actual del producto."""
     subtotal = Decimal("0.00")
     for ln in presupuesto.lineas.select_related("producto").order_by("id"):
         prod = ln.producto
@@ -142,19 +142,21 @@ def _actualizar_presupuesto_lineas_desde_catalogo(presupuesto: Presupuesto) -> N
         PresupuestoLinea.objects.filter(pk=ln.pk).update(
             precio_unitario=pu,
             subtotal=st,
-            codigo_snapshot=(prod.codigo or "")[:6],
-            descripcion_snapshot=(prod.descripcion or "")[:255],
             producto_capturado_en=prod.actualizado_en,
+            precio_catalogo_capturado=pu,
         )
     presupuesto.subtotal_lineas = subtotal
     presupuesto.save(update_fields=["subtotal_lineas"])
 
 
 def _marcar_lineas_presupuesto_al_dia_con_catalogo(presupuesto: Presupuesto) -> None:
-    """Sin cambiar montos ni textos: registra que el presupuesto se aprueba con valores actuales respecto al catálogo."""
+    """Sin cambiar montos: registra que se conserva el precio del presupuesto."""
     for ln in presupuesto.lineas.select_related("producto"):
         prod = ln.producto
-        PresupuestoLinea.objects.filter(pk=ln.pk).update(producto_capturado_en=prod.actualizado_en)
+        PresupuestoLinea.objects.filter(pk=ln.pk).update(
+            producto_capturado_en=prod.actualizado_en,
+            precio_catalogo_capturado=q2(prod.precio_venta),
+        )
 
 
 def _productos_payload():
@@ -412,6 +414,7 @@ def _guardar_presupuesto_desde_lineas(
             codigo_snapshot=(cod or "")[:6],
             descripcion_snapshot=(desc or "")[:255],
             producto_capturado_en=prod.actualizado_en,
+            precio_catalogo_capturado=q2(prod.precio_venta),
         )
 
 
@@ -555,7 +558,7 @@ def presupuesto_detalle(request, pk: int):
 @require_http_methods(["GET"])
 def presupuesto_comparativa(request, pk: int):
     """
-    Modal: comparación Presupuesto guardado vs catálogo actual (Producto).
+    Modal: comparación de precios entre presupuesto guardado y catálogo actual.
     Se usa cuando hay `alerta_catalogo` para que el usuario elija actualizar o conservar antes de aprobar.
     """
     p = get_object_or_404(
@@ -571,6 +574,7 @@ def presupuesto_comparativa(request, pk: int):
     for ln in p.lineas.select_related("producto").order_by("id"):
         prod = ln.producto
         cat_pu = q2(Decimal(str(prod.precio_venta or 0)))
+        presu_pu = q2(Decimal(str(ln.precio_unitario or 0)))
         filas.append(
             {
                 "producto_id": prod.pk,
@@ -578,7 +582,7 @@ def presupuesto_comparativa(request, pk: int):
                 "presu": {
                     "codigo": ln.codigo_snapshot or prod.codigo,
                     "descripcion": ln.descripcion_snapshot or prod.descripcion,
-                    "pu": q2(Decimal(str(ln.precio_unitario or 0))),
+                    "pu": presu_pu,
                     "st": q2(Decimal(str(ln.subtotal or 0))),
                 },
                 "cat": {
@@ -587,11 +591,7 @@ def presupuesto_comparativa(request, pk: int):
                     "pu": cat_pu,
                     "st": q2(cat_pu * Decimal(int(ln.cantidad))),
                 },
-                "changed": bool(
-                    (ln.codigo_snapshot or "") != (prod.codigo or "")
-                    or (ln.descripcion_snapshot or "") != (prod.descripcion or "")
-                    or q2(Decimal(str(ln.precio_unitario or 0))) != cat_pu
-                ),
+                "changed": ln.linea_superada_por_catalogo_producto(),
             }
         )
 
@@ -652,6 +652,7 @@ def presupuesto_nuevo(request):
                         codigo_snapshot=(cod or "")[:6],
                         descripcion_snapshot=(desc or "")[:255],
                         producto_capturado_en=prod.actualizado_en,
+                        precio_catalogo_capturado=q2(prod.precio_venta),
                     )
             messages.success(request, f"Presupuesto #{pr.pk} guardado.")
             return redirect("presupuesto_lista")
@@ -948,8 +949,8 @@ def presupuesto_aprobar(request, pk: int):
     if necesita_resolver and resolver not in ("actualizar", "conservar"):
         messages.error(
             request,
-            "El catálogo de productos cambió después de armar este presupuesto. "
-            "Elegí «Actualizar desde catálogo» o «Conservar presupuesto original» antes de aprobar.",
+            "Hay precios del catálogo distintos a los guardados en este presupuesto. "
+            "Elegí «Actualizar precios desde catálogo» o «Conservar presupuesto original» antes de aprobar.",
         )
         return redirect("presupuesto_detalle", pk=pk)
 
@@ -989,7 +990,7 @@ def presupuesto_aprobar(request, pk: int):
 def presupuesto_resolver_catalogo(request, pk: int):
     """
     Aplica una resolución de catálogo SIN aprobar:
-    - actualizar: recalcula montos/textos desde catálogo.
+    - actualizar: recalcula precios desde catálogo.
     - conservar: marca líneas al día (capturado_en) pero no cambia montos.
     """
     presupuesto = get_object_or_404(Presupuesto, pk=pk)
@@ -1011,7 +1012,7 @@ def presupuesto_resolver_catalogo(request, pk: int):
                 return redirect("presupuesto_detalle", pk=pk)
             if resolver == "actualizar":
                 _actualizar_presupuesto_lineas_desde_catalogo(pr)
-                messages.success(request, "Presupuesto actualizado desde catálogo.")
+                messages.success(request, "Precios del presupuesto actualizados desde catálogo.")
             else:
                 _marcar_lineas_presupuesto_al_dia_con_catalogo(pr)
                 messages.success(request, "Se conservaron los valores del presupuesto (catalogo validado).")
@@ -1061,6 +1062,7 @@ def presupuesto_duplicar(request, pk: int):
                     codigo_snapshot=ln.codigo_snapshot,
                     descripcion_snapshot=ln.descripcion_snapshot,
                     producto_capturado_en=ln.producto_capturado_en,
+                    precio_catalogo_capturado=ln.precio_catalogo_capturado,
                 )
     except Exception as exc:
         detalle = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
@@ -1142,8 +1144,8 @@ def presupuestos_aprobar_masivo(request):
         partes.append(f"{len(ok)} aprobado(s): {nums}.")
     if skip_alerta:
         partes.append(
-            f"Omitidos {len(skip_alerta)} (alerta de catálogo: {', '.join(f'#{i}' for i in skip_alerta)}). "
-            f"Aprobalos desde el detalle o elegí «conservar/actualizar catálogo» arriba."
+            f"Omitidos {len(skip_alerta)} (precios distintos al catálogo: {', '.join(f'#{i}' for i in skip_alerta)}). "
+            f"Aprobalos desde el detalle o elegí «conservar/actualizar precios» arriba."
         )
     if fallos:
         partes.append("No aprobados: " + " · ".join(fallos[:8]) + ("…" if len(fallos) > 8 else ""))

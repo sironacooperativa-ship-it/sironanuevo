@@ -33,7 +33,7 @@
                 <td><code>{{ row.codigo }}</code></td>
                 <td class="small">
                   <div><strong>{{ row.excel.descripcion }}</strong></div>
-                  {% if row.excel.laboratorio %}<div>Laboratorio: {{ row.excel.laboratorio }}</div>{% endif %}
+                  {% if row.excel.laboratorio %}<div>Marca: {{ row.excel.laboratorio }}</div>{% endif %}
                   <div class="text-muted">{{ row.excel.tipo_label }}</div>
                   <div>Costo: {{ row.excel.costo }} · %: {{ row.excel.porcentaje_ganancia }} · Stock: {{ row.excel.stock }}</div>
                   <div>
@@ -51,7 +51,7 @@
                 <td class="small">
                   {% if row.producto %}
                     <div><strong>{{ row.producto.descripcion }}</strong></div>
-                    {% if row.producto.laboratorio %}<div>Laboratorio: {{ row.producto.laboratorio }}</div>{% endif %}
+                    {% if row.producto.laboratorio %}<div>Marca: {{ row.producto.laboratorio }}</div>{% endif %}
                     <div class="text-muted">{{ row.producto.get_tipo_display }}</div>
                     <div>Costo: {{ row.producto.costo }} · %: {{ row.producto.porcentaje_ganancia }} · Stock: {{ row.producto.stock }}</div>
                     <div>Precio: {{ row.producto.precio_venta|ars }}{% if not row.producto.precio_venta_editado %} <span class="text-muted">(calculado)</span>{% endif %}</div>

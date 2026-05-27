@@ -19,8 +19,8 @@
       rel="stylesheet"
     />
     <!-- theme: ios-2026r29 -->
-    <link href="{% static 'css/theme.css' %}?v=ios-2026r43" rel="stylesheet" />
-    <link href="{% static 'css/styles.css' %}?v=saas-2026r20" rel="stylesheet" />
+    <link href="{% static 'css/theme.css' %}?v=ios-2026r44" rel="stylesheet" />
+    <link href="{% static 'css/styles.css' %}?v=saas-2026r21" rel="stylesheet" />
     <link href="{% static 'css/ui-force-productos.css' %}?v=3" rel="stylesheet" />
     <link href="{% static 'css/sirona-calc.css' %}" rel="stylesheet" />
     <style>
@@ -159,9 +159,11 @@
                   <i data-lucide="calculator" class="app-lucide-toolbar"></i>
                 </button>
                 {% if recibe_notas_admin %}
-                  <a
+                  <button
                     class="btn app-icon-btn position-relative"
-                    href="{% url 'admin_notas_list' %}"
+                    type="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#sironaAdminMsgs"
                     aria-label="Mensajes con usuarios{% if notas_admin_no_leidas %}: hay sin leer{% endif %}"
                     title="Mensajes"
                   >
@@ -169,7 +171,7 @@
                     {% if notas_admin_no_leidas %}
                       <span class="position-absolute top-0 start-100 translate-middle sirona-notif-dot" aria-hidden="true"></span>
                     {% endif %}
-                  </a>
+                  </button>
                 {% else %}
                   <button
                     class="btn app-icon-btn position-relative sirona-msgs-user-btn"
@@ -309,9 +311,11 @@
                   <i data-lucide="calculator" class="app-lucide-toolbar"></i>
                 </button>
                 {% if recibe_notas_admin %}
-                  <a
+                  <button
                     class="btn app-icon-btn position-relative"
-                    href="{% url 'admin_notas_list' %}"
+                    type="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#sironaAdminMsgs"
                     aria-label="Mensajes con usuarios{% if notas_admin_no_leidas %}: hay sin leer{% endif %}"
                     title="Mensajes"
                   >
@@ -319,7 +323,7 @@
                     {% if notas_admin_no_leidas %}
                       <span class="position-absolute top-0 start-100 translate-middle sirona-notif-dot" aria-hidden="true"></span>
                     {% endif %}
-                  </a>
+                  </button>
                 {% else %}
                   <button
                     class="btn app-icon-btn position-relative sirona-msgs-user-btn"
@@ -613,7 +617,7 @@
                         {% endif %}
                       </span>
                       <span class="app-sidebar-label sidebar-label">
-                        Notas
+                        Mensajes
                         {% if notas_admin_no_leidas %}
                           <span class="badge text-bg-warning text-dark ms-1">{{ notas_admin_no_leidas }}</span>
                         {% endif %}
@@ -914,7 +918,7 @@
                           {% endif %}
                         </span>
                         <span class="app-sidebar-label">
-                          Notas
+                          Mensajes
                           {% if notas_admin_no_leidas %}
                             <span class="badge text-bg-warning text-dark ms-1">{{ notas_admin_no_leidas }}</span>
                           {% endif %}
@@ -1006,26 +1010,68 @@
         </div>
       </div>
 
-      {% if not recibe_notas_admin %}
+      {% if recibe_notas_admin %}
+        <div
+          class="modal fade"
+          id="sironaAdminMsgs"
+          tabindex="-1"
+          aria-labelledby="sironaAdminMsgsLabel"
+          aria-hidden="true"
+          data-admin-chat-url="{% url 'admin_notas_chat_json' %}"
+          data-admin-send-url="{% url 'admin_notas_list' %}"
+        >
+          <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+            <div class="modal-content border-0 shadow">
+              <div class="modal-header">
+                <h5 class="modal-title" id="sironaAdminMsgsLabel">Mensajes con usuarios</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+              </div>
+              <div class="modal-body p-0 d-flex flex-column sirona-notas-chat-wrap">
+                <ul id="sironaAdminMsgsTabs" class="nav nav-tabs flex-nowrap overflow-auto px-3 pt-2" role="tablist"></ul>
+                <div id="sironaAdminMsgsBody" class="sirona-notas-chat-messages flex-grow-1 overflow-auto px-3 py-2" role="log" aria-live="polite"></div>
+                <div class="border-top bg-light px-3 py-3">
+                  <form id="sironaAdminMsgsForm" method="post" action="{% url 'admin_notas_list' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="usuario_id" id="sironaAdminMsgsUserId" value="" autocomplete="off" />
+                    <label class="form-label small text-muted mb-1" for="sironaAdminMsgsTexto">Responder</label>
+                    <textarea
+                      id="sironaAdminMsgsTexto"
+                      class="form-control"
+                      name="texto_respuesta"
+                      rows="3"
+                      maxlength="2000"
+                      placeholder="Escribí una respuesta…"
+                      required
+                    ></textarea>
+                    <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
+                      <a class="btn btn-outline-secondary" href="{% url 'admin_notas_list' %}">Ver pantalla completa</a>
+                      <button type="submit" class="btn btn-primary" id="sironaAdminMsgsEnviarBtn">Enviar</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% elif not recibe_notas_admin %}
         <div
           class="modal fade"
           id="sironaQuickMsg"
           tabindex="-1"
           aria-labelledby="sironaQuickMsgLabel"
           aria-hidden="true"
-          data-send-url="{% url 'nota_admin_enviar' %}"
+          data-notas-send-url="{% url 'nota_admin_enviar' %}"
           data-notas-chat-url="{% url 'notas_chat_json' %}"
+          data-notas-mark-url="{% url 'notas_marcar_leidas_usuario' %}"
         >
-          <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow">
               <div class="modal-header">
-                <h5 class="modal-title" id="sironaQuickMsgLabel">Mensaje rápido</h5>
+                <h5 class="modal-title" id="sironaQuickMsgLabel">Mensajes con administración</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
               </div>
-              <div class="modal-body">
-                <div class="small text-muted mb-2">
-                  Enviá un mensaje rápido a administración. Podés ver el hilo completo desde “Ver chat”.
-                </div>
+              <div class="modal-body d-flex flex-column sirona-notas-chat-wrap">
+                <div id="sironaQuickMsgMensajes" class="sirona-notas-chat-messages flex-grow-1 overflow-auto mb-3" role="log" aria-live="polite"></div>
                 <form id="sironaQuickMsgForm" method="post" action="{% url 'nota_admin_enviar' %}">
                   {% csrf_token %}
                   <input type="hidden" name="next" value="{{ request.get_full_path }}" />
@@ -1041,12 +1087,7 @@
                     placeholder="Escribí un mensaje…"
                     required
                   ></textarea>
-                  <div class="form-check form-switch mt-2">
-                    <input class="form-check-input" type="checkbox" role="switch" id="sironaQuickMsgNuevoHilo" />
-                    <label class="form-check-label small text-muted" for="sironaQuickMsgNuevoHilo">Enviar como nuevo hilo</label>
-                  </div>
                   <div class="d-flex justify-content-end gap-2 mt-3">
-                    <button type="button" class="btn btn-outline-secondary" id="sironaQuickMsgVerChatBtn">Ver chat</button>
                     <button type="submit" class="btn btn-primary" id="sironaQuickMsgEnviarBtn">Enviar</button>
                   </div>
                 </form>
@@ -1567,6 +1608,290 @@
       })();
     </script>
     <script>
+      // Admin: popup de conversaciones, una pestaña por usuario.
+      (function () {
+        const modalEl = document.getElementById("sironaAdminMsgs");
+        if (!modalEl) return;
+        const urlChat = modalEl.getAttribute("data-admin-chat-url");
+        const urlSend = modalEl.getAttribute("data-admin-send-url");
+        const tabs = document.getElementById("sironaAdminMsgsTabs");
+        const body = document.getElementById("sironaAdminMsgsBody");
+        const form = document.getElementById("sironaAdminMsgsForm");
+        const userIn = document.getElementById("sironaAdminMsgsUserId");
+        const textarea = document.getElementById("sironaAdminMsgsTexto");
+        const btnSend = document.getElementById("sironaAdminMsgsEnviarBtn");
+        if (!urlChat || !urlSend || !tabs || !body || !form || !userIn || !textarea || !btnSend) return;
+        let conversaciones = [];
+        let activeUserId = null;
+
+        function escapeHtml(s) {
+          const d = document.createElement("div");
+          d.textContent = s == null ? "" : String(s);
+          return d.innerHTML;
+        }
+
+        function fmtTime(iso) {
+          try {
+            const d = new Date(iso);
+            return d.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+          } catch (e) {
+            return "";
+          }
+        }
+
+        function clearAdminDots() {
+          document.querySelectorAll('[data-bs-target="#sironaAdminMsgs"] .sirona-notif-dot').forEach(function (dot) {
+            dot.remove();
+          });
+        }
+
+        function renderConversation() {
+          const conv = conversaciones.find(function (c) {
+            return Number(c.usuario_id) === Number(activeUserId);
+          });
+          if (!conv) {
+            body.innerHTML = '<p class="text-muted small mb-0">No hay conversaciones todavía.</p>';
+            userIn.value = "";
+            textarea.disabled = true;
+            btnSend.disabled = true;
+            return;
+          }
+          userIn.value = String(conv.usuario_id);
+          textarea.disabled = false;
+          btnSend.disabled = false;
+          const mensajes = conv.mensajes || [];
+          if (!mensajes.length) {
+            body.innerHTML = '<p class="text-muted small mb-0">Todavía no hay mensajes con este usuario.</p>';
+            return;
+          }
+          body.innerHTML = mensajes
+            .map(function (m) {
+              const side = m.es_staff ? "sirona-chat-bubble--in" : "sirona-chat-bubble--out";
+              return (
+                '<div class="sirona-chat-bubble ' +
+                side +
+                '">' +
+                '<div class="sirona-chat-bubble-meta small text-muted">' +
+                escapeHtml(m.autor || "") +
+                " · " +
+                fmtTime(m.creado_en) +
+                "</div>" +
+                '<div class="sirona-chat-bubble-text">' +
+                escapeHtml(m.texto || "").replace(/\n/g, "<br>") +
+                "</div></div>"
+              );
+            })
+            .join("");
+          body.scrollTop = body.scrollHeight;
+        }
+
+        function renderTabs() {
+          tabs.innerHTML = "";
+          if (!conversaciones.length) {
+            renderConversation();
+            return;
+          }
+          if (!activeUserId) activeUserId = conversaciones[0].usuario_id;
+          conversaciones.forEach(function (conv) {
+            const li = document.createElement("li");
+            li.className = "nav-item";
+            const btn = document.createElement("button");
+            btn.className = "nav-link" + (Number(conv.usuario_id) === Number(activeUserId) ? " active" : "");
+            btn.type = "button";
+            btn.textContent = conv.username || "Usuario";
+            if (conv.no_leidos) {
+              const dot = document.createElement("span");
+              dot.className = "sirona-notif-dot position-static ms-2 align-middle";
+              dot.setAttribute("aria-hidden", "true");
+              btn.appendChild(dot);
+            }
+            btn.addEventListener("click", function () {
+              activeUserId = conv.usuario_id;
+              renderTabs();
+              renderConversation();
+            });
+            li.appendChild(btn);
+            tabs.appendChild(li);
+          });
+          renderConversation();
+        }
+
+        function loadChat() {
+          return fetch(urlChat, { credentials: "same-origin" })
+            .then(function (r) {
+              return r.json();
+            })
+            .then(function (data) {
+              conversaciones = data.conversaciones || [];
+              if (!conversaciones.some(function (c) { return Number(c.usuario_id) === Number(activeUserId); })) {
+                activeUserId = conversaciones.length ? conversaciones[0].usuario_id : null;
+              }
+              renderTabs();
+              if (data.sin_leer === 0) clearAdminDots();
+            })
+            .catch(function () {
+              body.innerHTML = '<p class="text-danger small mb-0">No se pudieron cargar los mensajes.</p>';
+            });
+        }
+
+        modalEl.addEventListener("shown.bs.modal", function () {
+          loadChat().finally(function () {
+            try {
+              textarea.focus();
+            } catch (e) {}
+          });
+        });
+
+        form.addEventListener("submit", function (ev) {
+          ev.preventDefault();
+          const tx = (textarea.value || "").trim();
+          if (!tx || !userIn.value) return;
+          const csrfIn = form.querySelector("[name=csrfmiddlewaretoken]");
+          const csrf = csrfIn ? csrfIn.value : "";
+          const fd = new FormData(form);
+          btnSend.disabled = true;
+          fetch(urlSend, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": csrf },
+            body: fd,
+          })
+            .then(function (r) {
+              return r.json().then(function (body) {
+                return { ok: r.ok, body: body };
+              });
+            })
+            .then(function (res) {
+              if (!res.ok || !res.body || !res.body.ok) {
+                window.alert((res.body && res.body.error) || "No se pudo enviar.");
+                return;
+              }
+              textarea.value = "";
+              return loadChat();
+            })
+            .finally(function () {
+              btnSend.disabled = false;
+            });
+        });
+      })();
+    </script>
+    <script>
+      // Mensajes: popup único tipo chat entre usuario y administración.
+      (function () {
+        const modalEl = document.getElementById("sironaQuickMsg");
+        if (!modalEl) return;
+        const urlChat = modalEl.getAttribute("data-notas-chat-url");
+        const urlSend = modalEl.getAttribute("data-notas-send-url");
+        const box = document.getElementById("sironaQuickMsgMensajes");
+        const form = document.getElementById("sironaQuickMsgForm");
+        const textarea = document.getElementById("sironaQuickMsgTexto");
+        const btnSend = document.getElementById("sironaQuickMsgEnviarBtn");
+        if (!urlChat || !urlSend || !box || !form || !textarea || !btnSend) return;
+
+        function escapeHtml(s) {
+          const d = document.createElement("div");
+          d.textContent = s == null ? "" : String(s);
+          return d.innerHTML;
+        }
+
+        function fmtTime(iso) {
+          try {
+            const d = new Date(iso);
+            return d.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+          } catch (e) {
+            return "";
+          }
+        }
+
+        function syncBadges(sinLeer) {
+          if (sinLeer !== 0) return;
+          document.querySelectorAll(".sirona-msgs-user-btn .sirona-notif-dot").forEach(function (dot) {
+            dot.remove();
+          });
+        }
+
+        function renderMensajes(arr) {
+          if (!arr || !arr.length) {
+            box.innerHTML = '<p class="text-muted small mb-0">Todavía no hay mensajes. Escribí el primero abajo.</p>';
+            return;
+          }
+          box.innerHTML = arr
+            .map(function (m) {
+              const side = m.es_staff ? "sirona-chat-bubble--in" : "sirona-chat-bubble--out";
+              return (
+                '<div class="sirona-chat-bubble ' +
+                side +
+                '">' +
+                '<div class="sirona-chat-bubble-meta small text-muted">' +
+                escapeHtml(m.autor || "") +
+                " · " +
+                fmtTime(m.creado_en) +
+                "</div>" +
+                '<div class="sirona-chat-bubble-text">' +
+                escapeHtml(m.texto || "").replace(/\n/g, "<br>") +
+                "</div></div>"
+              );
+            })
+            .join("");
+          box.scrollTop = box.scrollHeight;
+        }
+
+        function loadChat() {
+          return fetch(urlChat, { credentials: "same-origin" })
+            .then(function (r) {
+              return r.json();
+            })
+            .then(function (data) {
+              renderMensajes(data.mensajes || []);
+              syncBadges(data.sin_leer);
+            })
+            .catch(function () {
+              box.innerHTML = '<p class="text-danger small mb-0">No se pudo cargar el chat.</p>';
+            });
+        }
+
+        modalEl.addEventListener("shown.bs.modal", function () {
+          loadChat().finally(function () {
+            try {
+              textarea.focus();
+            } catch (e) {}
+          });
+        });
+
+        form.addEventListener("submit", function (ev) {
+          ev.preventDefault();
+          const tx = (textarea.value || "").trim();
+          if (!tx) return;
+          const csrfIn = form.querySelector("[name=csrfmiddlewaretoken]");
+          const csrf = csrfIn ? csrfIn.value : "";
+          const fd = new FormData(form);
+          btnSend.disabled = true;
+          fetch(urlSend, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": csrf },
+            body: fd,
+          })
+            .then(function (r) {
+              return r.json().then(function (body) {
+                return { ok: r.ok, body: body };
+              });
+            })
+            .then(function (res) {
+              if (!res.ok || !res.body || !res.body.ok) {
+                window.alert((res.body && res.body.error) || "No se pudo enviar.");
+                return;
+              }
+              textarea.value = "";
+              return loadChat();
+            })
+            .finally(function () {
+              btnSend.disabled = false;
+            });
+        });
+      })();
+    </script>
+    <script>
       // Topbar: sombra al hacer scroll (solo UI).
       (function () {
         try {
@@ -1987,7 +2312,7 @@
         } catch (e) {}
       })();
     </script>
-    <script src="{% static 'js/sirona-offcanvas-nav.js' %}?v=1"></script>
+    <script src="{% static 'js/sirona-offcanvas-nav.js' %}?v=2"></script>
     <script src="{% static 'js/sirona-modal.js' %}?v=3"></script>
     <script src="{% static 'js/sirona-scroll-top.js' %}?v=1"></script>
     {% if request.user.is_authenticated %}

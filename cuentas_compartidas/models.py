@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Sum
@@ -34,6 +35,13 @@ class OperacionCompartida(models.Model):
     pagador = models.ForeignKey(Negocio, on_delete=models.PROTECT, related_name="operaciones_pagadas")
     monto_total = models.DecimalField(max_digits=14, decimal_places=2)
     observaciones = models.TextField(blank=True)
+    creado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="gastos_compartidos_creados",
+    )
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
 

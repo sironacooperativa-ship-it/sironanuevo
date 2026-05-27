@@ -23,11 +23,11 @@
           <form class="d-flex flex-wrap align-items-center gap-2" method="get">
             <label class="form-check form-switch sirona-switch mb-0">
               <input class="form-check-input" type="checkbox" name="laboratorio" value="1" />
-              <span class="form-check-label small">Indicar laboratorio</span>
+              <span class="form-check-label small">Indicar marca</span>
             </label>
             <select class="form-select form-select-sm rounded-pill w-auto" name="orden" aria-label="Orden de exportación">
               <option value="tipo">Orden: rubro</option>
-              <option value="laboratorio">Orden: laboratorio</option>
+              <option value="laboratorio">Orden: marca</option>
             </select>
             <button class="action-pill action-pill--pdf" type="submit" formaction="{% url 'lista_precios_export_pdf' lista.pk %}">
               <i data-lucide="file-down" aria-hidden="true"></i>
@@ -157,7 +157,7 @@
                     <span class="prod-thumb" aria-hidden="true"><i data-lucide="tag"></i></span>
                     <span class="prod-meta">
                       <span class="prod-desc">{{ it.producto.descripcion }}</span>
-                      <span class="prod-sub">Código: <span class="prod-code">{{ it.producto.codigo }}</span>{% if it.producto.laboratorio %} • Laboratorio: {{ it.producto.laboratorio }}{% endif %}</span>
+                      <span class="prod-sub">Código: <span class="prod-code">{{ it.producto.codigo }}</span>{% if it.producto.laboratorio %} • Marca: {{ it.producto.laboratorio }}{% endif %}</span>
                     </span>
                   </div>
                 </td>

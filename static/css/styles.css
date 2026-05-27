@@ -1469,14 +1469,34 @@ body.offcanvas-open #btnHamburgerMenu .sirona-hamb-ico--close {
 
 #sironaMenu .sirona-offcanvas-header .app-icon-btn,
 #sironaMenuDemo .sirona-offcanvas-header .app-icon-btn {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   padding: 0 !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  line-height: 1;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  line-height: 0 !important;
+}
+
+#sironaMenu .sirona-offcanvas-header .app-icon-btn:hover,
+#sironaMenu .sirona-offcanvas-header .app-icon-btn:focus,
+#sironaMenu .sirona-offcanvas-header .app-icon-btn:active,
+#sironaMenuDemo .sirona-offcanvas-header .app-icon-btn:hover,
+#sironaMenuDemo .sirona-offcanvas-header .app-icon-btn:focus,
+#sironaMenuDemo .sirona-offcanvas-header .app-icon-btn:active {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+#sironaMenu .sirona-offcanvas-header .app-icon-btn svg,
+#sironaMenuDemo .sirona-offcanvas-header .app-icon-btn svg {
+  display: block;
+  margin: 0;
 }
 
 /* ===== Topbar ===== */

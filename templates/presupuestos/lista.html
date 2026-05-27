@@ -101,18 +101,18 @@
     <div class="table-card-header table-card-header--block presu-lista-bulk border-0 border-bottom">
       <div class="row g-2 align-items-end small">
         <div class="col-12 col-md-auto">
-          <label for="id_resolver_masivo_catalogo" class="form-label text-muted mb-0">Aprobación en lote (con alerta de catálogo)</label>
+          <label for="id_resolver_masivo_catalogo" class="form-label text-muted mb-0">Aprobación en lote (con precios distintos)</label>
           <select
             class="form-select form-select-sm"
             id="id_resolver_masivo_catalogo"
             name="resolver_masivo_catalogo"
             form="form-aprobacion-masiva"
             style="max-width: 22rem"
-            title="Si un presupuesto tiene alerta de catálogo, con «Omitir» se lo salta; con conservar/actualizar se aplica a todos los que tengan alerta."
+            title="Si un presupuesto tiene precios distintos al catálogo, con «Omitir» se lo salta; con conservar/actualizar se aplica a todos los que tengan alerta."
           >
-            <option value="omitir">Omitir filas con alerta (aprobar el resto)</option>
-            <option value="conservar">Conservar textos e importes si hay alerta</option>
-            <option value="actualizar">Actualizar desde catálogo si hay alerta</option>
+            <option value="omitir">Omitir filas con precios distintos (aprobar el resto)</option>
+            <option value="conservar">Conservar importes si hay diferencia</option>
+            <option value="actualizar">Actualizar precios desde catálogo</option>
           </select>
         </div>
         <div class="col-12 col-md-auto">
@@ -123,7 +123,7 @@
             onclick="return (function(){ var n = document.querySelectorAll('input[form=form-aprobacion-masiva][name=presupuesto_id]:checked').length; if (!n) { alert('Seleccioná al menos un presupuesto pendiente (casilla a la izquierda).'); return false; } return confirm('¿Aprobar ' + n + ' presupuesto(s) y generar los pedidos? Se descontará stock.'); })();"
           >Aprobar seleccionados</button>
         </div>
-        <p class="col-12 text-muted small mb-0">Marcá las casillas de los <strong>pendientes</strong> que podés aprobar (mismo criterio que vendedor/admin). Con alerta de catálogo, elegí arriba cómo resolver o abrí el detalle.</p>
+        <p class="col-12 text-muted small mb-0">Marcá las casillas de los <strong>pendientes</strong> que podés aprobar (mismo criterio que vendedor/admin). Si hay precios distintos al catálogo, elegí arriba cómo resolver o abrí el detalle.</p>
       </div>
     </div>
     {% endif %}
@@ -184,10 +184,10 @@
                   {% if p.alerta_catalogo %}
                     · <span
                         class="text-danger fw-semibold"
-                        title="Uno o más productos cambiaron en el catálogo. Abrí el detalle para elegir actualizar o conservar antes de aprobar."
+                        title="Uno o más precios son distintos al catálogo. Abrí el detalle para elegir actualizar o conservar antes de aprobar."
                         role="img"
-                        aria-label="Alerta: catálogo modificado"
-                      >Catálogo!</span>
+                        aria-label="Alerta: precios distintos al catálogo"
+                      >Precio!</span>
                   {% endif %}
                 </div>
               </td>
@@ -223,8 +223,8 @@
                       <a
                         class="btn-icon btn-approve"
                         href="{% url 'presupuesto_detalle' p.pk %}#aprobar-catalogo"
-                        title="Aprobar (elegir catálogo en el detalle)"
-                        aria-label="Aprobar con resolución de catálogo en el detalle"
+                        title="Aprobar (resolver precios en el detalle)"
+                        aria-label="Aprobar con resolución de precios en el detalle"
                       >
                         <i data-lucide="check" aria-hidden="true"></i>
                       </a>

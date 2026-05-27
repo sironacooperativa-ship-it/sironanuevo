@@ -510,7 +510,7 @@
 
   {% if vencimientos_prod %}
     <div class="card shadow-sm presu-lista-modern mb-3">
-      <div class="card-header fw-semibold">Vencimientos de productos (próximos 30 días)</div>
+      <div class="card-header fw-semibold">Vencimientos de medicamentos (próximos 90 días)</div>
       <div class="card-body p-0">
         <div class="table-responsive presu-lista-table-wrap">
           <table class="modern-table home-venc-prod-tabla">
@@ -536,7 +536,7 @@
         </div>
       </div>
       <div class="card-body border-top d-flex justify-content-end">
-        <a class="btn btn-sm btn-outline-secondary" href="{% url 'productos_list' %}">Ver productos</a>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'productos_list' %}?lista=all&estado=1&tipo=MED&vencimiento=90">Ver productos</a>
       </div>
     </div>
   {% endif %}

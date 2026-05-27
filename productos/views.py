@@ -239,6 +239,7 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
 
     estado = _get_param_last_nonempty(request, "estado")
     ingreso = _get_param_last_nonempty(request, "ingreso")
+    vencimiento = _get_param_last_nonempty(request, "vencimiento")
 
     farmacia = _lista_precios_farmacia()
     if lista == "" and farmacia is not None:
@@ -293,6 +294,15 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
         desde = timezone.now() - timedelta(days=30)
         productos = productos.filter(creado_en__gte=desde)
 
+    if vencimiento in {"30", "90"}:
+        hoy = date.today()
+        dias = 90 if vencimiento == "90" else 30
+        productos = productos.filter(
+            fecha_vencimiento__isnull=False,
+            fecha_vencimiento__gte=hoy,
+            fecha_vencimiento__lte=hoy + timedelta(days=dias),
+        )
+
     productos = _annotate_precio_lista_vista(productos, lista_modo, lista_obj)
     sort_merge = dict(PRODUCTOS_SORT_FIELDS)
     sort_merge["precio"] = "precio_lista_vista"
@@ -307,6 +317,7 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
         "lista_obj": lista_obj,
         "estado": estado,
         "ingreso": ingreso,
+        "vencimiento": vencimiento,
         "sort_ord": sort_ord,
         "sort_dir": sort_dir,
     }
@@ -626,6 +637,7 @@ def productos_list(request):
     lista_obj = filtros_ctx["lista_obj"]
     estado = filtros_ctx["estado"]
     ingreso = filtros_ctx["ingreso"]
+    vencimiento = filtros_ctx["vencimiento"]
     sort_ord = filtros_ctx["sort_ord"]
     sort_dir = filtros_ctx["sort_dir"]
 
@@ -640,7 +652,7 @@ def productos_list(request):
         headers = [
             "Código",
             "Descripción",
-            "Laboratorio",
+            "Marca",
             "Tipo",
             "Costo",
             "Stock",
@@ -717,6 +729,7 @@ def productos_list(request):
             "lista_obj": lista_obj,
             "estado": estado,
             "ingreso": ingreso,
+            "vencimiento": vencimiento,
             "sort_ord": sort_ord,
             "sort_dir": sort_dir,
             "sort_links": _productos_sort_links(request),
@@ -1380,7 +1393,7 @@ def productos_import_excel(request):
         colmap = _construir_mapa_columnas_import(row1)
         data_start_row = 2
 
-    # Columnas: codigo(opcional), descripcion, tipo, costo, porcentaje_ganancia(opcional), precio_venta(opcional), stock(opcional), fecha_vencimiento(opcional), laboratorio(opcional)
+    # Columnas: codigo(opcional), descripcion, marca/laboratorio(opcional), tipo, costo, porcentaje_ganancia(opcional), precio_venta(opcional), stock(opcional), fecha_vencimiento(opcional)
     # Si la fila 1 tiene encabezados reconocidos, las columnas se ubican por título (orden libre).
     # Tipo: flexible — ver _resolver_tipo_producto
     #
@@ -1562,7 +1575,7 @@ def productos_import_excel_modelo(request):
     headers = [
         "codigo",
         "descripcion",
-        "laboratorio",
+        "marca",
         "tipo",
         "costo",
         "porcentaje_ganancia",
@@ -1574,7 +1587,7 @@ def productos_import_excel_modelo(request):
         [
             "",
             "Paracetamol 500mg",
-            "Laboratorio ejemplo",
+            "Marca ejemplo",
             "MED",
             "100.00",
             "30.00",

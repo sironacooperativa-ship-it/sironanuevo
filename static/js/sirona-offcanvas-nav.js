@@ -1,6 +1,6 @@
 (function () {
   var menu = document.getElementById("sironaMenu");
-  if (!menu || typeof bootstrap === "undefined") return;
+  if (!menu) return;
   menu.querySelectorAll("a.sirona-offcanvas-nav-link[href]").forEach(function (anchor) {
     anchor.addEventListener("click", function (ev) {
       var href = anchor.getAttribute("href");
@@ -8,14 +8,15 @@
       if (ev.defaultPrevented) return;
       if (ev.button !== 0 || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) return;
       if (!menu.classList.contains("show")) return;
-      var inst = bootstrap.Offcanvas.getOrCreateInstance(menu);
-      ev.preventDefault();
-      function go() {
-        menu.removeEventListener("hidden.bs.offcanvas", go);
-        window.location.assign(href);
-      }
-      menu.addEventListener("hidden.bs.offcanvas", go);
-      inst.hide();
+      // Navegar de inmediato. Antes se esperaba el cierre animado del offcanvas
+      // y eso agregaba una demora perceptible al tocar cualquier opción.
+      try {
+        menu.classList.remove("show");
+        document.body.classList.remove("offcanvas-open");
+        document.querySelectorAll(".offcanvas-backdrop").forEach(function (bd) {
+          if (bd.parentNode) bd.parentNode.removeChild(bd);
+        });
+      } catch (e) {}
     });
   });
 })();

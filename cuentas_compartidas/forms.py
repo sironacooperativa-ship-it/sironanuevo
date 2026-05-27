@@ -34,21 +34,34 @@ class OperacionCompartidaForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.negocios = list(kwargs.pop("negocios", Negocio.objects.filter(activo=True)))
         super().__init__(*args, **kwargs)
-        self.fields["pagador"].queryset = Negocio.objects.filter(activo=True).order_by("nombre")
+        pagador_qs = Negocio.objects.filter(activo=True)
+        if self.instance and self.instance.pk and self.instance.pagador_id:
+            pagador_qs = Negocio.objects.filter(pk=self.instance.pagador_id) | pagador_qs
+        self.fields["pagador"].queryset = pagador_qs.distinct().order_by("nombre")
+        deudas_actuales = {}
+        if self.instance and self.instance.pk:
+            deudas_actuales = {
+                deuda.deudor_id: deuda
+                for deuda in self.instance.deudas.all()
+            }
         for negocio in self.negocios:
+            deuda_actual = deudas_actuales.get(negocio.pk)
             self.fields[f"incluir_{negocio.pk}"] = forms.BooleanField(
                 required=False,
                 label=negocio.nombre,
+                initial=bool(deuda_actual),
                 widget=forms.CheckboxInput(attrs={"class": "form-check-input deuda-toggle"}),
             )
             self.fields[f"monto_{negocio.pk}"] = forms.DecimalField(
                 required=False,
                 min_value=Decimal("0.01"),
+                initial=deuda_actual.monto if deuda_actual else None,
                 widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "min": "0.01"}),
             )
             self.fields[f"vencimiento_{negocio.pk}"] = forms.DateField(
                 required=False,
                 input_formats=list(DATE_INPUT_FORMATS),
+                initial=deuda_actual.vencimiento if deuda_actual else None,
                 widget=date_input_widget(),
             )
 

@@ -15,7 +15,7 @@ from django.core.management import call_command
 from django.core.paginator import Paginator
 from django.db import connections, transaction
 from django.db.models import Exists, OuterRef, Q
-from django.http import FileResponse, HttpResponseBadRequest
+from django.http import FileResponse, HttpResponseBadRequest, JsonResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
@@ -98,119 +98,118 @@ def usuarios_list(request):
 @require_http_methods(["GET", "POST"])
 def notas_list(request):
     if request.method == "POST":
-        accion = (request.POST.get("accion") or "").strip()
-        if accion == "responder":
-            root_id = (request.POST.get("root_id") or "").strip()
-            texto_resp = (request.POST.get("texto_respuesta") or "").strip()
-            if not root_id.isdigit() or not texto_resp:
-                messages.error(request, "Completá el mensaje de respuesta.")
-                return redirect("admin_notas_list")
-            root = get_object_or_404(NotaAdmin, pk=int(root_id), parent__isnull=True)
-            NotaAdmin.objects.create(
-                usuario=root.usuario,
-                vendedor=root.vendedor,
-                texto=texto_resp[:2000],
-                pagina="",
-                parent=root,
-                es_staff=True,
-                leida=True,
-                leida_usuario=False,
-                creado_por=request.user,
-            )
-            messages.success(request, "Respuesta enviada.")
-            invalidate_vendor_sidebar_cache_for_user(root.usuario)
+        usuario_id = (request.POST.get("usuario_id") or "").strip()
+        texto_resp = (request.POST.get("texto_respuesta") or "").strip()
+        if not usuario_id.isdigit() or not texto_resp:
+            messages.error(request, "Completá el mensaje de respuesta.")
             return redirect("admin_notas_list")
-
-        nota_id = (request.POST.get("nota_id") or "").strip()
-        if not nota_id.isdigit():
-            messages.error(request, "Nota no válida.")
+        usuario = get_object_or_404(User, pk=int(usuario_id))
+        root = (
+            NotaAdmin.objects.filter(usuario=usuario, parent__isnull=True, es_staff=False)
+            .order_by("creado_en", "id")
+            .first()
+        )
+        if root is None:
+            if (request.headers.get("X-Requested-With") or "").strip().lower() == "xmlhttprequest":
+                return JsonResponse({"ok": False, "error": "No se encontró la conversación."}, status=400)
+            messages.error(request, "No se encontró la conversación.")
             return redirect("admin_notas_list")
-
-        nota = get_object_or_404(NotaAdmin, pk=int(nota_id))
-        if accion == "marcar_leida":
-            nota.leida = True
-            nota.save(update_fields=["leida"])
-            if nota.parent_id is None:
-                NotaAdmin.objects.filter(parent=nota, es_staff=False).update(leida=True)
-            messages.success(request, "Nota marcada como leída.")
-        elif accion == "marcar_no_leida":
-            nota.leida = False
-            nota.save(update_fields=["leida"])
-            if nota.parent_id is None:
-                NotaAdmin.objects.filter(parent=nota, es_staff=False).update(leida=False)
-            messages.success(request, "Nota marcada como no leída.")
-        elif accion == "eliminar":
-            nota.delete()
-            messages.success(request, "Nota eliminada.")
-        else:
-            messages.error(request, "Acción no válida.")
+        NotaAdmin.objects.create(
+            usuario=usuario,
+            vendedor=root.vendedor if root else None,
+            texto=texto_resp[:2000],
+            pagina="",
+            parent=root,
+            es_staff=True,
+            leida=True,
+            leida_usuario=False,
+            creado_por=request.user,
+        )
+        messages.success(request, "Respuesta enviada.")
+        invalidate_vendor_sidebar_cache_for_user(usuario)
+        if (request.headers.get("X-Requested-With") or "").strip().lower() == "xmlhttprequest":
+            return JsonResponse({"ok": True})
         return redirect("admin_notas_list")
 
-    estado = (request.GET.get("estado") or "no_leidas").strip()
     q = (request.GET.get("q") or "").strip()
-
-    unread_child = NotaAdmin.objects.filter(
-        parent_id=OuterRef("pk"),
-        es_staff=False,
-        leida=False,
-    )
-    qs = (
-        NotaAdmin.objects.filter(parent__isnull=True)
-        .select_related("usuario", "vendedor")
-        .annotate(unread_child=Exists(unread_child))
-    )
-    if estado == "no_leidas":
-        qs = qs.filter(Q(leida=False) | Q(unread_child=True))
-    elif estado == "leidas":
-        qs = qs.filter(leida=True, unread_child=False)
-    else:
-        estado = "todas"
-
+    usuarios_ids = list(NotaAdmin.objects.values_list("usuario_id", flat=True).distinct())
+    usuarios = list(User.objects.filter(pk__in=usuarios_ids).order_by("username"))
     if q:
-        reply_match = NotaAdmin.objects.filter(
-            parent__isnull=False,
-        ).filter(
-            Q(texto__icontains=q)
-            | Q(usuario__username__icontains=q)
-            | Q(usuario__email__icontains=q)
-        ).values_list("parent_id", flat=True)
-        qs = qs.filter(
-            Q(texto__icontains=q)
-            | Q(usuario__username__icontains=q)
-            | Q(usuario__email__icontains=q)
-            | Q(vendedor__codigo__icontains=q)
-            | Q(vendedor__apellido__icontains=q)
-            | Q(pk__in=reply_match)
-        ).distinct()
+        usuarios = [
+            u for u in usuarios
+            if q.lower() in u.username.lower()
+            or q.lower() in (u.email or "").lower()
+            or NotaAdmin.objects.filter(usuario=u, texto__icontains=q).exists()
+        ]
 
-    paginator = Paginator(qs, 25)
-    page = paginator.get_page(request.GET.get("page") or 1)
-
-    root_ids = [r.pk for r in page.object_list]
-    hilos_por_raiz: dict[int, list[NotaAdmin]] = {}
-    if root_ids:
-        for m in (
-            NotaAdmin.objects.filter(Q(pk__in=root_ids) | Q(parent_id__in=root_ids))
+    conversaciones = []
+    for usuario in usuarios:
+        mensajes = list(
+            NotaAdmin.objects.filter(usuario=usuario)
             .select_related("usuario", "vendedor", "creado_por")
             .order_by("creado_en", "id")
-        ):
-            rid = m.parent_id or m.pk
-            hilos_por_raiz.setdefault(rid, []).append(m)
-    for r in page.object_list:
-        r.hilo_mensajes = hilos_por_raiz.get(r.pk, [r])
+        )
+        conversaciones.append(
+            {
+                "usuario": usuario,
+                "mensajes": mensajes,
+                "no_leidos": sum(1 for m in mensajes if not m.es_staff and not m.leida),
+            }
+        )
 
-    qcopy = request.GET.copy()
-    qcopy.pop("page", None)
+    total_no_leidas = NotaAdmin.objects.filter(es_staff=False, leida=False).count()
+    NotaAdmin.objects.filter(es_staff=False, leida=False).update(leida=True)
     return render(
         request,
         "administrador/notas_list.html",
         {
-            "page_obj": page,
-            "filtros": {"estado": estado, "q": q},
-            "querystring": qcopy.urlencode(),
-            "total_no_leidas": NotaAdmin.objects.filter(es_staff=False, leida=False).count(),
+            "conversaciones": conversaciones,
+            "filtros": {"q": q},
+            "total_no_leidas": total_no_leidas,
         },
     )
+
+
+@notas_admin_required
+@require_http_methods(["GET"])
+def notas_admin_chat_json(request):
+    conversaciones = []
+    usuarios_ids = list(NotaAdmin.objects.values_list("usuario_id", flat=True).distinct())
+    usuarios = list(User.objects.filter(pk__in=usuarios_ids).order_by("username"))
+    for usuario in usuarios:
+        mensajes = []
+        for m in (
+            NotaAdmin.objects.filter(usuario=usuario)
+            .select_related("usuario", "creado_por")
+            .order_by("creado_en", "id")
+        ):
+            autor = "Administración"
+            if not m.es_staff:
+                autor = m.usuario.get_username()
+            elif m.creado_por_id:
+                autor = m.creado_por.get_username()
+            mensajes.append(
+                {
+                    "id": m.pk,
+                    "texto": m.texto,
+                    "creado_en": m.creado_en.isoformat(),
+                    "es_staff": m.es_staff,
+                    "autor": autor,
+                    "leida": m.leida,
+                }
+            )
+        conversaciones.append(
+            {
+                "usuario_id": usuario.pk,
+                "username": usuario.username,
+                "email": usuario.email,
+                "no_leidos": sum(1 for m in mensajes if not m["es_staff"] and not m["leida"]),
+                "mensajes": mensajes,
+            }
+        )
+
+    NotaAdmin.objects.filter(es_staff=False, leida=False).update(leida=True)
+    return JsonResponse({"conversaciones": conversaciones, "sin_leer": 0})
 
 
 @admin_required

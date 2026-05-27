@@ -245,7 +245,7 @@ def lista_precios_pdf_file_response(*, lista: ListaPrecios, incluir_laboratorio:
     tw = doc.width
     if incluir_laboratorio:
         col_w = [tw * 0.13, tw * 0.16, tw * 0.34, tw * 0.19, tw * 0.18]
-        headers = ["Código", "Tipo", "Descripción", "Laboratorio", "Precio"]
+        headers = ["Código", "Tipo", "Descripción", "Marca", "Precio"]
     else:
         col_w = [tw * 0.15, tw * 0.18, tw * 0.45, tw * 0.22]
         headers = ["Código", "Tipo", "Descripción", "Precio"]
@@ -326,7 +326,7 @@ def lista_precios_xlsx_response(*, lista: ListaPrecios, incluir_laboratorio: boo
 
     headers = ["Código", "Tipo", "Descripción"]
     if incluir_laboratorio:
-        headers.append("Laboratorio")
+        headers.append("Marca")
     headers.append("Precio")
     last_col = len(headers)
     last_col_letter = get_column_letter(last_col)

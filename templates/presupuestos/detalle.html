@@ -190,22 +190,22 @@
     <div class="no-print alert alert-warning d-flex align-items-start gap-3 mb-3" id="aprobar-catalogo" role="alert">
       <span class="fs-3 lh-1 text-danger" aria-hidden="true">!</span>
       <div class="flex-grow-1">
-        <strong>El catálogo de productos cambió</strong> después de guardar este presupuesto.
+        <strong>Hay precios del catálogo distintos</strong> a los guardados en este presupuesto.
         Antes de aprobar y generar el pedido, elegí una opción:
         <ul class="small mb-2 mt-2">
-          <li><strong>Actualizar desde catálogo</strong>: se recalculan precios de línea con el <em>precio de venta</em> actual de cada producto y se actualizan código/descripción en el presupuesto.</li>
-          <li><strong>Conservar presupuesto original</strong>: se mantienen los importes y textos guardados en el presupuesto (como al cotizar).</li>
+          <li><strong>Actualizar precios desde catálogo</strong>: se recalculan las líneas con el <em>precio de venta</em> actual de cada producto.</li>
+          <li><strong>Conservar presupuesto original</strong>: se mantienen los importes guardados en el presupuesto (como al cotizar).</li>
         </ul>
         <div class="d-flex flex-wrap gap-2">
           <form
             method="post"
             action="{% url 'presupuesto_aprobar' presupuesto.pk %}"
             class="d-inline"
-            onsubmit="return confirm('Se aplicarán precio de venta y datos actuales del catálogo a cada línea. ¿Aprobar y generar el pedido?');"
+            onsubmit="return confirm('Se aplicará el precio de venta actual del catálogo a cada línea. ¿Aprobar y generar el pedido?');"
           >
             {% csrf_token %}
             <input type="hidden" name="resolver_catalogo" value="actualizar" />
-            <button type="submit" class="btn btn-warning btn-sm">Actualizar desde catálogo y aprobar</button>
+            <button type="submit" class="btn btn-warning btn-sm">Actualizar precios y aprobar</button>
           </form>
           <form
             method="post"
