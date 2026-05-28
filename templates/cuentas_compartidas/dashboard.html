@@ -7,7 +7,11 @@
       <h1 class="app-page-title mb-0">Gastos compartidos</h1>
       <p class="text-muted mb-0">
         Saldos entre negocios, vencimientos y operaciones internas.
-        {% if not es_hoy %}
+        {% if es_futuro %}
+          <span class="d-block mt-1">
+            Vista al <strong>{{ fecha_corte|date:"d/m/Y" }}</strong> (proyección: vencimientos exigibles hasta esa fecha; movimientos y pagos ya registrados).
+          </span>
+        {% elif not es_hoy %}
           <span class="d-block mt-1">Vista al <strong>{{ fecha_corte|date:"d/m/Y" }}</strong> (sólo movimientos y pagos hasta esa fecha).</span>
         {% endif %}
       </p>
@@ -53,7 +57,16 @@
         </div>
         <div class="col-12 col-lg-2 col-md-3">
           <label class="form-label small text-muted mb-1" for="cc-fecha-corte">Saldos a la fecha</label>
-          <input id="cc-fecha-corte" class="form-control" type="date" name="al" value="{{ fecha_corte_iso }}" max="{{ fecha_hoy_iso }}" />
+          <input
+            id="cc-fecha-corte"
+            class="form-control"
+            type="date"
+            name="al"
+            value="{{ fecha_corte_iso }}"
+            max="{{ fecha_max_futuro_iso }}"
+            title="Pasado, hoy o hasta 5 años en el futuro"
+          />
+          <div class="form-text">Incluye fechas futuras para ver vencimientos proyectados.</div>
         </div>
         <div class="col-12 col-lg-2 col-md-3">
           <label class="form-label small text-muted mb-1" for="cc-marcado">Chequeado</label>
@@ -102,6 +115,8 @@
         <div class="text-muted small">
           {% if es_hoy %}
             {{ proximas|length }} vencen en los próximos 14 días
+          {% elif es_futuro %}
+            {{ proximas|length }} vencerán en los 14 días posteriores a esa fecha
           {% else %}
             {{ proximas|length }} vencían en los 14 días posteriores a esa fecha
           {% endif %}
@@ -115,7 +130,7 @@
           <span class="stat-ico stat-ico--danger"><i data-lucide="alert-triangle"></i></span>
         </div>
         <div class="stat-value">{{ total_pendiente|ars }}</div>
-        <div class="text-muted small">Exigible hoy + sin vencer</div>
+        <div class="text-muted small">{% if es_hoy %}Exigible hoy + sin vencer{% else %}Exigible a la fecha + sin vencer{% endif %}</div>
       </div>
     </div>
   </div>

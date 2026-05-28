@@ -40,7 +40,10 @@ def _fecha_corte_desde_request(request) -> date:
         fc = date(y, m, d)
     except (ValueError, TypeError):
         return hoy
-    return min(fc, hoy)
+    max_futuro = hoy + timedelta(days=365 * 5)
+    if fc > max_futuro:
+        return max_futuro
+    return fc
 
 
 def _deudas_con_saldo(queryset, *, fecha_corte: date):
@@ -413,6 +416,7 @@ def cuentas_dashboard(request):
     hoy = date.today()
     fecha_corte = _fecha_corte_desde_request(request)
     es_hoy = fecha_corte == hoy
+    es_futuro = fecha_corte > hoy
     todos_negocios = list(Negocio.objects.order_by("nombre"))
     negocio_a = (request.GET.get("negocio_a") or "").strip()
     negocio_b = (request.GET.get("negocio_b") or "").strip()
@@ -468,6 +472,8 @@ def cuentas_dashboard(request):
             "fecha_corte_iso": fecha_corte.isoformat(),
             "fecha_hoy_iso": hoy.isoformat(),
             "es_hoy": es_hoy,
+            "es_futuro": es_futuro,
+            "fecha_max_futuro_iso": (hoy + timedelta(days=365 * 5)).isoformat(),
             "saldos": _saldos_netos(deudas_pendientes, fecha_corte=fecha_corte, par_ids=par_ids),
             "vencimientos": vencimientos,
             "vencidas": vencidas,
