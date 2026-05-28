@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q, Sum, Value
 from django.db.models.functions import Coalesce, TruncDate, TruncMonth
 from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_GET
 
 from core.export_utils import xlsx_response
@@ -18,6 +19,9 @@ from productos.models import Producto
 from compras.models import Compra
 from ventas.models import Venta, VentaLinea
 from ventas.sql_metrics import venta_comision_expr, venta_linea_margen_bruto_expr, venta_neto_nonneg_expr
+
+TOP_PRODUCTOS_TABLA = 10
+TOP_PRODUCTOS_CHART_MAX = 150
 
 
 def _chart_label_producto(row: dict) -> str:
@@ -49,6 +53,102 @@ def _rango_fechas(request):
         desde = parse_fecha_dashboard(request.GET.get("fecha_desde"))
         hasta = parse_fecha_dashboard(request.GET.get("fecha_hasta"))
     return periodo, desde, hasta
+
+
+def _mes_primero(mes_val) -> date | None:
+    if mes_val is None:
+        return None
+    if timezone.is_aware(mes_val):
+        mes_val = timezone.localtime(mes_val)
+    if isinstance(mes_val, datetime):
+        d = mes_val.date()
+    elif isinstance(mes_val, date):
+        d = mes_val
+    else:
+        return None
+    return d.replace(day=1)
+
+
+def _siguiente_mes(d: date) -> date:
+    if d.month == 12:
+        return date(d.year + 1, 1, 1)
+    return date(d.year, d.month + 1, 1)
+
+
+def _serie_mensual_chart(rows, valor_key: str, fecha_desde, fecha_hasta) -> tuple[list[str], list[str]]:
+    """Etiquetas y valores por mes calendario (rellena huecos con cero)."""
+    by_mes: dict[date, Decimal] = {}
+    for row in rows:
+        mk = _mes_primero(row.get("mes"))
+        if mk is None:
+            continue
+        by_mes[mk] = q2(row.get(valor_key) or 0)
+
+    hoy = timezone.localdate()
+    if fecha_desde and fecha_hasta:
+        start = fecha_desde.replace(day=1)
+        end = fecha_hasta.replace(day=1)
+    elif by_mes:
+        start = min(by_mes.keys())
+        end = max(by_mes.keys())
+    else:
+        end = hoy.replace(day=1)
+        start = end
+        for _ in range(11):
+            if start.month == 1:
+                start = date(start.year - 1, 12, 1)
+            else:
+                start = date(start.year, start.month - 1, 1)
+
+    labels: list[str] = []
+    valores: list[str] = []
+    cur = start
+    while cur <= end:
+        labels.append(f"{cur.month:02d}/{cur.year}")
+        valores.append(str(by_mes.get(cur, Decimal("0.00"))))
+        cur = _siguiente_mes(cur)
+    return labels, valores
+
+
+def _as_date(val) -> date | None:
+    if val is None:
+        return None
+    if timezone.is_aware(val):
+        val = timezone.localtime(val)
+    if isinstance(val, datetime):
+        return val.date()
+    if isinstance(val, date):
+        return val
+    return None
+
+
+def _serie_diaria_chart(
+    rows, fecha_field: str, valor_key: str, fecha_desde, fecha_hasta
+) -> tuple[list[str], list[str]]:
+    """Etiquetas y montos por día (rellena huecos con cero en el rango)."""
+    by_day: dict[date, Decimal] = {}
+    for row in rows:
+        d = _as_date(row.get(fecha_field))
+        if d is None:
+            continue
+        by_day[d] = q2(row.get(valor_key) or 0)
+
+    hoy = timezone.localdate()
+    if fecha_desde and fecha_hasta:
+        start, end = fecha_desde, fecha_hasta
+    elif by_day:
+        start, end = min(by_day.keys()), max(by_day.keys())
+    else:
+        return [], []
+
+    labels: list[str] = []
+    valores: list[str] = []
+    cur = start
+    while cur <= end:
+        labels.append(cur.strftime("%d/%m"))
+        valores.append(str(by_day.get(cur, Decimal("0.00"))))
+        cur += timedelta(days=1)
+    return labels, valores
 
 
 def _reportes_export_query(request) -> str:
@@ -246,11 +346,13 @@ def reportes_dashboard(request):
         .order_by("mes")
     )
 
-    top_productos = (
+    top_productos_qs = (
         ventas.values("lineas__producto_id", "lineas__producto__codigo", "lineas__producto__descripcion")
         .annotate(unidades=Coalesce(Sum("lineas__cantidad"), Value(0)))
-        .order_by("-unidades")[:10]
+        .order_by("-unidades")
     )
+    top_productos_chart = list(top_productos_qs[:TOP_PRODUCTOS_CHART_MAX])
+    top_productos = top_productos_chart[:TOP_PRODUCTOS_TABLA]
     top_vendedores = (
         ventas.values("vendedor_id", "vendedor__codigo", "vendedor__apellido", "vendedor__nombre")
         .annotate(neto=Coalesce(Sum(neto_nonneg), Value(Decimal("0.00"))), pedidos=Count("id"))
@@ -279,20 +381,45 @@ def reportes_dashboard(request):
     labels_tipo = [tipo_labels_map.get((r.get("lineas__producto__tipo") or "").strip(), "—") for r in por_tipo]
     tipo_unidades = [r["unidades"] for r in por_tipo]
 
+    labels_ventas_mes, ventas_mes_neto = _serie_mensual_chart(
+        list(ventas_por_mes), "neto", fecha_desde, fecha_hasta
+    )
+    labels_compras_mes, compras_mes_monto = _serie_mensual_chart(
+        list(compras_por_mes), "monto", fecha_desde, fecha_hasta
+    )
+    labels_ventas_dia, ventas_dia_neto = _serie_diaria_chart(
+        list(ventas_por_dia), "dia", "neto", fecha_desde, fecha_hasta
+    )
+    labels_compras_dia, compras_dia_monto = _serie_diaria_chart(
+        list(compras_por_dia), "fecha_compra", "monto", fecha_desde, fecha_hasta
+    )
+    ventas_dia_pedidos_map = {_as_date(v["dia"]): v["pedidos"] for v in ventas_por_dia if _as_date(v.get("dia"))}
+    ventas_dia_pedidos = []
+    if fecha_desde and fecha_hasta:
+        cur = fecha_desde
+        while cur <= fecha_hasta:
+            ventas_dia_pedidos.append(ventas_dia_pedidos_map.get(cur, 0))
+            cur += timedelta(days=1)
+
     chart = {
-        "labels_ventas_dia": [v["dia"].strftime("%d/%m") for v in ventas_por_dia],
-        "ventas_dia_neto": [str(q2(v["neto"])) for v in ventas_por_dia],
-        "ventas_dia_pedidos": [v["pedidos"] for v in ventas_por_dia],
-        "labels_compras_dia": [c["fecha_compra"].strftime("%d/%m") for c in compras_por_dia],
-        "compras_dia_monto": [str(q2(c["monto"])) for c in compras_por_dia],
-        "labels_ventas_mes": [v["mes"].strftime("%m/%Y") for v in ventas_por_mes],
-        "ventas_mes_neto": [str(q2(v["neto"])) for v in ventas_por_mes],
-        "labels_compras_mes": [c["mes"].strftime("%m/%Y") for c in compras_por_mes],
-        "compras_mes_monto": [str(q2(c["monto"])) for c in compras_por_mes],
+        "labels_ventas_dia": labels_ventas_dia,
+        "ventas_dia_neto": ventas_dia_neto,
+        "ventas_dia_pedidos": ventas_dia_pedidos,
+        "labels_compras_dia": labels_compras_dia,
+        "compras_dia_monto": compras_dia_monto,
+        "labels_ventas_mes": labels_ventas_mes,
+        "ventas_mes_neto": ventas_mes_neto,
+        "labels_compras_mes": labels_compras_mes,
+        "compras_mes_monto": compras_mes_monto,
         "estado_labels": ["Pendiente", "Pagada"],
         "estado_counts": [kpis["pendientes"], kpis["pagadas"]],
         "labels_top_productos": [_chart_label_producto(p) for p in top_productos],
         "top_productos_unidades": [p["unidades"] for p in top_productos],
+        "labels_top_productos_all": [_chart_label_producto(p) for p in top_productos_chart],
+        "top_productos_unidades_all": [int(p["unidades"] or 0) for p in top_productos_chart],
+        "top_productos_limite_defecto": TOP_PRODUCTOS_TABLA,
+        "top_productos_limite_max": TOP_PRODUCTOS_CHART_MAX,
+        "top_productos_ranking_disponible": len(top_productos_chart),
         "labels_top_vendedores": [_chart_label_vendedor(v) for v in top_vendedores],
         "top_vendedores_neto": [str(q2(v["neto"])) for v in top_vendedores],
         "labels_top_clientes": [

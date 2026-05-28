@@ -3640,6 +3640,28 @@ button.btn-icon.btn-ink,
   min-height: 220px;
 }
 
+.chart-wrap.chart-wrap--line {
+  height: 280px;
+  min-height: 240px;
+}
+
+.chart-wrap.chart-wrap--line canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.chart-wrap.chart-wrap--bar {
+  height: 260px;
+  min-height: 220px;
+}
+
+.chart-wrap.chart-wrap--bar canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .reports-grid .span-6 {
   grid-column: span 6;
 }
@@ -3788,6 +3810,20 @@ button.btn-icon.btn-ink,
 .reports-page .rep-top-productos-export .btn svg {
   width: 14px;
   height: 14px;
+}
+
+.reports-page .rep-top-chart-head {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.reports-page .rep-top-chart-more {
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.reports-page .chart-wrap.chart-wrap--ranking {
+  min-height: 240px;
+  transition: height 0.2s ease;
 }
 
 /* Acciones rápidas: evitar compresión + texto fuera */
