@@ -73,6 +73,9 @@
         if (typeof window.sironaInitProductoFormPrecio === "function") {
           window.sironaInitProductoFormPrecio(contentEl);
         }
+        if (typeof window.sironaInitProductoListasPropagar === "function") {
+          window.sironaInitProductoListasPropagar(contentEl);
+        }
         if (typeof lucide !== "undefined") {
           try {
             lucide.createIcons();

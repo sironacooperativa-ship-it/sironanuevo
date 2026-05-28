@@ -442,6 +442,12 @@ def switch_to_full_mode(request):
     solo_vendedor = bool(getattr(getattr(request.user, "perfil_acceso", None), "solo_vendedor", False))
     if solo_vendedor:
         return redirect("vendedor_home")
+    if request.session.get("modo_admin"):
+        from urllib.parse import quote
+
+        logout(request)
+        destino = reverse("home")
+        return redirect(f"{reverse('login')}?next={quote(destino, safe='/')}")
     try:
         request.session["modo_vendedor"] = False
         request.session.pop("modo_vendedor", None)
@@ -455,10 +461,8 @@ def switch_to_full_mode(request):
 @require_http_methods(["GET"])
 def switch_to_admin_mode(request):
     """
-    Staff: cierra sesión y envía al login con destino administración, para revalidar credenciales antes del panel admin.
+    VE0007: entra a administración sin revalidar. Para salir de admin sí se pide login.
     """
-    from urllib.parse import quote
-
     v = _safe_get_vendedor_perfil(request.user)
     if not (
         getattr(request.user, "is_staff", False)
@@ -474,8 +478,7 @@ def switch_to_admin_mode(request):
     except Exception:
         pass
     destino = safe_internal_path(reverse("admin_usuarios_list")) or reverse("admin_usuarios_list")
-    logout(request)
-    return redirect(f"{reverse('login')}?admin_reauth=1&next={quote(destino, safe='/')}")
+    return redirect(destino)
 
 
 @login_required
@@ -630,4 +633,25 @@ def notas_marcar_leidas_usuario(request):
     ).count()
     invalidate_vendor_sidebar_cache_for_user(user)
     return JsonResponse({"ok": True, "sin_leer": sin_leer})
+
+
+@login_required
+@require_http_methods(["GET"])
+def global_search_json(request):
+    from .global_search import global_search_results
+
+    q = (request.GET.get("q") or "").strip()
+    path = str(getattr(request, "path", "") or "")
+    session_get = getattr(getattr(request, "session", None), "get", None)
+    vendor_mode = bool(
+        path.startswith("/vendedor/")
+        or (session_get("modo_vendedor", False) if callable(session_get) else False)
+    )
+    results = global_search_results(
+        request.user,
+        q,
+        vendor_mode=vendor_mode,
+        vendedor=_safe_get_vendedor_perfil(request.user),
+    )
+    return JsonResponse({"q": q, "results": results})
 

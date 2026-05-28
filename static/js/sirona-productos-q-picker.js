@@ -16,8 +16,6 @@
       var st = document.createElement("style");
       st.id = "sironaSelectSearchCss";
       st.textContent =
-        ".sirona-select-search-menu{background:#fff;border:1px solid rgba(15,23,42,.12);border-radius:10px;box-shadow:0 10px 24px rgba(15,23,42,.12);padding:8px}" +
-        ".sirona-select-search-list{max-height:320px;overflow:auto;display:flex;flex-direction:column;gap:4px}" +
         ".sirona-select-search-item{width:100%;text-align:left;border:1px solid rgba(15,23,42,.08);background:#fff;border-radius:8px;padding:6px 10px;font-size:.85rem}" +
         ".sirona-select-search-item:hover{background:#f1f5f9}";
       document.head.appendChild(st);
@@ -73,17 +71,9 @@
 
     function positionMenu() {
       try {
-        var r = inpQ.getBoundingClientRect();
-        menu.style.position = "fixed";
-        menu.style.top = Math.round(r.bottom + 4) + "px";
-        if (window.innerWidth <= 575) {
-          menu.style.left = "8px";
-          menu.style.width = Math.max(260, window.innerWidth - 16) + "px";
-        } else {
-          menu.style.left = Math.round(r.left) + "px";
-          menu.style.width = Math.max(280, Math.round(r.width)) + "px";
+        if (global.SironaSelectSearchMenu) {
+          global.SironaSelectSearchMenu.position({ menu: menu, anchor: inpQ, list: list });
         }
-        menu.style.zIndex = "2000";
       } catch (e2) {}
     }
 
@@ -93,6 +83,7 @@
       try {
         if (menu.parentNode) menu.parentNode.removeChild(menu);
       } catch (e3) {}
+      if (global.SironaSelectSearchMenu) global.SironaSelectSearchMenu.onClose();
     }
 
     function renderList() {
@@ -131,8 +122,10 @@
       try {
         document.body.appendChild(menu);
       } catch (e4) {}
-      positionMenu();
+      if (global.SironaSelectSearchMenu) global.SironaSelectSearchMenu.onOpen();
       renderList();
+      positionMenu();
+      requestAnimationFrame(positionMenu);
     }
 
     inpQ.addEventListener("focus", openMenu);
@@ -154,7 +147,10 @@
       }, 0);
     });
     inpQ.addEventListener("input", function () {
-      if (!menu.hidden) renderList();
+      if (!menu.hidden) {
+        renderList();
+        positionMenu();
+      }
     });
 
     document.addEventListener(

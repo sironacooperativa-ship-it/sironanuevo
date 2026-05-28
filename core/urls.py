@@ -17,5 +17,6 @@ urlpatterns = [
     path("notas/enviar/", views.nota_admin_enviar, name="nota_admin_enviar"),
     path("notas/chat.json", views.notas_chat_json, name="notas_chat_json"),
     path("notas/marcar-leidas-usuario/", views.notas_marcar_leidas_usuario, name="notas_marcar_leidas_usuario"),
+    path("buscar.json", views.global_search_json, name="global_search_json"),
 ]
 

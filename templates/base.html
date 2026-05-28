@@ -19,7 +19,7 @@
       rel="stylesheet"
     />
     <!-- theme: ios-2026r29 -->
-    <link href="{% static 'css/theme.css' %}?v=ios-2026r44" rel="stylesheet" />
+    <link href="{% static 'css/theme.css' %}?v=ios-2026r46" rel="stylesheet" />
     <link href="{% static 'css/styles.css' %}?v=saas-2026r23" rel="stylesheet" />
     <link href="{% static 'css/ui-force-productos.css' %}?v=3" rel="stylesheet" />
     <link href="{% static 'css/sirona-calc.css' %}" rel="stylesheet" />
@@ -135,15 +135,23 @@
             <div class="sirona-topbar-cluster">
             <div class="sirona-topbar-trailing">
               <div class="sirona-topbar-center d-none d-md-flex">
-                <div class="sirona-topbar-search" role="search" aria-label="Buscar en el sistema">
-                  <i data-lucide="search" class="sirona-search-ico" aria-hidden="true"></i>
-                  <input
-                    id="sironaTopbarSearch"
-                    class="sirona-search-input"
-                    type="search"
-                    autocomplete="off"
-                    placeholder="Buscar…"
-                  />
+                <div
+                  class="sirona-topbar-search-wrap"
+                  data-sirona-global-search
+                  data-search-url="{% url 'global_search_json' %}"
+                >
+                  <div class="sirona-topbar-search" role="search" aria-label="Buscar en el sistema">
+                    <i data-lucide="search" class="sirona-search-ico" aria-hidden="true"></i>
+                    <input
+                      id="sironaTopbarSearch"
+                      class="sirona-search-input"
+                      data-sirona-search-input
+                      type="search"
+                      autocomplete="off"
+                      placeholder="Buscar productos, presupuestos, gastos…"
+                    />
+                  </div>
+                  <div class="sirona-search-dropdown" data-sirona-search-dropdown hidden></div>
                 </div>
               </div>
               <div class="sirona-topbar-actions">
@@ -170,6 +178,7 @@
                     <i data-lucide="message-square" class="app-lucide-toolbar"></i>
                     {% if notas_admin_no_leidas %}
                       <span class="position-absolute top-0 start-100 translate-middle sirona-notif-dot" aria-hidden="true"></span>
+                      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger sirona-notif-count">{{ notas_admin_no_leidas }}</span>
                     {% endif %}
                   </button>
                 {% else %}
@@ -278,18 +287,26 @@
             <div class="sirona-topbar-trailing">
               <div class="sirona-topbar-center">
                 <div
-                  class="sirona-topbar-search sirona-topbar-search--desktop d-none d-lg-flex"
-                  role="search"
-                  aria-label="Buscar en el sistema"
+                  class="sirona-topbar-search-wrap sirona-topbar-search-wrap--desktop d-none d-lg-block"
+                  data-sirona-global-search
+                  data-search-url="{% url 'global_search_json' %}"
                 >
-                  <i data-lucide="search" class="sirona-search-ico" aria-hidden="true"></i>
-                  <input
-                    id="sironaTopbarSearch"
-                    class="sirona-search-input"
-                    type="search"
-                    autocomplete="off"
-                    placeholder="Buscar…"
-                  />
+                  <div
+                    class="sirona-topbar-search sirona-topbar-search--desktop"
+                    role="search"
+                    aria-label="Buscar en el sistema"
+                  >
+                    <i data-lucide="search" class="sirona-search-ico" aria-hidden="true"></i>
+                    <input
+                      id="sironaTopbarSearch"
+                      class="sirona-search-input"
+                      data-sirona-search-input
+                      type="search"
+                      autocomplete="off"
+                      placeholder="Buscar productos, presupuestos, gastos…"
+                    />
+                  </div>
+                  <div class="sirona-search-dropdown" data-sirona-search-dropdown hidden></div>
                 </div>
                 <button
                   type="button"
@@ -327,6 +344,7 @@
                     <i data-lucide="message-square" class="app-lucide-toolbar"></i>
                     {% if notas_admin_no_leidas %}
                       <span class="position-absolute top-0 start-100 translate-middle sirona-notif-dot" aria-hidden="true"></span>
+                      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger sirona-notif-count">{{ notas_admin_no_leidas }}</span>
                     {% endif %}
                   </button>
                 {% else %}
@@ -1013,15 +1031,23 @@
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body pt-0">
-              <div class="sirona-topbar-search sirona-topbar-search--modal w-100" role="search" aria-label="Buscar en el sistema">
-                <i data-lucide="search" class="sirona-search-ico" aria-hidden="true"></i>
-                <input
-                  type="search"
-                  id="sironaTopbarSearchModalInput"
-                  class="sirona-search-input"
-                  autocomplete="off"
-                  placeholder="Buscar…"
-                />
+              <div
+                class="sirona-topbar-search-wrap w-100"
+                data-sirona-global-search
+                data-search-url="{% url 'global_search_json' %}"
+              >
+                <div class="sirona-topbar-search sirona-topbar-search--modal w-100" role="search" aria-label="Buscar en el sistema">
+                  <i data-lucide="search" class="sirona-search-ico" aria-hidden="true"></i>
+                  <input
+                    type="search"
+                    id="sironaTopbarSearchModalInput"
+                    class="sirona-search-input"
+                    data-sirona-search-input
+                    autocomplete="off"
+                    placeholder="Buscar productos, presupuestos, gastos…"
+                  />
+                </div>
+                <div class="sirona-search-dropdown" data-sirona-search-dropdown hidden></div>
               </div>
             </div>
           </div>
@@ -1037,6 +1063,7 @@
           aria-hidden="true"
           data-admin-chat-url="{% url 'admin_notas_chat_json' %}"
           data-admin-send-url="{% url 'admin_notas_list' %}"
+          data-admin-resuelto-url="{% url 'admin_notas_resuelto' %}"
         >
           <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
             <div class="modal-content border-0 shadow">
@@ -1061,7 +1088,16 @@
                       placeholder="Escribí una respuesta…"
                       required
                     ></textarea>
-                    <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
+                    <div class="form-check mb-2">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="sironaAdminMsgsResuelto"
+                        value="1"
+                      />
+                      <label class="form-check-label small" for="sironaAdminMsgsResuelto">Marcar conversación como resuelta</label>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center gap-2 mt-2">
                       <a class="btn btn-outline-secondary" href="{% url 'admin_notas_list' %}">Ver pantalla completa</a>
                       <button type="submit" class="btn btn-primary" id="sironaAdminMsgsEnviarBtn">Enviar</button>
                     </div>
@@ -1089,12 +1125,12 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
               </div>
               <div class="modal-body d-flex flex-column sirona-notas-chat-wrap">
+                <p class="text-muted small mb-2">Un solo hilo con administración: acá ves el historial y podés escribir.</p>
                 <div id="sironaQuickMsgMensajes" class="sirona-notas-chat-messages flex-grow-1 overflow-auto mb-3" role="log" aria-live="polite"></div>
                 <form id="sironaQuickMsgForm" method="post" action="{% url 'nota_admin_enviar' %}">
                   {% csrf_token %}
                   <input type="hidden" name="next" value="{{ request.get_full_path }}" />
                   <input type="hidden" name="pagina" value="{{ request.path }}" />
-                  <input type="hidden" name="parent_id" id="sironaQuickMsgParentId" value="" autocomplete="off" />
                   <label class="form-label small text-muted mb-1" for="sironaQuickMsgTexto">Tu mensaje</label>
                   <textarea
                     id="sironaQuickMsgTexto"
@@ -1114,517 +1150,18 @@
           </div>
         </div>
       {% endif %}
-
-      <div
-        class="modal fade"
-        id="sironaNotas"
-        tabindex="-1"
-        aria-labelledby="sironaNotasLabel"
-        aria-hidden="true"
-        data-notas-chat-url="{% url 'notas_chat_json' %}"
-        data-notas-mark-url="{% url 'notas_marcar_leidas_usuario' %}"
-        data-notas-send-url="{% url 'nota_admin_enviar' %}"
-      >
-        <div class="modal-dialog modal-dialog-scrollable modal-lg">
-          <div class="modal-content border-0 shadow">
-            <div class="modal-header">
-              <h5 class="modal-title" id="sironaNotasLabel">Mensajes con administración</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body p-0 d-flex flex-column sirona-notas-chat-wrap">
-              <div class="text-muted small px-3 pt-2 pb-1">
-                Podés tener varios hilos con administración. Elegí uno abajo o iniciá uno nuevo; las respuestas del equipo se marcan como leídas al abrir cada conversación.
-              </div>
-              <div class="sirona-notas-hilo-bar d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom">
-                <label class="small text-muted mb-0 text-nowrap" for="sironaNotasHiloSel">Conversación</label>
-                <select id="sironaNotasHiloSel" class="form-select form-select-sm flex-grow-1" style="min-width: 10rem" aria-label="Elegir conversación"></select>
-                <button type="button" class="btn btn-sm btn-outline-primary text-nowrap" id="sironaNotasNuevoHiloBtn">
-                  Nuevo hilo
-                </button>
-              </div>
-              <div id="sironaNotasMensajes" class="sirona-notas-chat-messages flex-grow-1 overflow-auto px-3 py-2" role="log" aria-live="polite"></div>
-              <div class="border-top bg-light px-3 py-3">
-                <form id="sironaNotasChatForm" method="post" action="{% url 'nota_admin_enviar' %}">
-                  {% csrf_token %}
-                  <input type="hidden" name="next" value="{{ request.get_full_path }}" />
-                  <input type="hidden" name="pagina" value="{{ request.path }}" />
-                  <input type="hidden" name="parent_id" id="sironaNotasParentId" value="" autocomplete="off" />
-                  <label class="form-label small text-muted mb-1" for="sironaNotasTexto">Tu mensaje</label>
-                  <textarea
-                    id="sironaNotasTexto"
-                    class="form-control"
-                    name="nota_texto"
-                    rows="3"
-                    maxlength="2000"
-                    placeholder="Escribí un mensaje…"
-                    required
-                  ></textarea>
-                  <div class="d-flex justify-content-end gap-2 mt-2">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <button type="submit" class="btn btn-primary" id="sironaNotasEnviarBtn">Enviar</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     {% endif %}
 
-    <script src="{% static 'js/producto-form-precio.js' %}?v=1"></script>
+    {% if request.user.is_authenticated %}
+      {% include "productos/includes/producto_listas_propagar_modal.html" %}
+    {% endif %}
+
+    <script src="{% static 'js/producto-form-precio.js' %}?v=2"></script>
+    <script src="{% static 'js/producto-listas-propagar.js' %}?v=1"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
 
     <script src="{% static 'js/sirona-icons.js' %}?v=5"></script>
-    <script>
-      (function () {
-        const modalEl = document.getElementById("sironaNotas");
-        if (!modalEl) return;
-        const urlChat = modalEl.getAttribute("data-notas-chat-url");
-        const urlMark = modalEl.getAttribute("data-notas-mark-url");
-        const urlSend = modalEl.getAttribute("data-notas-send-url");
-        const box = document.getElementById("sironaNotasMensajes");
-        const form = document.getElementById("sironaNotasChatForm");
-        const parentIn = document.getElementById("sironaNotasParentId");
-        const textarea = document.getElementById("sironaNotasTexto");
-        const btnSend = document.getElementById("sironaNotasEnviarBtn");
-        const hiloSel = document.getElementById("sironaNotasHiloSel");
-        const btnNuevoHilo = document.getElementById("sironaNotasNuevoHiloBtn");
-        if (!box || !form || !textarea || !btnSend || !urlSend) return;
-
-        const STORAGE_KEY = "sironaNotasHiloId";
-        let nuevoModo = false;
-
-        function sanitizeHiloStorageVsHilos(hilos) {
-          try {
-            const raw = sessionStorage.getItem(STORAGE_KEY) || "";
-            if (!raw || raw === "nuevo" || !/^\d+$/.test(raw)) return;
-            const ok = (hilos || []).some(function (x) {
-              return Number(x.id) === Number(raw);
-            });
-            if (!ok) sessionStorage.removeItem(STORAGE_KEY);
-          } catch (e) {}
-        }
-
-        function readStoragePreference() {
-          try {
-            return sessionStorage.getItem(STORAGE_KEY) || "";
-          } catch (e) {
-            return "";
-          }
-        }
-
-        function writeStoragePreference(val) {
-          try {
-            if (val === null || val === undefined || val === "") sessionStorage.removeItem(STORAGE_KEY);
-            else sessionStorage.setItem(STORAGE_KEY, val);
-          } catch (e) {}
-        }
-
-        function escapeHtml(s) {
-          const d = document.createElement("div");
-          d.textContent = s;
-          return d.innerHTML;
-        }
-
-        function fmtTime(iso) {
-          try {
-            const d = new Date(iso);
-            return d.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-          } catch (e) {
-            return "";
-          }
-        }
-
-        function currentThreadRootId() {
-          if (nuevoModo || !hiloSel) return null;
-          const v = hiloSel.value;
-          if (!v || v === "__nuevo__") return null;
-          const n = parseInt(v, 10);
-          return isNaN(n) ? null : n;
-        }
-
-        function syncParentInput() {
-          if (!parentIn) return;
-          const id = currentThreadRootId();
-          parentIn.value = id == null ? "" : String(id);
-        }
-
-        function syncBadges(sinLeer) {
-          const n = typeof sinLeer === "number" ? sinLeer : 0;
-          const targets = ".sirona-msgs-user-btn, .sirona-sidebar-msgs-user, .sirona-offcanvas-msgs-user";
-          document.querySelectorAll(targets).forEach(function (btn) {
-            const wrap = btn.querySelector(".app-sidebar-icon-wrap");
-            const host = wrap || btn;
-            let dot = host.querySelector(".sirona-notif-dot");
-            if (n > 0) {
-              if (!dot) {
-                dot = document.createElement("span");
-                dot.className = "position-absolute top-0 start-100 translate-middle sirona-notif-dot";
-                dot.setAttribute("aria-hidden", "true");
-                if (wrap && !wrap.classList.contains("position-relative")) wrap.classList.add("position-relative");
-                host.appendChild(dot);
-              }
-            } else if (dot) {
-              dot.remove();
-            }
-          });
-          try {
-            if (window.lucide && typeof lucide.createIcons === "function") lucide.createIcons();
-          } catch (e) {}
-        }
-
-        function renderMensajes(arr, esNuevo) {
-          if (esNuevo && (!arr || !arr.length)) {
-            box.innerHTML =
-              '<p class="text-muted small mb-0">Nuevo hilo: el primer mensaje que envíes iniciará esta conversación con administración.</p>';
-            return;
-          }
-          if (!arr || !arr.length) {
-            box.innerHTML = '<p class="text-muted small mb-0">Todavía no hay mensajes. Escribí el primero abajo.</p>';
-            return;
-          }
-          box.innerHTML = arr
-            .map(function (m) {
-              const side = m.es_staff ? "sirona-chat-bubble--in" : "sirona-chat-bubble--out";
-              const who = escapeHtml(m.autor || "");
-              const txt = escapeHtml(m.texto || "").replace(/\n/g, "<br>");
-              const when = fmtTime(m.creado_en);
-              return (
-                '<div class="sirona-chat-bubble ' +
-                side +
-                '">' +
-                '<div class="sirona-chat-bubble-meta small text-muted">' +
-                who +
-                " · " +
-                when +
-                "</div>" +
-                '<div class="sirona-chat-bubble-text">' +
-                txt +
-                "</div></div>"
-              );
-            })
-            .join("");
-          box.scrollTop = box.scrollHeight;
-          try {
-            if (window.lucide && typeof lucide.createIcons === "function") lucide.createIcons();
-          } catch (e) {}
-        }
-
-        function fillHiloSelect(hilos, activeHiloId) {
-          if (!hiloSel) return;
-          hiloSel.innerHTML = "";
-          const oNuevo = document.createElement("option");
-          oNuevo.value = "__nuevo__";
-          oNuevo.textContent = "+ Nuevo hilo";
-          hiloSel.appendChild(oNuevo);
-          (hilos || []).forEach(function (h) {
-            const o = document.createElement("option");
-            o.value = String(h.id);
-            let label = (h.preview || "(sin texto)").slice(0, 72);
-            if (h.no_leidas) label += " · sin leer";
-            o.textContent = label;
-            hiloSel.appendChild(o);
-          });
-          if (nuevoModo) {
-            hiloSel.value = "__nuevo__";
-          } else if (activeHiloId != null && (hilos || []).some(function (x) { return Number(x.id) === Number(activeHiloId); })) {
-            hiloSel.value = String(activeHiloId);
-          } else if ((hilos || []).length) {
-            hiloSel.value = String(hilos[0].id);
-            writeStoragePreference(String(hilos[0].id));
-            nuevoModo = false;
-          } else {
-            hiloSel.value = "__nuevo__";
-            nuevoModo = true;
-            writeStoragePreference("nuevo");
-          }
-        }
-
-        function buildChatUrl() {
-          if (!urlChat) return "";
-          const sep = urlChat.indexOf("?") >= 0 ? "&" : "?";
-          if (nuevoModo) return urlChat + sep + "nuevo=1";
-          const raw = readStoragePreference();
-          if (raw && raw !== "nuevo" && /^\d+$/.test(raw)) return urlChat + sep + "hilo=" + encodeURIComponent(raw);
-          return urlChat;
-        }
-
-        function loadChat() {
-          if (!urlChat) return Promise.resolve();
-          return fetch(buildChatUrl(), { credentials: "same-origin" })
-            .then(function (r) {
-              return r.json();
-            })
-            .then(function (data) {
-              sanitizeHiloStorageVsHilos(data.hilos || []);
-              renderMensajes(data.mensajes || [], nuevoModo);
-              fillHiloSelect(data.hilos || [], nuevoModo ? null : data.hilo_id);
-              if (!nuevoModo && data.hilo_id != null) writeStoragePreference(String(data.hilo_id));
-              syncParentInput();
-            })
-            .catch(function () {
-              box.innerHTML = '<p class="text-danger small mb-0">No se pudo cargar el chat.</p>';
-            });
-        }
-
-        function markRead() {
-          if (!urlMark) return Promise.resolve();
-          const hid = currentThreadRootId();
-          if (hid == null) return Promise.resolve();
-          const csrfIn = form.querySelector("[name=csrfmiddlewaretoken]");
-          const csrf = csrfIn ? csrfIn.value : "";
-          const params = new URLSearchParams({ csrfmiddlewaretoken: csrf });
-          params.set("hilo_id", String(hid));
-          return fetch(urlMark, {
-            method: "POST",
-            credentials: "same-origin",
-            headers: {
-              "X-Requested-With": "XMLHttpRequest",
-              "X-CSRFToken": csrf,
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: params,
-          })
-            .then(function (r) {
-              return r.json().catch(function () {
-                return null;
-              });
-            })
-            .then(function (body) {
-              if (body && typeof body.sin_leer === "number") syncBadges(body.sin_leer);
-            })
-            .catch(function () {});
-        }
-
-        document.querySelectorAll('[data-bs-target="#sironaNotas"]').forEach(function (el) {
-          el.addEventListener("click", function () {
-            const menu = document.getElementById("sironaMenu");
-            if (menu && menu.classList.contains("show") && typeof bootstrap !== "undefined") {
-              const oc = bootstrap.Offcanvas.getInstance(menu);
-              if (oc) oc.hide();
-            }
-          });
-        });
-
-        if (hiloSel) {
-          hiloSel.addEventListener("change", function () {
-            if (hiloSel.value === "__nuevo__") {
-              nuevoModo = true;
-              writeStoragePreference("nuevo");
-            } else {
-              nuevoModo = false;
-              writeStoragePreference(hiloSel.value);
-            }
-            loadChat().then(function () {
-              return markRead();
-            });
-          });
-        }
-
-        if (btnNuevoHilo && hiloSel) {
-          btnNuevoHilo.addEventListener("click", function () {
-            nuevoModo = true;
-            writeStoragePreference("nuevo");
-            hiloSel.value = "__nuevo__";
-            loadChat().then(function () {
-              return markRead();
-            });
-          });
-        }
-
-        modalEl.addEventListener("shown.bs.modal", function () {
-          const raw = readStoragePreference();
-          nuevoModo = raw === "nuevo";
-          loadChat().then(function () {
-            return markRead();
-          });
-        });
-
-        form.addEventListener("submit", function (ev) {
-          ev.preventDefault();
-          syncParentInput();
-          const tx = (textarea.value || "").trim();
-          if (!tx) return;
-          const csrf = form.querySelector("[name=csrfmiddlewaretoken]").value;
-          const fd = new FormData(form);
-          btnSend.disabled = true;
-          fetch(urlSend, {
-            method: "POST",
-            credentials: "same-origin",
-            headers: {
-              "X-Requested-With": "XMLHttpRequest",
-              "X-CSRFToken": csrf,
-            },
-            body: fd,
-          })
-            .then(function (r) {
-              return r.json().then(
-                function (body) {
-                  return { ok: r.ok, body: body };
-                },
-                function () {
-                  return { ok: false, body: null };
-                }
-              );
-            })
-            .then(function (res) {
-              if (!res.ok || !res.body || !res.body.ok) {
-                window.alert((res.body && res.body.error) || "No se pudo enviar.");
-                return;
-              }
-              textarea.value = "";
-              if (res.body.nueva_raiz_id) {
-                nuevoModo = false;
-                writeStoragePreference(String(res.body.nueva_raiz_id));
-              }
-              return loadChat().then(function () {
-                return markRead();
-              });
-            })
-            .finally(function () {
-              btnSend.disabled = false;
-            });
-        });
-      })();
-    </script>
-    <script>
-      // Mensaje rápido (topbar) → enviar sin abrir el chat completo.
-      (function () {
-        try {
-          const qm = document.getElementById("sironaQuickMsg");
-          if (!qm) return;
-          const form = document.getElementById("sironaQuickMsgForm");
-          const textarea = document.getElementById("sironaQuickMsgTexto");
-          const parentIn = document.getElementById("sironaQuickMsgParentId");
-          const btnSend = document.getElementById("sironaQuickMsgEnviarBtn");
-          const chkNuevo = document.getElementById("sironaQuickMsgNuevoHilo");
-          const btnVerChat = document.getElementById("sironaQuickMsgVerChatBtn");
-          const sendUrl = qm.getAttribute("data-send-url");
-          const chatUrlSanitize = qm.getAttribute("data-notas-chat-url");
-          if (!form || !textarea || !parentIn || !btnSend || !sendUrl) return;
-
-          const STORAGE_KEY = "sironaNotasHiloId";
-
-          function sanitizeHiloFromServer(hilos) {
-            try {
-              const raw = sessionStorage.getItem(STORAGE_KEY) || "";
-              if (!raw || raw === "nuevo" || !/^\d+$/.test(raw)) return;
-              const ok = (hilos || []).some(function (x) {
-                return Number(x.id) === Number(raw);
-              });
-              if (!ok) sessionStorage.removeItem(STORAGE_KEY);
-            } catch (e) {}
-          }
-
-          function readThreadPref() {
-            try {
-              return sessionStorage.getItem(STORAGE_KEY) || "";
-            } catch (e) {
-              return "";
-            }
-          }
-
-          function syncParentId() {
-            if (!parentIn) return;
-            const raw = readThreadPref();
-            const forceNew = chkNuevo && chkNuevo.checked;
-            if (!forceNew && raw && raw !== "nuevo" && /^\d+$/.test(raw)) parentIn.value = raw;
-            else parentIn.value = "";
-          }
-
-          qm.addEventListener("shown.bs.modal", function () {
-            function afterSanitize() {
-              syncParentId();
-              try {
-                textarea.focus();
-              } catch (e) {}
-            }
-            if (chatUrlSanitize) {
-              fetch(chatUrlSanitize, { credentials: "same-origin" })
-                .then(function (r) {
-                  return r.json();
-                })
-                .then(function (data) {
-                  sanitizeHiloFromServer(data.hilos || []);
-                  afterSanitize();
-                })
-                .catch(function () {
-                  afterSanitize();
-                });
-            } else {
-              afterSanitize();
-            }
-          });
-
-          if (chkNuevo) chkNuevo.addEventListener("change", syncParentId);
-
-          if (btnVerChat) {
-            btnVerChat.addEventListener("click", function () {
-              try {
-                const inst = bootstrap.Modal.getInstance(qm) || bootstrap.Modal.getOrCreateInstance(qm);
-                inst.hide();
-              } catch (e) {}
-              const full = document.getElementById("sironaNotas");
-              if (full && typeof bootstrap !== "undefined") {
-                try {
-                  bootstrap.Modal.getOrCreateInstance(full).show();
-                } catch (e) {}
-              }
-            });
-          }
-
-          form.addEventListener("submit", function (ev) {
-            ev.preventDefault();
-            syncParentId();
-            const tx = (textarea.value || "").trim();
-            if (!tx) return;
-            const csrfIn = form.querySelector("[name=csrfmiddlewaretoken]");
-            const csrf = csrfIn ? csrfIn.value : "";
-            const fd = new FormData(form);
-            btnSend.disabled = true;
-            fetch(sendUrl, {
-              method: "POST",
-              credentials: "same-origin",
-              headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": csrf },
-              body: fd,
-            })
-              .then(function (r) {
-                return r.json().then(
-                  function (body) {
-                    return { ok: r.ok, body: body };
-                  },
-                  function () {
-                    return { ok: false, body: null };
-                  }
-                );
-              })
-              .then(function (res) {
-                if (!res.ok || !res.body || !res.body.ok) {
-                  window.alert((res.body && res.body.error) || "No se pudo enviar.");
-                  return;
-                }
-                // Si fue nuevo hilo, guardamos la raíz para que el chat completo abra ahí.
-                if (res.body.nueva_raiz_id) {
-                  try {
-                    sessionStorage.setItem(STORAGE_KEY, String(res.body.nueva_raiz_id));
-                  } catch (e) {}
-                }
-                textarea.value = "";
-                if (chkNuevo) chkNuevo.checked = false;
-                syncParentId();
-                try {
-                  const inst = bootstrap.Modal.getInstance(qm);
-                  if (inst) inst.hide();
-                } catch (e) {}
-              })
-              .finally(function () {
-                btnSend.disabled = false;
-              });
-          });
-        } catch (e) {}
-      })();
-    </script>
     <script>
       // Admin: popup de conversaciones, una pestaña por usuario.
       (function () {
@@ -1632,13 +1169,15 @@
         if (!modalEl) return;
         const urlChat = modalEl.getAttribute("data-admin-chat-url");
         const urlSend = modalEl.getAttribute("data-admin-send-url");
+        const urlResuelto = modalEl.getAttribute("data-admin-resuelto-url");
         const tabs = document.getElementById("sironaAdminMsgsTabs");
         const body = document.getElementById("sironaAdminMsgsBody");
         const form = document.getElementById("sironaAdminMsgsForm");
         const userIn = document.getElementById("sironaAdminMsgsUserId");
         const textarea = document.getElementById("sironaAdminMsgsTexto");
         const btnSend = document.getElementById("sironaAdminMsgsEnviarBtn");
-        if (!urlChat || !urlSend || !tabs || !body || !form || !userIn || !textarea || !btnSend) return;
+        const chkResuelto = document.getElementById("sironaAdminMsgsResuelto");
+        if (!urlChat || !urlSend || !tabs || !body || !form || !userIn || !textarea || !btnSend || !chkResuelto) return;
         let conversaciones = [];
         let activeUserId = null;
 
@@ -1658,7 +1197,7 @@
         }
 
         function clearAdminDots() {
-          document.querySelectorAll('[data-bs-target="#sironaAdminMsgs"] .sirona-notif-dot').forEach(function (dot) {
+          document.querySelectorAll('[data-bs-target="#sironaAdminMsgs"] .sirona-notif-dot, [data-bs-target="#sironaAdminMsgs"] .sirona-notif-count').forEach(function (dot) {
             dot.remove();
           });
         }
@@ -1672,11 +1211,15 @@
             userIn.value = "";
             textarea.disabled = true;
             btnSend.disabled = true;
+            chkResuelto.disabled = true;
+            chkResuelto.checked = false;
             return;
           }
           userIn.value = String(conv.usuario_id);
           textarea.disabled = false;
           btnSend.disabled = false;
+          chkResuelto.disabled = !urlResuelto;
+          chkResuelto.checked = !!conv.resuelto;
           const mensajes = conv.mensajes || [];
           if (!mensajes.length) {
             body.innerHTML = '<p class="text-muted small mb-0">Todavía no hay mensajes con este usuario.</p>';
@@ -1717,7 +1260,13 @@
             btn.className = "nav-link" + (Number(conv.usuario_id) === Number(activeUserId) ? " active" : "");
             btn.type = "button";
             btn.textContent = conv.username || "Usuario";
-            if (conv.no_leidos) {
+            if (conv.resuelto) {
+              const badge = document.createElement("span");
+              badge.className = "badge text-bg-success ms-1 align-middle";
+              badge.style.fontSize = "0.65rem";
+              badge.textContent = "OK";
+              btn.appendChild(badge);
+            } else if (conv.no_leidos) {
               const dot = document.createElement("span");
               dot.className = "sirona-notif-dot position-static ms-2 align-middle";
               dot.setAttribute("aria-hidden", "true");
@@ -1751,6 +1300,51 @@
               body.innerHTML = '<p class="text-danger small mb-0">No se pudieron cargar los mensajes.</p>';
             });
         }
+
+        function syncResuelto(checked) {
+          if (!urlResuelto || !userIn.value) return Promise.resolve();
+          const csrfIn = form.querySelector("[name=csrfmiddlewaretoken]");
+          const csrf = csrfIn ? csrfIn.value : "";
+          const fd = new FormData();
+          fd.append("usuario_id", userIn.value);
+          fd.append("resuelto", checked ? "1" : "0");
+          fd.append("csrfmiddlewaretoken", csrf);
+          chkResuelto.disabled = true;
+          return fetch(urlResuelto, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": csrf },
+            body: fd,
+          })
+            .then(function (r) {
+              return r.json().then(function (body) {
+                return { ok: r.ok, body: body };
+              });
+            })
+            .then(function (res) {
+              if (!res.ok || !res.body || !res.body.ok) {
+                window.alert((res.body && res.body.error) || "No se pudo guardar.");
+                chkResuelto.checked = !checked;
+                return;
+              }
+              const conv = conversaciones.find(function (c) {
+                return Number(c.usuario_id) === Number(userIn.value);
+              });
+              if (conv) conv.resuelto = !!res.body.resuelto;
+              renderTabs();
+            })
+            .catch(function () {
+              chkResuelto.checked = !checked;
+              window.alert("No se pudo guardar.");
+            })
+            .finally(function () {
+              chkResuelto.disabled = false;
+            });
+        }
+
+        chkResuelto.addEventListener("change", function () {
+          syncResuelto(chkResuelto.checked);
+        });
 
         modalEl.addEventListener("shown.bs.modal", function () {
           loadChat().finally(function () {
@@ -1823,9 +1417,13 @@
 
         function syncBadges(sinLeer) {
           if (sinLeer !== 0) return;
-          document.querySelectorAll(".sirona-msgs-user-btn .sirona-notif-dot").forEach(function (dot) {
-            dot.remove();
-          });
+          document
+            .querySelectorAll(
+              ".sirona-msgs-user-btn .sirona-notif-dot, .sirona-sidebar-msgs-user .sirona-notif-dot, .sirona-offcanvas-msgs-user .sirona-notif-dot"
+            )
+            .forEach(function (dot) {
+              dot.remove();
+            });
         }
 
         function renderMensajes(arr) {
@@ -1901,7 +1499,11 @@
                 return;
               }
               textarea.value = "";
-              return loadChat();
+              if (typeof bootstrap !== "undefined") {
+                const inst =
+                  bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+                inst.hide();
+              }
             })
             .finally(function () {
               btnSend.disabled = false;
@@ -2333,6 +1935,8 @@
     <script src="{% static 'js/sirona-modal.js' %}?v=3"></script>
     <script src="{% static 'js/sirona-scroll-top.js' %}?v=1"></script>
     {% if request.user.is_authenticated %}
+      <script src="{% static 'js/sirona-select-search-menu.js' %}?v=1"></script>
+      <script src="{% static 'js/sirona-global-search.js' %}?v=1"></script>
       <script src="{% static 'js/sirona-calc.js' %}?v=4"></script>
       <script src="{% static 'js/sirona-scroll-restore.js' %}?v=1"></script>
       {% if logout_on_tab_close_enabled %}

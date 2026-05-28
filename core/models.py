@@ -67,6 +67,11 @@ class NotaAdmin(models.Model):
         db_index=True,
         help_text="Si es respuesta de staff: el usuario ya abrió/vio el mensaje.",
     )
+    resuelto = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="En el mensaje raíz del hilo: administración marcó la consulta como resuelta.",
+    )
     creado_en = models.DateTimeField(auto_now_add=True)
 
     class Meta:

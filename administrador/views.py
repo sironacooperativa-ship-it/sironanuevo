@@ -18,7 +18,7 @@ from django.db.models import Exists, OuterRef, Q
 from django.http import FileResponse, HttpResponseBadRequest, JsonResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 
 from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_param
 from core.context_processors import invalidate_vendor_sidebar_cache_for_user
@@ -45,6 +45,14 @@ def admin_required(view):
 
 def notas_admin_required(view):
     return login_required(user_passes_test(_recibe_notas_admin)(view))
+
+
+def _nota_raiz_usuario(usuario):
+    return (
+        NotaAdmin.objects.filter(usuario=usuario, parent__isnull=True, es_staff=False)
+        .order_by("creado_en", "id")
+        .first()
+    )
 
 
 @admin_required
@@ -149,11 +157,13 @@ def notas_list(request):
             .select_related("usuario", "vendedor", "creado_por")
             .order_by("creado_en", "id")
         )
+        raiz = _nota_raiz_usuario(usuario)
         conversaciones.append(
             {
                 "usuario": usuario,
                 "mensajes": mensajes,
                 "no_leidos": sum(1 for m in mensajes if not m.es_staff and not m.leida),
+                "resuelto": bool(raiz and raiz.resuelto),
             }
         )
 
@@ -198,18 +208,37 @@ def notas_admin_chat_json(request):
                     "leida": m.leida,
                 }
             )
+        raiz = _nota_raiz_usuario(usuario)
         conversaciones.append(
             {
                 "usuario_id": usuario.pk,
                 "username": usuario.username,
                 "email": usuario.email,
                 "no_leidos": sum(1 for m in mensajes if not m["es_staff"] and not m["leida"]),
+                "resuelto": bool(raiz and raiz.resuelto),
                 "mensajes": mensajes,
             }
         )
 
     NotaAdmin.objects.filter(es_staff=False, leida=False).update(leida=True)
     return JsonResponse({"conversaciones": conversaciones, "sin_leer": 0})
+
+
+@notas_admin_required
+@require_POST
+def notas_admin_resuelto(request):
+    usuario_id = (request.POST.get("usuario_id") or "").strip()
+    if not usuario_id.isdigit():
+        return JsonResponse({"ok": False, "error": "Usuario inválido."}, status=400)
+    usuario = get_object_or_404(User, pk=int(usuario_id))
+    raiz = _nota_raiz_usuario(usuario)
+    if raiz is None:
+        return JsonResponse({"ok": False, "error": "No hay conversación con ese usuario."}, status=400)
+    resuelto = (request.POST.get("resuelto") or "").strip().lower() in ("1", "true", "on", "yes")
+    if raiz.resuelto != resuelto:
+        raiz.resuelto = resuelto
+        raiz.save(update_fields=["resuelto"])
+    return JsonResponse({"ok": True, "resuelto": raiz.resuelto})
 
 
 @admin_required

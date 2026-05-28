@@ -1,0 +1,47 @@
+<div
+  class="modal fade"
+  id="sironaProductoListasPropagar"
+  tabindex="-1"
+  aria-labelledby="sironaProductoListasPropagarLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title" id="sironaProductoListasPropagarLabel">Aplicar cambio en listas de precio</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-2" id="sironaProductoListasPropagarHint">
+          Este producto está en varias listas. Elegí en cuáles querés actualizar el precio de venta.
+        </p>
+        <p class="small mb-3">
+          Precio de catálogo propuesto: <strong id="sironaProductoListasPropagarPrecio">—</strong>
+        </p>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 3rem">Aplicar</th>
+                <th>Lista</th>
+                <th class="text-end">Precio actual</th>
+                <th class="text-end">Precio nuevo</th>
+                <th class="text-end">Diferencia</th>
+              </tr>
+            </thead>
+            <tbody id="sironaProductoListasPropagarBody"></tbody>
+          </table>
+        </div>
+        <p class="text-muted small mt-2 mb-0" id="sironaProductoListasPropagarEmpty" hidden>
+          No hay listas con cambio de precio pendiente.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary rounded-pill" id="sironaProductoListasPropagarConfirm">
+          Guardar producto
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

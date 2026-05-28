@@ -134,3 +134,37 @@ class CancelacionDeuda(models.Model):
                     pendiente += anterior
             if self.monto and self.monto > pendiente:
                 raise ValidationError({"monto": "La cancelación no puede superar el saldo pendiente."})
+
+
+class MovimientoCCMarcacion(models.Model):
+    """Marca en cuenta corriente que un movimiento fue chequeado contra papeles."""
+
+    class MovTipo(models.TextChoices):
+        OPERACION = "operacion", "Operación"
+        CANCELACION = "cancelacion", "Cancelación"
+
+    mov_tipo = models.CharField(max_length=12, choices=MovTipo.choices)
+    objeto_id = models.PositiveIntegerField()
+    marcado = models.BooleanField(default=True, db_index=True)
+    marcado_en = models.DateTimeField(auto_now=True)
+    marcado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="cc_marcaciones",
+    )
+
+    class Meta:
+        verbose_name = "Marcación cuenta corriente"
+        verbose_name_plural = "Marcaciones cuenta corriente"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["mov_tipo", "objeto_id"],
+                name="uniq_cc_marcacion_mov",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        estado = "chequeado" if self.marcado else "sin chequear"
+        return f"{self.mov_tipo} #{self.objeto_id} ({estado})"

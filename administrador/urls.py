@@ -6,6 +6,7 @@ urlpatterns = [
     path("actividad/", views.actividad_list, name="admin_actividad_list"),
     path("notas/", views.notas_list, name="admin_notas_list"),
     path("notas/chat.json", views.notas_admin_chat_json, name="admin_notas_chat_json"),
+    path("notas/resuelto/", views.notas_admin_resuelto, name="admin_notas_resuelto"),
     path("", views.usuarios_list, name="admin_usuarios_list"),
     path("usuarios/nuevo/", views.usuario_create, name="admin_usuario_create"),
     path("usuarios/<int:pk>/editar/", views.usuario_update, name="admin_usuario_update"),

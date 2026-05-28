@@ -79,11 +79,20 @@
     // Inicial
     actualizarImplica();
 
+    if (formEl) {
+      bindInhabilitadoAviso(formEl);
+    }
+
     // Confirmación: permitir guardar sin listas, pero preguntar antes.
     if (formEl && !formEl.__sironaListasConfirmBound) {
       formEl.__sironaListasConfirmBound = true;
       formEl.addEventListener("submit", function (ev) {
         try {
+          if (formEl.getAttribute("data-inhabilitado-pending") === "1") {
+            ev.preventDefault();
+            ev.stopPropagation();
+            return;
+          }
           var present = formEl.querySelector('input[name="listas_extra_present"]');
           if (!present) return;
           var checked = formEl.querySelectorAll('input[name="listas_extra"]:checked');
@@ -96,6 +105,113 @@
         } catch (e) {}
       });
     }
+  }
+
+  function motivoInhabilitado(formEl) {
+    var stockEl = formEl.querySelector("#id_stock");
+    var habEl = formEl.querySelector("#id_habilitado");
+    if (!stockEl || !habEl) return null;
+    var s = parseInt(String(stockEl.value || "0"), 10);
+    if (!Number.isFinite(s)) s = 0;
+    if (s === 0) return "stock_cero";
+    if (!habEl.checked) return "manual";
+    return null;
+  }
+
+  function textoMotivoInhabilitado(motivo) {
+    if (motivo === "stock_cero") {
+      return "El stock es 0: no aparecerá para ventas hasta que lo habilites o cargues stock.";
+    }
+    if (motivo === "manual") {
+      return "No está marcado como habilitado: no aparecerá para ventas.";
+    }
+    return "Revisá el stock y el interruptor «Producto habilitado» antes de guardar.";
+  }
+
+  function bindInhabilitadoAviso(formEl) {
+    if (!formEl || formEl.getAttribute("data-sirona-producto-nuevo") !== "1") return;
+    if (formEl.__sironaInhabilitadoBound) return;
+    formEl.__sironaInhabilitadoBound = true;
+
+    var aviso = formEl.querySelector("#sironaProductoInhabilitadoAviso");
+    var texto = formEl.querySelector("#sironaProductoInhabilitadoAvisoTexto");
+    var hidden = formEl.querySelector("#sironaConfirmarInhabilitado");
+    var btnConfirm = formEl.querySelector("[data-inhabilitado-confirm]");
+    var btnModificar = formEl.querySelector("[data-inhabilitado-modificar]");
+    var stockEl = formEl.querySelector("#id_stock");
+    var habEl = formEl.querySelector("#id_habilitado");
+    if (!aviso) return;
+
+    function showAviso(motivo) {
+      if (texto) texto.textContent = textoMotivoInhabilitado(motivo);
+      aviso.classList.remove("d-none");
+      aviso.classList.add("d-block");
+      formEl.setAttribute("data-inhabilitado-pending", "1");
+      try {
+        aviso.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      } catch (e) {}
+    }
+
+    function hideAviso() {
+      aviso.classList.add("d-none");
+      aviso.classList.remove("d-block");
+      formEl.removeAttribute("data-inhabilitado-pending");
+      if (hidden) hidden.value = "0";
+    }
+
+    if (btnModificar) {
+      btnModificar.addEventListener("click", function () {
+        hideAviso();
+        var motivo = motivoInhabilitado(formEl);
+        if (motivo === "stock_cero" && stockEl) {
+          stockEl.focus();
+        } else if (habEl) {
+          habEl.focus();
+        }
+      });
+    }
+
+    if (btnConfirm) {
+      btnConfirm.addEventListener("click", function () {
+        if (hidden) hidden.value = "1";
+        formEl.setAttribute("data-inhabilitado-ok", "1");
+        hideAviso();
+        if (typeof formEl.requestSubmit === "function") {
+          formEl.requestSubmit();
+        } else {
+          formEl.submit();
+        }
+      });
+    }
+
+    function onEstadoChange() {
+      if (formEl.getAttribute("data-inhabilitado-ok") === "1") return;
+      if (!motivoInhabilitado(formEl)) hideAviso();
+    }
+    if (stockEl) stockEl.addEventListener("input", onEstadoChange);
+    if (stockEl) stockEl.addEventListener("change", onEstadoChange);
+    if (habEl) habEl.addEventListener("change", onEstadoChange);
+
+    formEl.addEventListener(
+      "submit",
+      function (ev) {
+        if (formEl.getAttribute("data-inhabilitado-ok") === "1") {
+          formEl.removeAttribute("data-inhabilitado-ok");
+          formEl.removeAttribute("data-inhabilitado-pending");
+          return;
+        }
+        var motivo = motivoInhabilitado(formEl);
+        if (!motivo) {
+          hideAviso();
+          return;
+        }
+        if (hidden && hidden.value === "1") return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        showAviso(motivo);
+      },
+      true
+    );
   }
 
   w.sironaInitProductoFormPrecio = bind;

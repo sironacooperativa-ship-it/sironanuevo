@@ -27,7 +27,7 @@ from django.db.models import (
 )
 from django.db.models.functions import Coalesce
 from django.utils import timezone
-from django.http import FileResponse, HttpResponse, HttpResponseBadRequest
+from django.http import FileResponse, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
@@ -52,6 +52,13 @@ from .listas_precios_views import (
     producto_listas_ids_post,
     producto_tiene_lista_precio_en_post,
     sync_producto_listas_extras_from_post,
+)
+from .listas_propagacion import (
+    aplicar_precio_a_listas,
+    comparativa_listas_producto,
+    listas_del_producto,
+    parse_aplicar_precio_listas_post,
+    precio_propuesto_desde_post,
 )
 from .models import ListaPrecioItem, ListaPrecios, Producto
 
@@ -1021,7 +1028,29 @@ def _producto_repite_en_misma_lista(request, form, producto: Producto | None = N
     return False
 
 
-def _render_producto_form(request, *, template_full: str, modo: str, form, producto=None):
+def _producto_quedaria_inhabilitado(form: ProductoForm) -> tuple[bool, str]:
+    """Indica si, al guardar, el producto quedará inhabilitado para ventas."""
+    if not form.is_valid():
+        return False, ""
+    stock = form.cleaned_data.get("stock")
+    if stock is not None and int(stock) == 0:
+        return True, "stock_cero"
+    if not form.cleaned_data.get("habilitado"):
+        return True, "manual"
+    return False, ""
+
+
+def _render_producto_form(
+    request,
+    *,
+    template_full: str,
+    modo: str,
+    form,
+    producto=None,
+    aviso_inhabilitado: bool = False,
+    aviso_inhabilitado_motivo: str = "",
+):
+    listas_count = len(listas_del_producto(producto)) if producto and producto.pk else 0
     ctx = {
         "form": form,
         "modo": modo,
@@ -1035,10 +1064,18 @@ def _render_producto_form(request, *, template_full: str, modo: str, form, produ
             f"Editar · {producto.codigo}" if producto else "Nuevo producto"
         ),
         "retorno_query": request.GET.urlencode(),
+        "producto_listas_count": listas_count,
+        "producto_listas_comparativa_url": (
+            reverse("producto_listas_comparativa_json", args=[producto.pk])
+            if producto and producto.pk
+            else ""
+        ),
         **producto_listas_extra_context(
             producto,
             selected_ids=_producto_listas_seleccionadas_post(request),
         ),
+        "aviso_inhabilitado": aviso_inhabilitado,
+        "aviso_inhabilitado_motivo": aviso_inhabilitado_motivo,
     }
     if request.GET.get("modal") == "1":
         return render(request, "productos/form_fragment.html", ctx)
@@ -1054,6 +1091,16 @@ def producto_create(request):
         falta_lista = _producto_requiere_lista_precio(request, form)
         repetido = _producto_repite_en_misma_lista(request, form) if form_ok else False
         if form_ok and not falta_lista and not repetido:
+            queda_inh, motivo_inh = _producto_quedaria_inhabilitado(form)
+            if queda_inh and request.POST.get("confirmar_inhabilitado") != "1":
+                return _render_producto_form(
+                    request,
+                    template_full="productos/form.html",
+                    modo="nuevo",
+                    form=form,
+                    aviso_inhabilitado=True,
+                    aviso_inhabilitado_motivo=motivo_inh,
+                )
             producto = form.save(commit=False)
             producto.precio_venta_editado = bool(form.cleaned_data.get("precio_venta_editado"))
             producto.save()
@@ -1090,6 +1137,33 @@ def producto_create(request):
 
 
 @login_required
+@require_http_methods(["POST"])
+def producto_listas_comparativa_json(request, pk: int):
+    producto = get_object_or_404(Producto, pk=pk)
+    precio_propuesto = precio_propuesto_desde_post(request.POST)
+    filas = comparativa_listas_producto(producto, precio_propuesto)
+    return JsonResponse(
+        {
+            "listas": [
+                {
+                    "lista_id": f["lista_id"],
+                    "nombre": f["nombre"],
+                    "es_farmacia": f["es_farmacia"],
+                    "precio_actual": str(f["precio_actual"]),
+                    "precio_propuesto": str(f["precio_propuesto"]),
+                    "diferencia": str(f["diferencia"]),
+                    "impacta": f["impacta"],
+                }
+                for f in filas
+            ],
+            "precio_propuesto": str(q2(precio_propuesto)),
+            "total_listas": len(filas),
+            "listas_con_impacto": sum(1 for f in filas if f["impacta"]),
+        }
+    )
+
+
+@login_required
 @require_http_methods(["GET", "POST"])
 def producto_update(request, pk: int):
     producto = get_object_or_404(Producto, pk=pk)
@@ -1103,6 +1177,14 @@ def producto_update(request, pk: int):
             producto.precio_venta_editado = bool(form.cleaned_data.get("precio_venta_editado"))
             producto.save()
             sync_producto_listas_extras_from_post(request, producto)
+            aplicar_ids = parse_aplicar_precio_listas_post(request)
+            if aplicar_ids:
+                n = aplicar_precio_a_listas(producto, aplicar_ids, producto.precio_venta)
+                if n:
+                    messages.info(
+                        request,
+                        f"Precio de catálogo aplicado en {n} lista(s) de precio por rubro.",
+                    )
             messages.success(request, f"Producto actualizado: {producto.codigo}")
             if request.GET.get("modal") == "1":
                 return HttpResponse(

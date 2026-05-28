@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import CancelacionDeuda, DeudaCompartida, Negocio, OperacionCompartida
+from .models import CancelacionDeuda, DeudaCompartida, MovimientoCCMarcacion, Negocio, OperacionCompartida
 
 
 class DeudaInline(admin.TabularInline):
@@ -33,3 +33,9 @@ class DeudaCompartidaAdmin(admin.ModelAdmin):
 class CancelacionDeudaAdmin(admin.ModelAdmin):
     list_display = ("fecha", "deuda", "monto", "medio")
     list_filter = ("medio", "fecha")
+
+
+@admin.register(MovimientoCCMarcacion)
+class MovimientoCCMarcacionAdmin(admin.ModelAdmin):
+    list_display = ("mov_tipo", "objeto_id", "marcado", "marcado_por", "marcado_en")
+    list_filter = ("mov_tipo", "marcado")

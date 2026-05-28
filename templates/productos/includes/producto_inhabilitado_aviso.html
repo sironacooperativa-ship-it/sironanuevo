@@ -1,0 +1,28 @@
+{% if modo == "nuevo" %}
+  <div
+    id="sironaProductoInhabilitadoAviso"
+    class="alert alert-warning border-warning py-3 px-3 small mb-3{% if aviso_inhabilitado %} d-block{% else %} d-none{% endif %}"
+    role="alert"
+    aria-live="polite"
+  >
+    <div class="fw-semibold mb-1">El producto quedará inhabilitado</div>
+    <p class="mb-2" id="sironaProductoInhabilitadoAvisoTexto">
+      {% if aviso_inhabilitado_motivo == "stock_cero" %}
+        El stock es 0: no aparecerá para ventas hasta que lo habilites o cargues stock.
+      {% elif aviso_inhabilitado_motivo == "manual" %}
+        No está marcado como habilitado: no aparecerá para ventas.
+      {% else %}
+        Revisá el stock y el interruptor «Producto habilitado» antes de guardar.
+      {% endif %}
+    </p>
+    <div class="d-flex flex-wrap gap-2">
+      <button type="button" class="btn btn-warning btn-sm rounded-pill" data-inhabilitado-confirm>
+        Dejar inhabilitado y guardar
+      </button>
+      <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-inhabilitado-modificar>
+        Voy a modificar
+      </button>
+    </div>
+  </div>
+  <input type="hidden" name="confirmar_inhabilitado" id="sironaConfirmarInhabilitado" value="{% if aviso_inhabilitado %}1{% else %}0{% endif %}" />
+{% endif %}

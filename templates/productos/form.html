@@ -1,10 +1,23 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}{% if modo == "nuevo" %}Nuevo producto{% else %}Editar producto{% endif %}{% endblock %}
 {% block content %}
   <span id="sidebarCurrentNode" class="d-none" data-parent-url="{% url 'productos_list' %}">{% if modo == "nuevo" %}Nuevo producto{% else %}{{ producto.codigo }} — {{ producto.descripcion }}{% endif %}</span>
   <div class="sirona-product-sheet sirona-modal-dialog--product mx-auto">
     <div class="bg-white border-0 shadow producto-sheet-card">
-      <form method="post" class="sirona-modal-form">
+      <form
+        method="post"
+        class="sirona-modal-form{% if modo == 'nuevo' %} sirona-producto-form--nuevo{% endif %}{% if modo == 'editar' and producto_listas_count >= 2 %} sirona-producto-form--multi-lista{% endif %}"
+        {% if modo == "nuevo" %}data-sirona-producto-nuevo="1"{% endif %}
+        {% if modo == "editar" and producto and producto_listas_count >= 2 %}
+          data-sirona-producto-listas-propagar="1"
+          data-comparativa-url="{{ producto_listas_comparativa_url }}"
+          data-listas-count="{{ producto_listas_count }}"
+          data-initial-costo="{{ form.costo.value|default:producto.costo }}"
+          data-initial-pct="{{ form.porcentaje_ganancia.value|default:producto.porcentaje_ganancia }}"
+          data-initial-precio="{{ form.precio_venta.value|default:producto.precio_venta }}"
+        {% endif %}
+      >
         {% csrf_token %}
         <input type="hidden" name="retorno_query" value="{{ retorno_query|default:'' }}" />
         <input type="hidden" name="listas_extra_present" value="1" />
@@ -29,13 +42,23 @@
         </div>
 
         <div class="producto-modal-body px-3 px-md-4 pb-2">
+          {% include "productos/includes/producto_inhabilitado_aviso.html" %}
           {% include "productos/includes/product_form_fields_compact.html" %}
         </div>
 
-        <div class="producto-modal-foot d-flex justify-content-end gap-2 px-3 px-md-4 pb-3 pt-2">
+        <div class="producto-modal-foot d-flex justify-content-end flex-wrap gap-2 px-3 px-md-4 pb-3 pt-2">
           <a class="btn btn-outline-secondary btn-sm rounded-pill px-4" href="{% url 'productos_list' %}{% if retorno_query %}?{{ retorno_query }}{% endif %}">
             Cancelar
           </a>
+          {% if modo == "editar" and producto_listas_count >= 2 %}
+            <button
+              type="button"
+              class="btn btn-outline-primary btn-sm rounded-pill px-4"
+              data-producto-listas-comparativa
+            >
+              Ver comparativa
+            </button>
+          {% endif %}
           <button
             type="button"
             class="btn btn-outline-secondary btn-sm rounded-pill px-4"
@@ -51,4 +74,17 @@
       </form>
     </div>
   </div>
+{% endblock %}
+
+{% block page_scripts %}
+  {{ block.super }}
+  {% if modo == "editar" and producto_listas_count >= 2 %}
+    <script>
+      (function () {
+        if (typeof window.sironaInitProductoListasPropagar === "function") {
+          window.sironaInitProductoListasPropagar(document);
+        }
+      })();
+    </script>
+  {% endif %}
 {% endblock %}

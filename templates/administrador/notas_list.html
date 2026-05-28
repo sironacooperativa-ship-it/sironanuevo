@@ -51,7 +51,9 @@
                   aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
                 >
                   {{ conv.usuario.username }}
-                  {% if conv.no_leidos %}
+                  {% if conv.resuelto %}
+                    <span class="badge text-bg-success ms-1 align-middle" style="font-size: 0.65rem">OK</span>
+                  {% elif conv.no_leidos %}
                     <span class="sirona-notif-dot position-static ms-1 align-middle" aria-hidden="true"></span>
                   {% endif %}
                 </button>
@@ -76,11 +78,25 @@
                     <span class="text-muted">· {{ conv.usuario.email }}</span>
                   {% endif %}
                 </div>
-                {% if conv.no_leidos %}
-                  <span class="badge text-bg-warning text-dark rounded-pill">Mensajes nuevos</span>
-                {% else %}
-                  <span class="badge text-bg-secondary rounded-pill">Al día</span>
-                {% endif %}
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                  <div class="form-check form-check-inline mb-0 admin-nota-resuelto-check">
+                    <input
+                      class="form-check-input js-admin-nota-resuelto"
+                      type="checkbox"
+                      id="resuelto-{{ conv.usuario.pk }}"
+                      data-usuario-id="{{ conv.usuario.pk }}"
+                      {% if conv.resuelto %}checked{% endif %}
+                    />
+                    <label class="form-check-label small" for="resuelto-{{ conv.usuario.pk }}">Resuelto</label>
+                  </div>
+                  {% if conv.resuelto %}
+                    <span class="badge text-bg-success rounded-pill admin-nota-badge-resuelto">Resuelto</span>
+                  {% elif conv.no_leidos %}
+                    <span class="badge text-bg-warning text-dark rounded-pill">Mensajes nuevos</span>
+                  {% else %}
+                    <span class="badge text-bg-secondary rounded-pill">Al día</span>
+                  {% endif %}
+                </div>
               </div>
 
               <div class="admin-nota-chat px-3 py-2">
@@ -133,4 +149,64 @@
       </div>
     {% endif %}
   </div>
+
+  <script>
+    (function () {
+      var url = "{% url 'admin_notas_resuelto' %}";
+      var csrf = "{{ csrf_token }}";
+      document.querySelectorAll(".js-admin-nota-resuelto").forEach(function (cb) {
+        cb.addEventListener("change", function () {
+          var uid = cb.getAttribute("data-usuario-id");
+          if (!uid) return;
+          var fd = new FormData();
+          fd.append("usuario_id", uid);
+          fd.append("resuelto", cb.checked ? "1" : "0");
+          fd.append("csrfmiddlewaretoken", csrf);
+          cb.disabled = true;
+          fetch(url, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": csrf },
+            body: fd,
+          })
+            .then(function (r) {
+              return r.json().then(function (body) {
+                return { ok: r.ok, body: body };
+              });
+            })
+            .then(function (res) {
+              if (!res.ok || !res.body || !res.body.ok) {
+                cb.checked = !cb.checked;
+                window.alert((res.body && res.body.error) || "No se pudo guardar.");
+                return;
+              }
+              var pane = cb.closest(".tab-pane");
+              if (!pane) return;
+              var badge = pane.querySelector(".admin-nota-badge-resuelto");
+              var otros = pane.querySelectorAll(".badge.rounded-pill:not(.admin-nota-badge-resuelto)");
+              if (res.body.resuelto) {
+                if (!badge) {
+                  badge = document.createElement("span");
+                  badge.className = "badge text-bg-success rounded-pill admin-nota-badge-resuelto";
+                  badge.textContent = "Resuelto";
+                  cb.closest(".d-flex.flex-wrap.align-items-center.gap-2").appendChild(badge);
+                }
+                otros.forEach(function (b) {
+                  b.remove();
+                });
+              } else {
+                if (badge) badge.remove();
+              }
+            })
+            .catch(function () {
+              cb.checked = !cb.checked;
+              window.alert("No se pudo guardar.");
+            })
+            .finally(function () {
+              cb.disabled = false;
+            });
+        });
+      });
+    })();
+  </script>
 {% endblock %}

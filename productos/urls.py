@@ -10,6 +10,11 @@ urlpatterns = [
     path("nuevo/", views.producto_create, name="producto_create"),
     path("<int:pk>/inline/", views.producto_inline_update, name="producto_inline_update"),
     path("<int:pk>/editar/", views.producto_update, name="producto_update"),
+    path(
+        "<int:pk>/listas-comparativa.json",
+        views.producto_listas_comparativa_json,
+        name="producto_listas_comparativa_json",
+    ),
     path("<int:pk>/eliminar/", views.producto_delete, name="producto_delete"),
     path("<int:pk>/toggle-habilitado/", views.producto_toggle_habilitado, name="producto_toggle_habilitado"),
     path("<int:pk>/toggle-lista/", views.producto_toggle_lista, name="producto_toggle_lista"),
