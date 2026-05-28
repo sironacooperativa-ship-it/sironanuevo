@@ -58,10 +58,8 @@ def _rango_fechas(request):
 def _mes_primero(mes_val) -> date | None:
     if mes_val is None:
         return None
-    if timezone.is_aware(mes_val):
-        mes_val = timezone.localtime(mes_val)
     if isinstance(mes_val, datetime):
-        d = mes_val.date()
+        d = timezone.localtime(mes_val).date() if timezone.is_aware(mes_val) else mes_val.date()
     elif isinstance(mes_val, date):
         d = mes_val
     else:
@@ -113,10 +111,8 @@ def _serie_mensual_chart(rows, valor_key: str, fecha_desde, fecha_hasta) -> tupl
 def _as_date(val) -> date | None:
     if val is None:
         return None
-    if timezone.is_aware(val):
-        val = timezone.localtime(val)
     if isinstance(val, datetime):
-        return val.date()
+        return timezone.localtime(val).date() if timezone.is_aware(val) else val.date()
     if isinstance(val, date):
         return val
     return None
