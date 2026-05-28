@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+from collections import defaultdict
+from datetime import date, datetime
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q, Sum, Value
 from django.db.models.functions import Coalesce, TruncDate, TruncMonth
-from django.shortcuts import render
+from django.shortcuts import redirect, render
+from django.views.decorators.http import require_GET
 
+from core.export_utils import xlsx_response
 from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_dashboard, rango_periodo
 from core.money_decimal import q2
 from personas.models import Comprador, Vendedor
@@ -45,6 +49,118 @@ def _rango_fechas(request):
         desde = parse_fecha_dashboard(request.GET.get("fecha_desde"))
         hasta = parse_fecha_dashboard(request.GET.get("fecha_hasta"))
     return periodo, desde, hasta
+
+
+def _reportes_export_query(request) -> str:
+    q = request.GET.copy()
+    q.pop("modo", None)
+    return q.urlencode()
+
+
+def _mes_label(d: date) -> str:
+    nombres = ("Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic")
+    return f"{nombres[d.month - 1]} {d.year}"
+
+
+def _mes_desde_trunc(mes_val) -> date | None:
+    if mes_val is None:
+        return None
+    if isinstance(mes_val, datetime):
+        return mes_val.date().replace(day=1)
+    if isinstance(mes_val, date):
+        return mes_val.replace(day=1)
+    return None
+
+
+def _ventas_queryset_reportes(request, *, aplicar_fechas: bool):
+    periodo, fecha_desde, fecha_hasta = _rango_fechas(request)
+    vid = (request.GET.get("vendedor") or "").strip()
+    cid = (request.GET.get("comprador") or "").strip()
+    pid = (request.GET.get("producto") or "").strip()
+
+    ventas = Venta.objects.all()
+    if aplicar_fechas:
+        if fecha_desde:
+            ventas = ventas.filter(creado_en__date__gte=fecha_desde)
+        if fecha_hasta:
+            ventas = ventas.filter(creado_en__date__lte=fecha_hasta)
+    if vid.isdigit():
+        ventas = ventas.filter(vendedor_id=int(vid))
+    if cid.isdigit():
+        ventas = ventas.filter(comprador_id=int(cid))
+    if pid.isdigit():
+        ventas = ventas.filter(lineas__producto_id=int(pid)).distinct()
+    return ventas, periodo, fecha_desde, fecha_hasta
+
+
+def _productos_vendidos_total_rows(ventas) -> list[list]:
+    qs = (
+        VentaLinea.objects.filter(venta__in=ventas)
+        .values("producto__codigo", "producto__descripcion")
+        .annotate(unidades=Coalesce(Sum("cantidad"), Value(0)))
+        .order_by("-unidades", "producto__descripcion")
+    )
+    return [
+        [r["producto__codigo"] or "", r["producto__descripcion"] or "", int(r["unidades"] or 0)]
+        for r in qs
+        if int(r["unidades"] or 0) > 0
+    ]
+
+
+def _productos_vendidos_periodos_tabla(ventas) -> tuple[list[str], list[list]]:
+    qs = (
+        VentaLinea.objects.filter(venta__in=ventas)
+        .annotate(mes=TruncMonth("venta__creado_en"))
+        .values("producto__codigo", "producto__descripcion", "mes")
+        .annotate(unidades=Coalesce(Sum("cantidad"), Value(0)))
+    )
+    months_set: set[date] = set()
+    by_prod: dict[tuple[str, str], dict[date, int]] = defaultdict(lambda: defaultdict(int))
+
+    for r in qs:
+        unidades = int(r["unidades"] or 0)
+        if unidades <= 0:
+            continue
+        mes_key = _mes_desde_trunc(r["mes"])
+        if mes_key is None:
+            continue
+        prod_key = (r["producto__codigo"] or "", r["producto__descripcion"] or "")
+        months_set.add(mes_key)
+        by_prod[prod_key][mes_key] += unidades
+
+    months_sorted = sorted(months_set)
+    headers = ["Código", "Producto"] + [_mes_label(m) for m in months_sorted] + ["Total"]
+    rows = []
+    for (cod, desc), per_m in sorted(by_prod.items(), key=lambda item: -sum(item[1].values())):
+        total = 0
+        row = [cod, desc]
+        for m in months_sorted:
+            v = per_m.get(m, 0)
+            row.append(v if v else "")
+            total += v
+        row.append(total)
+        rows.append(row)
+    return headers, rows
+
+
+def _export_fname_sufijo(periodo: str, fecha_desde, fecha_hasta, modo: str) -> str:
+    if modo == "inicio":
+        return "desde_inicio"
+    if periodo == "7d":
+        return "periodos_7d"
+    if periodo == "30d":
+        return "periodos_30d"
+    if periodo == "mes":
+        return "periodos_mes_actual"
+    if periodo == "mes_ant":
+        return "periodos_mes_anterior"
+    if fecha_desde and fecha_hasta:
+        return f"periodos_{fecha_desde.isoformat()}_{fecha_hasta.isoformat()}"
+    if fecha_desde:
+        return f"periodos_desde_{fecha_desde.isoformat()}"
+    if fecha_hasta:
+        return f"periodos_hasta_{fecha_hasta.isoformat()}"
+    return "periodos_todo"
 
 
 @login_required
@@ -216,6 +332,32 @@ def reportes_dashboard(request):
         "vendedores_filtro": Vendedor.objects.order_by("apellido", "nombre", "codigo"),
         "compradores_filtro": Comprador.objects.order_by("apellido", "nombre", "codigo"),
         "productos_filtro": Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo"),
+        "productos_export_query": _reportes_export_query(request),
     }
     return render(request, "reportes/dashboard.html", ctx)
+
+
+@login_required
+@require_GET
+def export_productos_vendidos(request):
+    modo = (request.GET.get("modo") or "").strip()
+    if modo not in ("inicio", "periodos"):
+        return redirect("reportes_dashboard")
+
+    aplicar_fechas = modo == "periodos"
+    ventas, periodo, fecha_desde, fecha_hasta = _ventas_queryset_reportes(
+        request, aplicar_fechas=aplicar_fechas
+    )
+    sufijo = _export_fname_sufijo(periodo, fecha_desde, fecha_hasta, modo)
+
+    if modo == "inicio":
+        headers = ["Código", "Producto", "Unidades vendidas"]
+        rows = _productos_vendidos_total_rows(ventas)
+        titulo_hoja = "Total histórico"
+    else:
+        headers, rows = _productos_vendidos_periodos_tabla(ventas)
+        titulo_hoja = "Por mes"
+
+    fname = f"reportes_productos_vendidos_{sufijo}"
+    return xlsx_response(fname, [(titulo_hoja, headers, rows)])
 

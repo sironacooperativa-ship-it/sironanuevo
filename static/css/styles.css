@@ -3771,6 +3771,25 @@ button.btn-icon.btn-ink,
   font-size: 0.72rem;
 }
 
+.reports-page .rep-top-productos-head {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.reports-page .rep-top-productos-export .btn {
+  white-space: nowrap;
+  font-size: 0.78rem;
+  padding: 0.28rem 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.reports-page .rep-top-productos-export .btn svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* Acciones rápidas: evitar compresión + texto fuera */
 .reports-page .rep-quick-actions .quick-actions {
   grid-template-columns: repeat(2, minmax(0, 1fr));

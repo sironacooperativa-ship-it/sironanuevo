@@ -338,9 +338,29 @@
 
       {# FILA 3 #}
       <article class="dashboard-card span-4 rep-top-productos">
-        <div class="card-head">
-          <h2 class="card-title"><i data-lucide="package" aria-hidden="true"></i> Productos más vendidos</h2>
-          <div class="card-subtle">Unidades</div>
+        <div class="card-head rep-top-productos-head">
+          <div class="min-w-0">
+            <h2 class="card-title"><i data-lucide="package" aria-hidden="true"></i> Productos más vendidos</h2>
+            <div class="card-subtle">Unidades · top 10 en pantalla</div>
+          </div>
+          <div class="rep-top-productos-export d-flex flex-wrap gap-2">
+            <a
+              class="btn btn-outline-secondary btn-sm rounded-pill"
+              href="{% url 'reportes_export_productos_vendidos' %}?modo=inicio{% if productos_export_query %}&amp;{{ productos_export_query }}{% endif %}"
+              title="Todos los productos vendidos desde el inicio (respeta vendedor, cliente y producto del filtro)"
+            >
+              <i data-lucide="download" aria-hidden="true"></i>
+              Excel desde inicio
+            </a>
+            <a
+              class="btn btn-outline-secondary btn-sm rounded-pill"
+              href="{% url 'reportes_export_productos_vendidos' %}?modo=periodos{% if productos_export_query %}&amp;{{ productos_export_query }}{% endif %}"
+              title="Unidades por producto y por mes según el período o fechas del filtro"
+            >
+              <i data-lucide="download" aria-hidden="true"></i>
+              Excel por períodos
+            </a>
+          </div>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
