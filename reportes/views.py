@@ -135,7 +135,8 @@ def _serie_diaria_chart(
     elif by_day:
         start, end = min(by_day.keys()), max(by_day.keys())
     else:
-        return [], []
+        end = hoy
+        start = hoy - timedelta(days=29)
 
     labels: list[str] = []
     valores: list[str] = []
@@ -268,7 +269,7 @@ def reportes_dashboard(request):
     pid = (request.GET.get("producto") or "").strip()
 
     ventas = Venta.objects.select_related("vendedor", "comprador").prefetch_related("lineas__producto")
-    compras = Compra.objects.select_related("proveedor", "producto")
+    compras = Compra.objects.filter(anulada=False).select_related("proveedor", "producto")
 
     if fecha_desde:
         ventas = ventas.filter(creado_en__date__gte=fecha_desde)
@@ -283,7 +284,7 @@ def reportes_dashboard(request):
         ventas = ventas.filter(comprador_id=int(cid))
     if pid.isdigit():
         ventas = ventas.filter(lineas__producto_id=int(pid)).distinct()
-        compras = compras.filter(producto_id=int(pid))
+        # El filtro de producto aplica a ventas; las compras tipo factura no tienen producto.
 
     neto_nonneg = venta_neto_nonneg_expr()
     comision_expr = venta_comision_expr(neto_nonneg)
@@ -407,6 +408,7 @@ def reportes_dashboard(request):
         "ventas_mes_neto": ventas_mes_neto,
         "labels_compras_mes": labels_compras_mes,
         "compras_mes_monto": compras_mes_monto,
+        "compras_registros": int(compras_kpis.get("compras") or 0),
         "estado_labels": ["Pendiente", "Pagada"],
         "estado_counts": [kpis["pendientes"], kpis["pagadas"]],
         "labels_top_productos": [_chart_label_producto(p) for p in top_productos],

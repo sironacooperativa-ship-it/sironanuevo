@@ -246,12 +246,12 @@
       {# FILA 2 #}
       <article class="chart-card span-4">
         <div class="card-head">
-          <h2 class="card-title"><i data-lucide="bar-chart-2" aria-hidden="true"></i> Compras por día</h2>
-          <div class="card-subtle">Monto diario</div>
+          <h2 class="card-title"><i data-lucide="bar-chart-2" aria-hidden="true"></i> Ventas por día</h2>
+          <div class="card-subtle">Neto diario</div>
         </div>
         <div class="card-body">
           <div class="chart-wrap chart-wrap--bar">
-            <canvas id="chartComprasDia"></canvas>
+            <canvas id="chartVentasDiaBar"></canvas>
           </div>
         </div>
       </article>
@@ -719,7 +719,15 @@
         });
       }
 
-      function renderComprasDiaBar(canvas, labels, data) {
+      function comprasChartEmptyMsg() {
+        const n = Number(payload.compras_registros) || 0;
+        if (n > 0) {
+          return "Hay compras en el período, pero no se pudieron agrupar para el gráfico. Probá ampliar el rango de fechas.";
+        }
+        return "Sin compras en el rango para mostrar por mes.";
+      }
+
+      function renderVentasDiaBar(canvas, labels, data) {
         if (!canvas) return;
         const wrap = canvas.closest(".chart-wrap");
         const vals = toNums(data);
@@ -729,14 +737,14 @@
         if (!labels.length || !(max > 0)) {
           if (wrap) {
             wrap.innerHTML =
-              '<div class="p-3 text-muted small text-center">Sin compras para el período seleccionado.</div>';
+              '<div class="p-3 text-muted small text-center">Sin ventas para el período seleccionado.</div>';
           }
           return;
         }
-        if (!wrap.querySelector("#chartComprasDia")) {
-          wrap.innerHTML = '<canvas id="chartComprasDia"></canvas>';
+        if (!wrap.querySelector("#chartVentasDiaBar")) {
+          wrap.innerHTML = '<canvas id="chartVentasDiaBar"></canvas>';
         }
-        const el = document.getElementById("chartComprasDia");
+        const el = document.getElementById("chartVentasDiaBar");
         if (!el) return;
         new Chart(el, {
           type: "bar",
@@ -744,10 +752,10 @@
             labels: labels,
             datasets: [
               {
-                label: "Monto",
+                label: "Neto",
                 data: vals,
-                backgroundColor: "rgba(249, 115, 22, 0.55)",
-                borderColor: ORANGE,
+                backgroundColor: "rgba(37, 99, 235, 0.5)",
+                borderColor: SIRONA,
                 borderWidth: 1.5,
                 borderRadius: 6,
                 maxBarThickness: 32,
@@ -789,10 +797,10 @@
         });
       }
 
-      renderComprasDiaBar(
-        document.getElementById("chartComprasDia"),
-        payload.labels_compras_dia || [],
-        payload.compras_dia_monto || []
+      renderVentasDiaBar(
+        document.getElementById("chartVentasDiaBar"),
+        payload.labels_ventas_dia || [],
+        payload.ventas_dia_neto || []
       );
 
       const ctxEstado = document.getElementById("chartEstadoPedidos");
@@ -847,7 +855,7 @@
         payload.labels_compras_mes || [],
         payload.compras_mes_monto || [],
         "Monto",
-        "Sin compras en el rango para mostrar por mes."
+        comprasChartEmptyMsg()
       );
 
       (function () {
