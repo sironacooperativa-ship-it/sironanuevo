@@ -13,12 +13,14 @@ from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import urlencode
 from django.views.decorators.http import require_http_methods
 
 from core.authz import staff_required
 from core.money_decimal import format_monto_ars, q2
 
 from .lista_precios_pdf import (
+    _order_by_lista_precios,
     build_png_export_payload,
     filas_lista_precios,
     lista_precios_pdf_file_response,
@@ -29,6 +31,19 @@ from .models import ListaPrecioItem, ListaPrecios, Producto
 
 # Borrador de nombre para el paso de confirmación al crear una lista nueva (session key).
 SESSION_LISTA_PRECIO_NUEVA_NOMBRE = "lista_precio_nueva_nombre"
+
+
+def _public_lista_precios_query(*, q: str, orden: str, ver_marca: bool, page: int | str | None = None) -> str:
+    params: dict[str, str] = {}
+    if q:
+        params["q"] = q
+    if orden:
+        params["orden"] = orden
+    if ver_marca:
+        params["marca"] = "1"
+    if page:
+        params["page"] = str(page)
+    return urlencode(params)
 
 
 def _lista_precios_ids_post(request) -> set[int]:
@@ -506,39 +521,51 @@ def lista_precios_public_cliente(request, slug: str):
     lista = get_object_or_404(ListaPrecios, slug=slug)
     q = (request.GET.get("q") or "").strip()
     page = (request.GET.get("page") or "").strip()
+    orden = normalizar_orden_lista_precios(request.GET.get("orden"))
+    ver_marca = request.GET.get("marca") == "1"
     emitido_en = timezone.localtime()
+    ctx_base = {
+        "lista": lista,
+        "q": q,
+        "emitido_en": emitido_en,
+        "orden": orden,
+        "ver_marca": ver_marca,
+        "public_query": _public_lista_precios_query(q=q, orden=orden, ver_marca=ver_marca),
+    }
 
     if lista.es_farmacia:
         qs_all = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
-            "tipo", "descripcion", "codigo"
+            *_order_by_lista_precios(orden)
         )
         qs = qs_all
         if q:
-            qs = qs.filter(Q(descripcion__icontains=q) | Q(codigo__icontains=q))
+            qs = qs.filter(
+                Q(descripcion__icontains=q) | Q(codigo__icontains=q) | Q(laboratorio__icontains=q)
+            )
         paginator = Paginator(qs, 120)
         page_obj = paginator.get_page(page or 1)
         return render(
             request,
             "productos/lista_precios_public_cliente.html",
             {
-                "lista": lista,
+                **ctx_base,
                 "es_farmacia": True,
                 "productos": list(page_obj),
                 "page_obj": page_obj,
-                "q": q,
-                "emitido_en": emitido_en,
             },
         )
 
     items_all = (
-        ListaPrecioItem.objects.filter(lista=lista)
+        ListaPrecioItem.objects.filter(lista=lista, producto__habilitado=True)
         .select_related("producto")
-        .order_by("producto__tipo", "producto__descripcion", "producto__codigo")
+        .order_by(*_order_by_lista_precios(orden, "producto__"))
     )
     items = items_all
     if q:
         items = items.filter(
-            Q(producto__descripcion__icontains=q) | Q(producto__codigo__icontains=q)
+            Q(producto__descripcion__icontains=q)
+            | Q(producto__codigo__icontains=q)
+            | Q(producto__laboratorio__icontains=q)
         )
     paginator = Paginator(items, 120)
     page_obj = paginator.get_page(page or 1)
@@ -546,12 +573,10 @@ def lista_precios_public_cliente(request, slug: str):
         request,
         "productos/lista_precios_public_cliente.html",
         {
-            "lista": lista,
+            **ctx_base,
             "es_farmacia": False,
             "items": list(page_obj),
             "page_obj": page_obj,
-            "q": q,
-            "emitido_en": emitido_en,
         },
     )
 

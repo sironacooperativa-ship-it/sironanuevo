@@ -389,13 +389,58 @@ html.sirona-select-search-scroll-pad {
   scroll-padding-bottom: var(--sirona-select-search-scroll-pad, 0px);
 }
 
-/* Gastos compartidos: fila chequeada en cuenta corriente */
-.modern-table tr.cc-row-marcado > td {
+/* Gastos compartidos: cuenta corriente */
+.modern-table tr.cc-row-archivado > td {
   background: rgba(34, 197, 94, 0.06);
 }
 
-.modern-table tr.cc-row-marcado:hover > td {
+.modern-table tr.cc-row-archivado:hover > td {
   background: rgba(34, 197, 94, 0.1);
+}
+
+.modern-table tr.cc-row-pendiente > td {
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.cc-acciones-bar .btn {
+  white-space: nowrap;
+}
+
+.cc-saldos-pares {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 1rem;
+}
+
+.cc-saldo-par-card {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  padding: 1.15rem 1.25rem;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+}
+
+.cc-saldo-par-frase {
+  font-size: 1.05rem;
+  line-height: 1.45;
+  color: rgba(15, 23, 42, 0.88);
+}
+
+.cc-saldo-par-deudor,
+.cc-saldo-par-acreedor {
+  font-weight: 700;
+}
+
+.cc-saldo-par-verbo {
+  font-weight: 500;
+  color: rgba(60, 60, 67, 0.72);
+}
+
+.cc-saldo-par-monto {
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--bs-danger, #dc3545);
 }
 
 .sirona-kbd {
@@ -4456,6 +4501,13 @@ h2.h6 {
 .admin-nota-bubble--user {
   align-self: flex-start;
   background: #f8fafc;
+}
+
+.admin-nota-bubble--user.admin-nota-bubble--pendiente,
+.sirona-chat-bubble--pendiente {
+  border-color: #fbbf24;
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.4);
+  background: #fffbeb;
 }
 
 .admin-nota-bubble--staff {

@@ -55,6 +55,56 @@ def _nota_raiz_usuario(usuario):
     )
 
 
+def _autor_mensaje_nota(m: NotaAdmin) -> str:
+    if not m.es_staff:
+        return m.usuario.get_username()
+    if m.creado_por_id:
+        return m.creado_por.get_username()
+    return "Administración"
+
+
+def _mensaje_nota_dict(m: NotaAdmin) -> dict:
+    return {
+        "id": m.pk,
+        "texto": m.texto,
+        "creado_en": m.creado_en.isoformat(),
+        "es_staff": m.es_staff,
+        "autor": _autor_mensaje_nota(m),
+        "leida": m.leida,
+        "resuelto": bool(m.resuelto) if not m.es_staff else None,
+    }
+
+
+def _conversaciones_admin(*, usuarios: list, marcar_leidos: bool) -> list[dict]:
+    conversaciones = []
+    for usuario in usuarios:
+        mensajes = list(
+            NotaAdmin.objects.filter(usuario=usuario)
+            .select_related("usuario", "vendedor", "creado_por")
+            .order_by("-creado_en", "-id")
+        )
+        ultimo_en = mensajes[0].creado_en if mensajes else None
+        conversaciones.append(
+            {
+                "usuario": usuario,
+                "mensajes": mensajes,
+                "mensajes_json": [_mensaje_nota_dict(m) for m in mensajes],
+                "no_leidos": sum(1 for m in mensajes if not m.es_staff and not m.leida),
+                "pendientes": sum(1 for m in mensajes if not m.es_staff and not m.resuelto),
+                "_ultimo_en": ultimo_en,
+            }
+        )
+    conversaciones.sort(
+        key=lambda c: c["_ultimo_en"].timestamp() if c["_ultimo_en"] else 0,
+        reverse=True,
+    )
+    for c in conversaciones:
+        c.pop("_ultimo_en", None)
+    if marcar_leidos:
+        NotaAdmin.objects.filter(es_staff=False, leida=False).update(leida=True)
+    return conversaciones
+
+
 @admin_required
 def actividad_list(request):
     qs = RegistroActividad.objects.select_related("usuario").all()
@@ -150,25 +200,8 @@ def notas_list(request):
             or NotaAdmin.objects.filter(usuario=u, texto__icontains=q).exists()
         ]
 
-    conversaciones = []
-    for usuario in usuarios:
-        mensajes = list(
-            NotaAdmin.objects.filter(usuario=usuario)
-            .select_related("usuario", "vendedor", "creado_por")
-            .order_by("creado_en", "id")
-        )
-        raiz = _nota_raiz_usuario(usuario)
-        conversaciones.append(
-            {
-                "usuario": usuario,
-                "mensajes": mensajes,
-                "no_leidos": sum(1 for m in mensajes if not m.es_staff and not m.leida),
-                "resuelto": bool(raiz and raiz.resuelto),
-            }
-        )
-
+    conversaciones = _conversaciones_admin(usuarios=usuarios, marcar_leidos=True)
     total_no_leidas = NotaAdmin.objects.filter(es_staff=False, leida=False).count()
-    NotaAdmin.objects.filter(es_staff=False, leida=False).update(leida=True)
     return render(
         request,
         "administrador/notas_list.html",
@@ -183,62 +216,45 @@ def notas_list(request):
 @notas_admin_required
 @require_http_methods(["GET"])
 def notas_admin_chat_json(request):
-    conversaciones = []
     usuarios_ids = list(NotaAdmin.objects.values_list("usuario_id", flat=True).distinct())
     usuarios = list(User.objects.filter(pk__in=usuarios_ids).order_by("username"))
-    for usuario in usuarios:
-        mensajes = []
-        for m in (
-            NotaAdmin.objects.filter(usuario=usuario)
-            .select_related("usuario", "creado_por")
-            .order_by("creado_en", "id")
-        ):
-            autor = "Administración"
-            if not m.es_staff:
-                autor = m.usuario.get_username()
-            elif m.creado_por_id:
-                autor = m.creado_por.get_username()
-            mensajes.append(
-                {
-                    "id": m.pk,
-                    "texto": m.texto,
-                    "creado_en": m.creado_en.isoformat(),
-                    "es_staff": m.es_staff,
-                    "autor": autor,
-                    "leida": m.leida,
-                }
-            )
-        raiz = _nota_raiz_usuario(usuario)
-        conversaciones.append(
-            {
-                "usuario_id": usuario.pk,
-                "username": usuario.username,
-                "email": usuario.email,
-                "no_leidos": sum(1 for m in mensajes if not m["es_staff"] and not m["leida"]),
-                "resuelto": bool(raiz and raiz.resuelto),
-                "mensajes": mensajes,
-            }
-        )
-
-    NotaAdmin.objects.filter(es_staff=False, leida=False).update(leida=True)
+    conversaciones_raw = _conversaciones_admin(usuarios=usuarios, marcar_leidos=True)
+    conversaciones = [
+        {
+            "usuario_id": c["usuario"].pk,
+            "username": c["usuario"].username,
+            "email": c["usuario"].email,
+            "no_leidos": c["no_leidos"],
+            "pendientes": c["pendientes"],
+            "mensajes": c["mensajes_json"],
+        }
+        for c in conversaciones_raw
+    ]
     return JsonResponse({"conversaciones": conversaciones, "sin_leer": 0})
 
 
 @notas_admin_required
 @require_POST
 def notas_admin_resuelto(request):
-    usuario_id = (request.POST.get("usuario_id") or "").strip()
-    if not usuario_id.isdigit():
-        return JsonResponse({"ok": False, "error": "Usuario inválido."}, status=400)
-    usuario = get_object_or_404(User, pk=int(usuario_id))
-    raiz = _nota_raiz_usuario(usuario)
-    if raiz is None:
-        return JsonResponse({"ok": False, "error": "No hay conversación con ese usuario."}, status=400)
+    mensaje_id = (request.POST.get("mensaje_id") or "").strip()
+    if not mensaje_id.isdigit():
+        return JsonResponse({"ok": False, "error": "Mensaje inválido."}, status=400)
+    mensaje = get_object_or_404(NotaAdmin, pk=int(mensaje_id), es_staff=False)
     resuelto = (request.POST.get("resuelto") or "").strip().lower() in ("1", "true", "on", "yes")
-    if raiz.resuelto != resuelto:
-        raiz.resuelto = resuelto
-        raiz.save(update_fields=["resuelto"])
-    return JsonResponse({"ok": True, "resuelto": raiz.resuelto})
+    if mensaje.resuelto != resuelto:
+        mensaje.resuelto = resuelto
+        mensaje.save(update_fields=["resuelto"])
+    pendientes = NotaAdmin.objects.filter(
+        usuario_id=mensaje.usuario_id, es_staff=False, resuelto=False
+    ).count()
+    return JsonResponse(
+        {
+            "ok": True,
+            "mensaje_id": mensaje.pk,
+            "resuelto": mensaje.resuelto,
+            "pendientes": pendientes,
+        }
+    )
 
 
 @admin_required

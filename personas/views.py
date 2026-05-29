@@ -12,6 +12,7 @@ from decimal import Decimal
 from django.utils import timezone
 
 from core.comision_agg import comisiones_acumuladas_por_mes, comisiones_vendedor_con_grupo_por_mes
+from core.fecha_filtros import trunc_to_month_start
 from core.export_utils import parse_export, pdf_response, xlsx_response
 from core.authz import staff_required
 from core.authz import is_staff_user
@@ -179,7 +180,11 @@ def vendedor_actividad(request, pk: int):
         )
         .order_by("mes")
     )
-    by_month = {row["mes"].date(): row for row in agg if row.get("mes")}
+    by_month = {}
+    for row in agg:
+        mk = trunc_to_month_start(row.get("mes"))
+        if mk is not None:
+            by_month[mk] = row
     series = []
     cur = now.replace(day=1).date()
     # construir lista cronológica de 12 meses hacia atrás

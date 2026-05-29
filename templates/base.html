@@ -19,7 +19,7 @@
       rel="stylesheet"
     />
     <!-- theme: ios-2026r29 -->
-    <link href="{% static 'css/theme.css' %}?v=ios-2026r46" rel="stylesheet" />
+    <link href="{% static 'css/theme.css' %}?v=ios-2026r47" rel="stylesheet" />
     <link href="{% static 'css/styles.css' %}?v=saas-2026r23" rel="stylesheet" />
     <link href="{% static 'css/ui-force-productos.css' %}?v=3" rel="stylesheet" />
     <link href="{% static 'css/sirona-calc.css' %}" rel="stylesheet" />
@@ -1088,15 +1088,7 @@
                       placeholder="Escribí una respuesta…"
                       required
                     ></textarea>
-                    <div class="form-check mb-2">
-                      <input
-                        class="form-check-input"
-                        type="checkbox"
-                        id="sironaAdminMsgsResuelto"
-                        value="1"
-                      />
-                      <label class="form-check-label small" for="sironaAdminMsgsResuelto">Marcar conversación como resuelta</label>
-                    </div>
+                    <p class="small text-muted mb-2 mb-0">Marcá cada mensaje del usuario como resuelto desde el historial de arriba.</p>
                     <div class="d-flex justify-content-between align-items-center gap-2 mt-2">
                       <a class="btn btn-outline-secondary" href="{% url 'admin_notas_list' %}">Ver pantalla completa</a>
                       <button type="submit" class="btn btn-primary" id="sironaAdminMsgsEnviarBtn">Enviar</button>
@@ -1176,8 +1168,7 @@
         const userIn = document.getElementById("sironaAdminMsgsUserId");
         const textarea = document.getElementById("sironaAdminMsgsTexto");
         const btnSend = document.getElementById("sironaAdminMsgsEnviarBtn");
-        const chkResuelto = document.getElementById("sironaAdminMsgsResuelto");
-        if (!urlChat || !urlSend || !tabs || !body || !form || !userIn || !textarea || !btnSend || !chkResuelto) return;
+        if (!urlChat || !urlSend || !tabs || !body || !form || !userIn || !textarea || !btnSend) return;
         let conversaciones = [];
         let activeUserId = null;
 
@@ -1202,6 +1193,62 @@
           });
         }
 
+        function parseJsonResponse(r) {
+          const ct = (r.headers.get("content-type") || "").toLowerCase();
+          if (ct.indexOf("application/json") >= 0) {
+            return r.json().then(function (body) {
+              return { ok: r.ok, body: body };
+            });
+          }
+          return Promise.resolve({ ok: false, body: { error: "Respuesta inválida del servidor." } });
+        }
+
+        function syncResueltoMensaje(cb) {
+          if (!urlResuelto) return Promise.resolve();
+          const mid = cb.getAttribute("data-mensaje-id");
+          if (!mid) return Promise.resolve();
+          const csrfIn = form.querySelector("[name=csrfmiddlewaretoken]");
+          const csrf = csrfIn ? csrfIn.value : "";
+          const fd = new FormData();
+          fd.append("mensaje_id", mid);
+          fd.append("resuelto", cb.checked ? "1" : "0");
+          fd.append("csrfmiddlewaretoken", csrf);
+          cb.disabled = true;
+          return fetch(urlResuelto, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": csrf },
+            body: fd,
+          })
+            .then(parseJsonResponse)
+            .then(function (res) {
+              if (!res.ok || !res.body || !res.body.ok) {
+                cb.checked = !cb.checked;
+                window.alert((res.body && res.body.error) || "No se pudo guardar.");
+                return;
+              }
+              const conv = conversaciones.find(function (c) {
+                return Number(c.usuario_id) === Number(activeUserId);
+              });
+              if (conv && conv.mensajes) {
+                const msg = conv.mensajes.find(function (m) {
+                  return Number(m.id) === Number(mid);
+                });
+                if (msg) msg.resuelto = !!res.body.resuelto;
+                conv.pendientes = res.body.pendientes;
+              }
+              renderTabs();
+              renderConversation();
+            })
+            .catch(function () {
+              cb.checked = !cb.checked;
+              window.alert("No se pudo guardar.");
+            })
+            .finally(function () {
+              cb.disabled = false;
+            });
+        }
+
         function renderConversation() {
           const conv = conversaciones.find(function (c) {
             return Number(c.usuario_id) === Number(activeUserId);
@@ -1211,15 +1258,11 @@
             userIn.value = "";
             textarea.disabled = true;
             btnSend.disabled = true;
-            chkResuelto.disabled = true;
-            chkResuelto.checked = false;
             return;
           }
           userIn.value = String(conv.usuario_id);
           textarea.disabled = false;
           btnSend.disabled = false;
-          chkResuelto.disabled = !urlResuelto;
-          chkResuelto.checked = !!conv.resuelto;
           const mensajes = conv.mensajes || [];
           if (!mensajes.length) {
             body.innerHTML = '<p class="text-muted small mb-0">Todavía no hay mensajes con este usuario.</p>';
@@ -1228,14 +1271,33 @@
           body.innerHTML = mensajes
             .map(function (m) {
               const side = m.es_staff ? "sirona-chat-bubble--in" : "sirona-chat-bubble--out";
+              const pendiente = !m.es_staff && !m.resuelto;
+              let resueltoUi = "";
+              if (!m.es_staff) {
+                resueltoUi =
+                  '<span class="admin-nota-resuelto-check form-check form-check-inline mb-0 ms-1">' +
+                  '<input type="checkbox" class="form-check-input js-admin-nota-resuelto" data-mensaje-id="' +
+                  String(m.id) +
+                  '" ' +
+                  (m.resuelto ? "checked" : "") +
+                  ' />' +
+                  '<label class="form-check-label small">Resuelto</label></span>';
+                if (pendiente) {
+                  resueltoUi += '<span class="badge text-bg-warning text-dark rounded-pill ms-1">Pendiente</span>';
+                }
+              }
               return (
                 '<div class="sirona-chat-bubble ' +
                 side +
+                (pendiente ? " sirona-chat-bubble--pendiente" : "") +
                 '">' +
-                '<div class="sirona-chat-bubble-meta small text-muted">' +
+                '<div class="sirona-chat-bubble-meta small text-muted d-flex flex-wrap align-items-center gap-1">' +
+                "<span>" +
                 escapeHtml(m.autor || "") +
                 " · " +
                 fmtTime(m.creado_en) +
+                "</span>" +
+                resueltoUi +
                 "</div>" +
                 '<div class="sirona-chat-bubble-text">' +
                 escapeHtml(m.texto || "").replace(/\n/g, "<br>") +
@@ -1243,7 +1305,12 @@
               );
             })
             .join("");
-          body.scrollTop = body.scrollHeight;
+          body.querySelectorAll(".js-admin-nota-resuelto").forEach(function (cb) {
+            cb.addEventListener("change", function () {
+              syncResueltoMensaje(cb);
+            });
+          });
+          body.scrollTop = 0;
         }
 
         function renderTabs() {
@@ -1260,11 +1327,11 @@
             btn.className = "nav-link" + (Number(conv.usuario_id) === Number(activeUserId) ? " active" : "");
             btn.type = "button";
             btn.textContent = conv.username || "Usuario";
-            if (conv.resuelto) {
+            if (conv.pendientes) {
               const badge = document.createElement("span");
-              badge.className = "badge text-bg-success ms-1 align-middle";
+              badge.className = "badge text-bg-warning text-dark ms-1 align-middle";
               badge.style.fontSize = "0.65rem";
-              badge.textContent = "OK";
+              badge.textContent = conv.pendientes + " pend.";
               btn.appendChild(badge);
             } else if (conv.no_leidos) {
               const dot = document.createElement("span");
@@ -1301,51 +1368,6 @@
             });
         }
 
-        function syncResuelto(checked) {
-          if (!urlResuelto || !userIn.value) return Promise.resolve();
-          const csrfIn = form.querySelector("[name=csrfmiddlewaretoken]");
-          const csrf = csrfIn ? csrfIn.value : "";
-          const fd = new FormData();
-          fd.append("usuario_id", userIn.value);
-          fd.append("resuelto", checked ? "1" : "0");
-          fd.append("csrfmiddlewaretoken", csrf);
-          chkResuelto.disabled = true;
-          return fetch(urlResuelto, {
-            method: "POST",
-            credentials: "same-origin",
-            headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": csrf },
-            body: fd,
-          })
-            .then(function (r) {
-              return r.json().then(function (body) {
-                return { ok: r.ok, body: body };
-              });
-            })
-            .then(function (res) {
-              if (!res.ok || !res.body || !res.body.ok) {
-                window.alert((res.body && res.body.error) || "No se pudo guardar.");
-                chkResuelto.checked = !checked;
-                return;
-              }
-              const conv = conversaciones.find(function (c) {
-                return Number(c.usuario_id) === Number(userIn.value);
-              });
-              if (conv) conv.resuelto = !!res.body.resuelto;
-              renderTabs();
-            })
-            .catch(function () {
-              chkResuelto.checked = !checked;
-              window.alert("No se pudo guardar.");
-            })
-            .finally(function () {
-              chkResuelto.disabled = false;
-            });
-        }
-
-        chkResuelto.addEventListener("change", function () {
-          syncResuelto(chkResuelto.checked);
-        });
-
         modalEl.addEventListener("shown.bs.modal", function () {
           loadChat().finally(function () {
             try {
@@ -1368,11 +1390,7 @@
             headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": csrf },
             body: fd,
           })
-            .then(function (r) {
-              return r.json().then(function (body) {
-                return { ok: r.ok, body: body };
-              });
-            })
+            .then(parseJsonResponse)
             .then(function (res) {
               if (!res.ok || !res.body || !res.body.ok) {
                 window.alert((res.body && res.body.error) || "No se pudo enviar.");
@@ -1426,6 +1444,34 @@
             });
         }
 
+        function parseJsonResponse(r) {
+          const ct = (r.headers.get("content-type") || "").toLowerCase();
+          if (ct.indexOf("application/json") >= 0) {
+            return r.json().then(function (body) {
+              return { ok: r.ok, body: body };
+            });
+          }
+          return Promise.resolve({ ok: false, body: { error: "Respuesta inválida del servidor." } });
+        }
+
+        function closeQuickMsgModal() {
+          try {
+            if (typeof bootstrap !== "undefined") {
+              const inst =
+                bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+              inst.hide();
+            }
+          } catch (e) {}
+          modalEl.classList.remove("show");
+          modalEl.style.display = "none";
+          modalEl.setAttribute("aria-hidden", "true");
+          document.body.classList.remove("modal-open");
+          document.body.style.removeProperty("padding-right");
+          document.querySelectorAll(".modal-backdrop").forEach(function (el) {
+            el.remove();
+          });
+        }
+
         function renderMensajes(arr) {
           if (!arr || !arr.length) {
             box.innerHTML = '<p class="text-muted small mb-0">Todavía no hay mensajes. Escribí el primero abajo.</p>';
@@ -1434,14 +1480,23 @@
           box.innerHTML = arr
             .map(function (m) {
               const side = m.es_staff ? "sirona-chat-bubble--in" : "sirona-chat-bubble--out";
+              const pendiente = !m.es_staff && !m.resuelto;
+              let estado = "";
+              if (!m.es_staff) {
+                estado = m.resuelto
+                  ? '<span class="badge text-bg-success rounded-pill ms-1">Resuelto</span>'
+                  : '<span class="badge text-bg-warning text-dark rounded-pill ms-1">Pendiente</span>';
+              }
               return (
                 '<div class="sirona-chat-bubble ' +
                 side +
+                (pendiente ? " sirona-chat-bubble--pendiente" : "") +
                 '">' +
                 '<div class="sirona-chat-bubble-meta small text-muted">' +
                 escapeHtml(m.autor || "") +
                 " · " +
                 fmtTime(m.creado_en) +
+                estado +
                 "</div>" +
                 '<div class="sirona-chat-bubble-text">' +
                 escapeHtml(m.texto || "").replace(/\n/g, "<br>") +
@@ -1449,7 +1504,7 @@
               );
             })
             .join("");
-          box.scrollTop = box.scrollHeight;
+          box.scrollTop = 0;
         }
 
         function loadChat() {
@@ -1488,22 +1543,17 @@
             headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": csrf },
             body: fd,
           })
-            .then(function (r) {
-              return r.json().then(function (body) {
-                return { ok: r.ok, body: body };
-              });
-            })
+            .then(parseJsonResponse)
             .then(function (res) {
               if (!res.ok || !res.body || !res.body.ok) {
                 window.alert((res.body && res.body.error) || "No se pudo enviar.");
                 return;
               }
               textarea.value = "";
-              if (typeof bootstrap !== "undefined") {
-                const inst =
-                  bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
-                inst.hide();
-              }
+              closeQuickMsgModal();
+            })
+            .catch(function () {
+              window.alert("No se pudo enviar el mensaje.");
             })
             .finally(function () {
               btnSend.disabled = false;

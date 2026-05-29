@@ -12,7 +12,13 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET
 
 from core.export_utils import xlsx_response
-from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_dashboard, rango_periodo
+from core.fecha_filtros import (
+    fecha_filtro_value_iso,
+    parse_fecha_dashboard,
+    rango_periodo,
+    trunc_to_date,
+    trunc_to_month_start,
+)
 from core.money_decimal import q2
 from personas.models import Comprador, Vendedor
 from productos.models import Producto
@@ -56,15 +62,7 @@ def _rango_fechas(request):
 
 
 def _mes_primero(mes_val) -> date | None:
-    if mes_val is None:
-        return None
-    if isinstance(mes_val, datetime):
-        d = timezone.localtime(mes_val).date() if timezone.is_aware(mes_val) else mes_val.date()
-    elif isinstance(mes_val, date):
-        d = mes_val
-    else:
-        return None
-    return d.replace(day=1)
+    return trunc_to_month_start(mes_val)
 
 
 def _siguiente_mes(d: date) -> date:
@@ -108,23 +106,13 @@ def _serie_mensual_chart(rows, valor_key: str, fecha_desde, fecha_hasta) -> tupl
     return labels, valores
 
 
-def _as_date(val) -> date | None:
-    if val is None:
-        return None
-    if isinstance(val, datetime):
-        return timezone.localtime(val).date() if timezone.is_aware(val) else val.date()
-    if isinstance(val, date):
-        return val
-    return None
-
-
 def _serie_diaria_chart(
     rows, fecha_field: str, valor_key: str, fecha_desde, fecha_hasta
 ) -> tuple[list[str], list[str]]:
     """Etiquetas y montos por día (rellena huecos con cero en el rango)."""
     by_day: dict[date, Decimal] = {}
     for row in rows:
-        d = _as_date(row.get(fecha_field))
+        d = trunc_to_date(row.get(fecha_field))
         if d is None:
             continue
         by_day[d] = q2(row.get(valor_key) or 0)
@@ -157,16 +145,6 @@ def _reportes_export_query(request) -> str:
 def _mes_label(d: date) -> str:
     nombres = ("Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic")
     return f"{nombres[d.month - 1]} {d.year}"
-
-
-def _mes_desde_trunc(mes_val) -> date | None:
-    if mes_val is None:
-        return None
-    if isinstance(mes_val, datetime):
-        return mes_val.date().replace(day=1)
-    if isinstance(mes_val, date):
-        return mes_val.replace(day=1)
-    return None
 
 
 def _ventas_queryset_reportes(request, *, aplicar_fechas: bool):
@@ -218,7 +196,7 @@ def _productos_vendidos_periodos_tabla(ventas) -> tuple[list[str], list[list]]:
         unidades = int(r["unidades"] or 0)
         if unidades <= 0:
             continue
-        mes_key = _mes_desde_trunc(r["mes"])
+        mes_key = trunc_to_month_start(r["mes"])
         if mes_key is None:
             continue
         prod_key = (r["producto__codigo"] or "", r["producto__descripcion"] or "")
@@ -390,7 +368,11 @@ def reportes_dashboard(request):
     labels_compras_dia, compras_dia_monto = _serie_diaria_chart(
         list(compras_por_dia), "fecha_compra", "monto", fecha_desde, fecha_hasta
     )
-    ventas_dia_pedidos_map = {_as_date(v["dia"]): v["pedidos"] for v in ventas_por_dia if _as_date(v.get("dia"))}
+    ventas_dia_pedidos_map = {
+        trunc_to_date(v["dia"]): v["pedidos"]
+        for v in ventas_por_dia
+        if trunc_to_date(v.get("dia")) is not None
+    }
     ventas_dia_pedidos = []
     if fecha_desde and fecha_hasta:
         cur = fecha_desde

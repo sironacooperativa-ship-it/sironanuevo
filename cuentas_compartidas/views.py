@@ -85,12 +85,16 @@ def _saldos_netos(deudas, *, fecha_corte: date, par_ids: set[int] | None = None)
             return {
                 "deudor": nombres[deudor_id],
                 "acreedor": nombres[acreedor_id],
+                "deudor_id": deudor_id,
+                "acreedor_id": acreedor_id,
                 "monto": neto,
             }
         if neto < 0:
             return {
                 "deudor": nombres[acreedor_id],
                 "acreedor": nombres[deudor_id],
+                "deudor_id": acreedor_id,
+                "acreedor_id": deudor_id,
                 "monto": abs(neto),
             }
         return None
@@ -125,6 +129,45 @@ def _saldos_netos(deudas, *, fecha_corte: date, par_ids: set[int] | None = None)
             }
         )
     return sorted(saldos, key=lambda item: (item["negocio_a"], item["negocio_b"]))
+
+
+def _saldos_pares(deudas, *, fecha_corte: date, par_ids: set[int] | None = None) -> list[dict]:
+    """Saldos netos entre pares en una sola dirección: deudor le debe a acreedor."""
+    filas = []
+    for item in _saldos_netos(deudas, fecha_corte=fecha_corte, par_ids=par_ids):
+        total = item.get("saldo_total")
+        if not total:
+            continue
+        exigible = item.get("saldo_hoy") or {}
+        futuro = item.get("saldo_futuro") or {}
+        filas.append(
+            {
+                "deudor": total["deudor"],
+                "acreedor": total["acreedor"],
+                "deudor_id": total["deudor_id"],
+                "acreedor_id": total["acreedor_id"],
+                "monto": total["monto"],
+                "monto_exigible": exigible.get("monto") or Decimal("0.00"),
+                "monto_sin_vencer": futuro.get("monto") or Decimal("0.00"),
+            }
+        )
+    return sorted(filas, key=lambda row: (-row["monto"], row["deudor"], row["acreedor"]))
+
+
+def _filtro_par_desde_request(request) -> tuple[str, str, set[int] | None, list[Negocio]]:
+    todos_negocios = list(Negocio.objects.order_by("nombre"))
+    negocio_a = (request.GET.get("negocio_a") or "").strip()
+    negocio_b = (request.GET.get("negocio_b") or "").strip()
+    par_ids = None
+    negocios = todos_negocios
+    if negocio_a.isdigit() and negocio_b.isdigit() and negocio_a != negocio_b:
+        par_ids = {int(negocio_a), int(negocio_b)}
+        negocios_filtrados = [n for n in todos_negocios if n.pk in par_ids]
+        if len(negocios_filtrados) == 2:
+            negocios = negocios_filtrados
+        else:
+            par_ids = None
+    return negocio_a, negocio_b, par_ids, todos_negocios, negocios
 
 
 def _puede_editar_operacion(request, operacion: OperacionCompartida) -> bool:
@@ -184,6 +227,55 @@ def _marcaciones_cc_map() -> dict[tuple[str, int], bool]:
     }
 
 
+def _archivar_movimiento_cc(mov_tipo: str, objeto_id: int, *, user, archivado: bool = True) -> None:
+    if archivado:
+        MovimientoCCMarcacion.objects.update_or_create(
+            mov_tipo=mov_tipo,
+            objeto_id=objeto_id,
+            defaults={"marcado": True, "marcado_por": user},
+        )
+    else:
+        MovimientoCCMarcacion.objects.filter(mov_tipo=mov_tipo, objeto_id=objeto_id).delete()
+
+
+def _deuda_pendiente_al(deuda: DeudaCompartida, fecha_corte: date) -> Decimal:
+    pagado = (
+        deuda.cancelaciones.filter(fecha__lte=fecha_corte).aggregate(total=Sum("monto"))["total"]
+        or Decimal("0.00")
+    )
+    return max(Decimal(deuda.monto or 0) - pagado, Decimal("0.00"))
+
+
+def _operacion_tiene_pendiente(operacion: OperacionCompartida, fecha_corte: date) -> bool:
+    for deuda in operacion.deudas.all():
+        if _deuda_pendiente_al(deuda, fecha_corte) > 0:
+            return True
+    return False
+
+
+def _cc_estado_desde_request(request) -> str:
+    estado = (request.GET.get("estado") or "").strip().lower()
+    if estado in ("pendiente", "archivado", "todos"):
+        return estado
+    marcado = (request.GET.get("marcado") or "").strip().lower()
+    if marcado == "si":
+        return "archivado"
+    if marcado == "no":
+        return "pendiente"
+    return "pendiente"
+
+
+def _parse_cc_seleccion(post) -> list[tuple[str, int]]:
+    out: list[tuple[str, int]] = []
+    for raw in post.getlist("seleccion"):
+        if ":" not in raw:
+            continue
+        mov_tipo, oid = raw.split(":", 1)
+        if mov_tipo in (CC_MOV_OPERACION, CC_MOV_CANCELACION) and oid.isdigit():
+            out.append((mov_tipo, int(oid)))
+    return out
+
+
 def _cuenta_corriente_rows(
     negocios: list[Negocio], *, par_ids: set[int] | None = None, fecha_corte: date
 ):
@@ -219,6 +311,7 @@ def _cuenta_corriente_rows(
             totales[negocio_id] += monto
 
         mov_key = (CC_MOV_OPERACION, operacion.pk)
+        archivado = marcaciones.get(mov_key, False)
         rows.append(
             {
                 "fecha": operacion.fecha,
@@ -229,7 +322,9 @@ def _cuenta_corriente_rows(
                 "url_pk": operacion.pk,
                 "mov_tipo": CC_MOV_OPERACION,
                 "mov_id": operacion.pk,
-                "marcado": marcaciones.get(mov_key, False),
+                "archivado": archivado,
+                "puede_pagar": _operacion_tiene_pendiente(operacion, fecha_corte),
+                "seleccion": f"{CC_MOV_OPERACION}:{operacion.pk}",
                 "valores": [valores[negocio.pk] for negocio in negocios],
             }
         )
@@ -256,6 +351,7 @@ def _cuenta_corriente_rows(
             totales[negocio_id] += valor
 
         mov_key = (CC_MOV_CANCELACION, cancelacion.pk)
+        archivado = marcaciones.get(mov_key, False)
         rows.append(
             {
                 "fecha": cancelacion.fecha,
@@ -266,7 +362,9 @@ def _cuenta_corriente_rows(
                 "url_pk": deuda.operacion_id,
                 "mov_tipo": CC_MOV_CANCELACION,
                 "mov_id": cancelacion.pk,
-                "marcado": marcaciones.get(mov_key, False),
+                "archivado": archivado,
+                "puede_pagar": False,
+                "seleccion": f"{CC_MOV_CANCELACION}:{cancelacion.pk}",
                 "valores": [valores[negocio.pk] for negocio in negocios],
             }
         )
@@ -373,12 +471,11 @@ def _filtrar_cuenta_corriente_por_q(rows: list[dict], q: str) -> list[dict]:
     return out
 
 
-def _filtrar_cuenta_corriente_por_marcado(rows: list[dict], marcado_filter: str) -> list[dict]:
-    mf = (marcado_filter or "").strip().lower()
-    if mf == "si":
-        return [row for row in rows if row.get("marcado")]
-    if mf == "no":
-        return [row for row in rows if not row.get("marcado")]
+def _filtrar_cuenta_corriente_por_estado(rows: list[dict], estado: str) -> list[dict]:
+    if estado == "archivado":
+        return [row for row in rows if row.get("archivado")]
+    if estado == "pendiente":
+        return [row for row in rows if not row.get("archivado")]
     return rows
 
 
@@ -398,11 +495,11 @@ def _cuenta_corriente_preparada(
     cc_q = (request.GET.get("q") or "").strip()
     if cc_q:
         rows = _filtrar_cuenta_corriente_por_q(rows, cc_q)
-    cc_marcado = (request.GET.get("marcado") or "").strip().lower()
-    if cc_marcado in ("si", "no"):
-        rows = _filtrar_cuenta_corriente_por_marcado(rows, cc_marcado)
+    cc_estado = _cc_estado_desde_request(request)
+    if cc_estado in ("pendiente", "archivado"):
+        rows = _filtrar_cuenta_corriente_por_estado(rows, cc_estado)
         totales = _cuenta_corriente_totales_desde_filas(rows, len(negocios))
-    return rows, totales, cc_sort_ord, cc_sort_dir, cc_q, cc_marcado
+    return rows, totales, cc_sort_ord, cc_sort_dir, cc_q, cc_estado
 
 
 def _cc_export_querystring(request) -> str:
@@ -411,39 +508,12 @@ def _cc_export_querystring(request) -> str:
     return q.urlencode()
 
 
-@cuentas_compartidas_required
-def cuentas_dashboard(request):
+def _cuenta_corriente_context(request) -> dict:
     hoy = date.today()
     fecha_corte = _fecha_corte_desde_request(request)
     es_hoy = fecha_corte == hoy
-    es_futuro = fecha_corte > hoy
-    todos_negocios = list(Negocio.objects.order_by("nombre"))
-    negocio_a = (request.GET.get("negocio_a") or "").strip()
-    negocio_b = (request.GET.get("negocio_b") or "").strip()
-    par_ids = None
-    negocios = todos_negocios
-    if negocio_a.isdigit() and negocio_b.isdigit() and negocio_a != negocio_b:
-        par_ids = {int(negocio_a), int(negocio_b)}
-        negocios_filtrados = [negocio for negocio in todos_negocios if negocio.pk in par_ids]
-        if len(negocios_filtrados) == 2:
-            negocios = negocios_filtrados
-        else:
-            par_ids = None
-    deudas_pendientes = _deudas_con_saldo(DeudaCompartida.objects.all(), fecha_corte=fecha_corte)
-    deudas_visibles = [
-        deuda
-        for deuda in deudas_pendientes
-        if not par_ids or {deuda.operacion.pagador_id, deuda.deudor_id} == par_ids
-    ]
-    vencimientos = sorted(deudas_visibles, key=lambda deuda: (deuda.vencimiento, deuda.pk))[:12]
-    vencidas = [deuda for deuda in deudas_visibles if deuda.vencimiento <= fecha_corte]
-    sin_vencer = [deuda for deuda in deudas_visibles if deuda.vencimiento > fecha_corte]
-    proximas = [
-        deuda
-        for deuda in deudas_visibles
-        if fecha_corte < deuda.vencimiento <= fecha_corte + timedelta(days=14)
-    ]
-    cuenta_corriente_rows, cuenta_corriente_totales, cc_sort_ord, cc_sort_dir, cc_q, cc_marcado = (
+    negocio_a, negocio_b, par_ids, todos_negocios, negocios = _filtro_par_desde_request(request)
+    cuenta_corriente_rows, cuenta_corriente_totales, cc_sort_ord, cc_sort_dir, cc_q, cc_estado = (
         _cuenta_corriente_preparada(request, negocios, par_ids=par_ids, fecha_corte=fecha_corte)
     )
     cc_paginator = Paginator(cuenta_corriente_rows, CC_PAGE_SIZE)
@@ -457,13 +527,50 @@ def cuentas_dashboard(request):
         }
         for negocio in negocios
     ]
-    total_al_dia = sum((deuda.pendiente_calc for deuda in vencidas), Decimal("0.00"))
-    total_sin_vencer = sum((deuda.pendiente_calc for deuda in sin_vencer), Decimal("0.00"))
+    return {
+        "negocios": negocios,
+        "todos_negocios": todos_negocios,
+        "filtro_negocio_a": negocio_a,
+        "filtro_negocio_b": negocio_b,
+        "filtro_par_activo": bool(par_ids),
+        "fecha_corte": fecha_corte,
+        "fecha_corte_iso": fecha_corte.isoformat(),
+        "fecha_hoy_iso": hoy.isoformat(),
+        "es_hoy": es_hoy,
+        "fecha_max_futuro_iso": (hoy + timedelta(days=365 * 5)).isoformat(),
+        "cuenta_corriente_rows": cc_page.object_list,
+        "cuenta_corriente_page": cc_page,
+        "cuenta_corriente_totales": cuenta_corriente_totales,
+        "cc_sort_ord": cc_sort_ord,
+        "cc_sort_dir": cc_sort_dir,
+        "cc_q": cc_q,
+        "cc_estado": cc_estado,
+        "cc_acciones_url": reverse("cuentas_cuenta_corriente_acciones"),
+        "cc_sort_links": cc_sort_links,
+        "negocios_cc_columnas": negocios_cc_columnas,
+        "cc_querystring_sin_orden": _cuenta_corriente_url_sin_orden(request),
+        "cc_export_query": _cc_export_querystring(request),
+        "puede_admin_gastos_compartidos": bool(
+            request.user.is_staff and request.session.get("modo_admin")
+        ),
+        "puede_cargar_gastos_compartidos": True,
+    }
+
+
+@cuentas_compartidas_required
+def cuentas_dashboard(request):
+    hoy = date.today()
+    fecha_corte = _fecha_corte_desde_request(request)
+    es_hoy = fecha_corte == hoy
+    es_futuro = fecha_corte > hoy
+    negocio_a, negocio_b, par_ids, todos_negocios, _negocios = _filtro_par_desde_request(request)
+    deudas_pendientes = _deudas_con_saldo(DeudaCompartida.objects.all(), fecha_corte=fecha_corte)
+    saldos_pares = _saldos_pares(deudas_pendientes, fecha_corte=fecha_corte, par_ids=par_ids)
+    total_pendiente = sum((p["monto"] for p in saldos_pares), Decimal("0.00"))
     return render(
         request,
         "cuentas_compartidas/dashboard.html",
         {
-            "negocios": negocios,
             "todos_negocios": todos_negocios,
             "filtro_negocio_a": negocio_a,
             "filtro_negocio_b": negocio_b,
@@ -474,30 +581,20 @@ def cuentas_dashboard(request):
             "es_hoy": es_hoy,
             "es_futuro": es_futuro,
             "fecha_max_futuro_iso": (hoy + timedelta(days=365 * 5)).isoformat(),
-            "saldos": _saldos_netos(deudas_pendientes, fecha_corte=fecha_corte, par_ids=par_ids),
-            "vencimientos": vencimientos,
-            "vencidas": vencidas,
-            "sin_vencer": sin_vencer,
-            "proximas": proximas,
-            "cuenta_corriente_rows": cc_page.object_list,
-            "cuenta_corriente_page": cc_page,
-            "cuenta_corriente_totales": cuenta_corriente_totales,
-            "cc_sort_ord": cc_sort_ord,
-            "cc_sort_dir": cc_sort_dir,
-            "cc_q": cc_q,
-            "cc_marcado": cc_marcado,
-            "cc_marcar_url": reverse("cuentas_cuenta_corriente_marcar"),
-            "cc_sort_links": cc_sort_links,
-            "negocios_cc_columnas": negocios_cc_columnas,
-            "cc_querystring_sin_orden": _cuenta_corriente_url_sin_orden(request),
-            "cc_export_query": _cc_export_querystring(request),
-            "total_al_dia": total_al_dia,
-            "total_sin_vencer": total_sin_vencer,
-            "total_pendiente": total_al_dia + total_sin_vencer,
-            "puede_admin_gastos_compartidos": bool(request.user.is_staff and request.session.get("modo_admin")),
+            "saldos_pares": saldos_pares,
+            "total_pendiente": total_pendiente,
+            "puede_admin_gastos_compartidos": bool(
+                request.user.is_staff and request.session.get("modo_admin")
+            ),
             "puede_cargar_gastos_compartidos": True,
         },
     )
+
+
+@cuentas_compartidas_required
+def cuenta_corriente(request):
+    ctx = _cuenta_corriente_context(request)
+    return render(request, "cuentas_compartidas/cuenta_corriente.html", ctx)
 
 
 @cuentas_compartidas_required
@@ -506,7 +603,7 @@ def cuenta_corriente_export(request):
     exp = parse_export(request)
     if exp not in ("xlsx", "pdf"):
         q = _cc_export_querystring(request)
-        url = reverse("cuentas_dashboard")
+        url = reverse("cuentas_cuenta_corriente")
         return redirect(f"{url}?{q}" if q else url)
 
     hoy = date.today()
@@ -524,10 +621,10 @@ def cuenta_corriente_export(request):
         else:
             par_ids = None
 
-    rows, totales, _, _, cc_q, cc_marcado = _cuenta_corriente_preparada(
+    rows, totales, _, _, cc_q, cc_estado = _cuenta_corriente_preparada(
         request, negocios, par_ids=par_ids, fecha_corte=fecha_corte
     )
-    headers = ["Chequeado", "Fecha", "Detalle", "Subdetalle"] + [n.nombre for n in negocios]
+    headers = ["Estado", "Fecha", "Detalle", "Subdetalle"] + [n.nombre for n in negocios]
     data_rows = []
     for row in rows:
         vals = []
@@ -535,7 +632,7 @@ def cuenta_corriente_export(request):
             vals.append("" if v == 0 else str(v))
         data_rows.append(
             [
-                "Sí" if row.get("marcado") else "No",
+                "Archivado" if row.get("archivado") else "Pendiente",
                 row["fecha"].strftime("%d/%m/%Y"),
                 row["detalle"],
                 row["subdetalle"],
@@ -550,10 +647,10 @@ def cuenta_corriente_export(request):
     titulo = f"Cuenta corriente — Gastos compartidos (al {fecha_corte:%d/%m/%Y})"
     if cc_q:
         titulo += f" — búsqueda: {cc_q}"
-    if cc_marcado == "si":
-        titulo += " — solo chequeados"
-    elif cc_marcado == "no":
-        titulo += " — sin chequear"
+    if cc_estado == "archivado":
+        titulo += " — solo archivados"
+    elif cc_estado == "pendiente":
+        titulo += " — solo pendientes"
     fname = f"gastos_compartidos_cc_{fecha_corte.isoformat()}"
 
     if exp == "xlsx":
@@ -561,27 +658,136 @@ def cuenta_corriente_export(request):
     return pdf_response(fname, titulo, [("Movimientos", headers, data_rows)])
 
 
-@cuentas_compartidas_required
-@require_POST
-def cuenta_corriente_marcar(request):
-    mov_tipo = (request.POST.get("mov_tipo") or "").strip()
-    objeto_id_raw = (request.POST.get("objeto_id") or "").strip()
-    if mov_tipo not in (CC_MOV_OPERACION, CC_MOV_CANCELACION) or not objeto_id_raw.isdigit():
-        return JsonResponse({"ok": False, "error": "Movimiento inválido."}, status=400)
-    objeto_id = int(objeto_id_raw)
+def _puede_eliminar_movimiento_cc(request, mov_tipo: str, objeto_id: int) -> bool:
+    if request.user.is_staff and request.session.get("modo_admin"):
+        return True
     if mov_tipo == CC_MOV_OPERACION:
-        if not OperacionCompartida.objects.filter(pk=objeto_id).exists():
-            return JsonResponse({"ok": False, "error": "Operación no encontrada."}, status=404)
-    elif not CancelacionDeuda.objects.filter(pk=objeto_id).exists():
-        return JsonResponse({"ok": False, "error": "Cancelación no encontrada."}, status=404)
+        operacion = OperacionCompartida.objects.filter(pk=objeto_id).first()
+        return bool(operacion and _puede_editar_operacion(request, operacion))
+    return False
 
-    marcado = (request.POST.get("marcado") or "").strip().lower() in ("1", "true", "on", "yes")
-    reg, _ = MovimientoCCMarcacion.objects.update_or_create(
-        mov_tipo=mov_tipo,
-        objeto_id=objeto_id,
-        defaults={"marcado": marcado, "marcado_por": request.user},
-    )
-    return JsonResponse({"ok": True, "marcado": reg.marcado})
+
+def _marcar_movimiento_pagado(
+    mov_tipo: str, objeto_id: int, *, user, fecha_pago: date
+) -> tuple[bool, str]:
+    if mov_tipo == CC_MOV_OPERACION:
+        operacion = (
+            OperacionCompartida.objects.filter(pk=objeto_id)
+            .prefetch_related("deudas", "deudas__cancelaciones")
+            .first()
+        )
+        if not operacion:
+            return False, "Operación no encontrada."
+        pagos = 0
+        for deuda in operacion.deudas.all():
+            pendiente = deuda.pendiente
+            if pendiente <= 0:
+                continue
+            cancelacion = CancelacionDeuda(
+                deuda=deuda,
+                fecha=fecha_pago,
+                monto=pendiente,
+                medio=CancelacionDeuda.Medio.DINERO,
+                detalle="Pago registrado (acción masiva)",
+            )
+            cancelacion.full_clean()
+            cancelacion.save()
+            pagos += 1
+        _archivar_movimiento_cc(mov_tipo, objeto_id, user=user, archivado=True)
+        if pagos:
+            return True, f"Operación #{objeto_id}: {pagos} deuda(s) cancelada(s)."
+        return True, f"Operación #{objeto_id}: archivada (ya estaba pagada)."
+    if mov_tipo == CC_MOV_CANCELACION:
+        if not CancelacionDeuda.objects.filter(pk=objeto_id).exists():
+            return False, "Cancelación no encontrada."
+        _archivar_movimiento_cc(mov_tipo, objeto_id, user=user, archivado=True)
+        return True, f"Cancelación #{objeto_id} archivada."
+    return False, "Movimiento inválido."
+
+
+def _eliminar_movimiento_cc(request, mov_tipo: str, objeto_id: int) -> tuple[bool, str]:
+    if not _puede_eliminar_movimiento_cc(request, mov_tipo, objeto_id):
+        return False, "No tenés permiso para eliminar este movimiento."
+    if mov_tipo == CC_MOV_OPERACION:
+        operacion = OperacionCompartida.objects.filter(pk=objeto_id).first()
+        if not operacion:
+            return False, "Operación no encontrada."
+        concepto = operacion.concepto
+        operacion.delete()
+        MovimientoCCMarcacion.objects.filter(mov_tipo=mov_tipo, objeto_id=objeto_id).delete()
+        return True, f"Operación eliminada: {concepto}."
+    if mov_tipo == CC_MOV_CANCELACION:
+        cancelacion = CancelacionDeuda.objects.filter(pk=objeto_id).first()
+        if not cancelacion:
+            return False, "Cancelación no encontrada."
+        cancelacion.delete()
+        MovimientoCCMarcacion.objects.filter(mov_tipo=mov_tipo, objeto_id=objeto_id).delete()
+        return True, "Cancelación eliminada."
+    return False, "Movimiento inválido."
+
+
+@modo_admin_gastos_required
+@require_POST
+def cuenta_corriente_acciones(request):
+    accion = (request.POST.get("accion") or "").strip().lower()
+    if accion not in ("pagar", "eliminar"):
+        messages.error(request, "Acción no válida.")
+        return redirect(_dashboard_redirect_con_query(request))
+
+    seleccion = _parse_cc_seleccion(request)
+    if not seleccion:
+        messages.warning(request, "Seleccioná al menos un movimiento.")
+        return redirect(_dashboard_redirect_con_query(request))
+
+    fecha_pago = date.today()
+    ok_n = 0
+    errores: list[str] = []
+    for mov_tipo, objeto_id in seleccion:
+        if accion == "pagar":
+            ok, msg = _marcar_movimiento_pagado(
+                mov_tipo, objeto_id, user=request.user, fecha_pago=fecha_pago
+            )
+        else:
+            ok, msg = _eliminar_movimiento_cc(request, mov_tipo, objeto_id)
+        if ok:
+            ok_n += 1
+        else:
+            errores.append(msg)
+
+    if ok_n:
+        if accion == "pagar":
+            messages.success(
+                request,
+                f"{ok_n} movimiento{'s' if ok_n != 1 else ''} marcado{'s' if ok_n != 1 else ''} como pagado{'s' if ok_n != 1 else ''} y archivado{'s' if ok_n != 1 else ''}.",
+            )
+        else:
+            messages.success(
+                request,
+                f"{ok_n} movimiento{'s' if ok_n != 1 else ''} eliminado{'s' if ok_n != 1 else ''}.",
+            )
+    if errores:
+        messages.error(request, " · ".join(errores[:5]))
+    return redirect(_dashboard_redirect_con_query(request))
+
+
+def _dashboard_redirect_con_query(request) -> str:
+    from urllib.parse import parse_qsl
+
+    from django.http import QueryDict
+
+    raw = (request.POST.get("retorno_query") or "").strip()
+    if raw:
+        qd = QueryDict(mutable=True)
+        for k, v in parse_qsl(raw, keep_blank_values=True):
+            if v:
+                qd[k] = v
+    else:
+        qd = request.GET.copy()
+    if "estado" not in qd and "marcado" not in qd:
+        qd["estado"] = "pendiente"
+    url = reverse("cuentas_cuenta_corriente")
+    qs = qd.urlencode()
+    return f"{url}?{qs}" if qs else url
 
 
 @cuentas_compartidas_required

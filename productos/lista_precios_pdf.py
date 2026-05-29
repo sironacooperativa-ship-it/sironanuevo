@@ -29,17 +29,28 @@ from .models import ListaPrecioItem, ListaPrecios, Producto
 
 
 LISTA_PRECIOS_ORDEN_DEFAULT = "tipo"
+LISTA_PRECIOS_ORDEN_PRODUCTO = "producto"
 LISTA_PRECIOS_ORDEN_LABORATORIO = "laboratorio"
 
 
 def normalizar_orden_lista_precios(orden: str | None) -> str:
-    return LISTA_PRECIOS_ORDEN_LABORATORIO if orden == LISTA_PRECIOS_ORDEN_LABORATORIO else LISTA_PRECIOS_ORDEN_DEFAULT
+    if orden == LISTA_PRECIOS_ORDEN_LABORATORIO:
+        return LISTA_PRECIOS_ORDEN_LABORATORIO
+    if orden == LISTA_PRECIOS_ORDEN_PRODUCTO:
+        return LISTA_PRECIOS_ORDEN_PRODUCTO
+    return LISTA_PRECIOS_ORDEN_DEFAULT
 
 
 def _order_by_lista_precios(orden: str | None, producto_prefix: str = "") -> list[str]:
-    if normalizar_orden_lista_precios(orden) == LISTA_PRECIOS_ORDEN_LABORATORIO:
+    norm = normalizar_orden_lista_precios(orden)
+    if norm == LISTA_PRECIOS_ORDEN_LABORATORIO:
         return [
             f"{producto_prefix}laboratorio",
+            f"{producto_prefix}descripcion",
+            f"{producto_prefix}codigo",
+        ]
+    if norm == LISTA_PRECIOS_ORDEN_PRODUCTO:
+        return [
             f"{producto_prefix}descripcion",
             f"{producto_prefix}codigo",
         ]

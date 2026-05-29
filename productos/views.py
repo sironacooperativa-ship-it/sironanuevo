@@ -1177,7 +1177,7 @@ def producto_update(request, pk: int):
             producto.precio_venta_editado = bool(form.cleaned_data.get("precio_venta_editado"))
             producto.save()
             sync_producto_listas_extras_from_post(request, producto)
-            aplicar_ids = parse_aplicar_precio_listas_post(request)
+            aplicar_ids = parse_aplicar_precio_listas_post(request.POST)
             if aplicar_ids:
                 n = aplicar_precio_a_listas(producto, aplicar_ids, producto.precio_venta)
                 if n:

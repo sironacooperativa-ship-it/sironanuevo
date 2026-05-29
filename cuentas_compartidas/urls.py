@@ -5,15 +5,16 @@ from . import views
 
 urlpatterns = [
     path("", views.cuentas_dashboard, name="cuentas_dashboard"),
+    path("cuenta-corriente/", views.cuenta_corriente, name="cuentas_cuenta_corriente"),
     path(
         "cuenta-corriente/export/",
         views.cuenta_corriente_export,
         name="cuentas_cuenta_corriente_export",
     ),
     path(
-        "cuenta-corriente/marcar/",
-        views.cuenta_corriente_marcar,
-        name="cuentas_cuenta_corriente_marcar",
+        "cuenta-corriente/acciones/",
+        views.cuenta_corriente_acciones,
+        name="cuentas_cuenta_corriente_acciones",
     ),
     path("operaciones/nueva/", views.operacion_nueva, name="cuentas_operacion_nueva"),
     path("operaciones/<int:pk>/", views.operacion_detalle, name="cuentas_operacion_detalle"),

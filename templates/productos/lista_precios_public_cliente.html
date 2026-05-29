@@ -61,6 +61,17 @@
         font-variant-numeric: tabular-nums;
         font-weight: 600;
       }
+      .lp-cli-toolbar {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+      }
+      .lp-cli-toolbar .form-label {
+        font-size: 0.78rem;
+        color: #64748b;
+        margin-bottom: 0.2rem;
+      }
     </style>
   </head>
   <body>
@@ -73,23 +84,49 @@
         </div>
       </header>
 
-      <form method="get" class="mb-3">
-        <label class="visually-hidden" for="lp-cli-q">Buscar</label>
-        <div class="input-group">
-          <input
-            id="lp-cli-q"
-            type="search"
-            name="q"
-            value="{{ q }}"
-            class="form-control form-control-sm rounded-start"
-            placeholder="Buscar por código o descripción"
-            autocomplete="off"
-          />
-          <button class="btn btn-primary btn-sm rounded-end" type="submit">Buscar</button>
+      <form method="get" class="mb-3 lp-cli-toolbar">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md">
+            <label class="form-label" for="lp-cli-q">Buscar</label>
+            <div class="input-group input-group-sm">
+              <input
+                id="lp-cli-q"
+                type="search"
+                name="q"
+                value="{{ q }}"
+                class="form-control rounded-start"
+                placeholder="Código, descripción o marca"
+                autocomplete="off"
+              />
+              <button class="btn btn-primary rounded-end" type="submit">Buscar</button>
+            </div>
+          </div>
+          <div class="col-6 col-sm-auto">
+            <div class="form-check form-switch mb-0 pb-1">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                role="switch"
+                name="marca"
+                id="lp-cli-marca"
+                value="1"
+                {% if ver_marca %}checked{% endif %}
+              />
+              <label class="form-check-label small" for="lp-cli-marca">Ver marca</label>
+            </div>
+          </div>
+          <div class="col-6 col-sm-auto">
+            <label class="form-label" for="lp-cli-orden">Ordenar por</label>
+            <select class="form-select form-select-sm" name="orden" id="lp-cli-orden" onchange="this.form.submit()">
+              <option value="tipo" {% if orden == "tipo" %}selected{% endif %}>Tipo</option>
+              <option value="producto" {% if orden == "producto" %}selected{% endif %}>Producto</option>
+              <option value="laboratorio" {% if orden == "laboratorio" %}selected{% endif %}>Marca</option>
+            </select>
+          </div>
         </div>
-        {% if q %}
+        {% if q or ver_marca or orden != "tipo" %}
           <div class="mt-2">
-            <a class="small text-decoration-none" href="?">Limpiar búsqueda</a>
+            <a class="small text-decoration-none" href="?">Restablecer vista</a>
           </div>
         {% endif %}
       </form>
@@ -109,7 +146,9 @@
                   <tr>
                     <td>
                       <div class="lp-cli-desc">{{ p.descripcion }}</div>
-                      <div class="lp-cli-sub font-monospace">Código {{ p.codigo }}{% if p.laboratorio %} · {{ p.laboratorio }}{% endif %}</div>
+                      <div class="lp-cli-sub font-monospace">
+                        Código {{ p.codigo }}{% if ver_marca and p.laboratorio %} · {{ p.laboratorio }}{% endif %}
+                      </div>
                     </td>
                     <td class="text-end lp-cli-price">{{ p.precio_venta|ars }}</td>
                   </tr>
@@ -123,7 +162,9 @@
                   <tr>
                     <td>
                       <div class="lp-cli-desc">{{ it.producto.descripcion }}</div>
-                      <div class="lp-cli-sub font-monospace">Código {{ it.producto.codigo }}{% if it.producto.laboratorio %} · {{ it.producto.laboratorio }}{% endif %}</div>
+                      <div class="lp-cli-sub font-monospace">
+                        Código {{ it.producto.codigo }}{% if ver_marca and it.producto.laboratorio %} · {{ it.producto.laboratorio }}{% endif %}
+                      </div>
                     </td>
                     <td class="text-end lp-cli-price">{{ it.precio_venta|ars }}</td>
                   </tr>
@@ -141,10 +182,10 @@
             <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
             <div class="d-flex gap-2">
               {% if page_obj.has_previous %}
-                <a class="btn btn-sm btn-outline-secondary" href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+                <a class="btn btn-sm btn-outline-secondary" href="?{% if public_query %}{{ public_query }}&{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>
               {% endif %}
               {% if page_obj.has_next %}
-                <a class="btn btn-sm btn-outline-secondary" href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+                <a class="btn btn-sm btn-outline-secondary" href="?{% if public_query %}{{ public_query }}&{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>
               {% endif %}
             </div>
           </div>

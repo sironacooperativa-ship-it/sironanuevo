@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Cuenta corriente — Gastos compartidos{% endblock %}
+{% block content %}
+  <div class="app-page-header mb-3 d-flex flex-wrap align-items-center gap-2">
+    <div class="me-auto">
+      <h1 class="app-page-title mb-0">Cuenta corriente</h1>
+      <p class="text-muted mb-0">
+        Detalle de movimientos entre negocios.
+        {% if not es_hoy %}
+          <span class="d-block mt-1">Hasta el <strong>{{ fecha_corte|date:"d/m/Y" }}</strong>.</span>
+        {% endif %}
+      </p>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_dashboard' %}{% if filtro_negocio_a or filtro_negocio_b or not es_hoy %}?{% endif %}{% if filtro_negocio_a %}negocio_a={{ filtro_negocio_a }}{% endif %}{% if filtro_negocio_b %}{% if filtro_negocio_a %}&amp;{% endif %}negocio_b={{ filtro_negocio_b }}{% endif %}{% if not es_hoy %}{% if filtro_negocio_a or filtro_negocio_b %}&amp;{% endif %}al={{ fecha_corte_iso }}{% endif %}">
+      Saldos por par
+    </a>
+    {% if puede_cargar_gastos_compartidos %}
+      <a class="btn btn-primary btn-sm rounded-pill" href="{% url 'cuentas_operacion_nueva' %}">Nueva operación</a>
+    {% endif %}
+  </div>
+
+  <div class="modern-filter-card mb-3">
+    <form method="get">
+      {% if cc_sort_ord %}
+        <input type="hidden" name="ord" value="{{ cc_sort_ord }}" />
+        <input type="hidden" name="dir" value="{{ cc_sort_dir }}" />
+      {% endif %}
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-3">
+          <label class="form-label small text-muted mb-1" for="cc-buscar">Buscar movimiento</label>
+          <input id="cc-buscar" class="form-control" type="search" name="q" value="{{ cc_q }}" placeholder="Texto, fecha o monto" />
+        </div>
+        <div class="col-12 col-lg-2 col-md-3">
+          <label class="form-label small text-muted mb-1" for="cc-negocio-a">Negocio 1</label>
+          <select id="cc-negocio-a" class="form-select" name="negocio_a">
+            <option value="">Todos</option>
+            {% for negocio in todos_negocios %}
+              <option value="{{ negocio.pk }}" {% if filtro_negocio_a == negocio.pk|stringformat:"s" %}selected{% endif %}>{{ negocio.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-lg-2 col-md-3">
+          <label class="form-label small text-muted mb-1" for="cc-negocio-b">Negocio 2</label>
+          <select id="cc-negocio-b" class="form-select" name="negocio_b">
+            <option value="">Todos</option>
+            {% for negocio in todos_negocios %}
+              <option value="{{ negocio.pk }}" {% if filtro_negocio_b == negocio.pk|stringformat:"s" %}selected{% endif %}>{{ negocio.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-lg-2 col-md-3">
+          <label class="form-label small text-muted mb-1" for="cc-fecha-corte">Hasta la fecha</label>
+          <input
+            id="cc-fecha-corte"
+            class="form-control"
+            type="date"
+            name="al"
+            value="{{ fecha_corte_iso }}"
+            max="{{ fecha_max_futuro_iso }}"
+          />
+        </div>
+        <div class="col-12 col-lg-2 col-md-3">
+          <label class="form-label small text-muted mb-1" for="cc-estado">Vista</label>
+          <select id="cc-estado" class="form-select" name="estado">
+            <option value="pendiente" {% if cc_estado == "pendiente" %}selected{% endif %}>Pendientes</option>
+            <option value="archivado" {% if cc_estado == "archivado" %}selected{% endif %}>Archivados (pagados)</option>
+            <option value="todos" {% if cc_estado == "todos" %}selected{% endif %}>Todos</option>
+          </select>
+        </div>
+        <div class="col-12 col-lg-3 d-flex flex-wrap gap-2 align-items-end">
+          <button class="btn btn-primary rounded-pill px-3" type="submit">Aplicar</button>
+          <a class="btn btn-outline-secondary rounded-pill px-3" href="{% url 'cuentas_cuenta_corriente' %}?estado=pendiente{% if not es_hoy %}&amp;al={{ fecha_corte_iso }}{% endif %}">Limpiar</a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="table-card ui-force-productos mb-3">
+    <div class="table-card-header flex-wrap gap-2">
+      <div class="me-auto">
+        <h2 class="table-card-title">Movimientos</h2>
+        <span class="table-card-count">
+          {% if filtro_par_activo %}Par filtrado{% else %}Todos los negocios{% endif %}
+          {% if cuenta_corriente_page.paginator.count %}
+            · {{ cuenta_corriente_page.paginator.count }} movimiento{{ cuenta_corriente_page.paginator.count|pluralize:"s" }}
+          {% endif %}
+        </span>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_cuenta_corriente_export' %}?export=xlsx&amp;{{ cc_export_query }}">Excel</a>
+        <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_cuenta_corriente_export' %}?export=pdf&amp;{{ cc_export_query }}">PDF</a>
+      </div>
+    </div>
+    {% if cc_q or cc_estado != "pendiente" %}
+      <p class="small text-muted px-3 mb-0">
+        {% if cc_q %}Búsqueda: «{{ cc_q }}».{% endif %}
+        {% if cc_estado == "archivado" %} Solo movimientos <strong>archivados</strong>.{% elif cc_estado == "todos" %} Mostrando <strong>todos</strong> los movimientos.{% endif %}
+      </p>
+    {% endif %}
+    {% if puede_admin_gastos_compartidos %}
+      <form
+        id="cc-acciones-form"
+        method="post"
+        action="{% url 'cuentas_cuenta_corriente_acciones' %}"
+        class="cc-acciones-bar d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom bg-light"
+      >
+        {% csrf_token %}
+        <input type="hidden" name="retorno_query" value="{{ cc_export_query }}" />
+        <span class="small text-muted" id="cc-seleccion-count">0 seleccionados</span>
+        <button type="submit" class="btn btn-primary btn-sm rounded-pill" name="accion" value="pagar">
+          Marcar como pagados
+        </button>
+        <button
+          type="submit"
+          class="btn btn-outline-danger btn-sm rounded-pill"
+          name="accion"
+          value="eliminar"
+          onclick="return confirm('¿Eliminar los movimientos seleccionados? Esta acción no se puede deshacer.');"
+        >
+          Eliminar
+        </button>
+      </form>
+    {% endif %}
+    {% if cc_sort_ord %}
+      <p class="small text-muted px-3 mb-0">
+        <a href="{% url 'cuentas_cuenta_corriente' %}{% if cc_querystring_sin_orden %}?{{ cc_querystring_sin_orden }}{% endif %}">Volver al orden por fecha (más reciente primero)</a>
+      </p>
+    {% endif %}
+    <div class="table-responsive">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            {% if puede_admin_gastos_compartidos %}
+              <th class="text-center" style="width: 2.75rem">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="cc-select-all"
+                  title="Seleccionar todos en esta página"
+                  aria-label="Seleccionar todos"
+                />
+              </th>
+            {% endif %}
+            <th>
+              <a class="app-th-sort" href="?{{ cc_sort_links.fecha }}" title="Ordenar por fecha">Fecha{% if cc_sort_ord == "fecha" %}<span class="ms-1 th-sort-caret" aria-hidden="true">{% if cc_sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            </th>
+            <th>
+              <a class="app-th-sort" href="?{{ cc_sort_links.detalle }}" title="Ordenar por detalle">Detalle{% if cc_sort_ord == "detalle" %}<span class="ms-1 th-sort-caret" aria-hidden="true">{% if cc_sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            </th>
+            {% for col in negocios_cc_columnas %}
+              <th class="text-end">
+                <a class="app-th-sort d-inline-flex w-100 justify-content-end" href="?{{ col.sort_link }}" title="Ordenar por {{ col.negocio.nombre }}">
+                  {{ col.negocio.nombre }}{% if cc_sort_ord == col.sort_ord %}<span class="ms-1 th-sort-caret" aria-hidden="true">{% if cc_sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}
+                </a>
+              </th>
+            {% endfor %}
+            <th class="text-end">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in cuenta_corriente_rows %}
+            <tr class="{% if row.archivado %}cc-row-archivado{% elif row.puede_pagar %}cc-row-pendiente{% endif %}">
+              {% if puede_admin_gastos_compartidos %}
+                <td class="text-center align-middle">
+                  <input
+                    type="checkbox"
+                    class="form-check-input js-cc-select"
+                    name="seleccion"
+                    value="{{ row.seleccion }}"
+                    form="cc-acciones-form"
+                    aria-label="Seleccionar movimiento"
+                  />
+                </td>
+              {% endif %}
+              <td class="text-nowrap">{{ row.fecha|date:"d/m/Y" }}</td>
+              <td>
+                <div class="fw-semibold">
+                  {{ row.detalle }}
+                  {% if row.archivado %}
+                    <span class="badge text-bg-success ms-1 align-middle" style="font-size: 0.65rem">Archivado</span>
+                  {% elif row.puede_pagar %}
+                    <span class="badge text-bg-warning text-dark ms-1 align-middle" style="font-size: 0.65rem">Pendiente</span>
+                  {% endif %}
+                </div>
+                <div class="text-muted small">{{ row.subdetalle }}</div>
+              </td>
+              {% for valor in row.valores %}
+                <td class="text-end col-money">
+                  {% if valor > 0 %}
+                    <span class="text-success">{{ valor|ars }}</span>
+                  {% elif valor < 0 %}
+                    <span class="text-danger">{{ valor|ars }}</span>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+              {% endfor %}
+              <td class="text-end">
+                <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url row.url row.url_pk %}">Ver</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="{% if puede_admin_gastos_compartidos %}{{ negocios|length|add:4 }}{% else %}{{ negocios|length|add:3 }}{% endif %}" class="table-empty">{% if cc_q or cc_estado != "pendiente" %}No hay movimientos con los filtros actuales.{% else %}No hay movimientos pendientes.{% endif %}</td></tr>
+          {% endfor %}
+        </tbody>
+        {% if cuenta_corriente_rows %}
+          <tfoot>
+            <tr>
+              {% if puede_admin_gastos_compartidos %}<th></th>{% endif %}
+              <th colspan="2">Saldo (movimientos listados)</th>
+              {% for total in cuenta_corriente_totales %}
+                <th class="text-end col-money">{{ total|ars }}</th>
+              {% endfor %}
+              <th></th>
+            </tr>
+          </tfoot>
+        {% endif %}
+      </table>
+    </div>
+    {% if cuenta_corriente_page.paginator.num_pages > 1 %}
+      <nav class="d-flex flex-wrap justify-content-between align-items-center gap-2 px-3 pb-3" aria-label="Paginación cuenta corriente">
+        <span class="text-muted small mb-0">
+          Página {{ cuenta_corriente_page.number }} de {{ cuenta_corriente_page.paginator.num_pages }}
+        </span>
+        <ul class="pagination pagination-sm mb-0">
+          {% if cuenta_corriente_page.has_previous %}
+            <li class="page-item">
+              <a class="page-link rounded-pill" href="?{% if cc_export_query %}{{ cc_export_query }}&amp;{% endif %}page={{ cuenta_corriente_page.previous_page_number }}">Anterior</a>
+            </li>
+          {% endif %}
+          {% if cuenta_corriente_page.has_next %}
+            <li class="page-item">
+              <a class="page-link rounded-pill" href="?{% if cc_export_query %}{{ cc_export_query }}&amp;{% endif %}page={{ cuenta_corriente_page.next_page_number }}">Siguiente</a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  </div>
+
+  <script>
+    (function () {
+      var selectAll = document.getElementById("cc-select-all");
+      var countEl = document.getElementById("cc-seleccion-count");
+      var boxes = document.querySelectorAll(".js-cc-select");
+
+      function updateCount() {
+        if (!countEl) return;
+        var n = 0;
+        boxes.forEach(function (cb) {
+          if (cb.checked) n += 1;
+        });
+        countEl.textContent = n + (n === 1 ? " seleccionado" : " seleccionados");
+        if (selectAll) {
+          var visible = boxes.length;
+          selectAll.checked = visible > 0 && n === visible;
+          selectAll.indeterminate = n > 0 && n < visible;
+        }
+      }
+
+      if (selectAll) {
+        selectAll.addEventListener("change", function () {
+          boxes.forEach(function (cb) {
+            cb.checked = selectAll.checked;
+          });
+          updateCount();
+        });
+      }
+      boxes.forEach(function (cb) {
+        cb.addEventListener("change", updateCount);
+      });
+      updateCount();
+    })();
+  </script>
+{% endblock %}

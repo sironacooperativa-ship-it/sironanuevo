@@ -6,12 +6,15 @@
     <div class="me-auto">
       <h1 class="app-page-title mb-0">Gastos compartidos</h1>
       <p class="text-muted mb-0">
-        Saldos entre negocios, vencimientos y operaciones internas.
+        Saldos pendientes entre negocios.
         {% if not es_hoy %}
-          <span class="d-block mt-1">Vista al <strong>{{ fecha_corte|date:"d/m/Y" }}</strong>.</span>
+          <span class="d-block mt-1">Al <strong>{{ fecha_corte|date:"d/m/Y" }}</strong>.</span>
         {% endif %}
       </p>
     </div>
+    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_cuenta_corriente' %}{% if filtro_negocio_a or filtro_negocio_b or not es_hoy %}?{% endif %}{% if filtro_negocio_a %}negocio_a={{ filtro_negocio_a }}{% endif %}{% if filtro_negocio_b %}{% if filtro_negocio_a %}&amp;{% endif %}negocio_b={{ filtro_negocio_b }}{% endif %}{% if not es_hoy %}{% if filtro_negocio_a or filtro_negocio_b %}&amp;{% endif %}al={{ fecha_corte_iso }}{% endif %}">
+      Movimientos
+    </a>
     {% if puede_admin_gastos_compartidos %}
       <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_negocios' %}">Negocios</a>
     {% endif %}
@@ -24,34 +27,26 @@
 
   <div class="modern-filter-card mb-3">
     <form method="get">
-      {% if cc_sort_ord %}
-        <input type="hidden" name="ord" value="{{ cc_sort_ord }}" />
-        <input type="hidden" name="dir" value="{{ cc_sort_dir }}" />
-      {% endif %}
       <div class="row g-2 align-items-end">
-        <div class="col-12 col-md-3">
-          <label class="form-label small text-muted mb-1" for="cc-buscar">Buscar movimiento</label>
-          <input id="cc-buscar" class="form-control" type="search" name="q" value="{{ cc_q }}" placeholder="Texto, fecha o monto" />
-        </div>
-        <div class="col-12 col-lg-2 col-md-3">
+        <div class="col-12 col-lg-3 col-md-4">
           <label class="form-label small text-muted mb-1" for="cc-negocio-a">Negocio 1</label>
           <select id="cc-negocio-a" class="form-select" name="negocio_a">
-            <option value="">Todos</option>
+            <option value="">Todos los pares</option>
             {% for negocio in todos_negocios %}
               <option value="{{ negocio.pk }}" {% if filtro_negocio_a == negocio.pk|stringformat:"s" %}selected{% endif %}>{{ negocio.nombre }}</option>
             {% endfor %}
           </select>
         </div>
-        <div class="col-12 col-lg-2 col-md-3">
+        <div class="col-12 col-lg-3 col-md-4">
           <label class="form-label small text-muted mb-1" for="cc-negocio-b">Negocio 2</label>
           <select id="cc-negocio-b" class="form-select" name="negocio_b">
-            <option value="">Todos</option>
+            <option value="">Todos los pares</option>
             {% for negocio in todos_negocios %}
               <option value="{{ negocio.pk }}" {% if filtro_negocio_b == negocio.pk|stringformat:"s" %}selected{% endif %}>{{ negocio.nombre }}</option>
             {% endfor %}
           </select>
         </div>
-        <div class="col-12 col-lg-2 col-md-3">
+        <div class="col-12 col-lg-3 col-md-4">
           <label class="form-label small text-muted mb-1" for="cc-fecha-corte">Saldos a la fecha</label>
           <input
             id="cc-fecha-corte"
@@ -62,355 +57,71 @@
             max="{{ fecha_max_futuro_iso }}"
           />
         </div>
-        <div class="col-12 col-lg-2 col-md-3">
-          <label class="form-label small text-muted mb-1" for="cc-marcado">Chequeado</label>
-          <select id="cc-marcado" class="form-select" name="marcado">
-            <option value="" {% if not cc_marcado %}selected{% endif %}>Todos</option>
-            <option value="si" {% if cc_marcado == "si" %}selected{% endif %}>Marcados</option>
-            <option value="no" {% if cc_marcado == "no" %}selected{% endif %}>No marcados</option>
-          </select>
-        </div>
         <div class="col-12 col-lg-3 d-flex flex-wrap gap-2 align-items-end">
           <button class="btn btn-primary rounded-pill px-3" type="submit">Aplicar</button>
-          <a class="btn btn-outline-secondary rounded-pill px-3" href="{% url 'cuentas_dashboard' %}{% if not es_hoy %}?al={{ fecha_corte_iso }}{% endif %}">Todos</a>
-          {% if not es_hoy %}
-            <a class="btn btn-outline-secondary rounded-pill px-3" href="{% url 'cuentas_dashboard' %}{% if filtro_negocio_a or filtro_negocio_b %}?negocio_a={{ filtro_negocio_a }}&amp;negocio_b={{ filtro_negocio_b }}{% endif %}">Hoy</a>
-          {% endif %}
+          <a class="btn btn-outline-secondary rounded-pill px-3" href="{% url 'cuentas_dashboard' %}">Hoy</a>
         </div>
       </div>
       <div class="text-muted small mt-2">
         {% if filtro_par_activo %}
-          Mostrando sólo las interacciones entre los dos negocios elegidos.
+          Mostrando sólo el saldo entre los dos negocios elegidos.
         {% else %}
-          Elegí dos negocios distintos para ver una cuenta corriente sólo entre ese par.
+          Elegí dos negocios distintos para ver un solo par, o dejá «Todos» para ver todos los saldos.
         {% endif %}
       </div>
     </form>
   </div>
 
-  <div class="row g-3 mb-3">
-    <div class="col-12 col-md-4">
-      <div class="stat-card h-100">
-        <div class="stat-row">
-          <div class="stat-label">{% if es_hoy %}Exigible hoy{% else %}Exigible al {{ fecha_corte|date:"d/m/Y" }}{% endif %}</div>
-          <span class="stat-ico"><i data-lucide="wallet"></i></span>
-        </div>
-        <div class="stat-value">{{ total_al_dia|ars }}</div>
-        <div class="text-muted small">{% if es_hoy %}Vencido o con vencimiento de hoy{% else %}Vencido o con vencimiento hasta esa fecha{% endif %}</div>
+  {% if saldos_pares %}
+    <div class="stat-card mb-3">
+      <div class="stat-row">
+        <div class="stat-label">{% if filtro_par_activo %}Saldo del par{% else %}Total entre pares listados{% endif %}</div>
+        <span class="stat-ico stat-ico--danger"><i data-lucide="scale"></i></span>
       </div>
+      <div class="stat-value">{{ total_pendiente|ars }}</div>
+      <div class="text-muted small">{{ saldos_pares|length }} relación{{ saldos_pares|length|pluralize:"es" }} con saldo pendiente</div>
     </div>
-    <div class="col-6 col-md-4">
-      <div class="stat-card h-100">
-        <div class="stat-row">
-          <div class="stat-label">Sin vencer</div>
-          <span class="stat-ico"><i data-lucide="calendar-days"></i></span>
-        </div>
-        <div class="stat-value">{{ total_sin_vencer|ars }}</div>
-        <div class="text-muted small">
-          {% if es_hoy %}
-            {{ proximas|length }} vencen en los próximos 14 días
-          {% elif es_futuro %}
-            {{ proximas|length }} vencerán en los 14 días posteriores a esa fecha
-          {% else %}
-            {{ proximas|length }} vencían en los 14 días posteriores a esa fecha
-          {% endif %}
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-md-4">
-      <div class="stat-card h-100">
-        <div class="stat-row">
-          <div class="stat-label">Total abierto</div>
-          <span class="stat-ico stat-ico--danger"><i data-lucide="alert-triangle"></i></span>
-        </div>
-        <div class="stat-value">{{ total_pendiente|ars }}</div>
-        <div class="text-muted small">{% if es_hoy %}Exigible hoy + sin vencer{% else %}Exigible a la fecha + sin vencer{% endif %}</div>
-      </div>
-    </div>
-  </div>
+  {% endif %}
 
-  <div class="table-card ui-force-productos mb-3">
-    <div class="table-card-header flex-wrap gap-2">
-      <div class="me-auto">
-        <h2 class="table-card-title">Cuenta corriente</h2>
-        <span class="table-card-count">
-          {% if filtro_par_activo %}Detalle por par{% else %}Movimientos por negocio{% endif %}
-          {% if not es_hoy %} · hasta {{ fecha_corte|date:"d/m/Y" }}{% endif %}
-          {% if cuenta_corriente_page.paginator.count %}
-            · {{ cuenta_corriente_page.paginator.count }} movimiento{{ cuenta_corriente_page.paginator.count|pluralize:"s" }}
-          {% endif %}
-        </span>
-      </div>
-      <div class="d-flex flex-wrap gap-2">
-        <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_cuenta_corriente_export' %}?export=xlsx&amp;{{ cc_export_query }}">Excel</a>
-        <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_cuenta_corriente_export' %}?export=pdf&amp;{{ cc_export_query }}">PDF</a>
-      </div>
-    </div>
-    {% if cc_q or cc_marcado %}
-      <p class="small text-muted px-3 mb-0">
-        {% if cc_q %}Búsqueda: «{{ cc_q }}».{% endif %}
-        {% if cc_marcado == "si" %} Solo movimientos <strong>marcados</strong> (chequeados).{% elif cc_marcado == "no" %} Solo movimientos <strong>sin marcar</strong>.{% endif %}
-      </p>
-    {% endif %}
-    {% if cc_sort_ord %}
-      <p class="small text-muted px-3 mb-0">
-        <a href="{% url 'cuentas_dashboard' %}{% if cc_querystring_sin_orden %}?{{ cc_querystring_sin_orden }}{% endif %}">Volver al orden por fecha (más reciente primero)</a>
-      </p>
-    {% endif %}
-    <div class="table-responsive">
-      <table class="modern-table">
-        <thead>
-          <tr>
-            <th class="text-center" style="width: 2.75rem" title="Chequeado contra papeles">✓</th>
-            <th>
-              <a class="app-th-sort" href="?{{ cc_sort_links.fecha }}" title="Ordenar por fecha">
-                Fecha{% if cc_sort_ord == "fecha" %}<span class="ms-1 th-sort-caret" aria-hidden="true">{% if cc_sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}
-              </a>
-            </th>
-            <th>
-              <a class="app-th-sort" href="?{{ cc_sort_links.detalle }}" title="Ordenar por detalle">
-                Detalle{% if cc_sort_ord == "detalle" %}<span class="ms-1 th-sort-caret" aria-hidden="true">{% if cc_sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}
-              </a>
-            </th>
-            {% for col in negocios_cc_columnas %}
-              <th class="text-end">
-                <a class="app-th-sort d-inline-flex w-100 justify-content-end" href="?{{ col.sort_link }}" title="Ordenar por {{ col.negocio.nombre }}">
-                  {{ col.negocio.nombre }}{% if cc_sort_ord == col.sort_ord %}<span class="ms-1 th-sort-caret" aria-hidden="true">{% if cc_sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}
-                </a>
-              </th>
-            {% endfor %}
-            <th class="text-end">Acción</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in cuenta_corriente_rows %}
-            <tr class="{% if row.marcado %}cc-row-marcado{% endif %}">
-              <td class="text-center align-middle">
-                <input
-                  type="checkbox"
-                  class="form-check-input js-cc-marcar"
-                  data-mov-tipo="{{ row.mov_tipo }}"
-                  data-objeto-id="{{ row.mov_id }}"
-                  {% if row.marcado %}checked{% endif %}
-                  aria-label="Marcar como chequeado"
-                  title="Chequeado contra papeles"
-                />
-              </td>
-              <td class="text-nowrap">{{ row.fecha|date:"d/m/Y" }}</td>
-              <td>
-                <div class="fw-semibold">{{ row.detalle }}</div>
-                <div class="text-muted small">{{ row.subdetalle }}</div>
-              </td>
-              {% for valor in row.valores %}
-                <td class="text-end col-money">
-                  {% if valor > 0 %}
-                    <span class="text-success">{{ valor|ars }}</span>
-                  {% elif valor < 0 %}
-                    <span class="text-danger">{{ valor|ars }}</span>
-                  {% else %}
-                    <span class="text-muted">—</span>
-                  {% endif %}
-                </td>
-              {% endfor %}
-              <td class="text-end">
-                <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url row.url row.url_pk %}">Ver</a>
-              </td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="{{ negocios|length|add:4 }}" class="table-empty">{% if cc_q or cc_marcado %}No hay movimientos con los filtros actuales.{% else %}Todavía no hay movimientos.{% endif %}</td></tr>
-          {% endfor %}
-        </tbody>
-        {% if cuenta_corriente_rows %}
-          <tfoot>
-            <tr>
-              <th></th>
-              <th colspan="2">{% if cc_marcado %}Saldo (movimientos listados){% elif es_hoy %}Saldo total abierto{% else %}Saldo abierto al {{ fecha_corte|date:"d/m/Y" }}{% endif %}</th>
-              {% for total in cuenta_corriente_totales %}
-                <th class="text-end col-money">
-                  {% if total > 0 %}
-                    <span class="text-success">{{ total|ars }}</span>
-                  {% elif total < 0 %}
-                    <span class="text-danger">{{ total|ars }}</span>
-                  {% else %}
-                    <span class="text-muted">{{ total|ars }}</span>
-                  {% endif %}
-                </th>
-              {% endfor %}
-              <th></th>
-            </tr>
-          </tfoot>
+  <div class="cc-saldos-pares">
+    {% for par in saldos_pares %}
+      <article class="cc-saldo-par-card">
+        <p class="cc-saldo-par-frase mb-2">
+          <span class="cc-saldo-par-deudor">{{ par.deudor }}</span>
+          <span class="cc-saldo-par-verbo">le debe a</span>
+          <span class="cc-saldo-par-acreedor">{{ par.acreedor }}</span>
+        </p>
+        <p class="cc-saldo-par-monto mb-0">{{ par.monto|ars }}</p>
+        {% if par.monto_exigible > 0 or par.monto_sin_vencer > 0 %}
+          <p class="cc-saldo-par-detalle text-muted small mb-0 mt-2">
+            {% if par.monto_exigible > 0 %}
+              <span>{% if es_hoy %}Exigible hoy{% else %}Exigible a la fecha{% endif %}: {{ par.monto_exigible|ars }}</span>
+            {% endif %}
+            {% if par.monto_exigible > 0 and par.monto_sin_vencer > 0 %}
+              <span class="mx-1">·</span>
+            {% endif %}
+            {% if par.monto_sin_vencer > 0 %}
+              <span>Sin vencer: {{ par.monto_sin_vencer|ars }}</span>
+            {% endif %}
+          </p>
         {% endif %}
-      </table>
-    </div>
-    {% if cuenta_corriente_page.paginator.num_pages > 1 %}
-      <nav class="d-flex flex-wrap justify-content-between align-items-center gap-2 px-3 pb-3" aria-label="Paginación cuenta corriente">
-        <span class="text-muted small mb-0">
-          Página {{ cuenta_corriente_page.number }} de {{ cuenta_corriente_page.paginator.num_pages }}
-        </span>
-        <ul class="pagination pagination-sm mb-0">
-          {% if cuenta_corriente_page.has_previous %}
-            <li class="page-item">
-              <a class="page-link rounded-pill" href="?{% if cc_export_query %}{{ cc_export_query }}&amp;{% endif %}page={{ cuenta_corriente_page.previous_page_number }}">Anterior</a>
-            </li>
+        <a
+          class="btn btn-outline-secondary btn-sm rounded-pill mt-3"
+          href="{% url 'cuentas_cuenta_corriente' %}?negocio_a={{ par.deudor_id }}&amp;negocio_b={{ par.acreedor_id }}{% if not es_hoy %}&amp;al={{ fecha_corte_iso }}{% endif %}"
+        >
+          Ver movimientos
+        </a>
+      </article>
+    {% empty %}
+      <div class="table-card ui-force-productos">
+        <div class="p-4 text-center text-muted">
+          {% if filtro_par_activo %}
+            No hay saldo pendiente entre estos dos negocios{% if not es_hoy %} al {{ fecha_corte|date:"d/m/Y" }}{% endif %}.
+          {% else %}
+            No hay saldos pendientes entre negocios{% if not es_hoy %} al {{ fecha_corte|date:"d/m/Y" }}{% endif %}.
           {% endif %}
-          {% if cuenta_corriente_page.has_next %}
-            <li class="page-item">
-              <a class="page-link rounded-pill" href="?{% if cc_export_query %}{{ cc_export_query }}&amp;{% endif %}page={{ cuenta_corriente_page.next_page_number }}">Siguiente</a>
-            </li>
-          {% endif %}
-        </ul>
-      </nav>
-    {% endif %}
-  </div>
-
-  <div class="row g-3">
-    <div class="col-12 col-xl-5">
-      <div class="table-card ui-force-productos mb-3">
-        <div class="table-card-header">
-          <h2 class="table-card-title">{% if es_hoy %}Saldos netos al día{% else %}Saldos netos al {{ fecha_corte|date:"d/m/Y" }}{% endif %}</h2>
-          <span class="table-card-count">{% if es_hoy %}Exigible hoy, sin vencer y total{% else %}Exigible a la fecha, sin vencer y total{% endif %}</span>
-        </div>
-        <div class="table-responsive">
-          <table class="modern-table">
-            <thead>
-              <tr>
-                <th>Par</th>
-                <th class="text-end">{% if es_hoy %}Al día de hoy{% else %}Exigible a la fecha{% endif %}</th>
-                <th class="text-end">Sin vencer</th>
-                <th class="text-end">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for saldo in saldos %}
-                <tr>
-                  <td>{{ saldo.negocio_a }} / {{ saldo.negocio_b }}</td>
-                  <td class="text-end col-money">
-                    {% if saldo.saldo_hoy %}
-                      <div class="fw-semibold">{{ saldo.saldo_hoy.monto|ars }}</div>
-                      <div class="text-muted small">{{ saldo.saldo_hoy.deudor }} debe a {{ saldo.saldo_hoy.acreedor }}</div>
-                    {% else %}
-                      <span class="text-muted">—</span>
-                    {% endif %}
-                  </td>
-                  <td class="text-end col-money">
-                    {% if saldo.saldo_futuro %}
-                      <div>{{ saldo.saldo_futuro.monto|ars }}</div>
-                      <div class="text-muted small">{{ saldo.saldo_futuro.deudor }} debe a {{ saldo.saldo_futuro.acreedor }}</div>
-                    {% else %}
-                      <span class="text-muted">—</span>
-                    {% endif %}
-                  </td>
-                  <td class="text-end col-money">
-                    {% if saldo.saldo_total %}
-                      <div>{{ saldo.saldo_total.monto|ars }}</div>
-                      <div class="text-muted small">{{ saldo.saldo_total.deudor }} debe a {{ saldo.saldo_total.acreedor }}</div>
-                    {% else %}
-                      <span class="text-muted">—</span>
-                    {% endif %}
-                  </td>
-                </tr>
-              {% empty %}
-                <tr><td colspan="4" class="table-empty">No hay saldos pendientes.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
         </div>
       </div>
-    </div>
-
-    <div class="col-12 col-xl-7">
-      <div class="table-card ui-force-productos mb-3">
-        <div class="table-card-header">
-          <h2 class="table-card-title">Calendario de vencimientos</h2>
-          <span class="table-card-count">{% if es_hoy %}Pendientes{% else %}Pendientes al {{ fecha_corte|date:"d/m/Y" }}{% endif %}</span>
-        </div>
-        <div class="table-responsive">
-          <table class="modern-table">
-            <thead>
-              <tr>
-                <th>Vence</th>
-                <th>Debe</th>
-                <th>A</th>
-                <th class="text-end">Saldo</th>
-                <th class="text-end">Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for deuda in vencimientos %}
-                <tr>
-                  <td>{{ deuda.vencimiento|date:"d/m/Y" }}</td>
-                  <td>{{ deuda.deudor.nombre }}</td>
-                  <td>{{ deuda.operacion.pagador.nombre }}</td>
-                  <td class="text-end col-money">{{ deuda.pendiente_calc|ars }}</td>
-                  <td class="text-end">
-                    {% if puede_admin_gastos_compartidos and es_hoy %}
-                      <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'cuentas_cancelar_deuda' deuda.pk %}">Cancelar</a>
-                    {% else %}
-                      <span class="text-muted small">—</span>
-                    {% endif %}
-                  </td>
-                </tr>
-              {% empty %}
-                <tr><td colspan="5" class="table-empty">No hay vencimientos pendientes.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    {% endfor %}
   </div>
-
-  <form id="cc-marcar-csrf" class="d-none">{% csrf_token %}</form>
-  <script>
-    (function () {
-      var url = "{{ cc_marcar_url|escapejs }}";
-      var csrfEl = document.querySelector("#cc-marcar-csrf [name=csrfmiddlewaretoken]");
-      var csrf = csrfEl ? csrfEl.value : "";
-      var marcadoFilter = "{{ cc_marcado|escapejs }}";
-
-      document.querySelectorAll(".js-cc-marcar").forEach(function (cb) {
-        cb.addEventListener("change", function () {
-          var tr = cb.closest("tr");
-          var fd = new FormData();
-          fd.append("mov_tipo", cb.getAttribute("data-mov-tipo") || "");
-          fd.append("objeto_id", cb.getAttribute("data-objeto-id") || "");
-          fd.append("marcado", cb.checked ? "1" : "0");
-          fd.append("csrfmiddlewaretoken", csrf);
-          cb.disabled = true;
-          fetch(url, {
-            method: "POST",
-            credentials: "same-origin",
-            headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": csrf },
-            body: fd,
-          })
-            .then(function (r) {
-              return r.json().then(function (body) {
-                return { ok: r.ok, body: body };
-              });
-            })
-            .then(function (res) {
-              if (!res.ok || !res.body || !res.body.ok) {
-                cb.checked = !cb.checked;
-                window.alert((res.body && res.body.error) || "No se pudo guardar.");
-                return;
-              }
-              var marcado = !!res.body.marcado;
-              if (tr) tr.classList.toggle("cc-row-marcado", marcado);
-              if (marcadoFilter === "si" && !marcado) {
-                tr.remove();
-              } else if (marcadoFilter === "no" && marcado) {
-                tr.remove();
-              }
-            })
-            .catch(function () {
-              cb.checked = !cb.checked;
-              window.alert("No se pudo guardar.");
-            })
-            .finally(function () {
-              cb.disabled = false;
-            });
-        });
-      });
-    })();
-  </script>
 {% endblock %}

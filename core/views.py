@@ -571,7 +571,7 @@ def notas_chat_json(request):
     msg_qs = (
         NotaAdmin.objects.filter(usuario=user)
         .select_related("creado_por", "usuario")
-        .order_by("creado_en", "id")
+        .order_by("-creado_en", "-id")
     )
     for m in msg_qs:
         autor = "Administración"
@@ -587,6 +587,7 @@ def notas_chat_json(request):
                 "es_staff": m.es_staff,
                 "autor": autor,
                 "parent_id": m.parent_id,
+                "resuelto": bool(m.resuelto) if not m.es_staff else None,
             }
         )
     NotaAdmin.objects.filter(usuario=user, es_staff=True, leida_usuario=False).update(

@@ -70,7 +70,7 @@ class NotaAdmin(models.Model):
     resuelto = models.BooleanField(
         default=False,
         db_index=True,
-        help_text="En el mensaje raíz del hilo: administración marcó la consulta como resuelta.",
+        help_text="Mensaje del usuario marcado como resuelto por administración.",
     )
     creado_en = models.DateTimeField(auto_now_add=True)
 

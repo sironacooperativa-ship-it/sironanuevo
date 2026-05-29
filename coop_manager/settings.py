@@ -53,6 +53,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "core.middleware.VendedorAccessMiddleware",
+    "core.middleware_log_errors.LogUnhandledExceptionMiddleware",
     "administrador.middleware.RegistroActividadMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -175,13 +176,29 @@ CACHES = {
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {name} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
     "loggers": {
         "django.request": {
             "handlers": ["console"],
             "level": "ERROR",
             "propagate": False,
-        }
+        },
+        "sirona.errors": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
     },
 }
 

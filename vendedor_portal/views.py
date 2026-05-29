@@ -14,6 +14,8 @@ from django.http import FileResponse, HttpResponse, HttpResponseBadRequest, Http
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
+
+from core.fecha_filtros import trunc_chart_label
 from django.utils.dateparse import parse_date
 
 from personas.models import Comprador, Vendedor
@@ -658,8 +660,7 @@ def vendedor_reportes(request):
         b = r["bucket"]
         if not b:
             continue
-        b_local = timezone.localtime(b) if timezone.is_aware(b) else b
-        labels.append(b_local.strftime(label_fmt))
+        labels.append(trunc_chart_label(b, label_fmt))
         serie_neto.append(float(r["neto"] or 0))
         serie_pedidos.append(int(r["pedidos"] or 0))
 
@@ -679,8 +680,7 @@ def vendedor_reportes(request):
         b = r["bucket"]
         if not b:
             continue
-        b_local = timezone.localtime(b) if timezone.is_aware(b) else b
-        global_labels.append(b_local.strftime("sem %W/%Y"))
+        global_labels.append(trunc_chart_label(b, "sem %W/%Y"))
         global_neto.append(float(r["neto"] or 0))
         global_pedidos.append(int(r["pedidos"] or 0))
 

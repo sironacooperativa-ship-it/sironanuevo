@@ -51,8 +51,8 @@
                   aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
                 >
                   {{ conv.usuario.username }}
-                  {% if conv.resuelto %}
-                    <span class="badge text-bg-success ms-1 align-middle" style="font-size: 0.65rem">OK</span>
+                  {% if conv.pendientes %}
+                    <span class="badge text-bg-warning text-dark ms-1 align-middle" style="font-size: 0.65rem">{{ conv.pendientes }} pend.</span>
                   {% elif conv.no_leidos %}
                     <span class="sirona-notif-dot position-static ms-1 align-middle" aria-hidden="true"></span>
                   {% endif %}
@@ -79,38 +79,46 @@
                   {% endif %}
                 </div>
                 <div class="d-flex flex-wrap align-items-center gap-2">
-                  <div class="form-check form-check-inline mb-0 admin-nota-resuelto-check">
-                    <input
-                      class="form-check-input js-admin-nota-resuelto"
-                      type="checkbox"
-                      id="resuelto-{{ conv.usuario.pk }}"
-                      data-usuario-id="{{ conv.usuario.pk }}"
-                      {% if conv.resuelto %}checked{% endif %}
-                    />
-                    <label class="form-check-label small" for="resuelto-{{ conv.usuario.pk }}">Resuelto</label>
-                  </div>
-                  {% if conv.resuelto %}
-                    <span class="badge text-bg-success rounded-pill admin-nota-badge-resuelto">Resuelto</span>
+                  {% if conv.pendientes %}
+                    <span class="badge text-bg-warning text-dark rounded-pill">{{ conv.pendientes }} mensaje{% if conv.pendientes != 1 %}s{% endif %} sin resolver</span>
                   {% elif conv.no_leidos %}
-                    <span class="badge text-bg-warning text-dark rounded-pill">Mensajes nuevos</span>
+                    <span class="badge text-bg-danger rounded-pill">Mensajes nuevos</span>
                   {% else %}
-                    <span class="badge text-bg-secondary rounded-pill">Al día</span>
+                    <span class="badge text-bg-success rounded-pill">Al día</span>
                   {% endif %}
                 </div>
               </div>
 
               <div class="admin-nota-chat px-3 py-2">
                 {% for m in conv.mensajes %}
-                  <div class="admin-nota-bubble {% if m.es_staff %}admin-nota-bubble--staff{% else %}admin-nota-bubble--user{% endif %}">
-                    <div class="admin-nota-bubble-meta small text-muted">
-                      {% if m.es_staff %}
-                        {% if m.creado_por %}{{ m.creado_por.username }}{% else %}Administración{% endif %}
-                      {% else %}
-                        {{ m.usuario.username }}
-                      {% endif %}
-                      · {{ m.creado_en|date:"d/m H:i" }}
-                      {% if not m.es_staff and not m.leida %}
-                        <span class="badge bg-danger ms-1">Nuevo</span>
+                  <div class="admin-nota-bubble {% if m.es_staff %}admin-nota-bubble--staff{% else %}admin-nota-bubble--user{% if not m.resuelto %} admin-nota-bubble--pendiente{% endif %}{% endif %}">
+                    <div class="admin-nota-bubble-meta small text-muted d-flex flex-wrap align-items-center gap-2">
+                      <span>
+                        {% if m.es_staff %}
+                          {% if m.creado_por %}{{ m.creado_por.username }}{% else %}Administración{% endif %}
+                        {% else %}
+                          {{ m.usuario.username }}
+                        {% endif %}
+                        · {{ m.creado_en|date:"d/m H:i" }}
+                        {% if not m.es_staff and not m.leida %}
+                          <span class="badge bg-danger ms-1">Nuevo</span>
+                        {% endif %}
+                      </span>
+                      {% if not m.es_staff %}
+                        <span class="admin-nota-resuelto-check form-check form-check-inline mb-0">
+                          <input
+                            class="form-check-input js-admin-nota-resuelto"
+                            type="checkbox"
+                            id="resuelto-msg-{{ m.pk }}"
+                            data-mensaje-id="{{ m.pk }}"
+                            data-usuario-id="{{ conv.usuario.pk }}"
+                            {% if m.resuelto %}checked{% endif %}
+                          />
+                          <label class="form-check-label small" for="resuelto-msg-{{ m.pk }}">Resuelto</label>
+                        </span>
+                        {% if not m.resuelto %}
+                          <span class="badge text-bg-warning text-dark rounded-pill">Pendiente</span>
+                        {% endif %}
                       {% endif %}
                     </div>
                     <div class="admin-nota-bubble-text">{{ m.texto|linebreaksbr }}</div>
@@ -154,57 +162,71 @@
     (function () {
       var url = "{% url 'admin_notas_resuelto' %}";
       var csrf = "{{ csrf_token }}";
+      function syncResueltoMensaje(cb) {
+        var mid = cb.getAttribute("data-mensaje-id");
+        if (!mid) return;
+        var fd = new FormData();
+        fd.append("mensaje_id", mid);
+        fd.append("resuelto", cb.checked ? "1" : "0");
+        fd.append("csrfmiddlewaretoken", csrf);
+        cb.disabled = true;
+        fetch(url, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": csrf },
+          body: fd,
+        })
+          .then(function (r) {
+            return r.json().then(function (body) {
+              return { ok: r.ok, body: body };
+            });
+          })
+          .then(function (res) {
+            if (!res.ok || !res.body || !res.body.ok) {
+              cb.checked = !cb.checked;
+              window.alert((res.body && res.body.error) || "No se pudo guardar.");
+              return;
+            }
+            var bubble = cb.closest(".admin-nota-bubble");
+            var pendienteBadge = bubble ? bubble.querySelector(".badge.text-bg-warning") : null;
+            if (res.body.resuelto) {
+              if (bubble) bubble.classList.remove("admin-nota-bubble--pendiente");
+              if (pendienteBadge) pendienteBadge.remove();
+            } else {
+              if (bubble) bubble.classList.add("admin-nota-bubble--pendiente");
+              if (bubble && !pendienteBadge) {
+                var b = document.createElement("span");
+                b.className = "badge text-bg-warning text-dark rounded-pill";
+                b.textContent = "Pendiente";
+                cb.closest(".admin-nota-bubble-meta").appendChild(b);
+              }
+            }
+            var uid = cb.getAttribute("data-usuario-id");
+            var tabBtn = document.getElementById("tab-user-" + uid);
+            if (tabBtn && typeof res.body.pendientes === "number") {
+              var old = tabBtn.querySelector(".badge.text-bg-warning");
+              if (old) old.remove();
+              if (res.body.pendientes > 0) {
+                var nb = document.createElement("span");
+                nb.className = "badge text-bg-warning text-dark ms-1 align-middle";
+                nb.style.fontSize = "0.65rem";
+                nb.textContent = res.body.pendientes + " pend.";
+                tabBtn.appendChild(nb);
+              }
+            }
+          })
+          .catch(function () {
+            cb.checked = !cb.checked;
+            window.alert("No se pudo guardar.");
+          })
+          .finally(function () {
+            cb.disabled = false;
+          });
+      }
+
       document.querySelectorAll(".js-admin-nota-resuelto").forEach(function (cb) {
         cb.addEventListener("change", function () {
-          var uid = cb.getAttribute("data-usuario-id");
-          if (!uid) return;
-          var fd = new FormData();
-          fd.append("usuario_id", uid);
-          fd.append("resuelto", cb.checked ? "1" : "0");
-          fd.append("csrfmiddlewaretoken", csrf);
-          cb.disabled = true;
-          fetch(url, {
-            method: "POST",
-            credentials: "same-origin",
-            headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": csrf },
-            body: fd,
-          })
-            .then(function (r) {
-              return r.json().then(function (body) {
-                return { ok: r.ok, body: body };
-              });
-            })
-            .then(function (res) {
-              if (!res.ok || !res.body || !res.body.ok) {
-                cb.checked = !cb.checked;
-                window.alert((res.body && res.body.error) || "No se pudo guardar.");
-                return;
-              }
-              var pane = cb.closest(".tab-pane");
-              if (!pane) return;
-              var badge = pane.querySelector(".admin-nota-badge-resuelto");
-              var otros = pane.querySelectorAll(".badge.rounded-pill:not(.admin-nota-badge-resuelto)");
-              if (res.body.resuelto) {
-                if (!badge) {
-                  badge = document.createElement("span");
-                  badge.className = "badge text-bg-success rounded-pill admin-nota-badge-resuelto";
-                  badge.textContent = "Resuelto";
-                  cb.closest(".d-flex.flex-wrap.align-items-center.gap-2").appendChild(badge);
-                }
-                otros.forEach(function (b) {
-                  b.remove();
-                });
-              } else {
-                if (badge) badge.remove();
-              }
-            })
-            .catch(function () {
-              cb.checked = !cb.checked;
-              window.alert("No se pudo guardar.");
-            })
-            .finally(function () {
-              cb.disabled = false;
-            });
+          syncResueltoMensaje(cb);
         });
       });
     })();

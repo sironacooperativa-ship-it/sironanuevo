@@ -57,3 +57,35 @@ def rango_periodo(codigo: str) -> tuple[date | None, date | None]:
         _, last = monthrange(y, m)
         return start, date(y, m, last)
     return None, None
+
+
+def trunc_to_date(val) -> date | None:
+    """
+    Normaliza la salida de TruncDate / TruncMonth / TruncWeek (SQLite suele devolver
+    `date` en TruncDate; Postgres puede devolver `datetime`). No usar is_aware() sobre `date`.
+    """
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        if timezone.is_aware(val):
+            return timezone.localtime(val).date()
+        return val.date()
+    if isinstance(val, date):
+        return val
+    return None
+
+
+def trunc_to_month_start(val) -> date | None:
+    """Primer día del mes a partir de un valor truncado por mes."""
+    d = trunc_to_date(val)
+    return d.replace(day=1) if d else None
+
+
+def trunc_chart_label(val, fmt: str) -> str:
+    """Etiqueta para gráficos a partir de un bucket truncado."""
+    d = trunc_to_date(val)
+    if d is not None:
+        return d.strftime(fmt)
+    if isinstance(val, datetime):
+        return val.strftime(fmt)
+    return ""

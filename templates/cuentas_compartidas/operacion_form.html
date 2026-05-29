@@ -56,7 +56,7 @@
 
         <hr class="my-4">
         <h2 class="h5">Partes que deben pagar</h2>
-        <p class="text-muted small">Marcá cada negocio que participa como deudor. El negocio que pagó no debe marcarse.</p>
+        <p class="text-muted small">Marcá cada negocio que participa como deudor. El negocio que pagó no debe marcarse. Si no indicás vencimiento, se usa la <strong>fecha de la operación</strong> (exigible en el acto).</p>
 
         <div class="row g-3">
           {% for row in deuda_rows %}
@@ -74,7 +74,7 @@
                     {% if row.monto.errors %}<div class="text-danger small">{{ row.monto.errors }}</div>{% endif %}
                   </div>
                   <div class="col-6">
-                    <label class="form-label small">Vencimiento</label>
+                    <label class="form-label small">Vencimiento <span class="text-muted fw-normal">(opcional)</span></label>
                     {{ row.vencimiento }}
                     {% if row.vencimiento.errors %}<div class="text-danger small">{{ row.vencimiento.errors }}</div>{% endif %}
                   </div>

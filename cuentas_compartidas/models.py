@@ -137,7 +137,7 @@ class CancelacionDeuda(models.Model):
 
 
 class MovimientoCCMarcacion(models.Model):
-    """Marca en cuenta corriente que un movimiento fue chequeado contra papeles."""
+    """Oculta un movimiento de la vista de pendientes en cuenta corriente (archivado)."""
 
     class MovTipo(models.TextChoices):
         OPERACION = "operacion", "Operación"
@@ -166,5 +166,5 @@ class MovimientoCCMarcacion(models.Model):
         ]
 
     def __str__(self) -> str:
-        estado = "chequeado" if self.marcado else "sin chequear"
+        estado = "archivado" if self.marcado else "pendiente"
         return f"{self.mov_tipo} #{self.objeto_id} ({estado})"

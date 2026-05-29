@@ -65,9 +65,18 @@ class OperacionCompartidaForm(forms.ModelForm):
                 widget=date_input_widget(),
             )
 
+    def _fecha_operacion(self, cleaned) -> date:
+        fecha = cleaned.get("fecha")
+        if fecha:
+            return fecha
+        if self.instance and self.instance.pk and self.instance.fecha:
+            return self.instance.fecha
+        return date.today()
+
     def clean(self):
         cleaned = super().clean()
         pagador = cleaned.get("pagador")
+        fecha_operacion = self._fecha_operacion(cleaned)
         deudas = []
         for negocio in self.negocios:
             incluido = cleaned.get(f"incluir_{negocio.pk}")
@@ -76,11 +85,11 @@ class OperacionCompartidaForm(forms.ModelForm):
             if pagador and negocio.pk == pagador.pk and incluido:
                 self.add_error(f"incluir_{negocio.pk}", "El pagador no puede deberse a sí mismo.")
                 continue
-            if incluido and (not monto or not vencimiento):
-                if not monto:
-                    self.add_error(f"monto_{negocio.pk}", "Indicá el monto.")
-                if not vencimiento:
-                    self.add_error(f"vencimiento_{negocio.pk}", "Indicá el vencimiento.")
+            if incluido and monto and not vencimiento:
+                vencimiento = fecha_operacion
+                cleaned[f"vencimiento_{negocio.pk}"] = vencimiento
+            if incluido and not monto:
+                self.add_error(f"monto_{negocio.pk}", "Indicá el monto.")
             if not incluido and (monto or vencimiento):
                 self.add_error(f"incluir_{negocio.pk}", "Marcá el negocio para cargar esta deuda.")
             if incluido and monto and vencimiento and (not pagador or negocio.pk != pagador.pk):
