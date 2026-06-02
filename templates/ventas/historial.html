@@ -301,8 +301,6 @@
                   <input type="hidden" name="next" value="{{ request.get_full_path }}" />
                   <input type="hidden" name="aplica_comision" value="0" />
                   <input type="hidden" name="comision_descontada_en_pedido" value="0" />
-                  {% with comision_bloqueada=v.comision_liquidacion_pago_id %}
-                  {% with comision_editable=v.estado == "PEN" or v.estado == "PAG" %}
                   <div class="ventas-hist-comision-stack">
                     <div class="d-flex flex-row align-items-center justify-content-center gap-1 flex-nowrap">
                       <input
@@ -313,8 +311,10 @@
                         value="1"
                         id="comision-v-{{ v.pk }}"
                         {% if v.aplica_comision %}checked{% endif %}
-                        {% if comision_editable and not comision_bloqueada %}{% else %}disabled{% endif %}
-                        title="{% if comision_bloqueada %}Comisión ya liquidada y pagada{% elif comision_editable %}Aplicar comisión del vendedor (5% sobre el neto){% else %}Solo en pedidos pendientes o cobrados{% endif %}"
+                        {% if v.estado == "PEN" or v.estado == "PAG" %}
+                          {% if v.comision_liquidacion_pago_id %}disabled{% endif %}
+                        {% else %}disabled{% endif %}
+                        title="{% if v.comision_liquidacion_pago_id %}Comisión ya liquidada y pagada{% elif v.estado == 'PEN' or v.estado == 'PAG' %}Aplicar comisión del vendedor (5% sobre el neto){% else %}Solo en pedidos pendientes o cobrados{% endif %}"
                         aria-label="Aplicar comisión del vendedor"
                         onchange="this.form.submit()"
                       />
@@ -330,7 +330,7 @@
                         value="1"
                         id="comision-pedido-v-{{ v.pk }}"
                         {% if v.comision_descontada_en_pedido %}checked{% endif %}
-                        {% if comision_editable and not comision_bloqueada and v.aplica_comision %}{% else %}disabled{% endif %}
+                        {% if v.estado != "PEN" and v.estado != "PAG" %}disabled{% elif v.comision_liquidacion_pago_id %}disabled{% elif not v.aplica_comision %}disabled{% endif %}
                         title="Descontar la comisión del monto a cobrar en caja"
                         aria-label="Aplicar comisión al pedido, descontar del monto a pagar"
                         onchange="this.form.submit()"
@@ -338,8 +338,6 @@
                       <label class="form-check-label small" for="comision-pedido-v-{{ v.pk }}">Aplicar a pedido</label>
                     </div>
                   </div>
-                  {% endwith %}
-                  {% endwith %}
                 </form>
               </td>
               <td class="text-end col-money ventas-hist-caja">
