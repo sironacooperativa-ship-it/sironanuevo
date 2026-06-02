@@ -20,7 +20,7 @@
     />
     <!-- theme: ios-2026r29 -->
     <link href="{% static 'css/theme.css' %}?v=ios-2026r47" rel="stylesheet" />
-    <link href="{% static 'css/styles.css' %}?v=saas-2026r23" rel="stylesheet" />
+    <link href="{% static 'css/styles.css' %}?v=saas-2026r24" rel="stylesheet" />
     <link href="{% static 'css/ui-force-productos.css' %}?v=3" rel="stylesheet" />
     <link href="{% static 'css/sirona-calc.css' %}" rel="stylesheet" />
     <style>
@@ -242,7 +242,7 @@
                     {% endif %}
                     {% if can_switch_admin_mode and not admin_mode %}
                       <li>
-                        <a class="dropdown-item" href="{% url 'switch_to_admin_mode' %}">Administración (pedir login)</a>
+                        <a class="dropdown-item" href="{% url 'switch_to_admin_mode' %}">Administración</a>
                       </li>
                       <li><hr class="dropdown-divider" /></li>
                     {% endif %}
@@ -410,7 +410,7 @@
                     {% endif %}
                     {% if can_switch_admin_mode and not admin_mode %}
                       <li>
-                        <a class="dropdown-item" href="{% url 'switch_to_admin_mode' %}">Administración (pedir login)</a>
+                        <a class="dropdown-item" href="{% url 'switch_to_admin_mode' %}">Administración</a>
                       </li>
                       <li><hr class="dropdown-divider" /></li>
                     {% endif %}
@@ -1155,6 +1155,52 @@
 
     <script src="{% static 'js/sirona-icons.js' %}?v=5"></script>
     <script>
+      // Cierre fiable de modales Bootstrap (mensajes con admin / usuarios).
+      window.sironaCloseBootstrapModal = function (modalEl) {
+        if (!modalEl) return;
+        const dismissBtn = modalEl.querySelector('[data-bs-dismiss="modal"]');
+        if (dismissBtn) {
+          dismissBtn.click();
+          return;
+        }
+        try {
+          if (typeof bootstrap !== "undefined") {
+            const inst =
+              bootstrap.Modal.getInstance(modalEl) ||
+              bootstrap.Modal.getOrCreateInstance(modalEl);
+            inst.hide();
+          }
+        } catch (e) {}
+      };
+
+      document.querySelectorAll(".modal.fade").forEach(function (el) {
+        el.addEventListener("hidden.bs.modal", function () {
+          if (document.querySelector(".modal.show")) return;
+          document.querySelectorAll(".modal-backdrop").forEach(function (b) {
+            b.remove();
+          });
+          document.body.classList.remove("modal-open");
+          document.body.style.removeProperty("padding-right");
+          document.body.style.removeProperty("overflow");
+        });
+      });
+
+      window.sironaParseJsonResponse = function (r) {
+        return r.text().then(function (text) {
+          let body = null;
+          try {
+            body = text ? JSON.parse(text) : null;
+          } catch (e) {
+            body = null;
+          }
+          if (body && typeof body === "object") {
+            return { ok: r.ok, body: body };
+          }
+          return { ok: false, body: { error: "Respuesta inválida del servidor." } };
+        });
+      };
+    </script>
+    <script>
       // Admin: popup de conversaciones, una pestaña por usuario.
       (function () {
         const modalEl = document.getElementById("sironaAdminMsgs");
@@ -1193,15 +1239,10 @@
           });
         }
 
-        function parseJsonResponse(r) {
-          const ct = (r.headers.get("content-type") || "").toLowerCase();
-          if (ct.indexOf("application/json") >= 0) {
-            return r.json().then(function (body) {
-              return { ok: r.ok, body: body };
-            });
-          }
-          return Promise.resolve({ ok: false, body: { error: "Respuesta inválida del servidor." } });
-        }
+        const parseJsonResponse = window.sironaParseJsonResponse;
+        const closeModal = function () {
+          window.sironaCloseBootstrapModal(modalEl);
+        };
 
         function syncResueltoMensaje(cb) {
           if (!urlResuelto) return Promise.resolve();
@@ -1397,7 +1438,7 @@
                 return;
               }
               textarea.value = "";
-              return loadChat();
+              closeModal();
             })
             .finally(function () {
               btnSend.disabled = false;
@@ -1444,33 +1485,10 @@
             });
         }
 
-        function parseJsonResponse(r) {
-          const ct = (r.headers.get("content-type") || "").toLowerCase();
-          if (ct.indexOf("application/json") >= 0) {
-            return r.json().then(function (body) {
-              return { ok: r.ok, body: body };
-            });
-          }
-          return Promise.resolve({ ok: false, body: { error: "Respuesta inválida del servidor." } });
-        }
-
-        function closeQuickMsgModal() {
-          try {
-            if (typeof bootstrap !== "undefined") {
-              const inst =
-                bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
-              inst.hide();
-            }
-          } catch (e) {}
-          modalEl.classList.remove("show");
-          modalEl.style.display = "none";
-          modalEl.setAttribute("aria-hidden", "true");
-          document.body.classList.remove("modal-open");
-          document.body.style.removeProperty("padding-right");
-          document.querySelectorAll(".modal-backdrop").forEach(function (el) {
-            el.remove();
-          });
-        }
+        const parseJsonResponse = window.sironaParseJsonResponse;
+        const closeModal = function () {
+          window.sironaCloseBootstrapModal(modalEl);
+        };
 
         function renderMensajes(arr) {
           if (!arr || !arr.length) {
@@ -1550,7 +1568,7 @@
                 return;
               }
               textarea.value = "";
-              closeQuickMsgModal();
+              closeModal();
             })
             .catch(function () {
               window.alert("No se pudo enviar el mensaje.");

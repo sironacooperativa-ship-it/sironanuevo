@@ -49,10 +49,15 @@ def sync_evento_pedido_pendiente(venta: Venta) -> None:
         if venta.aplica_comision
         else "Sin comisión al vendedor."
     )
+    ingreso_txt = (
+        f"Ingreso en caja al cobrar: {format_monto_ars(venta.monto_ingreso_caja)} (neto menos comisión en el pedido)."
+        if venta.aplica_comision and venta.comision_descontada_en_pedido
+        else f"Ingreso en caja al cobrar: {format_monto_ars(venta.monto_ingreso_caja)} (neto del pedido)."
+    )
     desc = (
         f"Vendedor: {venta.vendedor}. "
         f"Monto neto pedido: {format_monto_ars(venta.neto)}. {com_txt} "
-        f"Ingreso en caja al cobrar: {format_monto_ars(venta.monto_ingreso_caja)} (importe íntegro al neto).{extra}"
+        f"{ingreso_txt}{extra}"
     )
     if venta.fecha_vencimiento_pago is None:
         qs.delete()

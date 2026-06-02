@@ -77,6 +77,10 @@ class Venta(models.Model):
         default=False,
         help_text="Si aplica, la comisión se calcula sobre el neto y se liquida desde Comisiones al pagar al vendedor (egreso de caja).",
     )
+    comision_descontada_en_pedido = models.BooleanField(
+        default=False,
+        help_text="Si aplica comisión y está activo, el ingreso en caja al cobrar es neto menos comisión.",
+    )
     creado_por = models.ForeignKey(
         "auth.User",
         null=True,
@@ -149,8 +153,11 @@ class Venta(models.Model):
 
     @property
     def monto_ingreso_caja(self) -> Decimal:
-        """Importe que se registra en caja al cobrar el pedido (igual al neto; la comisión se paga aparte al liquidar)."""
-        return _q2(self.neto)
+        """Importe en caja al cobrar: neto, o neto − comisión si está marcado «aplicar a pedido»."""
+        neto = self.neto
+        if self.aplica_comision and self.comision_descontada_en_pedido:
+            return _q2(max(neto - self.monto_comision, Decimal("0.00")))
+        return _q2(neto)
 
     def clean(self):
         super().clean()

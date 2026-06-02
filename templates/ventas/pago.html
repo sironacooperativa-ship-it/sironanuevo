@@ -28,7 +28,13 @@
         <div class="col-md-4">
           <span class="text-muted">Monto a ingresar en caja</span>
           <div class="fw-semibold fs-5">{{ venta.monto_ingreso_caja|ars }}</div>
-          <div class="small text-muted mt-1">Neto del pedido. La comisión al vendedor se liquida aparte.</div>
+          <div class="small text-muted mt-1">
+            {% if venta.aplica_comision and venta.comision_descontada_en_pedido %}
+              Neto {{ venta.neto|ars }} menos comisión {{ venta.monto_comision|ars }}.
+            {% else %}
+              Neto del pedido. La comisión al vendedor se liquida aparte en Comisiones.
+            {% endif %}
+          </div>
         </div>
       </div>
       <hr />

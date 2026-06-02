@@ -943,6 +943,7 @@ def venta_historial(request):
             "Descuento",
             "Neto",
             "Aplica comisión",
+            "Comisión en pedido",
             "Comisión %",
             "Monto comisión",
             "Ingreso caja",
@@ -961,6 +962,7 @@ def venta_historial(request):
                     str(q2(v.descuento_monto)),
                     str(q2(v.neto)),
                     "Sí" if v.aplica_comision else "No",
+                    "Sí" if v.comision_descontada_en_pedido else "No",
                     str(v.comision_porcentaje),
                     str(q2(v.monto_comision)),
                     str(q2(v.monto_ingreso_caja)),
@@ -1465,16 +1467,37 @@ def venta_actualizar_comision(request, pk: int):
         return _redirect_response()
 
     aplica = request.POST.get("aplica_comision") == "1"
+    descontar = request.POST.get("comision_descontada_en_pedido") == "1" and aplica
     venta.aplica_comision = aplica
+    venta.comision_descontada_en_pedido = descontar
     if aplica:
         venta.comision_porcentaje = COMISION_PORCENTAJE_DEFECTO
+    else:
+        venta.comision_descontada_en_pedido = False
     venta.actualizado_por = request.user
-    venta.save(update_fields=["aplica_comision", "comision_porcentaje", "actualizado_por"])
-    sync_evento_pedido_pendiente(venta)
-    messages.success(
-        request,
-        "Comisión del vendedor activada (5% sobre el neto)." if aplica else "Comisión del vendedor desactivada.",
+    venta.save(
+        update_fields=[
+            "aplica_comision",
+            "comision_descontada_en_pedido",
+            "comision_porcentaje",
+            "actualizado_por",
+        ]
     )
+    if venta.estado == Venta.Estado.PAGADA and venta.pago_movimiento_id:
+        mov = venta.pago_movimiento
+        nuevo_monto = venta.monto_ingreso_caja
+        if mov.monto != nuevo_monto:
+            mov.monto = nuevo_monto
+            mov.actualizado_por = request.user
+            mov.save(update_fields=["monto", "actualizado_por"])
+    sync_evento_pedido_pendiente(venta)
+    if aplica and descontar:
+        msg = "Comisión activa: se descontará del monto a cobrar en caja."
+    elif aplica:
+        msg = "Comisión del vendedor activada (5% sobre el neto)."
+    else:
+        msg = "Comisión del vendedor desactivada."
+    messages.success(request, msg)
     return _redirect_response()
 
 

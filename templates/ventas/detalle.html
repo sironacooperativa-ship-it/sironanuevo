@@ -399,7 +399,12 @@
                 </tr>
               {% endif %}
               <tr class="fw-semibold">
-                <td>Ingreso en caja al cobrar <span class="text-muted fw-normal small">(neto íntegro)</span></td>
+                <td>
+                  Ingreso en caja al cobrar
+                  <span class="text-muted fw-normal small">
+                    {% if venta.aplica_comision and venta.comision_descontada_en_pedido %}(neto − comisión){% else %}(neto íntegro){% endif %}
+                  </span>
+                </td>
                 <td class="text-end">{{ venta.monto_ingreso_caja|ars }}</td>
               </tr>
               <tr>
@@ -455,9 +460,14 @@
             {% endif %}
           </p>
           <p class="small mb-0">
-            Al cobrar se registra en caja el <strong>neto del pedido</strong> (<strong>{{ venta.monto_ingreso_caja|ars }}</strong>).
-            {% if venta.aplica_comision and venta.monto_comision > 0 %}
-              La comisión al vendedor (<strong>{{ venta.monto_comision|ars }}</strong>) se paga por separado desde <strong>Comisiones</strong> al liquidar el mes.
+            Al cobrar se registra en caja <strong>{{ venta.monto_ingreso_caja|ars }}</strong>
+            {% if venta.aplica_comision and venta.comision_descontada_en_pedido %}
+              (neto <strong>{{ venta.neto|ars }}</strong> menos comisión <strong>{{ venta.monto_comision|ars }}</strong>).
+            {% else %}
+              (neto del pedido: <strong>{{ venta.neto|ars }}</strong>).
+              {% if venta.aplica_comision and venta.monto_comision > 0 %}
+                La comisión al vendedor (<strong>{{ venta.monto_comision|ars }}</strong>) se paga por separado desde <strong>Comisiones</strong>.
+              {% endif %}
             {% endif %}
           </p>
         {% endif %}

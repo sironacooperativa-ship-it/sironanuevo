@@ -3026,7 +3026,33 @@ button.btn-icon.btn-ink,
 .ventas-historial-tabla .th-comision,
 .ventas-historial-tabla .comision-cel {
   width: 118px;
+  white-space: normal;
+}
+
+.ventas-hist-comision-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  max-width: 118px;
+  margin: 0 auto;
+}
+
+.ventas-hist-comision-pedido {
+  line-height: 1.15;
+  padding-left: 0.1rem;
+}
+
+.ventas-hist-comision-pedido .form-check-label {
+  font-size: 0.68rem;
+  color: rgba(60, 60, 67, 0.72);
   white-space: nowrap;
+}
+
+.ventas-hist-comision-pedido .form-check-input {
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-top: 0.12rem;
 }
 
 .ventas-historial-tabla .th-caja,

@@ -7,7 +7,7 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
 from django.db.models import Q, Sum
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -734,7 +734,7 @@ def cuenta_corriente_acciones(request):
         messages.error(request, "Acción no válida.")
         return redirect(_dashboard_redirect_con_query(request))
 
-    seleccion = _parse_cc_seleccion(request)
+    seleccion = _parse_cc_seleccion(request.POST)
     if not seleccion:
         messages.warning(request, "Seleccioná al menos un movimiento.")
         return redirect(_dashboard_redirect_con_query(request))
@@ -742,17 +742,21 @@ def cuenta_corriente_acciones(request):
     fecha_pago = date.today()
     ok_n = 0
     errores: list[str] = []
-    for mov_tipo, objeto_id in seleccion:
-        if accion == "pagar":
-            ok, msg = _marcar_movimiento_pagado(
-                mov_tipo, objeto_id, user=request.user, fecha_pago=fecha_pago
-            )
-        else:
-            ok, msg = _eliminar_movimiento_cc(request, mov_tipo, objeto_id)
-        if ok:
-            ok_n += 1
-        else:
-            errores.append(msg)
+    with transaction.atomic():
+        for mov_tipo, objeto_id in seleccion:
+            try:
+                if accion == "pagar":
+                    ok, msg = _marcar_movimiento_pagado(
+                        mov_tipo, objeto_id, user=request.user, fecha_pago=fecha_pago
+                    )
+                else:
+                    ok, msg = _eliminar_movimiento_cc(request, mov_tipo, objeto_id)
+            except ValidationError as exc:
+                ok, msg = False, " · ".join(exc.messages) if getattr(exc, "messages", None) else str(exc)
+            if ok:
+                ok_n += 1
+            else:
+                errores.append(msg)
 
     if ok_n:
         if accion == "pagar":
