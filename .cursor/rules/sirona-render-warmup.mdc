@@ -1,0 +1,29 @@
+---
+description: SIRONA en Render — URL warmup, monitor y cold start
+alwaysApply: true
+---
+
+# SIRONA (Render Free) — despertar app y monitoreo
+
+El usuario despliega **SIRONA** (cooperativa) en **Render Free** (`sironanuevo-1.onrender.com`).
+
+## Pantalla negra / "Welcome to Render"
+
+Es **cold start** del plan free. Mitigación:
+
+- **Precalentar / favorito / monitor:** `https://sironanuevo-1.onrender.com/warmup/` (recomendado; despierta app + DB, responde `ok`)
+- Alternativa liviana: `https://sironanuevo-1.onrender.com/health/` (solo `ok`, sin DB)
+- **Uso normal:** `https://sironanuevo-1.onrender.com/login/`
+
+## Monitor externo (UptimeRobot, cron-job.org, etc.)
+
+- URL: **`/warmup/`** (no la raíz `/`)
+- Método: **HTTP GET** (no HEAD — la raíz con HEAD da **405 Method Not Allowed**)
+- Intervalo: ~5 minutos
+- Éxito: HTTP **200** y cuerpo `ok`
+
+## Si vuelve un incidente falso o pantalla negra
+
+1. Verificar que el monitor apunte a `/warmup/` con **GET**
+2. Abrir `/warmup/` manualmente y luego `/login/`
+3. Revisar logs de Render si hay 500 real (migraciones, DB)

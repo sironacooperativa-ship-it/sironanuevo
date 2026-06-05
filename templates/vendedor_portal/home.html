@@ -176,15 +176,15 @@
           </div>
         </div>
 
-        <div class="table-responsive presu-lista-table-wrap mb-3">
-          <table class="modern-table form-lineas-tabla" id="tablaLineas">
+        <div class="table-responsive presu-lista-table-wrap presu-form-table-wrap mb-3">
+          <table class="modern-table form-lineas-tabla presu-form-lineas" id="tablaLineas">
             <thead>
               <tr>
-                <th scope="col">Producto</th>
-                <th scope="col" class="text-end" style="width: 6.5rem">Cant.</th>
-                <th scope="col" class="text-end" style="width: 8rem">Precio</th>
-                <th scope="col" class="text-end" style="width: 8rem">Subtotal</th>
-                <th scope="col" style="width: 3rem"></th>
+                <th scope="col" class="presu-form-th-prod">Producto</th>
+                <th scope="col" class="text-end presu-form-th-qty">Cant.</th>
+                <th scope="col" class="text-end presu-form-th-pu">Precio</th>
+                <th scope="col" class="text-end presu-form-th-sub">Subtotal</th>
+                <th scope="col" class="presu-form-th-del" aria-label="Quitar"></th>
               </tr>
             </thead>
             <tbody id="lineasBody"></tbody>
@@ -529,14 +529,47 @@
           );
         }
 
+        function ensureTrailingEmptyRow() {
+          if (!productos.length) return;
+          const rows = tbody.querySelectorAll("tr");
+          const last = rows.length ? rows[rows.length - 1] : null;
+          if (!last) {
+            addRow();
+            return;
+          }
+          const sel = last.querySelector('select[name="linea_producto"]');
+          if (sel && String(sel.value || "").trim()) {
+            addRow();
+          }
+        }
+
+        function removeLineRow(tr) {
+          if (!tr || !tbody.contains(tr)) return;
+          tr.remove();
+          if (!tbody.querySelector("tr")) {
+            addRow();
+          } else {
+            ensureTrailingEmptyRow();
+          }
+          totals();
+        }
+
+        tbody.addEventListener("click", function (ev) {
+          const btn = ev.target.closest(".js-remove");
+          if (!btn || !tbody.contains(btn)) return;
+          ev.preventDefault();
+          removeLineRow(btn.closest("tr"));
+        });
+
         function addRow() {
           const tr = document.createElement("tr");
+          tr.className = "presu-form-line";
           tr.innerHTML =
-            '<td></td>' +
-            '<td class="text-end"><input type="number" name="linea_cantidad" class="form-control form-control-sm text-end" min="1" step="1" value="" placeholder="1" title="Cantidad" /></td>' +
-            '<td class="text-end"><input type="text" name="linea_precio_unitario" class="form-control form-control-sm text-end" inputmode="decimal" placeholder="Lista" autocomplete="off" title="Vacío = precio de lista del producto" /></td>' +
-            '<td class="text-end fw-semibold js-subtotal">—</td>' +
-            '<td><div class="table-actions presu-row-actions d-flex"><button type="button" class="btn-icon btn-delete js-remove" title="Quitar" aria-label="Quitar"><i data-lucide="x"></i></button></div></td>';
+            '<td class="presu-form-td-prod"></td>' +
+            '<td class="text-end presu-form-td-qty"><input type="number" name="linea_cantidad" class="form-control form-control-sm text-end" min="1" step="1" value="" placeholder="1" title="Cantidad" /></td>' +
+            '<td class="text-end presu-form-td-pu"><input type="text" name="linea_precio_unitario" class="form-control form-control-sm text-end" inputmode="decimal" placeholder="Lista" autocomplete="off" title="Vacío = precio de lista del producto" /></td>' +
+            '<td class="text-end fw-semibold presu-form-td-sub js-subtotal">—</td>' +
+            '<td class="presu-form-td-del"><div class="table-actions presu-row-actions d-flex justify-content-end"><button type="button" class="btn-icon btn-delete js-remove presu-form-line-remove" title="Quitar renglón" aria-label="Quitar renglón"><span class="presu-form-line-remove-glyph" aria-hidden="true">×</span></button></div></td>';
           tr.children[0].appendChild(buildSelect(tr));
           tr.querySelector('input[name="linea_cantidad"]').addEventListener("input", () => {
             refreshRow(tr);
@@ -544,10 +577,6 @@
           });
           tr.querySelector('input[name="linea_precio_unitario"]').addEventListener("input", () => {
             refreshRow(tr);
-            totals();
-          });
-          tr.querySelector(".js-remove").addEventListener("click", () => {
-            tr.remove();
             totals();
           });
           tbody.appendChild(tr);

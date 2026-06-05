@@ -14,6 +14,12 @@ def puede_usar_cuentas_compartidas(user) -> bool:
     )
 
 
+def es_admin_gastos_compartidos(request) -> bool:
+    """Gestión completa del módulo: staff con permiso de Gastos compartidos."""
+    user = getattr(request, "user", None)
+    return puede_usar_cuentas_compartidas(user)
+
+
 def cuentas_compartidas_required(view):
     return login_required(permission_required(PERMISO_CUENTAS_COMPARTIDAS, raise_exception=True)(view))
 
@@ -21,8 +27,8 @@ def cuentas_compartidas_required(view):
 def modo_admin_gastos_required(view):
     @cuentas_compartidas_required
     def _wrapped(request, *args, **kwargs):
-        if not (getattr(request.user, "is_staff", False) and request.session.get("modo_admin")):
-            raise PermissionDenied("La edición de Gastos compartidos requiere modo admin.")
+        if not es_admin_gastos_compartidos(request):
+            raise PermissionDenied("No tenés permiso para administrar Gastos compartidos.")
         return view(request, *args, **kwargs)
 
     return _wrapped

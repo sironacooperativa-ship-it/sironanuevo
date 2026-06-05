@@ -15,7 +15,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from core.export_utils import parse_export, pdf_response, xlsx_response
 
-from .auth import cuentas_compartidas_required, modo_admin_gastos_required
+from .auth import cuentas_compartidas_required, es_admin_gastos_compartidos, modo_admin_gastos_required
 from .forms import CancelacionDeudaForm, NegocioForm, OperacionCompartidaForm
 from .models import (
     CancelacionDeuda,
@@ -171,7 +171,7 @@ def _filtro_par_desde_request(request) -> tuple[str, str, set[int] | None, list[
 
 
 def _puede_editar_operacion(request, operacion: OperacionCompartida) -> bool:
-    if request.user.is_staff and request.session.get("modo_admin"):
+    if es_admin_gastos_compartidos(request):
         return True
     return bool(operacion.creado_por_id and operacion.creado_por_id == request.user.pk)
 
@@ -550,9 +550,7 @@ def _cuenta_corriente_context(request) -> dict:
         "negocios_cc_columnas": negocios_cc_columnas,
         "cc_querystring_sin_orden": _cuenta_corriente_url_sin_orden(request),
         "cc_export_query": _cc_export_querystring(request),
-        "puede_admin_gastos_compartidos": bool(
-            request.user.is_staff and request.session.get("modo_admin")
-        ),
+        "puede_admin_gastos_compartidos": es_admin_gastos_compartidos(request),
         "puede_cargar_gastos_compartidos": True,
     }
 
@@ -583,9 +581,7 @@ def cuentas_dashboard(request):
             "fecha_max_futuro_iso": (hoy + timedelta(days=365 * 5)).isoformat(),
             "saldos_pares": saldos_pares,
             "total_pendiente": total_pendiente,
-            "puede_admin_gastos_compartidos": bool(
-                request.user.is_staff and request.session.get("modo_admin")
-            ),
+            "puede_admin_gastos_compartidos": es_admin_gastos_compartidos(request),
             "puede_cargar_gastos_compartidos": True,
         },
     )
@@ -659,7 +655,7 @@ def cuenta_corriente_export(request):
 
 
 def _puede_eliminar_movimiento_cc(request, mov_tipo: str, objeto_id: int) -> bool:
-    if request.user.is_staff and request.session.get("modo_admin"):
+    if es_admin_gastos_compartidos(request):
         return True
     if mov_tipo == CC_MOV_OPERACION:
         operacion = OperacionCompartida.objects.filter(pk=objeto_id).first()
@@ -875,7 +871,7 @@ def operacion_detalle(request, pk: int):
         "cuentas_compartidas/operacion_detalle.html",
         {
             "operacion": operacion,
-            "puede_admin_gastos_compartidos": bool(request.user.is_staff and request.session.get("modo_admin")),
+            "puede_admin_gastos_compartidos": es_admin_gastos_compartidos(request),
             "puede_editar_operacion": _puede_editar_operacion(request, operacion),
         },
     )

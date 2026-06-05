@@ -197,7 +197,12 @@
                 </td>
               {% endfor %}
               <td class="text-end">
-                <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url row.url row.url_pk %}">Ver</a>
+                <div class="d-flex flex-wrap justify-content-end gap-1">
+                  <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url row.url row.url_pk %}">Ver</a>
+                  {% if puede_admin_gastos_compartidos and row.mov_tipo == "operacion" %}
+                    <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'cuentas_operacion_editar' row.url_pk %}">Editar</a>
+                  {% endif %}
+                </div>
               </td>
             </tr>
           {% empty %}

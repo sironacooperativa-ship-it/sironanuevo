@@ -255,18 +255,51 @@ def home(request):
     )
 
 
-@require_http_methods(["GET"])
+@require_http_methods(["GET", "HEAD"])
 def health(request):
+    if request.method == "HEAD":
+        return HttpResponse(status=200)
     return HttpResponse("ok", content_type="text/plain")
 
 
-@require_http_methods(["GET"])
+@require_http_methods(["GET", "HEAD"])
 def warmup(request):
+    if request.method == "HEAD":
+        try:
+            conn = connections["default"]
+            conn.ensure_connection()
+        except OperationalError:
+            return HttpResponse(status=503)
+        return HttpResponse(status=200)
     try:
         conn = connections["default"]
         conn.ensure_connection()
     except OperationalError:
+        if "text/html" in (request.META.get("HTTP_ACCEPT") or ""):
+            return HttpResponse(
+                "<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'>"
+                "<title>SIRONA — warmup</title></head><body>"
+                "<p style='font-family:sans-serif'>Base de datos no disponible (<code>db_error</code>).</p>"
+                "</body></html>",
+                status=503,
+                content_type="text/html; charset=utf-8",
+            )
         return HttpResponse("db_error", status=503, content_type="text/plain")
+    if "text/html" in (request.META.get("HTTP_ACCEPT") or ""):
+        login_url = reverse("login")
+        return HttpResponse(
+            "<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'>"
+            "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+            "<title>SIRONA — listo</title>"
+            "<style>body{font-family:system-ui,sans-serif;max-width:28rem;margin:3rem auto;padding:0 1rem;color:#0f172a}"
+            "a.btn{display:inline-block;margin-top:1rem;padding:.6rem 1.1rem;background:#0f97b5;color:#fff;"
+            "text-decoration:none;border-radius:999px;font-weight:600}</style></head><body>"
+            "<h1 style='font-size:1.25rem'>SIRONA activo</h1>"
+            "<p>El servicio ya está despierto. Podés entrar al sistema.</p>"
+            f"<a class='btn' href='{login_url}'>Ir a ingresar</a>"
+            "</body></html>",
+            content_type="text/html; charset=utf-8",
+        )
     return HttpResponse("ok", content_type="text/plain")
 
 

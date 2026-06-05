@@ -631,6 +631,72 @@ body.sidebar-hidden .sidebar-collapse-btn .sirona-side-ico--close {
   width: 3rem;
 }
 
+/* Presupuesto / portal vendedor: tabla de líneas con botón quitar visible */
+.presu-form-page .presu-form-table-wrap,
+.vendedor-portal-page .presu-form-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.presu-form-page .presu-form-lineas,
+.vendedor-portal-page .presu-form-lineas {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 0;
+}
+
+.presu-form-page .presu-form-th-prod,
+.vendedor-portal-page .presu-form-th-prod,
+.presu-form-page .presu-form-td-prod,
+.vendedor-portal-page .presu-form-td-prod {
+  width: auto;
+  min-width: 0;
+}
+
+.presu-form-page .presu-form-th-qty,
+.vendedor-portal-page .presu-form-th-qty,
+.presu-form-page .presu-form-td-qty,
+.vendedor-portal-page .presu-form-td-qty {
+  width: 6.5rem;
+}
+
+.presu-form-page .presu-form-th-pu,
+.vendedor-portal-page .presu-form-th-pu,
+.presu-form-page .presu-form-th-sub,
+.vendedor-portal-page .presu-form-th-sub,
+.presu-form-page .presu-form-td-pu,
+.vendedor-portal-page .presu-form-td-pu,
+.presu-form-page .presu-form-td-sub,
+.vendedor-portal-page .presu-form-td-sub {
+  width: 7.5rem;
+}
+
+.presu-form-page .presu-form-th-del,
+.vendedor-portal-page .presu-form-th-del,
+.presu-form-page .presu-form-td-del,
+.vendedor-portal-page .presu-form-td-del {
+  width: 3.25rem;
+  min-width: 3.25rem;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+}
+
+.presu-form-page .presu-form-line-remove.btn-icon,
+.vendedor-portal-page .presu-form-line-remove.btn-icon {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 10px;
+}
+
+.presu-form-line-remove-glyph {
+  display: inline-block;
+  font-size: 1.25rem;
+  line-height: 1;
+  font-weight: 700;
+  color: inherit;
+}
+
 .venta-nueva-line-product {
   width: 100%;
   max-width: 100%;

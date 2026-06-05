@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{% if modo == "editar" %}Editar presupuesto{% else %}Nuevo presupuesto{% endif %}{% endblock %}
 {% block content %}
+  <div class="presu-form-page">
   <span id="sidebarCurrentNode" class="d-none" data-parent-url="{% url 'presupuesto_lista' %}">{% if modo == "editar" %}Editar presupuesto #{{ presupuesto.pk }}{% else %}Nuevo presupuesto{% endif %}</span>
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">{% if modo == "editar" %}Editar presupuesto #{{ presupuesto.pk }}{% else %}Nuevo presupuesto{% endif %}</h1>
@@ -113,15 +114,15 @@
         <p class="text-muted small mb-2">
           Podés cambiar el <strong>precio unitario</strong> por línea (solo para este presupuesto); en el catálogo el producto sigue con su precio de lista.
         </p>
-        <div class="table-responsive presu-lista-table-wrap">
-          <table class="modern-table form-lineas-tabla" id="tablaLineas">
+        <div class="table-responsive presu-lista-table-wrap presu-form-table-wrap">
+          <table class="modern-table form-lineas-tabla presu-form-lineas" id="tablaLineas">
             <thead>
               <tr>
-                <th scope="col">Producto</th>
-                <th scope="col" class="text-end" style="width: 7rem">Cantidad</th>
-                <th scope="col" class="text-end" style="width: 8rem">Precio unit.</th>
-                <th scope="col" class="text-end" style="width: 8rem">Subtotal</th>
-                <th scope="col" style="width: 3rem"></th>
+                <th scope="col" class="presu-form-th-prod">Producto</th>
+                <th scope="col" class="text-end presu-form-th-qty">Cantidad</th>
+                <th scope="col" class="text-end presu-form-th-pu">Precio unit.</th>
+                <th scope="col" class="text-end presu-form-th-sub">Subtotal</th>
+                <th scope="col" class="presu-form-th-del" aria-label="Quitar"></th>
               </tr>
             </thead>
             <tbody id="lineasBody"></tbody>
@@ -175,6 +176,7 @@
       </button>
     </div>
   </form>
+  </div>
 
   <script>
     (function () {
@@ -207,6 +209,48 @@
         const v = parseFloat(t);
         return Number.isFinite(v) ? v : 0;
       }
+
+      function refreshLucide() {
+        try {
+          if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons({ nodes: [tbody] });
+          }
+        } catch (e) {}
+      }
+
+      function ensureTrailingEmptyRow() {
+        if (!productos.length) return;
+        const rows = tbody.querySelectorAll("tr");
+        const last = rows.length ? rows[rows.length - 1] : null;
+        if (!last) {
+          addRow();
+          return;
+        }
+        const sel = last.querySelector('select[name="linea_producto"]');
+        if (sel && String(sel.value || "").trim()) {
+          addRow();
+        }
+      }
+
+      function removeLineRow(tr) {
+        if (!tr || !tbody.contains(tr)) return;
+        closeFloatingProductMenus();
+        tr.remove();
+        if (!tbody.querySelector("tr")) {
+          addRow();
+        } else {
+          ensureTrailingEmptyRow();
+        }
+        totals();
+        refreshLucide();
+      }
+
+      tbody.addEventListener("click", function (ev) {
+        const btn = ev.target.closest(".js-remove");
+        if (!btn || !tbody.contains(btn)) return;
+        ev.preventDefault();
+        removeLineRow(btn.closest("tr"));
+      });
 
       function closeFloatingProductMenus() {
         document.querySelectorAll(".sirona-select-search-menu").forEach(function (menu) {
@@ -525,12 +569,13 @@
 
       function addRow() {
         const tr = document.createElement("tr");
+        tr.className = "presu-form-line";
         tr.innerHTML =
-          '<td></td>' +
-          '<td class="text-end"><input type="number" name="linea_cantidad" class="form-control form-control-sm text-end" min="1" step="1" value="" placeholder="1" title="Cantidad" /></td>' +
-          '<td class="text-end"><input type="text" name="linea_precio_unitario" class="form-control form-control-sm text-end js-precio-input" inputmode="decimal" placeholder="Lista" autocomplete="off" title="Vacío = precio de lista del producto" /></td>' +
-          '<td class="text-end fw-semibold js-subtotal">—</td>' +
-          '<td><div class="table-actions presu-row-actions d-flex"><button type="button" class="btn-icon btn-delete js-remove" title="Quitar" aria-label="Quitar"><i data-lucide="x"></i></button></div></td>';
+          '<td class="presu-form-td-prod"></td>' +
+          '<td class="text-end presu-form-td-qty"><input type="number" name="linea_cantidad" class="form-control form-control-sm text-end" min="1" step="1" value="" placeholder="1" title="Cantidad" /></td>' +
+          '<td class="text-end presu-form-td-pu"><input type="text" name="linea_precio_unitario" class="form-control form-control-sm text-end js-precio-input" inputmode="decimal" placeholder="Lista" autocomplete="off" title="Vacío = precio de lista del producto" /></td>' +
+          '<td class="text-end fw-semibold presu-form-td-sub js-subtotal">—</td>' +
+          '<td class="presu-form-td-del"><div class="table-actions presu-row-actions d-flex justify-content-end"><button type="button" class="btn-icon btn-delete js-remove presu-form-line-remove" title="Quitar renglón" aria-label="Quitar renglón"><span class="presu-form-line-remove-glyph" aria-hidden="true">×</span></button></div></td>';
         tr.children[0].appendChild(buildSelect(tr));
         tr.querySelector('input[name="linea_cantidad"]').addEventListener("input", () => {
           refreshRow(tr);
@@ -540,14 +585,10 @@
           refreshRow(tr);
           totals();
         });
-        tr.querySelector(".js-remove").addEventListener("click", () => {
-          closeFloatingProductMenus();
-          tr.remove();
-          totals();
-        });
         tbody.appendChild(tr);
         refreshRow(tr);
         totals();
+        refreshLucide();
       }
 
       btnAdd.addEventListener("click", addRow);

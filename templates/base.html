@@ -1113,12 +1113,12 @@
           <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow">
               <div class="modal-header">
-                <h5 class="modal-title" id="sironaQuickMsgLabel">Mensajes con administración</h5>
+                <h5 class="modal-title" id="sironaQuickMsgLabel">Enviar mensaje a administración</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
               </div>
               <div class="modal-body d-flex flex-column sirona-notas-chat-wrap">
-                <p class="text-muted small mb-2">Un solo hilo con administración: acá ves el historial y podés escribir.</p>
-                <div id="sironaQuickMsgMensajes" class="sirona-notas-chat-messages flex-grow-1 overflow-auto mb-3" role="log" aria-live="polite"></div>
+                <p class="text-muted small mb-3 mb-md-2">Escribí tu consulta; administración la verá en el panel de mensajes.</p>
+                <div id="sironaQuickMsgMensajes" class="d-none" aria-hidden="true"></div>
                 <form id="sironaQuickMsgForm" method="post" action="{% url 'nota_admin_enviar' %}">
                   {% csrf_token %}
                   <input type="hidden" name="next" value="{{ request.get_full_path }}" />
@@ -1453,26 +1453,11 @@
         if (!modalEl) return;
         const urlChat = modalEl.getAttribute("data-notas-chat-url");
         const urlSend = modalEl.getAttribute("data-notas-send-url");
-        const box = document.getElementById("sironaQuickMsgMensajes");
+        const urlMark = modalEl.getAttribute("data-notas-mark-url");
         const form = document.getElementById("sironaQuickMsgForm");
         const textarea = document.getElementById("sironaQuickMsgTexto");
         const btnSend = document.getElementById("sironaQuickMsgEnviarBtn");
-        if (!urlChat || !urlSend || !box || !form || !textarea || !btnSend) return;
-
-        function escapeHtml(s) {
-          const d = document.createElement("div");
-          d.textContent = s == null ? "" : String(s);
-          return d.innerHTML;
-        }
-
-        function fmtTime(iso) {
-          try {
-            const d = new Date(iso);
-            return d.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-          } catch (e) {
-            return "";
-          }
-        }
+        if (!urlSend || !form || !textarea || !btnSend) return;
 
         function syncBadges(sinLeer) {
           if (sinLeer !== 0) return;
@@ -1490,57 +1475,39 @@
           window.sironaCloseBootstrapModal(modalEl);
         };
 
-        function renderMensajes(arr) {
-          if (!arr || !arr.length) {
-            box.innerHTML = '<p class="text-muted small mb-0">Todavía no hay mensajes. Escribí el primero abajo.</p>';
-            return;
-          }
-          box.innerHTML = arr
-            .map(function (m) {
-              const side = m.es_staff ? "sirona-chat-bubble--in" : "sirona-chat-bubble--out";
-              const pendiente = !m.es_staff && !m.resuelto;
-              let estado = "";
-              if (!m.es_staff) {
-                estado = m.resuelto
-                  ? '<span class="badge text-bg-success rounded-pill ms-1">Resuelto</span>'
-                  : '<span class="badge text-bg-warning text-dark rounded-pill ms-1">Pendiente</span>';
-              }
-              return (
-                '<div class="sirona-chat-bubble ' +
-                side +
-                (pendiente ? " sirona-chat-bubble--pendiente" : "") +
-                '">' +
-                '<div class="sirona-chat-bubble-meta small text-muted">' +
-                escapeHtml(m.autor || "") +
-                " · " +
-                fmtTime(m.creado_en) +
-                estado +
-                "</div>" +
-                '<div class="sirona-chat-bubble-text">' +
-                escapeHtml(m.texto || "").replace(/\n/g, "<br>") +
-                "</div></div>"
-              );
+        function syncLeidas() {
+          if (!urlChat && !urlMark) return Promise.resolve();
+          if (urlMark) {
+            const csrfIn = form.querySelector("[name=csrfmiddlewaretoken]");
+            const csrf = csrfIn ? csrfIn.value : "";
+            const fd = new FormData();
+            fd.append("csrfmiddlewaretoken", csrf);
+            return fetch(urlMark, {
+              method: "POST",
+              credentials: "same-origin",
+              headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": csrf },
+              body: fd,
             })
-            .join("");
-          box.scrollTop = 0;
-        }
-
-        function loadChat() {
+              .then(function (r) {
+                return r.json();
+              })
+              .then(function (data) {
+                syncBadges(data && data.sin_leer != null ? data.sin_leer : 0);
+              })
+              .catch(function () {});
+          }
           return fetch(urlChat, { credentials: "same-origin" })
             .then(function (r) {
               return r.json();
             })
             .then(function (data) {
-              renderMensajes(data.mensajes || []);
               syncBadges(data.sin_leer);
             })
-            .catch(function () {
-              box.innerHTML = '<p class="text-danger small mb-0">No se pudo cargar el chat.</p>';
-            });
+            .catch(function () {});
         }
 
         modalEl.addEventListener("shown.bs.modal", function () {
-          loadChat().finally(function () {
+          syncLeidas().finally(function () {
             try {
               textarea.focus();
             } catch (e) {}
