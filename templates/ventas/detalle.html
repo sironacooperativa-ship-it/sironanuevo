@@ -519,12 +519,13 @@
               <table class="p-table">
                 <thead>
                   <tr>
-                    <th class="c" style="width: 6%;">N.º</th>
-                    <th style="width: 14%;">Código</th>
+                    <th class="c" style="width: 5%;">N.º</th>
+                    <th style="width: 11%;">Código</th>
+                    <th style="width: 11%;">Marca</th>
                     <th>Descripción</th>
-                    <th class="c" style="width: 9%;">Cant.</th>
-                    <th class="num" style="width: 16%;">P. Unit.</th>
-                    <th class="num" style="width: 16%;">Subtotal</th>
+                    <th class="c" style="width: 8%;">Cant.</th>
+                    <th class="num" style="width: 14%;">P. Unit.</th>
+                    <th class="num" style="width: 14%;">Subtotal</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -532,13 +533,14 @@
                     <tr>
                       <td class="c">{{ forloop.counter }}</td>
                       <td>{{ ln.texto_codigo }}</td>
-                      <td>{{ ln.texto_descripcion|truncatechars:52 }}</td>
+                      <td>{{ ln.texto_marca|default:"—" }}</td>
+                      <td>{{ ln.texto_descripcion|truncatechars:44 }}</td>
                       <td class="c">{{ ln.cantidad }}</td>
                       <td class="num">{{ ln.precio_unitario|ars }}</td>
                       <td class="num">{{ ln.subtotal|ars }}</td>
                     </tr>
                   {% empty %}
-                    <tr><td colspan="6" class="muted">Sin líneas</td></tr>
+                    <tr><td colspan="7" class="muted">Sin líneas</td></tr>
                   {% endfor %}
                 </tbody>
               </table>
@@ -592,10 +594,11 @@
               <table class="p-table">
                 <thead>
                   <tr>
-                    <th class="c" style="width: 7%;">N.º</th>
-                    <th style="width: 18%;">Código</th>
+                    <th class="c" style="width: 6%;">N.º</th>
+                    <th style="width: 14%;">Código</th>
+                    <th style="width: 14%;">Marca</th>
                     <th>Descripción</th>
-                    <th class="c" style="width: 15%;">Cant.</th>
+                    <th class="c" style="width: 12%;">Cant.</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -603,11 +606,12 @@
                     <tr>
                       <td class="c">{{ forloop.counter }}</td>
                       <td>{{ ln.texto_codigo }}</td>
-                      <td>{{ ln.texto_descripcion|truncatechars:62 }}</td>
+                      <td>{{ ln.texto_marca|default:"—" }}</td>
+                      <td>{{ ln.texto_descripcion|truncatechars:52 }}</td>
                       <td class="c">{{ ln.cantidad }}</td>
                     </tr>
                   {% empty %}
-                    <tr><td colspan="4" class="muted">Sin líneas</td></tr>
+                    <tr><td colspan="5" class="muted">Sin líneas</td></tr>
                   {% endfor %}
                 </tbody>
               </table>
@@ -658,12 +662,13 @@
             <table class="p-table">
               <thead>
                 <tr>
-                  <th class="c" style="width: 5%;">N.º</th>
-                  <th style="width: 12%;">Código</th>
+                  <th class="c" style="width: 4%;">N.º</th>
+                  <th style="width: 10%;">Código</th>
+                  <th style="width: 10%;">Marca</th>
                   <th>Descripción</th>
-                  <th class="c" style="width: 8%;">Cant.</th>
-                  <th class="num" style="width: 15%;">P. Unit.</th>
-                  <th class="num" style="width: 15%;">Subtotal</th>
+                  <th class="c" style="width: 7%;">Cant.</th>
+                  <th class="num" style="width: 14%;">P. Unit.</th>
+                  <th class="num" style="width: 14%;">Subtotal</th>
                 </tr>
               </thead>
               <tbody>
@@ -671,6 +676,7 @@
                   <tr>
                     <td class="c">{{ forloop.counter }}</td>
                     <td>{{ ln.texto_codigo }}</td>
+                    <td>{{ ln.texto_marca|default:"—" }}</td>
                     <td>{{ ln.texto_descripcion }}</td>
                     <td class="c">{{ ln.cantidad }}</td>
                     <td class="num">{{ ln.precio_unitario|ars }}</td>
@@ -728,10 +734,11 @@
             <table class="p-table">
               <thead>
                 <tr>
-                  <th class="c" style="width: 6%;">N.º</th>
-                  <th style="width: 14%;">Código</th>
+                  <th class="c" style="width: 5%;">N.º</th>
+                  <th style="width: 12%;">Código</th>
+                  <th style="width: 12%;">Marca</th>
                   <th>Descripción</th>
-                  <th class="c" style="width: 10%;">Cant.</th>
+                  <th class="c" style="width: 9%;">Cant.</th>
                 </tr>
               </thead>
               <tbody>
@@ -739,6 +746,7 @@
                   <tr>
                     <td class="c">{{ forloop.counter }}</td>
                     <td>{{ ln.texto_codigo }}</td>
+                    <td>{{ ln.texto_marca|default:"—" }}</td>
                     <td>{{ ln.texto_descripcion }}</td>
                     <td class="c">{{ ln.cantidad }}</td>
                   </tr>

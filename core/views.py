@@ -27,6 +27,7 @@ from calendario.models import Evento
 from caja.models import MovimientoCaja
 from compras.models import Compra
 from productos.models import Producto
+from productos.stock_alertas import queryset_stock_alertas, queryset_stock_critico
 from ventas.models import Venta
 from ventas.sql_metrics import venta_neto_nonneg_expr
 
@@ -175,7 +176,10 @@ def home(request):
         .order_by("fecha_vencimiento_cheque", "id")[:50]
     )
 
-    stock_critico = Producto.objects.filter(habilitado=True, stock__lte=0).order_by("descripcion", "codigo")[:30]
+    stock_critico_qs = queryset_stock_critico().order_by("descripcion", "codigo")
+    stock_critico = list(stock_critico_qs[:30])
+    stock_critico_count = stock_critico_qs.count()
+    stock_alertas_count = queryset_stock_alertas().count()
     deshabilitados_por_stock_qs = Producto.objects.filter(deshabilitado_por_stock=True).order_by(
         "-actualizado_en", "-id"
     )
@@ -245,6 +249,8 @@ def home(request):
             "cheques_proximos": cheques,
             "cheques_a_pagar": cheques_a_pagar,
             "stock_critico": stock_critico,
+            "stock_critico_count": stock_critico_count,
+            "stock_alertas_count": stock_alertas_count,
             "deshabilitados_por_stock": deshabilitados_por_stock,
             "deshabilitados_por_stock_count": deshabilitados_por_stock_count,
             "vencimientos_prod": vencimientos_prod,

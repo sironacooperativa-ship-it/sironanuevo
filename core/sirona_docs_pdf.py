@@ -54,6 +54,7 @@ class DocMeta:
 class LineItem:
     numero: int
     codigo: str
+    marca: str
     descripcion: str
     cantidad: str
     precio_unitario: str
@@ -225,12 +226,13 @@ def _line_table(*, items: Sequence[LineItem], doc_width: float, styles) -> Table
             return ss
         return ss[:117] + "…"
 
-    data: list[list[Any]] = [["N.º", "Código", "Descripción", "Cant.", "P. unit.", "Subtotal"]]
+    data: list[list[Any]] = [["N.º", "Código", "Marca", "Descripción", "Cant.", "P. unit.", "Subtotal"]]
     for it in items:
         data.append(
             [
                 Paragraph(escape(str(it.numero)), base),
                 Paragraph(escape(it.codigo), base),
+                Paragraph(escape((it.marca or "").strip() or "—"), base),
                 Paragraph(escape(clamp_desc(it.descripcion)), desc_style),
                 Paragraph(escape(it.cantidad), base),
                 Paragraph(escape(it.precio_unitario), base),
@@ -238,15 +240,16 @@ def _line_table(*, items: Sequence[LineItem], doc_width: float, styles) -> Table
             ]
         )
     if len(data) == 1:
-        data.append(["—", "—", "Sin líneas", "", "", ""])
+        data.append(["—", "—", "—", "Sin líneas", "", "", ""])
 
     col_w = [
-        doc_width * 0.06,
-        doc_width * 0.13,
-        doc_width * 0.43,
-        doc_width * 0.08,
-        doc_width * 0.15,
-        doc_width * 0.15,
+        doc_width * 0.05,
+        doc_width * 0.10,
+        doc_width * 0.12,
+        doc_width * 0.35,
+        doc_width * 0.07,
+        doc_width * 0.14,
+        doc_width * 0.14,
     ]
     t = Table(data, colWidths=col_w, repeatRows=1, hAlign="LEFT")
     t.setStyle(
@@ -264,8 +267,8 @@ def _line_table(*, items: Sequence[LineItem], doc_width: float, styles) -> Table
                 ("TOPPADDING", (0, 0), (-1, -1), 2.5),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 2.5),
                 ("ALIGN", (0, 0), (0, -1), "CENTER"),
-                ("ALIGN", (3, 1), (3, -1), "CENTER"),
-                ("ALIGN", (4, 1), (5, -1), "RIGHT"),
+                ("ALIGN", (4, 1), (4, -1), "CENTER"),
+                ("ALIGN", (5, 1), (6, -1), "RIGHT"),
             ]
         )
     )

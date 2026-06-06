@@ -62,6 +62,7 @@ from .listas_propagacion import (
     precio_propuesto_desde_post,
 )
 from .models import ListaPrecioItem, ListaPrecios, Producto
+from .stock_alertas import STOCK_ALERTAS_Q, STOCK_CRITICO_Q
 
 
 def _productos_picker_data():
@@ -293,8 +294,10 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
         productos = productos.filter(habilitado=False)
     elif estado == "stock":
         productos = productos.filter(deshabilitado_por_stock=True)
+    elif estado == "alertas":
+        productos = productos.filter(STOCK_ALERTAS_Q).distinct()
     elif estado == "critico":
-        productos = productos.filter(habilitado=True, stock__lte=0)
+        productos = productos.filter(STOCK_CRITICO_Q)
     elif estado == "manual":
         productos = productos.filter(habilitado=False, deshabilitado_por_stock=False)
     elif estado == "sin_lista":

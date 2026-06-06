@@ -15,6 +15,7 @@ from core.authz import staff_required
 from core.export_utils import parse_export, pdf_response, xlsx_response
 
 from productos.models import Producto
+from productos.stock_alertas import STOCK_ALERTAS_Q, STOCK_CRITICO_Q
 from productos.stock_cero import encolar_prompt_stock_cero, ids_que_quedaron_en_cero, snapshot_stock
 from personas.models import Proveedor
 
@@ -42,8 +43,10 @@ def _stock_productos_queryset(request):
         qs = qs.filter(habilitado=False)
     elif estado == "stock":
         qs = qs.filter(deshabilitado_por_stock=True)
+    elif estado == "alertas":
+        qs = qs.filter(STOCK_ALERTAS_Q).distinct()
     elif estado == "critico":
-        qs = qs.filter(habilitado=True, stock__lte=0)
+        qs = qs.filter(STOCK_CRITICO_Q)
     qs = qs.annotate(
         _ord_desh_stock=Case(
             When(deshabilitado_por_stock=True, then=Value(0)),
@@ -292,7 +295,8 @@ def stock_home(request):
             "productos_picker": productos_picker,
             "tipos": Producto.Tipo.choices,
             "proveedores_filtro": Proveedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo"),
-            "modo_critico": filtros["estado"] == "critico",
+            "modo_critico": filtros["estado"] in ("critico", "alertas"),
+            "modo_alertas": filtros["estado"] == "alertas",
             "abrir_carga": request.GET.get("open") == "1" or bool(request.GET.get("producto")),
         },
     )

@@ -135,9 +135,13 @@
     </article>
   </section>
 
-  {% if modo_critico %}
+      {% if modo_critico %}
     <div class="alert alert-warning border-0 shadow-sm mb-3">
-      <strong>Stock crítico:</strong> productos <strong>habilitados</strong> con saldo ≤ 0. Corregí el stock en la tabla o deshabilitálos si no querés venderlos.
+      {% if modo_alertas %}
+        <strong>Alertas de stock:</strong> productos bajo umbral crítico (Medicamentos &lt; 20 u., Accesorios/Otros &lt; 10 u.) y/o deshabilitados por falta de stock.
+      {% else %}
+        <strong>Stock crítico:</strong> productos <strong>habilitados</strong> con stock bajo el mínimo del rubro (Medicamentos &lt; 20 u., Accesorios/Otros &lt; 10 u.).
+      {% endif %}
     </div>
   {% endif %}
 
@@ -183,7 +187,8 @@
             <option value="1" {% if estado == "1" %}selected{% endif %}>Activos</option>
             <option value="0" {% if estado == "0" %}selected{% endif %}>Inactivos</option>
             <option value="stock" {% if estado == "stock" %}selected{% endif %}>Solo desh. por stock</option>
-            <option value="critico" {% if estado == "critico" %}selected{% endif %}>Stock crítico (activos ≤0)</option>
+            <option value="alertas" {% if estado == "alertas" %}selected{% endif %}>Alertas de stock (Inicio)</option>
+            <option value="critico" {% if estado == "critico" %}selected{% endif %}>Stock crítico (umbrales por rubro)</option>
           </select>
         </div>
         <div class="stock-filter-actions">
@@ -196,7 +201,7 @@
       </div>
       <p class="stock-filter-hint text-muted mb-0">
         En <strong>Stock disponible</strong> podés corregir el saldo a mano; se guarda en el producto y se refleja en Productos, presupuestos y ventas.
-        Los productos con <strong class="text-danger">stock crítico</strong> (activos sin saldo) se gestionan desde el filtro «Stock crítico» o desde el icono de alertas en Inicio.
+        Los productos con <strong class="text-danger">stock crítico</strong> (Medicamentos &lt; 20 u., Accesorios/Otros &lt; 10 u.) se gestionan desde el filtro «Stock crítico» o desde el icono de alertas en Inicio.
       </p>
     </form>
   </section>
@@ -298,7 +303,17 @@
               </tr>
             {% empty %}
               <tr>
-                <td colspan="6" class="table-empty">{% if q %}No hay productos que coincidan con la búsqueda.{% else %}No hay productos cargados.{% endif %}</td>
+                <td colspan="6" class="table-empty">
+                  {% if estado == "alertas" %}
+                    No hay productos con alertas de stock en este momento.
+                  {% elif estado == "critico" %}
+                    No hay productos activos bajo el umbral crítico de su rubro.
+                  {% elif q %}
+                    No hay productos que coincidan con la búsqueda.
+                  {% else %}
+                    No hay productos cargados.
+                  {% endif %}
+                </td>
               </tr>
             {% endfor %}
           </tbody>

@@ -47,6 +47,7 @@
         <tr>
           <th class="text-center" style="width: 2.25rem">N.º</th>
           <th class="col-prod">Producto</th>
+          <th style="width: 5rem">Marca</th>
           <th class="text-end" style="width: 3rem">Cant.</th>
           <th class="text-end" style="width: 5rem">P. unit.</th>
           <th class="text-end" style="width: 5.5rem">Subtotal</th>
@@ -63,13 +64,14 @@
                 · <span class="presu-prod-stock">Stock: {{ l.producto.stock }}</span>
               </div>
             </td>
+            <td>{{ l.texto_marca|default:"—" }}</td>
             <td class="text-end">{{ l.cantidad }}</td>
             <td class="text-end text-nowrap">{{ l.precio_unitario|ars }}</td>
             <td class="text-end text-nowrap fw-medium">{{ l.subtotal|ars }}</td>
           </tr>
         {% empty %}
           <tr>
-            <td colspan="5" class="text-center text-muted">Sin líneas</td>
+            <td colspan="6" class="text-center text-muted">Sin líneas</td>
           </tr>
         {% endfor %}
       </tbody>

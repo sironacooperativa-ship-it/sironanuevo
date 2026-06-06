@@ -72,6 +72,7 @@ def _append_copia_presupuesto_pdf(story, presupuesto, doc, styles, copia_label: 
             LineItem(
                 numero=n_item,
                 codigo=str(ln.texto_codigo),
+                marca=str(ln.texto_marca),
                 descripcion=str(ln.texto_descripcion or ""),
                 cantidad=str(ln.cantidad),
                 precio_unitario=money(ln.precio_unitario),

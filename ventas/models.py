@@ -201,5 +201,9 @@ class VentaLinea(models.Model):
     def texto_descripcion(self) -> str:
         return self.descripcion_snapshot or self.producto.descripcion
 
+    @property
+    def texto_marca(self) -> str:
+        return (getattr(self.producto, "laboratorio", None) or "").strip()
+
     def __str__(self) -> str:
         return f"{self.texto_codigo} x{self.cantidad}"

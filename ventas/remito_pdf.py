@@ -73,6 +73,7 @@ def remito_venta_pdf_response(venta) -> HttpResponse:
             LineItem(
                 numero=n_item,
                 codigo=str(ln.texto_codigo),
+                marca=str(ln.texto_marca),
                 descripcion=str(ln.texto_descripcion or ""),
                 cantidad=str(ln.cantidad),
                 precio_unitario=money(ln.precio_unitario),
