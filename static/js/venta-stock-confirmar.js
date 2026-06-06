@@ -62,6 +62,46 @@
     });
   }
 
+  function ensureQtyWarnStyles() {
+    if (document.getElementById("sironaQtyOverStockCss")) return;
+    const st = document.createElement("style");
+    st.id = "sironaQtyOverStockCss";
+    st.textContent =
+      "input[name=\"linea_cantidad\"].sirona-qty-over-stock{" +
+      "color:#dc3545!important;font-weight:600}" +
+      "input[name=\"linea_cantidad\"].sirona-qty-over-stock:focus{" +
+      "color:#dc3545!important}";
+    document.head.appendChild(st);
+  }
+
+  function refreshQtyWarnings(tbody, getProduct) {
+    if (!tbody || !getProduct) return;
+    const demand = collectDemandByProduct(tbody).demand;
+    const overPids = {};
+    Object.keys(demand).forEach(function (pid) {
+      const p = getProduct(pid);
+      if (!p) return;
+      const avail = parseInt10(p.stock);
+      if (demand[pid] > avail) overPids[pid] = true;
+    });
+    tbody.querySelectorAll("tr").forEach(function (tr) {
+      const qIn = tr.querySelector('input[name="linea_cantidad"]');
+      const sel = tr.querySelector('select[name="linea_producto"]');
+      if (!qIn) return;
+      const pid = sel ? String(sel.value || "").trim() : "";
+      const qty = parseInt10(qIn.value);
+      const over = !!(pid && qty > 0 && overPids[pid]);
+      qIn.classList.toggle("sirona-qty-over-stock", over);
+    });
+  }
+
+  function clearQtyWarnings(tbody) {
+    if (!tbody) return;
+    tbody.querySelectorAll('input[name="linea_cantidad"]').forEach(function (qIn) {
+      qIn.classList.remove("sirona-qty-over-stock");
+    });
+  }
+
   function escapeHtml(s) {
     return String(s || "").replace(/[&<>"']/g, function (ch) {
       return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch];
@@ -169,6 +209,11 @@
   }
 
   w.SironaVentaStockConfirm = {
+    refreshQty: function (form) {
+      if (form && typeof form.__sironaStockQtyRefresh === "function") {
+        form.__sironaStockQtyRefresh();
+      }
+    },
     bind: function (opts) {
       const form = opts.form;
       const tbody = opts.tbody;
@@ -177,17 +222,33 @@
       const hiddenId = opts.hiddenId || "id_stock_venta_json";
       if (!form || !tbody || !getProduct) return;
 
+      ensureQtyWarnStyles();
+
+      function syncQtyWarnings() {
+        refreshQtyWarnings(tbody, getProduct);
+      }
+
+      form.__sironaStockQtyRefresh = syncQtyWarnings;
+
       function clearHidden() {
         const h = document.getElementById(hiddenId);
         if (h) h.value = "";
       }
 
       tbody.addEventListener("input", function (ev) {
-        if (ev.target && ev.target.matches('input[name="linea_cantidad"]')) clearHidden();
+        if (ev.target && ev.target.matches('input[name="linea_cantidad"]')) {
+          clearHidden();
+          syncQtyWarnings();
+        }
       });
       tbody.addEventListener("change", function (ev) {
-        if (ev.target && ev.target.matches('select[name="linea_producto"]')) clearHidden();
+        if (ev.target && ev.target.matches('select[name="linea_producto"]')) {
+          clearHidden();
+          syncQtyWarnings();
+        }
       });
+
+      syncQtyWarnings();
 
       form.addEventListener("submit", function (ev) {
         const sub = ev.submitter;
@@ -207,6 +268,7 @@
 
         const hidden = document.getElementById(hiddenId);
         if (hidden && String(hidden.value || "").trim()) {
+          clearQtyWarnings(tbody);
           return;
         }
 
@@ -316,6 +378,7 @@
                   const strong = block.querySelector(".small strong");
                   if (strong) strong.textContent = String(data.stock);
                 }
+                syncQtyWarnings();
               });
             });
           });
@@ -369,6 +432,7 @@
 
           const h = document.getElementById(hiddenId);
           if (h) h.value = JSON.stringify(json);
+          clearQtyWarnings(tbody);
           if (modal) modal.hide();
           try {
             if (sub && typeof form.requestSubmit === "function") {

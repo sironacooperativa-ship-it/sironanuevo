@@ -17,7 +17,7 @@
     {{ productos_catalogo|json_script:"ventas-productos" }}
     {{ lineas_iniciales|json_script:"ventas-lineas-iniciales" }}
 
-    <form method="post" novalidate id="ventaForm" class="venta-nueva-form">
+    <form method="post" novalidate id="ventaForm" class="venta-nueva-form" data-sirona-leave-guard="pedido">
       {% csrf_token %}
       <input type="hidden" name="stock_venta_json" id="id_stock_venta_json" value="" autocomplete="off" />
 
@@ -199,7 +199,7 @@
     </form>
   </div>
 
-    <script src="{% static 'js/venta-stock-confirmar.js' %}?v=3"></script>
+    <script src="{% static 'js/venta-stock-confirmar.js' %}?v=4"></script>
   <script>
     (function () {
       const catalogoPreciosUrl = "{% url 'venta_catalogo_precios' %}";
@@ -520,9 +520,10 @@
           }
         });
         totals();
+        if (typeof SironaVentaStockConfirm !== "undefined") {
+          SironaVentaStockConfirm.refreshQty(document.getElementById("ventaForm"));
+        }
       }
-
-      function cargarCatalogoLista(lid) {
         if (!lid) return;
         return fetch(catalogoPreciosUrl + "?lista=" + encodeURIComponent(lid), {
           headers: { "X-Requested-With": "XMLHttpRequest" },

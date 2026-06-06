@@ -7,6 +7,17 @@
     <h1 class="h3 mb-0">Editar pedido #{{ venta.pk }}</h1>
     <a class="btn btn-outline-secondary btn-sm" href="{% url 'venta_detalle' venta.pk %}">Ver comprobante</a>
     <a class="btn btn-outline-secondary btn-sm" href="{% url 'ventas_historial' %}">Historial</a>
+    {% if user.is_staff %}
+      <form
+        method="post"
+        action="{% url 'venta_eliminar' venta.pk %}"
+        class="d-inline m-0"
+        data-sirona-confirm="¿Eliminar el pedido #{{ venta.pk }}? Se revierte stock, calendario y caja (si estaba pagado)."
+      >
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar</button>
+      </form>
+    {% endif %}
   </div>
 
   {{ productos_catalogo|json_script:"ventas-productos" }}
@@ -16,6 +27,7 @@
     method="post"
     novalidate
     id="ventaEditForm"
+    data-sirona-leave-guard="pedido"
     data-pedido-pagado="{% if pedido_pagado %}1{% else %}0{% endif %}"
   >
     {% csrf_token %}
@@ -149,7 +161,7 @@
     </div>
   </form>
 
-    <script src="{% static 'js/venta-stock-confirmar.js' %}?v=3"></script>
+    <script src="{% static 'js/venta-stock-confirmar.js' %}?v=4"></script>
   <script>
     (function () {
       const catalogoCompletoUrl = "{% url 'venta_catalogo_completo' %}";
@@ -378,9 +390,10 @@
           }
         });
         totals();
+        if (typeof SironaVentaStockConfirm !== "undefined") {
+          SironaVentaStockConfirm.refreshQty(document.getElementById("ventaEditForm"));
+        }
       }
-
-      fetch(catalogoCompletoUrl, {
         headers: { "X-Requested-With": "XMLHttpRequest", Accept: "application/json" },
         credentials: "same-origin",
       })

@@ -24,7 +24,6 @@ from productos.models import ListaPrecios, Producto
 from productos.stock_cero import encolar_prompt_stock_cero, ids_que_quedaron_en_cero, snapshot_stock
 from ventas.servicios import (
     crear_venta_confirmada,
-    eliminar_venta_admin,
     merge_stock_confirmacion_venta_locked,
     parse_stock_venta_json_from_post,
     unpack_linea_spec,
@@ -910,8 +909,6 @@ def presupuesto_eliminar(request, pk: int):
             except TypeError:
                 qs = qs.select_for_update()
             pr = qs.get(pk=presupuesto.pk)
-            if pr.venta_id:
-                eliminar_venta_admin(pr.venta)
             pr.delete()
     except Exception as exc:
         detalle = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""

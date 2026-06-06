@@ -238,7 +238,7 @@
                     {% endif %}
                   {% endif %}
                   {% if user.is_staff or vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
-                    <form method="post" action="{% url 'presupuesto_eliminar' p.pk %}" class="d-inline m-0 presu-accion-form" onsubmit="return confirm('¿Eliminar el presupuesto #{{ p.pk }}? Si estaba aprobado, también se elimina el pedido y se revierte stock y caja.');">
+                    <form method="post" action="{% url 'presupuesto_eliminar' p.pk %}" class="d-inline m-0 presu-accion-form" data-sirona-confirm="¿Eliminar el presupuesto #{{ p.pk }}?">
                       {% csrf_token %}
                       <button type="submit" class="btn-icon btn-delete" title="Eliminar" aria-label="Eliminar">
                         <i data-lucide="trash-2" aria-hidden="true"></i>

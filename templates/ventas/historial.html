@@ -399,7 +399,7 @@
                       class="d-inline m-0 presu-accion-form"
                       method="post"
                       action="{% url 'venta_eliminar' v.pk %}"
-                      onsubmit="return confirm('¿Eliminar el pedido #{{ v.pk }}? Se revierte stock y, si estaba pagado, el ingreso en caja.');"
+                      data-sirona-confirm="¿Eliminar el pedido #{{ v.pk }}? Se revierte stock y, si estaba pagado, el ingreso en caja."
                     >
                       {% csrf_token %}
                       <button

@@ -76,7 +76,7 @@
                     <a class="btn btn-sm btn-outline-secondary" href="{% url 'vendedor_presupuesto_ver' p.pk %}">Ver</a>
                     <a class="btn btn-sm btn-outline-primary" href="{% url 'presupuesto_editar' p.pk %}">Editar</a>
                     {% if p.estado == "ACT" %}
-                      <form method="post" action="{% url 'vendedor_presupuesto_eliminar' p.pk %}" class="d-inline m-0" onsubmit="return confirm('¿Eliminar el presupuesto #{{ p.pk }}?');">
+                      <form method="post" action="{% url 'vendedor_presupuesto_eliminar' p.pk %}" class="d-inline m-0" data-sirona-confirm="¿Eliminar el presupuesto #{{ p.pk }}?">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
                       </form>

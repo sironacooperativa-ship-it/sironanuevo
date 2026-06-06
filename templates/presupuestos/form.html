@@ -9,13 +9,26 @@
     <div class="d-flex flex-wrap gap-2">
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'presupuesto_lista' %}">Lista</a>
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedores_list' %}">Vendedores</a>
+      {% if modo == "editar" and presupuesto %}
+        {% if user.is_staff or vendedor_perfil_pk and vendedor_perfil_pk == presupuesto.vendedor_id %}
+          <form
+            method="post"
+            action="{% url 'presupuesto_eliminar' presupuesto.pk %}"
+            class="d-inline m-0"
+            data-sirona-confirm="¿Eliminar el presupuesto #{{ presupuesto.pk }}?"
+          >
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar</button>
+          </form>
+        {% endif %}
+      {% endif %}
     </div>
   </div>
 
   {{ productos_catalogo|json_script:"presupuestos-productos" }}
   {{ lineas_iniciales|json_script:"presupuestos-lineas-iniciales" }}
 
-  <form method="post" novalidate id="presupuestoForm">
+  <form method="post" novalidate id="presupuestoForm" data-sirona-leave-guard="presupuesto">
     {% csrf_token %}
     <input type="hidden" name="stock_venta_json" id="id_stock_venta_json" value="" autocomplete="off" />
     <div class="card shadow-sm mb-3">
@@ -180,6 +193,7 @@
   </form>
   </div>
 
+  <script src="{% static 'js/venta-stock-confirmar.js' %}?v=4"></script>
   <script>
     (function () {
       const catalogoPreciosUrl = "{% url 'presupuesto_catalogo_precios' %}";
@@ -650,6 +664,9 @@
             });
             setEnabled(true);
             totals();
+            if (typeof SironaVentaStockConfirm !== "undefined") {
+              SironaVentaStockConfirm.refreshQty(document.getElementById("presupuestoForm"));
+            }
           })
           .catch(function () {
             setEnabled(true);
@@ -740,33 +757,21 @@
           document.head.appendChild(st);
         } catch (e) {}
       })();
-    })();
-  </script>
-  <script src="{% static 'js/venta-stock-confirmar.js' %}?v=3"></script>
-  <script>
-    (function () {
-      if (typeof SironaVentaStockConfirm === "undefined") return;
-      const tbody = document.getElementById("lineasBody");
-      const form = document.getElementById("presupuestoForm");
-      if (!tbody || !form) return;
-      let byId = {};
-      try {
-        const el = document.getElementById("presupuestos-productos");
-        const productos = el ? JSON.parse(el.textContent) : [];
-        byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
-      } catch (e) {}
-      SironaVentaStockConfirm.bind({
-        form: form,
-        tbody: tbody,
-        getProduct: function (pid) {
-          return byId[String(pid)];
-        },
-        setProductStock: function (pid, stock) {
-          const p = byId[String(pid)];
-          if (p) p.stock = stock;
-        },
-        hiddenId: "id_stock_venta_json",
-      });
+
+      if (typeof SironaVentaStockConfirm !== "undefined") {
+        SironaVentaStockConfirm.bind({
+          form: document.getElementById("presupuestoForm"),
+          tbody: tbody,
+          getProduct: function (pid) {
+            return byId[String(pid)];
+          },
+          setProductStock: function (pid, stock) {
+            const p = byId[String(pid)];
+            if (p) p.stock = stock;
+          },
+          hiddenId: "id_stock_venta_json",
+        });
+      }
     })();
   </script>
 {% endblock %}
