@@ -596,44 +596,58 @@
           tbody.querySelectorAll(".sirona-select-search > button.form-select").forEach((b) => (b.disabled = !enabled));
         }
 
-        if (listaPreciosSel) {
-          listaPreciosSel.addEventListener("change", function () {
-            const lid = listaPreciosSel.value;
-            if (!lid) return;
-            setEnabled(false);
-            fetch(catalogoPreciosUrl + "?lista=" + encodeURIComponent(lid), {
-              headers: { "X-Requested-With": "XMLHttpRequest" },
-              credentials: "same-origin",
+        function cargarCatalogoLista(lid) {
+          if (!listaPreciosSel || !lid) return;
+          setEnabled(false);
+          return fetch(catalogoPreciosUrl + "?lista=" + encodeURIComponent(lid), {
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+            credentials: "same-origin",
+          })
+            .then(function (r) {
+              if (!r.ok) throw new Error("catálogo");
+              return r.json();
             })
-              .then(function (r) {
-                if (!r.ok) throw new Error("catálogo");
-                return r.json();
-              })
-              .then(function (data) {
-                productos = data.productos || [];
-                byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
-                tbody.querySelectorAll('select[name="linea_producto"]').forEach(function (sel) {
-                  const v = sel.value;
-                  sel.innerHTML = optionsHtml();
-                  if (v && byId[v]) {
-                    sel.value = v;
-                  } else {
-                    sel.value = "";
-                    sel.dataset.prevEmpty = "1";
-                  }
+            .then(function (data) {
+              productos = data.productos || [];
+              byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
+              if (productos.length === 0) {
+                tbody.innerHTML =
+                  '<tr><td colspan="5" class="table-empty">No hay productos habilitados.</td></tr>';
+                setEnabled(false);
+                totals();
+                return;
+              }
+              if (tbody.querySelector(".table-empty")) {
+                tbody.innerHTML = "";
+                addRow();
+              }
+              tbody.querySelectorAll('select[name="linea_producto"]').forEach(function (sel) {
+                const v = sel.value;
+                sel.innerHTML = optionsHtml();
+                if (v && byId[v]) {
+                  sel.value = v;
+                } else {
+                  sel.value = "";
+                  sel.dataset.prevEmpty = "1";
+                }
                 try {
                   if (sel.__sironaPicker && typeof sel.__sironaPicker.syncBtn === "function") sel.__sironaPicker.syncBtn();
                 } catch (e) {}
-                  const tr = sel.closest("tr");
-                  if (tr) refreshRow(tr);
-                });
-                setEnabled(productos.length > 0);
-                totals();
-              })
-              .catch(function () {
-                setEnabled(true);
-                alert("No se pudo cargar el catálogo de precios para esa lista.");
+                const tr = sel.closest("tr");
+                if (tr) refreshRow(tr);
               });
+              setEnabled(true);
+              totals();
+            })
+            .catch(function () {
+              setEnabled(true);
+              alert("No se pudo cargar el catálogo de precios para esa lista.");
+            });
+        }
+
+        if (listaPreciosSel) {
+          listaPreciosSel.addEventListener("change", function () {
+            cargarCatalogoLista(listaPreciosSel.value);
           });
         }
 
@@ -651,11 +665,7 @@
           });
         });
 
-        if (productos.length === 0) {
-          // btnAdd no existe en portal vendedor
-          tbody.innerHTML =
-            '<tr><td colspan="5" class="table-empty">No hay productos habilitados.</td></tr>';
-        } else if (iniciales.length > 0) {
+        if (iniciales.length > 0) {
           iniciales.forEach((L) => {
             addRow();
             const tr = tbody.lastElementChild;
@@ -704,7 +714,10 @@
         }
 
         if (listaPreciosSel) {
-          setEnabled(productos.length > 0);
+          setEnabled(false);
+          if (listaPreciosSel.value) {
+            cargarCatalogoLista(listaPreciosSel.value);
+          }
         }
 
         // styles (scoped)

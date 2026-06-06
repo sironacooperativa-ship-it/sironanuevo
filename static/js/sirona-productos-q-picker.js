@@ -4,7 +4,8 @@
  * rellena el campo `q` y opcionalmente envía el formulario.
  *
  * SironaProductosQPicker.attach({
- *   dataScriptId: 'productos-list-picker-data',
+ *   dataScriptId: 'productos-list-picker-data',  // opcional si hay dataFetchUrl
+ *   dataFetchUrl: '/productos/picker.json',      // carga bajo demanda (más rápido al abrir la página)
  *   inputId: 'productos-filter-q',
  *   submitOnPick: true   // default true
  * });
@@ -38,6 +39,7 @@
 
   function attach(opts) {
     var dataScriptId = opts && opts.dataScriptId;
+    var dataFetchUrl = opts && opts.dataFetchUrl;
     var inputId = opts && opts.inputId;
     var submitOnPick = opts && opts.submitOnPick !== false;
 
@@ -49,7 +51,8 @@
       productos = [];
     }
     var inpQ = inputId ? document.getElementById(inputId) : null;
-    if (!inpQ || !Array.isArray(productos) || productos.length === 0) return;
+    if (!inpQ) return;
+    if (!dataFetchUrl && (!Array.isArray(productos) || productos.length === 0)) return;
 
     ensureCss();
 
@@ -62,6 +65,10 @@
 
     var list = document.createElement("div");
     list.className = "sirona-select-search-list";
+
+    var catalogLoaded = productos.length > 0;
+    var catalogLoading = false;
+    var pendingOpen = false;
 
     inpQ.setAttribute("role", "combobox");
     inpQ.setAttribute("aria-autocomplete", "list");
@@ -116,7 +123,7 @@
       }
     }
 
-    function openMenu() {
+    function openMenuBody() {
       menu.hidden = false;
       inpQ.setAttribute("aria-expanded", "true");
       try {
@@ -126,6 +133,52 @@
       renderList();
       positionMenu();
       requestAnimationFrame(positionMenu);
+    }
+
+    function ensureCatalogThenOpen() {
+      if (catalogLoaded || !dataFetchUrl) {
+        openMenuBody();
+        return;
+      }
+      if (catalogLoading) {
+        pendingOpen = true;
+        return;
+      }
+      catalogLoading = true;
+      list.innerHTML = '<div class="text-muted small px-2 py-1">Cargando productos…</div>';
+      menu.hidden = false;
+      inpQ.setAttribute("aria-expanded", "true");
+      try {
+        document.body.appendChild(menu);
+      } catch (e5) {}
+      positionMenu();
+      fetch(dataFetchUrl, {
+        headers: { "X-Requested-With": "XMLHttpRequest", Accept: "application/json" },
+        credentials: "same-origin",
+      })
+        .then(function (r) {
+          if (!r.ok) throw new Error("picker");
+          return r.json();
+        })
+        .then(function (data) {
+          productos = (data && data.productos) || [];
+          catalogLoaded = true;
+          catalogLoading = false;
+          if (pendingOpen || !menu.hidden) {
+            pendingOpen = false;
+            openMenuBody();
+          }
+        })
+        .catch(function () {
+          catalogLoading = false;
+          pendingOpen = false;
+          list.innerHTML =
+            '<div class="text-muted small px-2 py-1">No se pudo cargar el listado. Reintentá.</div>';
+        });
+    }
+
+    function openMenu() {
+      ensureCatalogThenOpen();
     }
 
     inpQ.addEventListener("focus", openMenu);

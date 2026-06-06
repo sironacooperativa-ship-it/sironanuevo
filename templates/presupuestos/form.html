@@ -16,6 +16,7 @@
 
   <form method="post" novalidate id="presupuestoForm">
     {% csrf_token %}
+    <input type="hidden" name="stock_venta_json" id="id_stock_venta_json" value="" autocomplete="off" />
     <div class="card shadow-sm mb-3">
       <div class="card-body row g-3">
         <div class="col-12 col-md-6 col-lg-4">
@@ -604,44 +605,60 @@
         tbody.querySelectorAll(".sirona-select-search > button.form-select").forEach((b) => (b.disabled = !enabled));
       }
 
+      function cargarCatalogoLista(lid) {
+        if (!listaPreciosSel || !lid) return;
+        setEnabled(false);
+        return fetch(catalogoPreciosUrl + "?lista=" + encodeURIComponent(lid), {
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+          credentials: "same-origin",
+        })
+          .then(function (r) {
+            if (!r.ok) throw new Error("catálogo");
+            return r.json();
+          })
+          .then(function (data) {
+            productos = data.productos || [];
+            byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
+            if (productos.length === 0) {
+              tbody.innerHTML =
+                '<tr><td colspan="5" class="table-empty">No hay productos habilitados.</td></tr>';
+              setEnabled(false);
+              totals();
+              return;
+            }
+            if (tbody.querySelector(".table-empty")) {
+              tbody.innerHTML = "";
+              addRow();
+            }
+            tbody.querySelectorAll('select[name="linea_producto"]').forEach(function (sel) {
+              const v = sel.value;
+              sel.innerHTML = optionsHtml();
+              if (v && byId[v]) {
+                sel.value = v;
+              } else if (v) {
+                ensureSelectedOption(sel, { producto_id: v });
+              } else {
+                sel.value = "";
+                sel.dataset.prevEmpty = "1";
+              }
+              try {
+                if (sel.__sironaPicker && typeof sel.__sironaPicker.syncBtn === "function") sel.__sironaPicker.syncBtn();
+              } catch (e) {}
+              const tr = sel.closest("tr");
+              if (tr) refreshRow(tr);
+            });
+            setEnabled(true);
+            totals();
+          })
+          .catch(function () {
+            setEnabled(true);
+            alert("No se pudo cargar el catálogo de precios para esa lista.");
+          });
+      }
+
       if (listaPreciosSel) {
         listaPreciosSel.addEventListener("change", function () {
-          const lid = listaPreciosSel.value;
-          if (!lid) return;
-          setEnabled(false);
-          fetch(catalogoPreciosUrl + "?lista=" + encodeURIComponent(lid), {
-            headers: { "X-Requested-With": "XMLHttpRequest" },
-            credentials: "same-origin",
-          })
-            .then(function (r) {
-              if (!r.ok) throw new Error("catálogo");
-              return r.json();
-            })
-            .then(function (data) {
-              productos = data.productos || [];
-              byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
-              tbody.querySelectorAll('select[name="linea_producto"]').forEach(function (sel) {
-                const v = sel.value;
-                sel.innerHTML = optionsHtml();
-                if (v && byId[v]) {
-                  sel.value = v;
-                } else {
-                  sel.value = "";
-                  sel.dataset.prevEmpty = "1";
-                }
-                try {
-                  if (sel.__sironaPicker && typeof sel.__sironaPicker.syncBtn === "function") sel.__sironaPicker.syncBtn();
-                } catch (e) {}
-                const tr = sel.closest("tr");
-                if (tr) refreshRow(tr);
-              });
-              setEnabled(productos.length > 0);
-              totals();
-            })
-            .catch(function () {
-              setEnabled(true);
-              alert("No se pudo cargar el catálogo de precios para esa lista.");
-            });
+          cargarCatalogoLista(listaPreciosSel.value);
         });
       }
 
@@ -663,11 +680,7 @@
         });
       });
 
-      if (productos.length === 0) {
-        setEnabled(false);
-        tbody.innerHTML =
-          '<tr><td colspan="5" class="table-empty">No hay productos habilitados.</td></tr>';
-      } else if (iniciales.length > 0) {
+      if (iniciales.length > 0) {
         iniciales.forEach((L) => {
           addRow();
           const tr = tbody.lastElementChild;
@@ -705,9 +718,11 @@
         addRow();
       }
 
-      // Estado inicial: si hay selector de lista, habilitar según catálogo cargado
       if (listaPreciosSel) {
-        setEnabled(productos.length > 0);
+        setEnabled(false);
+        if (listaPreciosSel.value) {
+          cargarCatalogoLista(listaPreciosSel.value);
+        }
       }
 
       // styles (scoped)
@@ -724,6 +739,33 @@
           document.head.appendChild(st);
         } catch (e) {}
       })();
+    })();
+  </script>
+  <script src="{% static 'js/venta-stock-confirmar.js' %}?v=3"></script>
+  <script>
+    (function () {
+      if (typeof SironaVentaStockConfirm === "undefined") return;
+      const tbody = document.getElementById("lineasBody");
+      const form = document.getElementById("presupuestoForm");
+      if (!tbody || !form) return;
+      let byId = {};
+      try {
+        const el = document.getElementById("presupuestos-productos");
+        const productos = el ? JSON.parse(el.textContent) : [];
+        byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
+      } catch (e) {}
+      SironaVentaStockConfirm.bind({
+        form: form,
+        tbody: tbody,
+        getProduct: function (pid) {
+          return byId[String(pid)];
+        },
+        setProductStock: function (pid, stock) {
+          const p = byId[String(pid)];
+          if (p) p.stock = stock;
+        },
+        hiddenId: "id_stock_venta_json",
+      });
     })();
   </script>
 {% endblock %}

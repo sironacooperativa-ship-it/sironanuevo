@@ -20,7 +20,7 @@ class ProductoForm(forms.ModelForm):
         help_texts = {
             "stock": (
                 "Puede ser negativo si usás mercadería de otro depósito. "
-                "Si el stock pasa a 0, el producto se deshabilita solo al guardar. "
+                "Si el stock pasa a 0, te preguntamos si dejarlo vigente o deshabilitarlo. "
                 "Si pasa de 0 o negativo a un valor mayor, se habilita para la venta."
             ),
         }

@@ -31,10 +31,13 @@ from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_dashboard, pa
 
 from caja.models import MovimientoCaja
 from personas.models import Comprador, Vendedor
-from productos.listas_precios_views import (
-    producto_listas_extra_context,
-    sync_producto_listas_extras_from_post,
+from productos.catalogo_json import (
+    productos_payload_para_lineas,
+    productos_payload_para_lista,
+    productos_payload_todos,
 )
+from productos.stock_cero import encolar_prompt_stock_cero, ids_que_quedaron_en_cero, snapshot_stock
+from productos.listas_precios_views import sync_producto_listas_extras_from_post
 from productos.models import ListaPrecios, Producto
 
 from .forms import VentaCabeceraEditForm, VentaPagoForm
@@ -102,17 +105,7 @@ def _productos_queryset_para_lista(lista: ListaPrecios):
 
 
 def _productos_payload_lista(lista: ListaPrecios):
-    qs = _productos_queryset_para_lista(lista).order_by("descripcion", "codigo")
-    return [
-        {
-            "id": p.id,
-            "codigo": p.codigo,
-            "descripcion": p.descripcion,
-            "precio": str(_precio_producto_para_lista(lista, p)),
-            "stock": p.stock,
-        }
-        for p in qs
-    ]
+    return productos_payload_para_lista(lista)
 
 
 @login_required
@@ -128,13 +121,20 @@ def venta_catalogo_precios(request):
 
 
 @login_required
+@require_http_methods(["GET"])
+def venta_catalogo_completo(request):
+    """Catálogo completo (edición de pedido): se carga por AJAX para no bloquear el HTML inicial."""
+    return JsonResponse({"productos": productos_payload_todos()})
+
+
+@login_required
 @require_http_methods(["GET", "POST"])
 def venta_nueva(request):
     vendedores = Vendedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
     compradores = Comprador.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
     listas_precio = list(ListaPrecios.objects.all().order_by("-es_farmacia", "nombre"))
     lista_default = _lista_farmacia_o_primera()
-    productos_catalogo = _productos_payload_lista(lista_default) if lista_default else []
+    productos_catalogo: list[dict] = []
 
     if request.method == "POST":
         err = None
@@ -236,6 +236,8 @@ def venta_nueva(request):
                     err = "; ".join(getattr(exc, "messages", [str(exc)]))
                     stock_conf = None
                 if err is None:
+                    pids_venta = [int(spec[0].pk) for spec in line_specs]
+                    prev_snap_venta = snapshot_stock(pids_venta)
                     try:
                         venta = crear_venta_confirmada(
                             int(vid),
@@ -253,13 +255,17 @@ def venta_nueva(request):
                         venta = None
                     if err is None:
                         sincronizar_productos_lista_elegida_en_venta(lista_venta, line_specs)
+                        if not stock_conf:
+                            nuevos_cero = ids_que_quedaron_en_cero(prev_snap_venta, pids_venta)
+                            if nuevos_cero:
+                                encolar_prompt_stock_cero(request, nuevos_cero)
                         messages.success(request, f"Venta #{venta.pk} registrada. Orden de pago y evento en calendario.")
                         return redirect("ventas_historial")
 
         if err:
             messages.error(request, err)
         lista_rep = _lista_precios_desde_post(request)
-        cat_rep = _productos_payload_lista(lista_rep) if lista_rep else []
+        cat_rep = productos_payload_para_lineas(lineas_iniciales_desde_post(request))
         return render(
             request,
             "ventas/nueva.html",
@@ -271,6 +277,7 @@ def venta_nueva(request):
                 "lineas_iniciales": lineas_iniciales_desde_post(request),
                 "repoblar": repoblar_campos_cabecera_desde_post(request),
                 "comision_default": COMISION_PORCENTAJE_DEFECTO,
+                "lista_default": lista_default,
             },
         )
 
@@ -285,6 +292,7 @@ def venta_nueva(request):
             "lineas_iniciales": [],
             "repoblar": None,
             "comision_default": COMISION_PORCENTAJE_DEFECTO,
+            "lista_default": lista_default,
         },
     )
 
@@ -1051,23 +1059,11 @@ def venta_detalle(request, pk: int):
             except Exception:
                 pass
         return resp
-    productos_pedido_listas: list[dict] = []
-    seen_pids: set[int] = set()
-    for ln in venta.lineas.select_related("producto").order_by("id"):
-        if ln.producto_id in seen_pids:
-            continue
-        seen_pids.add(ln.producto_id)
-        productos_pedido_listas.append(
-            {"producto": ln.producto, **producto_listas_extra_context(ln.producto)}
-        )
-    lista_farmacia = ListaPrecios.objects.filter(es_farmacia=True).order_by("id").first()
     return render(
         request,
         "ventas/detalle.html",
         {
             "venta": venta,
-            "productos_pedido_listas": productos_pedido_listas,
-            "lista_farmacia": lista_farmacia,
         },
     )
 
@@ -1107,21 +1103,7 @@ def venta_editar(request, pk: int):
 
     vendedores = Vendedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
     compradores = Comprador.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
-    # En edición de pedido: mostrar un catálogo amplio (productos habilitados) y además
-    # garantizar que los productos ya presentes en el pedido aparezcan en el selector.
-    productos_catalogo = [
-        {
-            "id": p.id,
-            "codigo": p.codigo,
-            "descripcion": p.descripcion,
-            "precio": str(q2(p.precio_venta)),
-            "stock": p.stock,
-        }
-        for p in Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
-    ]
-    by_id = {int(p["id"]): p for p in productos_catalogo}
 
-    # Para edición: repoblar líneas desde la venta actual.
     lineas_qs = list(venta.lineas.select_related("producto").all())
     lineas_iniciales = [
         {
@@ -1134,25 +1116,7 @@ def venta_editar(request, pk: int):
         }
         for ln in lineas_qs
     ]
-    for ln in lineas_qs:
-        try:
-            pid = int(ln.producto_id or 0)
-        except Exception:
-            pid = 0
-        if not pid or pid in by_id:
-            continue
-        # Producto del pedido que no está en el catálogo (p. ej. deshabilitado): igual lo agregamos.
-        prod = getattr(ln, "producto", None)
-        if prod is None:
-            continue
-        by_id[pid] = {
-            "id": prod.id,
-            "codigo": prod.codigo,
-            "descripcion": prod.descripcion,
-            "precio": str(q2(prod.precio_venta)),
-            "stock": prod.stock,
-        }
-    productos_catalogo = list(by_id.values())
+    productos_catalogo = productos_payload_para_lineas(lineas_iniciales)
     repoblar = {
         "vendedor_id": venta.vendedor_id,
         "comprador_id": venta.comprador_id,
@@ -1226,6 +1190,7 @@ def venta_editar(request, pk: int):
                 messages.error(request, err)
                 repoblar = repoblar_campos_cabecera_desde_post(request)
                 lineas_iniciales = lineas_iniciales_desde_post(request)
+                productos_catalogo = productos_payload_para_lineas(lineas_iniciales)
                 return render(
                     request,
                     "ventas/editar.html",
@@ -1269,6 +1234,7 @@ def venta_editar(request, pk: int):
                 messages.error(request, "No se pudo guardar." + det)
                 repoblar = repoblar_campos_cabecera_desde_post(request)
                 lineas_iniciales = lineas_iniciales_desde_post(request)
+                productos_catalogo = productos_payload_para_lineas(lineas_iniciales)
                 return render(
                     request,
                     "ventas/editar.html",
@@ -1374,6 +1340,8 @@ def venta_editar(request, pk: int):
                         for ln in old_lines:
                             Producto.objects.filter(pk=ln.producto_id).update(stock=F("stock") + ln.cantidad)
                         VentaLinea.objects.filter(venta_id=v_locked.pk).delete()
+                        pids_edit = [int(spec[0].pk) for spec in line_specs]
+                        prev_snap_edit = snapshot_stock(pids_edit)
                         merged = merge_stock_confirmacion_venta_locked(line_specs, stock_conf)
                         for spec in line_specs:
                             prod, qty, pu, st, cod, desc = spec
@@ -1388,6 +1356,10 @@ def venta_editar(request, pk: int):
                             )
                             Producto.objects.filter(pk=prod.pk).update(stock=F("stock") - qty)
                         Producto.aplicar_deshabilitado_si_queda_en_cero(merged)
+                        if not stock_conf:
+                            nuevos_cero = ids_que_quedaron_en_cero(prev_snap_edit, pids_edit)
+                            if nuevos_cero:
+                                encolar_prompt_stock_cero(request, nuevos_cero)
 
                     v_locked.vendedor_id = vid
                     v_locked.comprador_id = comprador_id
@@ -1426,6 +1398,8 @@ def venta_editar(request, pk: int):
             messages.error(request, err)
             lineas_iniciales = lineas_iniciales_desde_post(request)
             repoblar = repoblar_campos_cabecera_desde_post(request)
+
+    productos_catalogo = productos_payload_para_lineas(lineas_iniciales)
 
     return render(
         request,

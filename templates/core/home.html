@@ -97,14 +97,14 @@
           </div>
         </div>
         <div class="col-6 d-flex align-items-stretch">
-          <div class="stat-card w-100 h-100">
+          <a class="stat-card w-100 h-100 text-decoration-none text-body d-block" href="{% url 'stock_home' %}?estado=critico" title="Ver productos con stock crítico">
             <div class="stat-row">
               <div class="stat-label">Alertas stock</div>
-              <span class="stat-ico stat-ico--danger"><i data-lucide="alert-triangle"></i></span>
+              <span class="stat-ico stat-ico--danger" aria-hidden="true"><i data-lucide="alert-triangle"></i></span>
             </div>
             <div class="stat-value">{{ stock_critico|length }}{% if deshabilitados_por_stock_count %}<span class="text-muted fs-6 fw-normal"> / </span><span class="text-danger">{{ deshabilitados_por_stock_count }}</span>{% endif %}</div>
-            <div class="text-muted small">Activos ≤0{% if deshabilitados_por_stock_count %} · <span class="text-danger">desh. por stock</span>{% endif %}</div>
-          </div>
+            <div class="text-muted small">Activos ≤0{% if deshabilitados_por_stock_count %} · <span class="text-danger">desh. por stock</span>{% endif %} · <span class="text-primary">Ver listado</span></div>
+          </a>
         </div>
       </div>
     </div>
@@ -502,7 +502,8 @@
           </table>
         </div>
       </div>
-      <div class="card-body border-top d-flex justify-content-end">
+      <div class="card-body border-top d-flex justify-content-end gap-2 flex-wrap">
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'stock_home' %}?estado=critico">Gestionar stock crítico</a>
         <a class="btn btn-sm btn-outline-secondary" href="{% url 'stock_home' %}">Ver stock</a>
       </div>
     </div>

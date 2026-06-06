@@ -26,6 +26,7 @@ from presupuestos.presupuesto_pdf import presupuesto_pdf_response
 from presupuestos.share_utils import contexto_compartir_presupuesto
 from presupuestos.views import _lineas_presupuesto_desde_post, _productos_payload, _validar_lineas_post
 from ventas.servicios import eliminar_venta_admin
+from productos.catalogo_json import productos_payload_para_lineas
 from productos.lista_precios_pdf import (
     filas_lista_precios,
     lista_precios_pdf_file_response,
@@ -105,21 +106,8 @@ def vendedor_home(request):
             .all()
         )
 
-    lista_default = (
-        ListaPrecios.objects.filter(es_farmacia=True).order_by("id").first()
-        or ListaPrecios.objects.order_by("id").first()
-    )
     listas_precio = list(ListaPrecios.objects.all().order_by("-es_farmacia", "nombre"))
-    productos_catalogo = (
-        [{"id": p.id, "codigo": p.codigo, "descripcion": p.descripcion, "precio": str(lista_default.precio_para(p) or p.precio_venta), "stock": p.stock}
-         for p in (
-            (Producto.objects.filter(habilitado=True, en_lista_precios=True) if lista_default and lista_default.es_farmacia
-             else Producto.objects.filter(habilitado=True, items_lista_precio__lista_id=lista_default.pk).distinct()
-            ).order_by("descripcion", "codigo")
-         )]
-        if lista_default
-        else []
-    )
+    productos_catalogo: list[dict] = []
     lineas_iniciales: list = []
     repoblar = None
 
@@ -190,6 +178,12 @@ def vendedor_home(request):
             "descuento_monto": request.POST.get("descuento_monto") or "0",
             "aplica_comision": True,
         }
+        productos_catalogo = productos_payload_para_lineas(lineas_iniciales)
+
+    lista_default = (
+        ListaPrecios.objects.filter(es_farmacia=True).order_by("id").first()
+        or ListaPrecios.objects.order_by("id").first()
+    )
 
     return render(
         request,

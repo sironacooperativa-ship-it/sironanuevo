@@ -72,6 +72,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.vendor_mode",
+                "core.context_processors.stock_cero_prompt",
             ],
         },
     }

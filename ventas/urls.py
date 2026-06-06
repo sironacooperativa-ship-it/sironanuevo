@@ -14,6 +14,7 @@ urlpatterns = [
     path("comisiones/liquidacion-pagar/", views.comision_liquidacion_pagar, name="ventas_comision_liquidacion_pagar"),
     path("nueva/", views.venta_nueva, name="venta_nueva"),
     path("catalogo-precios/", views.venta_catalogo_precios, name="venta_catalogo_precios"),
+    path("catalogo-completo/", views.venta_catalogo_completo, name="venta_catalogo_completo"),
     path("<int:pk>/editar/", views.venta_editar, name="venta_editar"),
     path(
         "<int:pk>/comision/",

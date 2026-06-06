@@ -4,6 +4,8 @@ from . import listas_precios_views, views
 
 
 urlpatterns = [
+    path("stock-cero-resolver/", views.producto_stock_cero_resolver, name="producto_stock_cero_resolver"),
+    path("picker.json", views.productos_picker_json, name="productos_picker_json"),
     path("", views.productos_list, name="productos_list"),
     path("aumento/", views.productos_aumento, name="productos_aumento"),
     path("vencimientos/", views.productos_vencimientos, name="productos_vencimientos"),

@@ -174,7 +174,7 @@ def merge_stock_confirmacion_venta_locked(
     for pid, qsum in demanda.items():
         avail = int(stock_map.get(pid, 0))
         permitir_neg = False
-        desh_cero = True
+        desh_cero = False
         if stock_confirmacion is not None and pid in stock_confirmacion:
             permitir_neg, desh_cero = stock_confirmacion[pid]
         if qsum > avail and not permitir_neg:
@@ -251,7 +251,7 @@ def crear_venta_confirmada(
     o con texto congelado: (..., codigo_snapshot, descripcion_snapshot).
 
     stock_confirmacion: por producto_id, (permitir_negativo, deshabilitar_si_queda_en_cero).
-    Si es None, no se permite vender por encima del stock y, si queda en 0, se deshabilita (comportamiento previo).
+    Si es None, no se permite vender por encima del stock; al quedar en 0 no se deshabilita solo (el modal decide).
     """
     subtotal = sum((t[3] for t in line_specs), Decimal("0.00"))
     with transaction.atomic():

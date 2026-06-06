@@ -19,10 +19,13 @@ from core.money_decimal import COMISION_PORCENTAJE_DEFECTO, format_monto_ars, pa
 from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_param, parse_fecha_dashboard, rango_periodo
 from core.repoblar_lineas import repoblar_campos_cabecera_desde_post
 from personas.models import Comprador, Vendedor
+from productos.catalogo_json import productos_payload_para_lineas, productos_payload_para_lista
 from productos.models import ListaPrecios, Producto
+from productos.stock_cero import encolar_prompt_stock_cero, ids_que_quedaron_en_cero, snapshot_stock
 from ventas.servicios import (
     crear_venta_confirmada,
     eliminar_venta_admin,
+    merge_stock_confirmacion_venta_locked,
     parse_stock_venta_json_from_post,
     unpack_linea_spec,
 )
@@ -204,17 +207,7 @@ def _productos_queryset_para_lista(lista: ListaPrecios):
 
 
 def _productos_payload_lista(lista: ListaPrecios):
-    qs = _productos_queryset_para_lista(lista).order_by("descripcion", "codigo")
-    return [
-        {
-            "id": p.id,
-            "codigo": p.codigo,
-            "descripcion": p.descripcion,
-            "precio": str(_precio_producto_para_lista(lista, p)),
-            "stock": p.stock,
-        }
-        for p in qs
-    ]
+    return productos_payload_para_lista(lista)
 
 
 @login_required
@@ -616,7 +609,7 @@ def presupuesto_nuevo(request):
     vendedores = Vendedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
     listas_precio = list(ListaPrecios.objects.all().order_by("-es_farmacia", "nombre"))
     lista_default = _lista_farmacia_o_primera()
-    productos_catalogo = _productos_payload_lista(lista_default) if lista_default else []
+    productos_catalogo: list[dict] = []
     lineas_iniciales: list = []
     repoblar = None
     vendedor_default_id = None
@@ -659,6 +652,7 @@ def presupuesto_nuevo(request):
         messages.error(request, err)
         lineas_iniciales = _lineas_presupuesto_desde_post(request)
         repoblar = repoblar_campos_cabecera_desde_post(request)
+        productos_catalogo = productos_payload_para_lineas(lineas_iniciales)
 
     return render(
         request,
@@ -691,22 +685,10 @@ def presupuesto_editar(request, pk: int):
     vendedores = Vendedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo")
     listas_precio = list(ListaPrecios.objects.all().order_by("-es_farmacia", "nombre"))
     lista_default = _lista_farmacia_o_primera()
-    productos_catalogo = _productos_payload_lista(lista_default) if lista_default else []
-    # En edición: asegurar que los productos ya cargados en el presupuesto aparezcan en el selector,
-    # incluso si quedaron fuera del catálogo por lista / estado.
-    by_id = {int(p["id"]): p for p in productos_catalogo if str(p.get("id", "")).isdigit()}
     lineas_qs = list(presupuesto.lineas.select_related("producto").all())
     lineas_iniciales = []
     for ln in lineas_qs:
         prod = getattr(ln, "producto", None)
-        if prod is not None and prod.pk and int(prod.pk) not in by_id:
-            by_id[int(prod.pk)] = {
-                "id": prod.pk,
-                "codigo": prod.codigo,
-                "descripcion": prod.descripcion,
-                "precio": str(q2(prod.precio_venta)),
-                "stock": prod.stock,
-            }
         lineas_iniciales.append(
             {
                 "producto_id": ln.producto_id,
@@ -717,7 +699,7 @@ def presupuesto_editar(request, pk: int):
                 "stock": int(getattr(prod, "stock", 0) or 0),
             }
         )
-    productos_catalogo = list(by_id.values())
+    productos_catalogo = productos_payload_para_lineas(lineas_iniciales)
     repoblar = None
 
     if request.method == "POST":
@@ -801,7 +783,15 @@ def presupuesto_editar(request, pk: int):
                         )
                         Producto.objects.filter(pk=prod.pk).update(stock=F("stock") - qty)
                         pids_afectados.append(prod.pk)
-                    Producto.deshabilitar_sin_stock(pids_afectados)
+                    prev_snap = snapshot_stock(pids_afectados)
+                    nuevos_cero = ids_que_quedaron_en_cero(prev_snap, pids_afectados)
+                    stock_conf_edit = parse_stock_venta_json_from_post(request.POST)
+                    if stock_conf_edit:
+                        merged = merge_stock_confirmacion_venta_locked(line_specs, stock_conf_edit)
+                        Producto.aplicar_deshabilitado_si_queda_en_cero(merged)
+                        nuevos_cero = [x for x in nuevos_cero if int(x) not in stock_conf_edit]
+                    if nuevos_cero:
+                        encolar_prompt_stock_cero(request, nuevos_cero)
 
                     venta.vendedor_id = vid
                     venta.comprador_id = comprador_id
@@ -870,6 +860,7 @@ def presupuesto_editar(request, pk: int):
         messages.error(request, err)
         lineas_iniciales = _lineas_presupuesto_desde_post(request)
         repoblar = repoblar_campos_cabecera_desde_post(request)
+        productos_catalogo = productos_payload_para_lineas(lineas_iniciales)
 
     return render(
         request,

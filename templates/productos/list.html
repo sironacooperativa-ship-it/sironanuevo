@@ -161,7 +161,6 @@
 {% endblock %}
 {% block title %}Productos{% endblock %}
 {% block content %}
-  {{ productos_picker|json_script:"productos-list-picker-data" }}
   <section class="page-header-card inventory-header">
     <div class="header-left">
       <span class="header-ico" aria-hidden="true"><i data-lucide="package"></i></span>
@@ -1009,12 +1008,12 @@
     Código automático: <code>ME/AC/OT</code> + 4 dígitos.
   </p>
 
-  <script src="{% static 'js/sirona-productos-q-picker.js' %}?v=2"></script>
+  <script src="{% static 'js/sirona-productos-q-picker.js' %}?v=3"></script>
   <script>
     (function () {
       if (window.SironaProductosQPicker) {
         SironaProductosQPicker.attach({
-          dataScriptId: "productos-list-picker-data",
+          dataFetchUrl: "{% url 'productos_picker_json' %}",
           inputId: "productos-filter-q",
         });
       }

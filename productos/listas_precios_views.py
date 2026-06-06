@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import os
+
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Avg, Case, Count, DecimalField, ExpressionWrapper, F, Q, Sum, Value, When
-from django.http import Http404, HttpResponseForbidden
+from django.http import Http404, HttpResponseForbidden, JsonResponse
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -31,6 +34,41 @@ from .models import ListaPrecioItem, ListaPrecios, Producto
 
 # Borrador de nombre para el paso de confirmación al crear una lista nueva (session key).
 SESSION_LISTA_PRECIO_NUEVA_NOMBRE = "lista_precio_nueva_nombre"
+_LISTAS_OPCIONES_CACHE_TTL = int(os.environ.get("SIRONA_LISTAS_OPCIONES_CACHE_SECONDS", "60"))
+_LISTAS_OPCIONES_CACHE_KEY = "sirona:listas_extra_opciones:v1"
+_FARMACIA_LISTA_ID_KEY = "sirona:farmacia_lista_id:v1"
+
+
+def _listas_extra_opciones():
+    if _LISTAS_OPCIONES_CACHE_TTL <= 0:
+        return list(ListaPrecios.objects.all().order_by("-es_farmacia", "nombre"))
+    hit = cache.get(_LISTAS_OPCIONES_CACHE_KEY)
+    if hit is not None:
+        return hit
+    val = list(ListaPrecios.objects.all().order_by("-es_farmacia", "nombre"))
+    cache.set(_LISTAS_OPCIONES_CACHE_KEY, val, _LISTAS_OPCIONES_CACHE_TTL)
+    return val
+
+
+def _farmacia_lista_id_cached() -> int | None:
+    if _LISTAS_OPCIONES_CACHE_TTL <= 0:
+        return (
+            ListaPrecios.objects.filter(es_farmacia=True)
+            .order_by("id")
+            .values_list("pk", flat=True)
+            .first()
+        )
+    hit = cache.get(_FARMACIA_LISTA_ID_KEY)
+    if hit is not None:
+        return hit if hit else None
+    pk = (
+        ListaPrecios.objects.filter(es_farmacia=True)
+        .order_by("id")
+        .values_list("pk", flat=True)
+        .first()
+    )
+    cache.set(_FARMACIA_LISTA_ID_KEY, pk or 0, _LISTAS_OPCIONES_CACHE_TTL)
+    return pk
 
 
 def _public_lista_precios_query(*, q: str, orden: str, ver_marca: bool, page: int | str | None = None) -> str:
@@ -64,29 +102,19 @@ def producto_listas_extra_context(
     *,
     selected_ids: set[int] | None = None,
 ) -> dict:
-    opciones = ListaPrecios.objects.all().order_by("-es_farmacia", "nombre")
+    opciones = _listas_extra_opciones()
     marcados: set[int] = set()
     if selected_ids is not None:
         marcados = selected_ids
     elif producto is None:
-        farmacia_id = (
-            ListaPrecios.objects.filter(es_farmacia=True)
-            .order_by("id")
-            .values_list("pk", flat=True)
-            .first()
-        )
+        farmacia_id = _farmacia_lista_id_cached()
         if farmacia_id:
             marcados.add(farmacia_id)
     elif producto and producto.pk:
         marcados = set(
             ListaPrecioItem.objects.filter(producto=producto).values_list("lista_id", flat=True)
         )
-        farmacia_id = (
-            ListaPrecios.objects.filter(es_farmacia=True)
-            .order_by("id")
-            .values_list("pk", flat=True)
-            .first()
-        )
+        farmacia_id = _farmacia_lista_id_cached()
         if farmacia_id and producto.en_lista_precios:
             marcados.add(farmacia_id)
     return {
@@ -130,8 +158,9 @@ def _parse_precio(raw: str) -> Decimal | None:
 
 
 def _export_lista_params(request) -> dict:
+    # Marca incluida por defecto; el formulario envía laboratorio=0 si el switch está apagado.
     return {
-        "incluir_laboratorio": request.GET.get("laboratorio") == "1",
+        "incluir_laboratorio": request.GET.get("laboratorio", "1") == "1",
         "orden": normalizar_orden_lista_precios(request.GET.get("orden")),
     }
 

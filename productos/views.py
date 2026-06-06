@@ -37,6 +37,7 @@ from urllib.parse import parse_qsl, urlencode
 
 from core.export_utils import parse_export, pdf_response, xlsx_response
 from core.authz import staff_required
+from core.security import safe_internal_path
 from core.money_decimal import format_monto_ars, q2, redondear_precio_mostrador_ars
 from core.pdf_membrete import platypus_membrete
 from personas.models import Proveedor
@@ -64,10 +65,16 @@ from .models import ListaPrecioItem, ListaPrecios, Producto
 
 
 def _productos_picker_data():
-    """Lista compacta (código + descripción) para buscadores con menú desplegable (máx. 3000)."""
-    return list(
-        Producto.objects.order_by("descripcion", "codigo").values("codigo", "descripcion")[:3000]
-    )
+    """Deprecated: usar productos.catalogo_json.productos_picker_data vía AJAX."""
+    return []
+
+
+@login_required
+@require_http_methods(["GET"])
+def productos_picker_json(request):
+    from .catalogo_json import productos_picker_data
+
+    return JsonResponse({"productos": productos_picker_data()})
 
 
 def _lista_precios_farmacia():
@@ -286,6 +293,8 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
         productos = productos.filter(habilitado=False)
     elif estado == "stock":
         productos = productos.filter(deshabilitado_por_stock=True)
+    elif estado == "critico":
+        productos = productos.filter(habilitado=True, stock__lte=0)
     elif estado == "manual":
         productos = productos.filter(habilitado=False, deshabilitado_por_stock=False)
     elif estado == "sin_lista":
@@ -749,7 +758,6 @@ def productos_list(request):
             "page_obj": page_obj,
             "querystring": querystring,
             "kpi": kpi,
-            "productos_picker": _productos_picker_data(),
         },
     )
 
@@ -928,7 +936,6 @@ def productos_aumento(request):
             "tipos": Producto.Tipo.choices,
             "proveedores_filtro": proveedores_filtro,
             "listas_precios_filtro": listas_filtro,
-            "productos_picker": _productos_picker_data(),
         },
     )
 
@@ -1164,6 +1171,40 @@ def producto_listas_comparativa_json(request, pk: int):
 
 
 @login_required
+@require_http_methods(["POST"])
+def producto_stock_cero_resolver(request):
+    """POST JSON: { \"decisiones\": [{ \"id\": 1, \"accion\": \"vigente\"|\"deshabilitar\" }, ...] }"""
+    import json
+
+    from .stock_cero import resolver_stock_cero
+
+    try:
+        body = json.loads(request.body.decode("utf-8") if request.body else "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "JSON no válido"}, status=400)
+    decisiones = body.get("decisiones") or []
+    if not isinstance(decisiones, list):
+        return JsonResponse({"error": "Formato no válido"}, status=400)
+    resueltos = []
+    for item in decisiones:
+        if not isinstance(item, dict):
+            continue
+        pid = item.get("id")
+        accion = item.get("accion")
+        if pid is None or not str(pid).isdigit():
+            continue
+        p = resolver_stock_cero(int(pid), str(accion or ""))
+        if p is not None:
+            resueltos.append(int(p.pk))
+    key = "stock_cero_prompt"
+    if resueltos and key in request.session:
+        rest = [x for x in request.session.get(key, []) if int(x) not in resueltos]
+        request.session[key] = rest
+        request.session.modified = True
+    return JsonResponse({"ok": True, "resueltos": resueltos})
+
+
+@login_required
 @require_http_methods(["GET", "POST"])
 def producto_update(request, pk: int):
     producto = get_object_or_404(Producto, pk=pk)
@@ -1173,10 +1214,15 @@ def producto_update(request, pk: int):
         falta_lista = _producto_requiere_lista_precio(request, form)
         repetido = _producto_repite_en_misma_lista(request, form, producto) if form_ok else False
         if form_ok and not falta_lista and not repetido:
+            prev_stock = int(producto.stock or 0)
             producto = form.save(commit=False)
             producto.precio_venta_editado = bool(form.cleaned_data.get("precio_venta_editado"))
             producto.save()
             sync_producto_listas_extras_from_post(request, producto)
+            if prev_stock > 0 and int(producto.stock or 0) <= 0:
+                from .stock_cero import encolar_prompt_stock_cero
+
+                encolar_prompt_stock_cero(request, [producto.pk])
             aplicar_ids = parse_aplicar_precio_listas_post(request.POST)
             if aplicar_ids:
                 n = aplicar_precio_a_listas(producto, aplicar_ids, producto.precio_venta)
@@ -1229,9 +1275,14 @@ def producto_inline_update(request, pk: int):
     producto = get_object_or_404(Producto, pk=pk)
     form = ProductoForm(request.POST, instance=producto)
     if form.is_valid():
+        prev_stock = int(producto.stock or 0)
         producto = form.save(commit=False)
         producto.precio_venta_editado = bool(form.cleaned_data.get("precio_venta_editado"))
         producto.save()
+        if prev_stock > 0 and int(producto.stock or 0) <= 0:
+            from .stock_cero import encolar_prompt_stock_cero
+
+            encolar_prompt_stock_cero(request, [producto.pk])
         messages.success(request, f"Producto actualizado: {producto.codigo}")
     else:
         parts = []
@@ -1258,15 +1309,28 @@ def producto_delete(request, pk: int):
 @require_http_methods(["POST"])
 def producto_toggle_habilitado(request, pk: int):
     producto = get_object_or_404(Producto, pk=pk)
-    if not producto.habilitado and producto.stock <= 0:
-        messages.warning(request, "No se puede habilitar un producto sin stock.")
-        return _redirect_productos_con_filtros(request)
-    producto.habilitado = not producto.habilitado
-    if not producto.habilitado:
-        producto.en_lista_precios = False
+    if producto.habilitado:
+        Producto.deshabilitar_manual([producto.pk])
+        messages.success(request, f"Producto deshabilitado: {producto.codigo}")
+    else:
+        if producto.stock <= 0:
+            messages.warning(request, "No se puede habilitar un producto sin stock. Repone stock o dejalo vigente desde el aviso correspondiente.")
+            dest = safe_internal_path(request.POST.get("retorno") or "") or safe_internal_path(
+                request.META.get("HTTP_REFERER") or ""
+            )
+            if dest:
+                return redirect(dest)
+            return _redirect_productos_con_filtros(request)
+        producto.habilitado = True
         producto.deshabilitado_por_stock = False
         producto.listas_stock_snapshot = None
-    producto.save()
+        producto.save(update_fields=["habilitado", "deshabilitado_por_stock", "listas_stock_snapshot"])
+        messages.success(request, f"Producto habilitado: {producto.codigo}")
+    dest = safe_internal_path(request.POST.get("retorno") or "") or safe_internal_path(
+        request.META.get("HTTP_REFERER") or ""
+    )
+    if dest:
+        return redirect(dest)
     return _redirect_productos_con_filtros(request)
 
 

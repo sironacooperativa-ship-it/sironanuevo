@@ -35,7 +35,7 @@
     {% if form.stock.help_text %}<div class="form-text producto-form-hint">{{ form.stock.help_text }}</div>{% endif %}
     {% if form.stock.errors %}<div class="text-danger small">{{ form.stock.errors }}</div>{% endif %}
     {% if form.instance.pk and form.instance.stock == 0 %}
-      <div class="alert alert-secondary py-2 px-2 small mt-2 mb-0">Sin stock: el producto está deshabilitado. Ingresá unidades (acá o en <a href="{% url 'stock_home' %}">Stock</a>) para volver a habilitarlo.</div>
+      <div class="alert alert-secondary py-2 px-2 small mt-2 mb-0">Sin stock: al guardar te preguntamos si dejarlo <strong>vigente</strong> o <strong>deshabilitarlo</strong>. También podés reponer unidades acá o en <a href="{% url 'stock_home' %}">Stock</a>.</div>
     {% endif %}
   </div>
 

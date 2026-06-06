@@ -6,7 +6,8 @@ from django.db import transaction
 from django.db.models import Case, Count, DecimalField, ExpressionWrapper, F, IntegerField, Q, Sum, Value, When
 from django.db.models.functions import Cast, Coalesce
 from django.core.paginator import Paginator
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.http import JsonResponse
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
@@ -14,6 +15,7 @@ from core.authz import staff_required
 from core.export_utils import parse_export, pdf_response, xlsx_response
 
 from productos.models import Producto
+from productos.stock_cero import encolar_prompt_stock_cero, ids_que_quedaron_en_cero, snapshot_stock
 from personas.models import Proveedor
 
 from .forms import MovimientoStockForm
@@ -40,6 +42,8 @@ def _stock_productos_queryset(request):
         qs = qs.filter(habilitado=False)
     elif estado == "stock":
         qs = qs.filter(deshabilitado_por_stock=True)
+    elif estado == "critico":
+        qs = qs.filter(habilitado=True, stock__lte=0)
     qs = qs.annotate(
         _ord_desh_stock=Case(
             When(deshabilitado_por_stock=True, then=Value(0)),
@@ -84,6 +88,8 @@ def stock_ajuste_inline(request):
         return _redirect_stock()
 
     if prev != new_stock:
+        if int(prev or 0) > 0 and int(new_stock or 0) <= 0:
+            encolar_prompt_stock_cero(request, [p.pk])
         messages.success(
             request,
             f"Stock actualizado: {p.codigo} — {prev} → {new_stock} unidades.",
@@ -91,6 +97,45 @@ def stock_ajuste_inline(request):
     else:
         messages.info(request, f"Sin cambios de stock para {p.codigo}.")
     return _redirect_stock()
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def stock_quick_add(request, pk: int):
+    """Carga rápida de stock desde modal (venta/presupuesto) sin salir de la página."""
+    producto = get_object_or_404(Producto, pk=pk)
+    if request.method == "POST":
+        raw = (request.POST.get("cantidad") or "").strip()
+        try:
+            cantidad = int(raw)
+        except (ValueError, TypeError):
+            return JsonResponse({"error": "Cantidad no válida"}, status=400)
+        if cantidad <= 0:
+            return JsonResponse({"error": "La cantidad debe ser mayor a cero"}, status=400)
+        with transaction.atomic():
+            p = Producto.objects.select_for_update().get(pk=producto.pk)
+            prev = int(p.stock or 0)
+            MovimientoStock.objects.create(
+                producto=p,
+                tipo=MovimientoStock.Tipo.ENTRADA,
+                cantidad=cantidad,
+                usuario=request.user if request.user.is_authenticated else None,
+            )
+            Producto.objects.filter(pk=p.pk).update(stock=F("stock") + cantidad)
+            p.refresh_from_db()
+        return JsonResponse(
+            {
+                "ok": True,
+                "producto_id": p.pk,
+                "stock": int(p.stock or 0),
+                "codigo": p.codigo,
+            }
+        )
+    return render(
+        request,
+        "stock/quick_add_fragment.html",
+        {"producto": producto},
+    )
 
 
 @login_required
@@ -119,15 +164,22 @@ def stock_home(request):
                 )
 
                 delta = cantidad if tipo == MovimientoStock.Tipo.ENTRADA else -cantidad
+                prev_snap = snapshot_stock([p.pk])
                 Producto.objects.filter(pk=p.pk).update(stock=F("stock") + delta)
                 p = Producto.objects.select_for_update().get(pk=p.pk)
                 p.save()
-                Producto.deshabilitar_sin_stock([p.pk])
+                nuevos_cero = ids_que_quedaron_en_cero(prev_snap, [p.pk])
+                if nuevos_cero:
+                    encolar_prompt_stock_cero(request, nuevos_cero)
 
                 messages.success(request, f"Stock actualizado ({mov.get_tipo_display()}): {p.codigo} ({delta:+d})")
                 return redirect("stock_home")
     else:
-        form = MovimientoStockForm()
+        initial = {"tipo": MovimientoStock.Tipo.ENTRADA}
+        pid_raw = (request.GET.get("producto") or "").strip()
+        if pid_raw.isdigit():
+            initial["producto"] = int(pid_raw)
+        form = MovimientoStockForm(initial=initial)
 
     exp = parse_export(request)
     if exp in ("xlsx", "pdf"):
@@ -240,6 +292,8 @@ def stock_home(request):
             "productos_picker": productos_picker,
             "tipos": Producto.Tipo.choices,
             "proveedores_filtro": Proveedor.objects.filter(habilitado=True).order_by("apellido", "nombre", "codigo"),
+            "modo_critico": filtros["estado"] == "critico",
+            "abrir_carga": request.GET.get("open") == "1" or bool(request.GET.get("producto")),
         },
     )
 

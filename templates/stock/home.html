@@ -135,6 +135,12 @@
     </article>
   </section>
 
+  {% if modo_critico %}
+    <div class="alert alert-warning border-0 shadow-sm mb-3">
+      <strong>Stock crítico:</strong> productos <strong>habilitados</strong> con saldo ≤ 0. Corregí el stock en la tabla o deshabilitálos si no querés venderlos.
+    </div>
+  {% endif %}
+
   <section class="modern-filter-card stock-page-filters" aria-label="Filtros">
     <form method="get" class="stock-filters-form">
       <div class="stock-filters-grid">
@@ -177,6 +183,7 @@
             <option value="1" {% if estado == "1" %}selected{% endif %}>Activos</option>
             <option value="0" {% if estado == "0" %}selected{% endif %}>Inactivos</option>
             <option value="stock" {% if estado == "stock" %}selected{% endif %}>Solo desh. por stock</option>
+            <option value="critico" {% if estado == "critico" %}selected{% endif %}>Stock crítico (activos ≤0)</option>
           </select>
         </div>
         <div class="stock-filter-actions">
@@ -189,7 +196,7 @@
       </div>
       <p class="stock-filter-hint text-muted mb-0">
         En <strong>Stock disponible</strong> podés corregir el saldo a mano; se guarda en el producto y se refleja en Productos, presupuestos y ventas.
-        Los productos <strong class="text-danger">deshabilitados automáticamente por stock</strong> aparecen primero en la tabla (fila roja).
+        Los productos con <strong class="text-danger">stock crítico</strong> (activos sin saldo) se gestionan desde el filtro «Stock crítico» o desde el icono de alertas en Inicio.
       </p>
     </form>
   </section>
@@ -222,7 +229,7 @@
           </thead>
           <tbody>
             {% for p in productos %}
-              <tr class="{% if p.deshabilitado_por_stock %}table-danger{% endif %}">
+              <tr class="{% if p.deshabilitado_por_stock %}table-danger{% elif modo_critico and p.habilitado %}table-warning{% endif %}">
                 <td>
                   <div class="name">{{ p.descripcion }}</div>
                   <div class="stock-prod-sub">
@@ -268,6 +275,15 @@
                 </td>
                 <td class="text-end stock-actions-td">
                   <div class="stock-actions-cell">
+                    {% if user.is_staff and p.habilitado %}
+                      <form method="post" action="{% url 'producto_toggle_habilitado' p.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="retorno" value="{{ request.get_full_path }}" />
+                        <button type="submit" class="btn-icon stock-icon-btn text-danger" title="Deshabilitar producto" aria-label="Deshabilitar">
+                          <i data-lucide="ban" aria-hidden="true"></i>
+                        </button>
+                      </form>
+                    {% endif %}
                     <a
                       class="btn-icon stock-icon-btn"
                       href="{% url 'producto_update' p.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"

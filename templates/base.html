@@ -1970,6 +1970,14 @@
     <script src="{% static 'js/sirona-modal.js' %}?v=3"></script>
     <script src="{% static 'js/sirona-scroll-top.js' %}?v=1"></script>
     {% if request.user.is_authenticated %}
+      {% if stock_cero_prompt_productos %}
+        {{ stock_cero_prompt_productos|json_script:"sirona-stock-cero-prompt-data" }}
+      {% endif %}
+      <script>
+        window.SIRONA_STOCK_CERO_RESOLVER_URL = "{% url 'producto_stock_cero_resolver' %}";
+        window.SIRONA_STOCK_QUICK_ADD_URL = "{% url 'stock_home' %}quick-add";
+      </script>
+      <script src="{% static 'js/sirona-stock-cero-decision.js' %}?v=1"></script>
       <script src="{% static 'js/sirona-select-search-menu.js' %}?v=1"></script>
       <script src="{% static 'js/sirona-global-search.js' %}?v=1"></script>
       <script src="{% static 'js/sirona-calc.js' %}?v=4"></script>

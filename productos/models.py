@@ -137,24 +137,8 @@ class Producto(models.Model):
         if not self.precio_venta_editado:
             self.precio_venta = self.calcular_precio_venta()
 
-        if self.stock is not None and self.stock == 0:
-            snap = self._snapshot_listas_stock_actual()
-            self.habilitado = False
-            self.en_lista_precios = False
-            self.deshabilitado_por_stock = True
-            self.listas_stock_snapshot = snap
-            uf = kwargs.get("update_fields")
-            if uf is not None:
-                kwargs["update_fields"] = sorted(
-                    set(uf)
-                    | {
-                        "habilitado",
-                        "en_lista_precios",
-                        "deshabilitado_por_stock",
-                        "listas_stock_snapshot",
-                    }
-                )
-        elif self.stock is not None and self.stock < 0:
+        # Ya no se deshabilita solo al quedar en stock 0: el usuario elige (vigente o deshabilitar).
+        if self.stock is not None and self.stock < 0:
             # Stock negativo (p. ej. mercadería externa): no forzar habilitado/listas desde acá.
             pass
         elif self.stock is not None and self.stock > 0:
@@ -190,8 +174,28 @@ class Producto(models.Model):
         super().save(*args, **kwargs)
 
     @classmethod
+    def deshabilitar_manual(cls, producto_ids: Iterable[int]) -> None:
+        """Igual que desactivar el interruptor «Producto habilitado» en la ficha."""
+        seen: list[int] = []
+        for x in producto_ids:
+            try:
+                ix = int(x)
+            except (TypeError, ValueError):
+                continue
+            if ix not in seen:
+                seen.append(ix)
+        if not seen:
+            return
+        cls.objects.filter(pk__in=seen).update(
+            habilitado=False,
+            en_lista_precios=False,
+            deshabilitado_por_stock=False,
+            listas_stock_snapshot=None,
+        )
+
+    @classmethod
     def registrar_deshabilitacion_por_stock(cls, producto_ids: Iterable[int]) -> None:
-        """Tras F() en stock: apaga venta y conserva snapshot de listas para rehabilitar luego."""
+        """Legacy: conserva snapshot de listas (rehabilitación automática al reponer stock)."""
         ListaPrecioItem = apps.get_model("productos", "ListaPrecioItem")
         seen: list[int] = []
         for x in producto_ids:
@@ -230,22 +234,27 @@ class Producto(models.Model):
         cls, opciones_por_producto: dict[int, tuple[bool, bool]]
     ) -> None:
         """
-        Tras descontar stock con F(), deshabilita productos que quedaron en stock 0.
-        opciones_por_producto: producto_id -> (permitir_negativo_ignorado_aquí, deshabilitar_si_stock_es_cero).
+        Tras descontar stock con F(), aplica la decisión del usuario por producto.
+        opciones_por_producto: producto_id -> (permitir_negativo, deshabilitar_si_queda_en_cero).
         """
-        ids: list[int] = []
+        ids_desh: list[int] = []
         for pid, (_neg, desh) in opciones_por_producto.items():
             if desh:
-                ids.append(int(pid))
-        cls.registrar_deshabilitacion_por_stock(ids)
+                ids_desh.append(int(pid))
+        if not ids_desh:
+            return
+        en_cero = list(
+            cls.objects.filter(pk__in=ids_desh, stock__lte=0).values_list("pk", flat=True)
+        )
+        cls.deshabilitar_manual(en_cero)
 
     @classmethod
     def deshabilitar_sin_stock(cls, producto_ids: list[int] | None = None) -> None:
-        """Tras actualizar stock con F() u otro SQL, deshabilita por stock donde corresponde."""
-        qs = cls.objects.filter(stock=0, habilitado=True)
+        """Deprecated: no usar en flujos nuevos; preferir deshabilitar_manual desde la UI."""
+        qs = cls.objects.filter(stock__lte=0, habilitado=True)
         if producto_ids is not None:
             qs = qs.filter(pk__in=producto_ids)
-        cls.registrar_deshabilitacion_por_stock(list(qs.values_list("pk", flat=True)))
+        cls.deshabilitar_manual(list(qs.values_list("pk", flat=True)))
 
 
 class ListaPrecios(models.Model):

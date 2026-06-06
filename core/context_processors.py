@@ -11,8 +11,9 @@ from core.models import NotaAdmin
 from personas.models import Vendedor
 from presupuestos.models import Presupuesto, PresupuestoLinea
 
-# Conteos del layout (badges): TTL corto; usuarios "recibe_notas_admin" no cachean (badge de bandeja).
+# Conteos del layout (badges): TTL corto en memoria (por proceso en Render).
 _VENDOR_CTX_CACHE_TTL = int(os.environ.get("SIRONA_VENDOR_CONTEXT_CACHE_SECONDS", "20"))
+_NOTAS_ADMIN_CACHE_KEY = "sirona:notas_admin_nl:v1"
 
 
 def _user_recibe_notas_admin(user) -> bool:
@@ -47,9 +48,11 @@ def _presupuestos_alerta_count(*, vendedor_perfil, limitar_alerta_a_mi_vendedor:
 def invalidate_vendor_sidebar_cache_for_user(user) -> None:
     """
     Limpia conteos cacheados del layout para este usuario (tras enviar/marcar notas, etc.).
-    No aplica a perfiles con bandeja de administración (no usan este caché).
     """
-    if _VENDOR_CTX_CACHE_TTL <= 0 or user is None or not getattr(user, "is_authenticated", False):
+    if user is None or not getattr(user, "is_authenticated", False):
+        return
+    cache.delete(_NOTAS_ADMIN_CACHE_KEY)
+    if _VENDOR_CTX_CACHE_TTL <= 0:
         return
     if _user_recibe_notas_admin(user):
         return
@@ -119,7 +122,13 @@ def vendor_mode(request):
         vp_pk = int(vendedor_perfil.pk) if isinstance(vendedor_perfil, Vendedor) else 0
 
         if recibe_notas_admin:
-            notas_admin_no_leidas = NotaAdmin.objects.filter(es_staff=False, leida=False).count()
+            cached_notas = cache.get(_NOTAS_ADMIN_CACHE_KEY) if _VENDOR_CTX_CACHE_TTL > 0 else None
+            if cached_notas is not None:
+                notas_admin_no_leidas = cached_notas
+            else:
+                notas_admin_no_leidas = NotaAdmin.objects.filter(es_staff=False, leida=False).count()
+                if _VENDOR_CTX_CACHE_TTL > 0:
+                    cache.set(_NOTAS_ADMIN_CACHE_KEY, notas_admin_no_leidas, _VENDOR_CTX_CACHE_TTL)
             presu_cache_key = (
                 f"sirona:presu_alert:v1:{int(is_staff)}:"
                 f"{int(limitar_alerta_a_mi_vendedor)}:{vp_pk}"
@@ -179,3 +188,16 @@ def vendor_mode(request):
         "presupuestos_alerta": presupuestos_alerta_count > 0,
         "logout_on_tab_close_enabled": bool(getattr(settings, "SIRONA_LOGOUT_ON_TAB_CLOSE", False)),
     }
+
+
+def stock_cero_prompt(request):
+    """Productos que quedaron sin stock y esperan decisión vigente/deshabilitar (modal global)."""
+    user = getattr(request, "user", None)
+    if user is None or not getattr(user, "is_authenticated", False):
+        return {"stock_cero_prompt_productos": []}
+    try:
+        from productos.stock_cero import consumir_prompt_stock_cero
+
+        return {"stock_cero_prompt_productos": consumir_prompt_stock_cero(request)}
+    except Exception:
+        return {"stock_cero_prompt_productos": []}

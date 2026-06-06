@@ -149,9 +149,10 @@
     </div>
   </form>
 
-  <script src="{% static 'js/venta-stock-confirmar.js' %}?v=1"></script>
+    <script src="{% static 'js/venta-stock-confirmar.js' %}?v=3"></script>
   <script>
     (function () {
+      const catalogoCompletoUrl = "{% url 'venta_catalogo_completo' %}";
       const el = document.getElementById("ventas-productos");
       let productos = el ? JSON.parse(el.textContent) : [];
       let byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
@@ -353,9 +354,44 @@
           getProduct: function (pid) {
             return byId[String(pid)];
           },
+          setProductStock: function (pid, stock) {
+            const p = byId[String(pid)];
+            if (p) p.stock = stock;
+          },
           hiddenId: "id_stock_venta_json",
         });
       }
+
+      function aplicarCatalogoCompleto(data) {
+        productos = data.productos || [];
+        byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
+        tbody.querySelectorAll('select[name="linea_producto"]').forEach(function (sel) {
+          const v = sel.value;
+          sel.innerHTML = optionsHtml();
+          if (v) {
+            ensureSelectedOption(sel, {
+              producto_id: v,
+              codigo: byId[v] ? byId[v].codigo : v,
+              descripcion: byId[v] ? byId[v].descripcion : "",
+              stock: byId[v] ? byId[v].stock : "?",
+            });
+          }
+        });
+        totals();
+      }
+
+      fetch(catalogoCompletoUrl, {
+        headers: { "X-Requested-With": "XMLHttpRequest", Accept: "application/json" },
+        credentials: "same-origin",
+      })
+        .then(function (r) {
+          if (!r.ok) throw new Error("catálogo");
+          return r.json();
+        })
+        .then(aplicarCatalogoCompleto)
+        .catch(function () {
+          /* Las líneas del pedido siguen editables con el catálogo mínimo embebido. */
+        });
     })();
   </script>
 {% endblock %}
