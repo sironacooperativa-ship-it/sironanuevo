@@ -719,11 +719,11 @@ body.sidebar-hidden .sidebar-collapse-btn .sirona-side-ico--close {
   .presu-form-page .presu-form-lineas tbody tr.presu-form-line,
   .vendedor-portal-page .presu-form-lineas tbody tr.presu-form-line {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 36px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 36px;
     grid-template-areas:
-      "prod del"
-      "qty pu"
-      "sub sub";
+      "prod prod del"
+      "qty pu ."
+      "sub sub sub";
     gap: 10px 8px;
     padding: 12px;
     border: 1px solid rgba(226, 232, 240, 0.95);
@@ -796,6 +796,7 @@ body.sidebar-hidden .sidebar-collapse-btn .sirona-side-ico--close {
   .vendedor-portal-page .presu-form-td-qty {
     grid-area: qty;
     min-width: 0;
+    text-align: left !important;
   }
 
   .presu-form-page .presu-form-td-qty::before,
@@ -814,6 +815,7 @@ body.sidebar-hidden .sidebar-collapse-btn .sirona-side-ico--close {
   .vendedor-portal-page .presu-form-td-pu {
     grid-area: pu;
     min-width: 0;
+    text-align: left !important;
   }
 
   .presu-form-page .presu-form-td-pu::before,
