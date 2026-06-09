@@ -376,13 +376,156 @@ nav.navbar.sirona-topbar.bg-white {
   padding: 8px;
 }
 
+.sirona-select-search-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+body.sirona-select-search-sheet-open {
+  overflow: hidden;
+  touch-action: none;
+}
+
+.sirona-select-search-menu--sheet {
+  border-radius: 16px 16px 0 0;
+  border: none;
+  border-top: 1px solid rgba(15, 23, 42, 0.1);
+  box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.18);
+  padding: 0 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  max-height: min(88vh, 720px);
+  display: flex;
+  flex-direction: column;
+}
+
+.sirona-select-search-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 2px 10px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  flex-shrink: 0;
+}
+
+.sirona-select-search-sheet-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.sirona-select-search-sheet-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(241, 245, 249, 0.95);
+  color: #334155;
+  font-size: 1.35rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sirona-select-search-menu--sheet .sirona-select-search-input {
+  min-height: 44px;
+  font-size: 16px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+}
+
 .sirona-select-search-list {
   overflow: auto;
   overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   -webkit-overflow-scrolling: touch;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-bottom: 4px;
+}
+
+.sirona-select-search-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+}
+
+.sirona-select-search-item:hover,
+.sirona-select-search-item:focus-visible {
+  background: #f1f5f9;
+  border-color: rgba(37, 99, 235, 0.25);
+  outline: none;
+}
+
+.sirona-pick-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.sirona-pick-item-code {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.sirona-pick-item-desc {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+.sirona-pick-item-meta {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: #0369a1;
+  background: rgba(224, 242, 254, 0.85);
+  border-radius: 999px;
+  padding: 4px 8px;
+  white-space: nowrap;
+  align-self: center;
+}
+
+.sirona-select-search > button.form-select {
+  min-height: 38px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 767.98px) {
+  .sirona-select-search > button.form-select {
+    min-height: 44px;
+    font-size: 0.875rem;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
 }
 
 html.sirona-select-search-scroll-pad {

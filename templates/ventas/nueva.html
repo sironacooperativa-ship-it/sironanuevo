@@ -359,6 +359,7 @@
         }
 
         function close() {
+          if (menu.hidden) return;
           menu.hidden = true;
           btn.setAttribute("aria-expanded", "false");
           try {
@@ -387,6 +388,19 @@
           list.appendChild(empty);
 
           items.slice(0, 400).forEach(function (p) {
+            const pick =
+              typeof SironaSelectSearchMenu !== "undefined" &&
+              typeof SironaSelectSearchMenu.createProductItem === "function"
+                ? SironaSelectSearchMenu.createProductItem(p, function () {
+                    sel.value = String(p.id);
+                    sel.dispatchEvent(new Event("change", { bubbles: true }));
+                    close();
+                  })
+                : null;
+            if (pick) {
+              list.appendChild(pick);
+              return;
+            }
             const it = document.createElement("button");
             it.type = "button";
             it.className = "sirona-select-search-item";
@@ -399,6 +413,8 @@
             list.appendChild(it);
           });
         }
+
+        menu.addEventListener("sirona:select-search-close", close);
 
         function open() {
           menu.hidden = false;
@@ -487,44 +503,43 @@
         totals();
       }
 
-      const listaPreciosSel = document.getElementById("id_lista_precios");
-
-      function aplicarCatalogoLista(data) {
-        productos = data.productos || [];
-        byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
-        if (productos.length === 0) {
-          tbody.innerHTML =
-            '<tr><td colspan="5" class="table-empty">No hay productos habilitados para vender.</td></tr>';
-          totals();
-          return;
+      function ensureSelectedOption(sel, L) {
+        const pid =
+          L && L.producto_id !== undefined && L.producto_id !== null && String(L.producto_id).trim() !== ""
+            ? String(L.producto_id)
+            : "";
+        if (!pid) return;
+        if (!sel.querySelector(`option[value="${pid}"]`)) {
+          const codigo = L.codigo ? String(L.codigo) : pid;
+          const desc = L.descripcion ? String(L.descripcion) : "Producto";
+          const stock = L.stock != null ? String(L.stock) : "?";
+          const opt = document.createElement("option");
+          opt.value = pid;
+          opt.textContent = `${codigo} — ${desc} (stock ${stock})`;
+          sel.appendChild(opt);
         }
-        if (tbody.querySelector(".table-empty")) {
-          tbody.innerHTML = "";
-          addRow();
-        }
-        tbody.querySelectorAll('select[name="linea_producto"]').forEach(function (sel) {
-          const v = sel.value;
-          sel.innerHTML = optionsHtml();
-          if (v && byId[v]) {
-            sel.value = v;
-          } else {
-            sel.value = "";
-            sel.dataset.prevEmpty = "1";
-          }
-          try {
-            if (sel.__sironaPicker && typeof sel.__sironaPicker.syncBtn === "function") sel.__sironaPicker.syncBtn();
-          } catch (e) {}
-          const tr = sel.closest("tr");
-          if (tr) {
-            refreshRow(tr);
-          }
-        });
-        totals();
-        if (typeof SironaVentaStockConfirm !== "undefined") {
-          SironaVentaStockConfirm.refreshQty(document.getElementById("ventaForm"));
-        }
+        sel.value = pid;
+        sel.dataset.prevEmpty = "0";
+        try {
+          if (sel.__sironaPicker && typeof sel.__sironaPicker.syncBtn === "function") sel.__sironaPicker.syncBtn();
+        } catch (e) {}
       }
-        if (!lid) return;
+
+      const listaPreciosSel = document.getElementById("id_lista_precios");
+      const btnNuevoProducto = document.getElementById("btnNuevoProducto");
+
+      function setEnabled(enabled) {
+        if (btnNuevoProducto) btnNuevoProducto.disabled = !enabled;
+        tbody.querySelectorAll('select[name="linea_producto"]').forEach((sel) => {
+          sel.disabled = !enabled;
+        });
+        tbody.querySelectorAll(".sirona-select-search-input").forEach((inp) => (inp.disabled = !enabled));
+        tbody.querySelectorAll(".sirona-select-search > button.form-select").forEach((b) => (b.disabled = !enabled));
+      }
+
+      function cargarCatalogoLista(lid) {
+        if (!listaPreciosSel || !lid) return;
+        setEnabled(false);
         return fetch(catalogoPreciosUrl + "?lista=" + encodeURIComponent(lid), {
           headers: { "X-Requested-With": "XMLHttpRequest" },
           credentials: "same-origin",
@@ -533,8 +548,45 @@
             if (!r.ok) throw new Error("catálogo");
             return r.json();
           })
-          .then(aplicarCatalogoLista)
+          .then(function (data) {
+            productos = data.productos || [];
+            byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
+            if (productos.length === 0) {
+              tbody.innerHTML =
+                '<tr><td colspan="5" class="table-empty">No hay productos habilitados para vender.</td></tr>';
+              setEnabled(false);
+              totals();
+              return;
+            }
+            if (tbody.querySelector(".table-empty")) {
+              tbody.innerHTML = "";
+              addRow();
+            }
+            tbody.querySelectorAll('select[name="linea_producto"]').forEach(function (sel) {
+              const v = sel.value;
+              sel.innerHTML = optionsHtml();
+              if (v && byId[v]) {
+                sel.value = v;
+              } else if (v) {
+                ensureSelectedOption(sel, { producto_id: v });
+              } else {
+                sel.value = "";
+                sel.dataset.prevEmpty = "1";
+              }
+              try {
+                if (sel.__sironaPicker && typeof sel.__sironaPicker.syncBtn === "function") sel.__sironaPicker.syncBtn();
+              } catch (e) {}
+              const tr = sel.closest("tr");
+              if (tr) refreshRow(tr);
+            });
+            setEnabled(true);
+            totals();
+            if (typeof SironaVentaStockConfirm !== "undefined") {
+              SironaVentaStockConfirm.refreshQty(document.getElementById("ventaForm"));
+            }
+          })
           .catch(function () {
+            setEnabled(true);
             alert("No se pudo cargar el catálogo de precios para esa lista.");
           });
       }
@@ -574,9 +626,14 @@
           const tr = tbody.lastElementChild;
           const sel = tr.querySelector('select[name="linea_producto"]');
           const qIn = tr.querySelector('input[name="linea_cantidad"]');
-          sel.value = String(L.producto_id);
-          sel.dataset.prevEmpty = "0";
-          qIn.value = String(L.cantidad);
+          ensureSelectedOption(sel, L);
+          const rawQty =
+            L.cantidad_raw !== undefined && L.cantidad_raw !== null
+              ? String(L.cantidad_raw)
+              : L.cantidad !== undefined && L.cantidad !== null
+                ? String(L.cantidad)
+                : "1";
+          qIn.value = rawQty;
           refreshRow(tr);
         });
         const last = tbody.lastElementChild;
@@ -590,10 +647,12 @@
       } else {
         addRow();
       }
-      totals();
 
-      if (listaPreciosSel && listaPreciosSel.value) {
-        cargarCatalogoLista(listaPreciosSel.value);
+      if (listaPreciosSel) {
+        setEnabled(false);
+        if (listaPreciosSel.value) {
+          cargarCatalogoLista(listaPreciosSel.value);
+        }
       }
 
       // styles (scoped)

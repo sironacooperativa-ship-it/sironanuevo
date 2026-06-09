@@ -410,6 +410,7 @@
         }
 
         function close() {
+          if (menu.hidden) return;
           menu.hidden = true;
           btn.setAttribute("aria-expanded", "false");
           try {
@@ -438,6 +439,19 @@
           list.appendChild(empty);
 
           items.slice(0, 400).forEach(function (p) {
+            const pick =
+              typeof SironaSelectSearchMenu !== "undefined" &&
+              typeof SironaSelectSearchMenu.createProductItem === "function"
+                ? SironaSelectSearchMenu.createProductItem(p, function () {
+                    sel.value = String(p.id);
+                    sel.dispatchEvent(new Event("change", { bubbles: true }));
+                    close();
+                  })
+                : null;
+            if (pick) {
+              list.appendChild(pick);
+              return;
+            }
             const it = document.createElement("button");
             it.type = "button";
             it.className = "sirona-select-search-item";
@@ -450,6 +464,8 @@
             list.appendChild(it);
           });
         }
+
+        menu.addEventListener("sirona:select-search-close", close);
 
         function open() {
           menu.hidden = false;
