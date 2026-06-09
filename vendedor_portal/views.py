@@ -10,7 +10,7 @@ from django.db.models import Q
 from django.db.models import Count, Q, Sum, Value
 from django.db.models.functions import Coalesce
 from django.db.models.functions import TruncDay, TruncMonth, TruncWeek
-from django.http import FileResponse, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
+from django.http import FileResponse, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
@@ -25,7 +25,7 @@ from presupuestos.models import Presupuesto, PresupuestoLinea, presupuesto_tiene
 from presupuestos.presupuesto_pdf import presupuesto_pdf_response
 from presupuestos.share_utils import contexto_compartir_presupuesto
 from presupuestos.views import _lineas_presupuesto_desde_post, _productos_payload, _validar_lineas_post
-from productos.catalogo_json import productos_payload_para_lineas
+from productos.catalogo_json import productos_payload_para_lineas, productos_payload_para_lista
 from productos.lista_precios_pdf import (
     filas_lista_precios,
     lista_precios_pdf_file_response,
@@ -52,6 +52,22 @@ def _listas_precios_accesibles(vendedor: Vendedor):
 
 def _vendedor_puede_ver_lista(vendedor: Vendedor, lista: ListaPrecios) -> bool:
     return not vendedor.listas_precios_bloqueadas.filter(pk=lista.pk).exists()
+
+
+@login_required
+@require_http_methods(["GET"])
+def vendedor_catalogo_precios(request):
+    """Catálogo AJAX para armar presupuestos en el portal (vendedores no pueden usar /presupuestos/)."""
+    vendedor = _get_vendedor_from_user(request.user)
+    if vendedor is None:
+        return JsonResponse({"error": "Sin perfil de vendedor"}, status=403)
+    lid = (request.GET.get("lista") or "").strip()
+    if not lid.isdigit():
+        return JsonResponse({"error": "Lista no válida"}, status=400)
+    lista = _listas_precios_accesibles(vendedor).filter(pk=int(lid)).first()
+    if lista is None:
+        return JsonResponse({"error": "Lista no encontrada o no disponible"}, status=404)
+    return JsonResponse({"productos": productos_payload_para_lista(lista)})
 
 
 @login_required
@@ -105,7 +121,7 @@ def vendedor_home(request):
             .all()
         )
 
-    listas_precio = list(ListaPrecios.objects.all().order_by("-es_farmacia", "nombre"))
+    listas_precio = list(_listas_precios_accesibles(vendedor).order_by("-es_farmacia", "nombre"))
     productos_catalogo: list[dict] = []
     lineas_iniciales: list = []
     repoblar = None
@@ -180,8 +196,8 @@ def vendedor_home(request):
         productos_catalogo = productos_payload_para_lineas(lineas_iniciales)
 
     lista_default = (
-        ListaPrecios.objects.filter(es_farmacia=True).order_by("id").first()
-        or ListaPrecios.objects.order_by("id").first()
+        _listas_precios_accesibles(vendedor).filter(es_farmacia=True).order_by("id").first()
+        or _listas_precios_accesibles(vendedor).order_by("id").first()
     )
 
     return render(

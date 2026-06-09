@@ -225,7 +225,7 @@
     <script src="{% static 'js/venta-stock-confirmar.js' %}?v=4"></script>
     <script>
       (function () {
-        const catalogoPreciosUrl = "{% url 'presupuesto_catalogo_precios' %}";
+        const catalogoPreciosUrl = "{% url 'vendedor_catalogo_precios' %}";
         const el = document.getElementById("presupuestos-productos");
         let productos = el ? JSON.parse(el.textContent) : [];
         let byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
