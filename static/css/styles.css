@@ -697,30 +697,34 @@ body.sidebar-hidden .sidebar-collapse-btn .sirona-side-ico--close {
   color: inherit;
 }
 
-/* Portal vendedor (móvil): líneas del presupuesto como tarjetas legibles */
+/* Presupuesto / portal vendedor (móvil): líneas como tarjetas legibles */
 @media (max-width: 767.98px) {
+  .presu-form-page .presu-form-table-wrap,
   .vendedor-portal-page .presu-form-table-wrap {
     overflow-x: visible;
   }
 
+  .presu-form-page .presu-form-lineas,
   .vendedor-portal-page .presu-form-lineas {
     table-layout: auto;
     border-collapse: separate;
     border-spacing: 0 10px;
   }
 
+  .presu-form-page .presu-form-lineas thead,
   .vendedor-portal-page .presu-form-lineas thead {
     display: none;
   }
 
+  .presu-form-page .presu-form-lineas tbody tr.presu-form-line,
   .vendedor-portal-page .presu-form-lineas tbody tr.presu-form-line {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) 36px;
     grid-template-areas:
       "prod del"
       "qty pu"
       "sub sub";
-    gap: 8px 10px;
+    gap: 10px 8px;
     padding: 12px;
     border: 1px solid rgba(226, 232, 240, 0.95);
     border-radius: 14px;
@@ -728,6 +732,7 @@ body.sidebar-hidden .sidebar-collapse-btn .sirona-side-ico--close {
     box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
   }
 
+  .presu-form-page .presu-form-lineas tbody tr.presu-form-line > td,
   .vendedor-portal-page .presu-form-lineas tbody tr.presu-form-line > td {
     display: block;
     width: auto !important;
@@ -737,20 +742,63 @@ body.sidebar-hidden .sidebar-collapse-btn .sirona-side-ico--close {
     background: transparent !important;
   }
 
+  .presu-form-page .presu-form-td-prod,
   .vendedor-portal-page .presu-form-td-prod {
     grid-area: prod;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
   }
 
+  .presu-form-page .presu-form-td-prod .sirona-select-search,
+  .vendedor-portal-page .presu-form-td-prod .sirona-select-search {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .presu-form-page .presu-form-td-prod .sirona-select-search > button.form-select,
+  .vendedor-portal-page .presu-form-td-prod .sirona-select-search > button.form-select {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    min-height: 44px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .presu-form-page .presu-form-td-del,
   .vendedor-portal-page .presu-form-td-del {
     grid-area: del;
+    width: 36px !important;
+    min-width: 36px !important;
+    max-width: 36px !important;
     align-self: start;
     justify-self: end;
+    padding: 0 !important;
   }
 
+  .presu-form-page .presu-form-td-del .presu-row-actions,
+  .vendedor-portal-page .presu-form-td-del .presu-row-actions {
+    justify-content: flex-end !important;
+  }
+
+  .presu-form-page .presu-form-line-remove.btn-icon,
+  .vendedor-portal-page .presu-form-line-remove.btn-icon {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+  }
+
+  .presu-form-page .presu-form-td-qty,
   .vendedor-portal-page .presu-form-td-qty {
     grid-area: qty;
+    min-width: 0;
   }
 
+  .presu-form-page .presu-form-td-qty::before,
   .vendedor-portal-page .presu-form-td-qty::before {
     content: "Cantidad";
     display: block;
@@ -762,10 +810,13 @@ body.sidebar-hidden .sidebar-collapse-btn .sirona-side-ico--close {
     margin-bottom: 4px;
   }
 
+  .presu-form-page .presu-form-td-pu,
   .vendedor-portal-page .presu-form-td-pu {
     grid-area: pu;
+    min-width: 0;
   }
 
+  .presu-form-page .presu-form-td-pu::before,
   .vendedor-portal-page .presu-form-td-pu::before {
     content: "Precio unit.";
     display: block;
@@ -777,6 +828,7 @@ body.sidebar-hidden .sidebar-collapse-btn .sirona-side-ico--close {
     margin-bottom: 4px;
   }
 
+  .presu-form-page .presu-form-td-sub,
   .vendedor-portal-page .presu-form-td-sub {
     grid-area: sub;
     display: flex !important;
@@ -787,6 +839,7 @@ body.sidebar-hidden .sidebar-collapse-btn .sirona-side-ico--close {
     border-top: 1px dashed rgba(148, 163, 184, 0.35) !important;
   }
 
+  .presu-form-page .presu-form-td-sub::before,
   .vendedor-portal-page .presu-form-td-sub::before {
     content: "Subtotal";
     font-size: 0.75rem;
@@ -794,20 +847,21 @@ body.sidebar-hidden .sidebar-collapse-btn .sirona-side-ico--close {
     color: var(--s-muted, #64748b);
   }
 
+  .presu-form-page .presu-form-td-sub.js-subtotal,
   .vendedor-portal-page .presu-form-td-sub.js-subtotal {
     font-size: 1rem;
     font-weight: 750;
     color: var(--s-ink, #0f172a);
   }
 
+  .presu-form-page .presu-form-td-qty .form-control,
+  .presu-form-page .presu-form-td-pu .form-control,
   .vendedor-portal-page .presu-form-td-qty .form-control,
   .vendedor-portal-page .presu-form-td-pu .form-control {
+    width: 100%;
+    max-width: 100%;
     min-height: 44px;
     font-size: 16px;
-  }
-
-  .vendedor-portal-page .sirona-select-search {
-    width: 100%;
   }
 }
 
