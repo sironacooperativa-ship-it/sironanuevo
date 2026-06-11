@@ -377,6 +377,10 @@
       function aplicarCatalogoCompleto(data) {
         productos = data.productos || [];
         byId = Object.fromEntries(productos.map((p) => [String(p.id), p]));
+        if (productos.length === 0) {
+          totals();
+          return;
+        }
         tbody.querySelectorAll('select[name="linea_producto"]').forEach(function (sel) {
           const v = sel.value;
           sel.innerHTML = optionsHtml();
@@ -388,12 +392,16 @@
               stock: byId[v] ? byId[v].stock : "?",
             });
           }
+          const tr = sel.closest("tr");
+          if (tr) refreshRow(tr);
         });
         totals();
         if (typeof SironaVentaStockConfirm !== "undefined") {
           SironaVentaStockConfirm.refreshQty(document.getElementById("ventaEditForm"));
         }
       }
+
+      fetch(catalogoCompletoUrl, {
         headers: { "X-Requested-With": "XMLHttpRequest", Accept: "application/json" },
         credentials: "same-origin",
       })

@@ -442,11 +442,15 @@
             const pick =
               typeof SironaSelectSearchMenu !== "undefined" &&
               typeof SironaSelectSearchMenu.createProductItem === "function"
-                ? SironaSelectSearchMenu.createProductItem(p, function () {
-                    sel.value = String(p.id);
-                    sel.dispatchEvent(new Event("change", { bubbles: true }));
-                    close();
-                  })
+                ? SironaSelectSearchMenu.createProductItem(
+                    p,
+                    function () {
+                      sel.value = String(p.id);
+                      sel.dispatchEvent(new Event("change", { bubbles: true }));
+                      close();
+                    },
+                    { descOnly: true }
+                  )
                 : null;
             if (pick) {
               list.appendChild(pick);
@@ -561,7 +565,7 @@
       }
 
       function productLabel(p) {
-        return `${p.codigo} — ${p.descripcion} (stock ${p.stock})`;
+        return String(p.descripcion || p.codigo || "Producto").trim();
       }
 
       function optionsHtml(filter, keepId) {
@@ -584,12 +588,10 @@
             : "";
         if (!pid) return;
         if (!sel.querySelector(`option[value="${pid}"]`)) {
-          const codigo = L.codigo ? String(L.codigo) : pid;
           const desc = L.descripcion ? String(L.descripcion) : "Producto";
-          const stock = L.stock != null ? String(L.stock) : "?";
           const opt = document.createElement("option");
           opt.value = pid;
-          opt.textContent = `${codigo} — ${desc} (stock ${stock})`;
+          opt.textContent = desc;
           sel.appendChild(opt);
         }
         sel.value = pid;

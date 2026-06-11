@@ -206,26 +206,32 @@
    * Ítem de producto con layout legible (código, descripción, stock).
    * @param {object} p
    * @param {() => void} onSelect
+   * @param {{ descOnly?: boolean }} [opts]
    */
-  function createProductItem(p, onSelect) {
+  function createProductItem(p, onSelect, opts) {
+    var descOnly = opts && opts.descOnly;
     var btn = document.createElement("button");
     btn.type = "button";
     btn.className = "sirona-select-search-item";
     var code = escapeHtml(p && p.codigo ? p.codigo : "");
     var desc = escapeHtml(p && p.descripcion ? p.descripcion : "Producto");
     var stock = p && p.stock != null ? escapeHtml(String(p.stock)) : "—";
-    btn.innerHTML =
-      '<span class="sirona-pick-item-body">' +
-      '<span class="sirona-pick-item-code">' +
-      code +
-      "</span>" +
-      '<span class="sirona-pick-item-desc">' +
-      desc +
-      "</span>" +
-      "</span>" +
-      '<span class="sirona-pick-item-meta">Stock ' +
-      stock +
-      "</span>";
+    if (descOnly) {
+      btn.innerHTML = '<span class="sirona-pick-item-desc sirona-pick-item-desc--solo">' + desc + "</span>";
+    } else {
+      btn.innerHTML =
+        '<span class="sirona-pick-item-body">' +
+        '<span class="sirona-pick-item-code">' +
+        code +
+        "</span>" +
+        '<span class="sirona-pick-item-desc">' +
+        desc +
+        "</span>" +
+        "</span>" +
+        '<span class="sirona-pick-item-meta">Stock ' +
+        stock +
+        "</span>";
+    }
     btn.addEventListener("click", function (ev) {
       ev.preventDefault();
       if (typeof onSelect === "function") onSelect();

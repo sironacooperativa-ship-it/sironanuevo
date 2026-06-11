@@ -528,6 +528,16 @@ body.sirona-select-search-sheet-open {
   }
 }
 
+.sirona-pick-item-desc--solo {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+  word-break: break-word;
+  display: block;
+  width: 100%;
+  text-align: left;
+}
+
 html.sirona-select-search-scroll-pad {
   scroll-padding-bottom: var(--sirona-select-search-scroll-pad, 0px);
 }
