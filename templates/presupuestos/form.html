@@ -38,7 +38,11 @@
           <select name="vendedor" class="form-select" required id="id_vendedor">
             <option value="">— Elegir —</option>
             {% for v in vendedores %}
-              <option value="{{ v.pk }}" {% if repoblar %}{% if repoblar.vendedor_id == v.pk %}selected{% endif %}{% elif presupuesto and presupuesto.vendedor_id == v.pk %}selected{% elif vendedor_default_id and vendedor_default_id == v.pk %}selected{% endif %}>
+              <option
+                value="{{ v.pk }}"
+                data-aplica-comision-default="{% if v.aplica_comision_por_defecto %}1{% else %}0{% endif %}"
+                {% if repoblar %}{% if repoblar.vendedor_id == v.pk %}selected{% endif %}{% elif presupuesto and presupuesto.vendedor_id == v.pk %}selected{% elif vendedor_default_id and vendedor_default_id == v.pk %}selected{% endif %}
+              >
                 {{ v.codigo }} — {{ v.apellido }}, {{ v.nombre }}
               </option>
             {% endfor %}
@@ -89,9 +93,7 @@
                 {% if repoblar.aplica_comision %}checked{% endif %}
               {% elif presupuesto %}
                 {% if presupuesto.aplica_comision %}checked{% endif %}
-              {% else %}
-                checked
-              {% endif %}
+              {% elif vendedor_default_aplica_comision %}checked{% endif %}
             />
             <label class="form-check-label" for="id_aplica_comision">Aplicar comisión al vendedor</label>
           </div>
@@ -790,6 +792,19 @@
           hiddenId: "id_stock_venta_json",
         });
       }
+
+      (function () {
+        const selVend = document.getElementById("id_vendedor");
+        const chkAplica = document.getElementById("id_aplica_comision");
+        if (!selVend || !chkAplica) return;
+        function syncAplicaComisionFromVendedor() {
+          const opt = selVend.options[selVend.selectedIndex];
+          if (!opt || !opt.value) return;
+          chkAplica.checked = opt.dataset.aplicaComisionDefault === "1";
+        }
+        selVend.addEventListener("change", syncAplicaComisionFromVendedor);
+        syncAplicaComisionFromVendedor();
+      })();
     })();
   </script>
 {% endblock %}

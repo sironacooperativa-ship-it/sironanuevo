@@ -77,6 +77,11 @@ class Vendedor(PersonaBase):
     comision_porcentaje = models.DecimalField(
         max_digits=6, decimal_places=2, default=Decimal("0.00")
     )
+    aplica_comision_por_defecto = models.BooleanField(
+        default=True,
+        verbose_name="Aplicar comisión por defecto",
+        help_text="Si está activo, al armar presupuestos o ventas con este vendedor la opción «Aplicar comisión» viene marcada.",
+    )
     es_jefe_grupo = models.BooleanField(
         default=False,
         db_index=True,
@@ -109,6 +114,13 @@ class Vendedor(PersonaBase):
     @classmethod
     def _prefijo_codigo(cls) -> str:
         return "VE"
+
+    @classmethod
+    def aplica_comision_por_defecto_para(cls, vendedor_id: int | None) -> bool:
+        if not vendedor_id:
+            return True
+        val = cls.objects.filter(pk=vendedor_id).values_list("aplica_comision_por_defecto", flat=True).first()
+        return True if val is None else bool(val)
 
     def clean(self):
         super().clean()

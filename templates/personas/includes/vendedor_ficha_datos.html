@@ -22,6 +22,14 @@
   </dd>
   <dt class="col-sm-4 text-muted">Comisión %</dt>
   <dd class="col-sm-8">{{ vendedor.comision_porcentaje }}%</dd>
+  <dt class="col-sm-4 text-muted">Aplicar comisión por defecto</dt>
+  <dd class="col-sm-8">
+    {% if vendedor.aplica_comision_por_defecto %}
+      <span class="badge text-bg-success">Sí</span>
+    {% else %}
+      <span class="badge text-bg-secondary">No</span>
+    {% endif %}
+  </dd>
   <dt class="col-sm-4 text-muted">Cargo de grupo</dt>
   <dd class="col-sm-8">
     {% if vendedor.es_jefe_grupo %}

@@ -453,5 +453,245 @@
         else if (window.confirm("Hay conflictos de stock. ¿Continuar?")) onOk();
       });
     },
+
+    /**
+     * Formularios de aprobar presupuesto (líneas fijas, sin tabla editable).
+     * opts.getPayload(form) -> { demand: {pid: qty}, productos: {pid: {codigo, descripcion, stock}} }
+     */
+    bindPresupuestoAprobar: function (opts) {
+      const formSelector = opts.formSelector || ".js-presu-aprobar-form";
+      const hiddenSelector = opts.hiddenSelector || 'input[name="stock_venta_json"]';
+      const getPayload = opts.getPayload;
+
+      document.querySelectorAll(formSelector).forEach(function (form) {
+        if (form.__sironaPresuAprobarBound) return;
+        form.__sironaPresuAprobarBound = true;
+
+        form.addEventListener("submit", function (ev) {
+          const sub = ev.submitter;
+          const hidden = form.querySelector(hiddenSelector);
+          if (hidden && String(hidden.value || "").trim()) return;
+
+          const payload =
+            typeof getPayload === "function" ? getPayload(form) : { demand: {}, productos: {} };
+          const demand = payload.demand || {};
+          const productos = payload.productos || {};
+
+          function getProduct(pid) {
+            return productos[String(pid)] || null;
+          }
+          function setProductStock(pid, stock) {
+            const p = getProduct(pid);
+            if (p) p.stock = stock;
+          }
+
+          if (!Object.keys(demand).length) return;
+
+          let issues = buildIssues(demand, getProduct);
+          if (!issues.length) return;
+
+          ev.preventDefault();
+
+          const modalEl = ensureModal();
+          const body = document.getElementById("sironaStockVentaModalBody");
+
+          function renderBody(currentIssues) {
+            let html =
+              '<p class="small text-muted mb-3">Revisá cada producto antes de aprobar y generar el pedido. Podés cargar stock sin salir de esta pantalla.</p>';
+            currentIssues.forEach(function (it) {
+              const cod = escapeHtml(it.p.codigo || "");
+              const desc = escapeHtml(it.p.descripcion || "");
+              const idBase = "sspa_" + it.pid;
+              html +=
+                '<div class="border rounded p-3 mb-3 bg-light" data-issue-pid="' +
+                escapeHtml(it.pid) +
+                '">';
+              html += "<div><strong>" + cod + "</strong> — " + desc + "</div>";
+              html +=
+                '<div class="small mt-1">Stock disponible: <strong class="js-sspa-avail">' +
+                it.avail +
+                "</strong> · Cantidad en presupuesto: <strong>" +
+                it.demand +
+                "</strong></div>";
+              html +=
+                '<button type="button" class="btn btn-sm btn-outline-primary mt-2 js-agregar-stock" data-pid="' +
+                escapeHtml(it.pid) +
+                '">Agregar stock</button>';
+
+              if (it.type === "zero") {
+                html +=
+                  '<div class="alert alert-warning small mt-2 mb-0">No hay stock en depósito. Cargá unidades o elegí vender en negativo.</div>';
+                html += '<div class="mt-2 fw-semibold small">¿Cómo seguimos?</div>';
+                html +=
+                  '<div class="form-check mt-1"><input class="form-check-input" type="radio" name="' +
+                  idBase +
+                  '_m" id="' +
+                  idBase +
+                  '_neg" value="neg" />' +
+                  '<label class="form-check-label" for="' +
+                  idBase +
+                  '_neg">Aprobar igual (stock negativo)</label></div>';
+                html +=
+                  '<div class="form-check"><input class="form-check-input" type="radio" name="' +
+                  idBase +
+                  '_m" id="' +
+                  idBase +
+                  '_can" value="can" checked />' +
+                  '<label class="form-check-label" for="' +
+                  idBase +
+                  '_can">Cancelar hasta cargar stock</label></div>';
+              } else if (it.type === "short") {
+                html +=
+                  '<div class="alert alert-warning small mt-2 mb-0">El presupuesto pide más unidades (' +
+                  it.demand +
+                  ") que las disponibles (" +
+                  it.avail +
+                  ' u.). Podés cargar stock o aprobar en negativo.</div>';
+                html += '<div class="mt-2 fw-semibold small">¿Cómo seguimos?</div>';
+                html +=
+                  '<div class="form-check mt-1"><input class="form-check-input" type="radio" name="' +
+                  idBase +
+                  '_m" id="' +
+                  idBase +
+                  '_neg" value="neg" checked />' +
+                  '<label class="form-check-label" for="' +
+                  idBase +
+                  '_neg">Aprobar igual (puede quedar stock negativo)</label></div>';
+                html +=
+                  '<div class="form-check"><input class="form-check-input" type="radio" name="' +
+                  idBase +
+                  '_m" id="' +
+                  idBase +
+                  '_can" value="can" />' +
+                  '<label class="form-check-label" for="' +
+                  idBase +
+                  '_can">Cancelar aprobación</label></div>';
+                html +=
+                  '<p class="small text-muted mb-0 mt-2">Para reducir cantidades, editá el presupuesto antes de aprobar.</p>';
+                if (it.avail > 0 && it.demand > it.avail) {
+                  html += renderCeroChoice(idBase);
+                }
+              } else {
+                html += renderCeroChoice(idBase);
+              }
+              html += "</div>";
+            });
+            body.innerHTML = html;
+
+            body.querySelectorAll(".js-agregar-stock").forEach(function (btn) {
+              btn.addEventListener("click", function () {
+                const pid = btn.getAttribute("data-pid");
+                openAgregarStock(pid, function (data) {
+                  setProductStock(pid, data.stock);
+                  const block = btn.closest("[data-issue-pid]");
+                  if (block) {
+                    const strong = block.querySelector(".js-sspa-avail");
+                    if (strong) strong.textContent = String(data.stock);
+                  }
+                  issues = buildIssues(demand, getProduct);
+                  if (!issues.length) {
+                    if (hidden) hidden.value = "";
+                    if (modal) modal.hide();
+                    try {
+                      if (sub && typeof form.requestSubmit === "function") {
+                        form.requestSubmit(sub);
+                      } else {
+                        form.submit();
+                      }
+                    } catch (e) {
+                      form.submit();
+                    }
+                    return;
+                  }
+                  renderBody(issues);
+                  wireOk();
+                });
+              });
+            });
+          }
+
+          const modal =
+            w.bootstrap && w.bootstrap.Modal ? w.bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+
+          function wireOk() {
+            const btnOk = document.getElementById("sironaStockVentaModalOk");
+            if (!btnOk) return;
+            const newBtn = btnOk.cloneNode(true);
+            btnOk.parentNode.replaceChild(newBtn, btnOk);
+            newBtn.addEventListener("click", function () {
+              const freshIssues = buildIssues(demand, getProduct);
+              if (!freshIssues.length) {
+                if (hidden) hidden.value = "";
+                if (modal) modal.hide();
+                try {
+                  if (sub && typeof form.requestSubmit === "function") {
+                    form.requestSubmit(sub);
+                  } else {
+                    form.submit();
+                  }
+                } catch (e) {
+                  form.submit();
+                }
+                return;
+              }
+
+              const json = {};
+              let cancelAll = false;
+              body.querySelectorAll("[data-issue-pid]").forEach(function (block) {
+                const pid = block.getAttribute("data-issue-pid");
+                const idBase = "sspa_" + pid;
+                const it = freshIssues.find(function (x) {
+                  return String(x.pid) === String(pid);
+                });
+                if (!it) return;
+                let neg = false;
+                let desh = false;
+                if (it.type === "zero") {
+                  const r = block.querySelector('input[name="' + idBase + '_m"]:checked');
+                  const mode = r ? r.value : "can";
+                  if (mode === "can") cancelAll = true;
+                  else neg = true;
+                } else if (it.type === "short") {
+                  const r = block.querySelector('input[name="' + idBase + '_m"]:checked');
+                  const mode = r ? r.value : "neg";
+                  if (mode === "can") cancelAll = true;
+                  else neg = true;
+                  const ceroR = block.querySelector('input[name="' + idBase + '_cero"]:checked');
+                  if (ceroR && ceroR.value === "deshabilitar") desh = true;
+                } else {
+                  const ceroR = block.querySelector('input[name="' + idBase + '_cero"]:checked');
+                  desh = ceroR ? ceroR.value === "deshabilitar" : false;
+                }
+                json[pid] = { neg: neg, desh: desh };
+              });
+
+              if (cancelAll) {
+                if (modal) modal.hide();
+                return;
+              }
+
+              if (hidden) hidden.value = JSON.stringify(json);
+              if (modal) modal.hide();
+              try {
+                if (sub && typeof form.requestSubmit === "function") {
+                  form.requestSubmit(sub);
+                } else {
+                  form.submit();
+                }
+              } catch (e) {
+                form.submit();
+              }
+            });
+          }
+
+          renderBody(issues);
+          wireOk();
+          if (modal) modal.show();
+          else if (window.confirm("Hay conflictos de stock. ¿Continuar?")) {
+            document.getElementById("sironaStockVentaModalOk").click();
+          }
+        });
+      });
+    },
   };
 })(typeof window !== "undefined" ? window : this);

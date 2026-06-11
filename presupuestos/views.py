@@ -1,4 +1,5 @@
 from decimal import Decimal, InvalidOperation
+from collections import defaultdict
 from itertools import zip_longest
 
 from django.contrib import messages
@@ -40,6 +41,24 @@ def _get_vendedor_from_user(user) -> Vendedor | None:
 from .models import Presupuesto, PresupuestoLinea, presupuesto_tiene_alerta_catalogo
 from .presupuesto_pdf import presupuesto_pdf_response
 from .share_utils import contexto_compartir_presupuesto, pk_desde_token_compartir
+
+
+def _presupuesto_stock_aprobar_payload(presupuesto: Presupuesto) -> dict:
+    """Productos y demanda agregada para el modal de stock al aprobar un presupuesto."""
+    demand: dict[str, int] = defaultdict(int)
+    productos: dict[str, dict] = {}
+    for ln in presupuesto.lineas.all():
+        prod = ln.producto
+        pid = str(prod.pk)
+        demand[pid] += int(ln.cantidad)
+        if pid not in productos:
+            productos[pid] = {
+                "id": prod.pk,
+                "codigo": ln.codigo_snapshot or prod.codigo,
+                "descripcion": ln.descripcion_snapshot or prod.descripcion,
+                "stock": int(prod.stock),
+            }
+    return {"demand": dict(demand), "productos": productos}
 
 
 def _usuario_puede_gestionar_presupuesto(user, pr: Presupuesto) -> bool:
@@ -461,6 +480,11 @@ def presupuesto_lista(request):
     vendedores = Vendedor.objects.order_by("apellido", "nombre", "codigo")
     for pr in items:
         pr.alerta_catalogo = presupuesto_tiene_alerta_catalogo(pr)
+    stock_aprobar_map = {
+        str(pr.pk): _presupuesto_stock_aprobar_payload(pr)
+        for pr in items
+        if pr.estado == Presupuesto.Estado.ACTIVO
+    }
     return render(
         request,
         "presupuestos/lista.html",
@@ -469,6 +493,7 @@ def presupuesto_lista(request):
             "filtros": filtros_ctx,
             "compradores_filtro": compradores,
             "vendedores_filtro": vendedores,
+            "stock_aprobar_map": stock_aprobar_map,
         },
     )
 
@@ -541,6 +566,7 @@ def presupuesto_detalle(request, pk: int):
         "presupuesto": p,
         "alerta_catalogo": presupuesto_tiene_alerta_catalogo(p),
         "vista_publica_compartida": False,
+        "presupuesto_stock_aprobar": _presupuesto_stock_aprobar_payload(p),
         **contexto_compartir_presupuesto(request, p),
     }
     return render(request, "presupuestos/detalle.html", ctx)
@@ -666,6 +692,7 @@ def presupuesto_nuevo(request):
             "lineas_iniciales": lineas_iniciales,
             "repoblar": repoblar,
             "vendedor_default_id": vendedor_default_id,
+            "vendedor_default_aplica_comision": Vendedor.aplica_comision_por_defecto_para(vendedor_default_id),
             "lista_default": lista_default,
             "comision_default": COMISION_PORCENTAJE_DEFECTO,
         },

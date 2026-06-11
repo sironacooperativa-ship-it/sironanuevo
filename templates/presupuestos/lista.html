@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load money %}
+{% load money static %}
 {% block title %}Presupuestos{% endblock %}
 {% block content %}
   <div class="app-page-header mb-3">
@@ -229,8 +229,9 @@
                         <i data-lucide="check" aria-hidden="true"></i>
                       </a>
                     {% else %}
-                      <form method="post" action="{% url 'presupuesto_aprobar' p.pk %}" class="d-inline m-0 presu-accion-form" onsubmit="return confirm('¿Aprobar y generar el pedido? Se descontará stock y quedará en Pedidos como pendiente de pago.');">
+                      <form method="post" action="{% url 'presupuesto_aprobar' p.pk %}" class="d-inline m-0 presu-accion-form js-presu-aprobar-form" data-presu-id="{{ p.pk }}" onsubmit="return confirm('¿Aprobar y generar el pedido? Se descontará stock y quedará en Pedidos como pendiente de pago.');">
                         {% csrf_token %}
+                        <input type="hidden" name="stock_venta_json" value="" autocomplete="off" />
                         <button type="submit" class="btn-icon btn-approve" title="Aprobar" aria-label="Aprobar">
                           <i data-lucide="check" aria-hidden="true"></i>
                         </button>
@@ -255,6 +256,8 @@
       </table>
     </div>
   </div>
+  {{ stock_aprobar_map|json_script:"presu-stock-aprob-map" }}
+  <script src="{% static 'js/venta-stock-confirmar.js' %}?v=5"></script>
   <script>
     (function () {
       const maestro = document.getElementById("js-masivo-todo");
@@ -291,6 +294,17 @@
             maestro.checked = false;
             maestro.indeterminate = true;
           }
+        });
+      }
+
+      if (typeof SironaVentaStockConfirm !== "undefined") {
+        var mapEl = document.getElementById("presu-stock-aprob-map");
+        var stockMap = mapEl ? JSON.parse(mapEl.textContent) : {};
+        SironaVentaStockConfirm.bindPresupuestoAprobar({
+          getPayload: function (form) {
+            var pid = form.getAttribute("data-presu-id") || "";
+            return stockMap[pid] || { demand: {}, productos: {} };
+          },
         });
       }
     })();

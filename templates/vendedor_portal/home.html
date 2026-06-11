@@ -122,7 +122,7 @@
     {% csrf_token %}
     <input type="hidden" name="stock_venta_json" id="id_stock_venta_json" value="" autocomplete="off" />
     <input type="hidden" name="comision_porcentaje" value="{{ vendedor.comision_porcentaje }}" />
-    <input type="hidden" name="aplica_comision" value="0" />
+    <input type="hidden" name="aplica_comision" value="{% if vendedor.aplica_comision_por_defecto %}1{% else %}0{% endif %}" />
 
     <div class="card shadow-sm presu-lista-modern mb-3">
       <div class="card-header fw-semibold">Nuevo presupuesto</div>

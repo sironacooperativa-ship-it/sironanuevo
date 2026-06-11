@@ -148,8 +148,9 @@
         {% if alerta_catalogo %}
           <span class="align-self-center small text-danger fw-semibold" title="Resolvé la alerta abajo antes de aprobar.">!</span>
         {% else %}
-          <form method="post" action="{% url 'presupuesto_aprobar' presupuesto.pk %}" class="d-inline" onsubmit="return confirm('¿Aprobar y generar el pedido?');">
+          <form method="post" action="{% url 'presupuesto_aprobar' presupuesto.pk %}" class="d-inline js-presu-aprobar-form" onsubmit="return confirm('¿Aprobar y generar el pedido?');">
             {% csrf_token %}
+            <input type="hidden" name="stock_venta_json" value="" autocomplete="off" />
             <button type="submit" class="btn btn-success btn-sm">Aprobar</button>
           </form>
         {% endif %}
@@ -200,21 +201,23 @@
           <form
             method="post"
             action="{% url 'presupuesto_aprobar' presupuesto.pk %}"
-            class="d-inline"
+            class="d-inline js-presu-aprobar-form"
             onsubmit="return confirm('Se aplicará el precio de venta actual del catálogo a cada línea. ¿Aprobar y generar el pedido?');"
           >
             {% csrf_token %}
             <input type="hidden" name="resolver_catalogo" value="actualizar" />
+            <input type="hidden" name="stock_venta_json" value="" autocomplete="off" />
             <button type="submit" class="btn btn-warning btn-sm">Actualizar precios y aprobar</button>
           </form>
           <form
             method="post"
             action="{% url 'presupuesto_aprobar' presupuesto.pk %}"
-            class="d-inline"
+            class="d-inline js-presu-aprobar-form"
             onsubmit="return confirm('Se mantienen los valores del presupuesto. ¿Aprobar y generar el pedido?');"
           >
             {% csrf_token %}
             <input type="hidden" name="resolver_catalogo" value="conservar" />
+            <input type="hidden" name="stock_venta_json" value="" autocomplete="off" />
             <button type="submit" class="btn btn-outline-secondary btn-sm">Conservar presupuesto original y aprobar</button>
           </form>
           <button
@@ -265,6 +268,39 @@
   </div>
 
   {% if not vista_publica_compartida %}
+  {{ presupuesto_stock_aprobar|json_script:"presupuesto-stock-aprob" }}
+  <script src="{% static 'js/venta-stock-confirmar.js' %}?v=5"></script>
+  <script>
+    (function () {
+      document.querySelectorAll(".js-copy-enlace-presupuesto").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var u = btn.getAttribute("data-url") || "";
+          if (!u) return;
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(u).then(function () {
+              btn.textContent = "¡Copiado!";
+              setTimeout(function () {
+                btn.textContent = "Copiar enlace";
+              }, 2000);
+            });
+          } else {
+            window.prompt("Copiá este enlace:", u);
+          }
+        });
+      });
+
+      if (typeof SironaVentaStockConfirm !== "undefined") {
+        var stockEl = document.getElementById("presupuesto-stock-aprob");
+        var stockPayload = stockEl ? JSON.parse(stockEl.textContent) : { demand: {}, productos: {} };
+        SironaVentaStockConfirm.bindPresupuestoAprobar({
+          getPayload: function () {
+            return stockPayload;
+          },
+        });
+      }
+    })();
+  </script>
+  {% else %}
   <script>
     (function () {
       document.querySelectorAll(".js-copy-enlace-presupuesto").forEach(function (btn) {

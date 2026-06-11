@@ -21,6 +21,7 @@ class VendedorForm(_BasePersonaForm):
         model = Vendedor
         fields = _BasePersonaForm.Meta.fields + [
             "comision_porcentaje",
+            "aplica_comision_por_defecto",
             "es_jefe_grupo",
             "comision_grupo_porcentaje",
             "vendedores_a_cargo",
@@ -29,6 +30,9 @@ class VendedorForm(_BasePersonaForm):
             **_BasePersonaForm.Meta.widgets,
             "comision_porcentaje": forms.NumberInput(
                 attrs={"class": "form-control", "step": "0.01", "min": "0"}
+            ),
+            "aplica_comision_por_defecto": forms.CheckboxInput(
+                attrs={"class": "form-check-input", "role": "switch"}
             ),
             "es_jefe_grupo": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "comision_grupo_porcentaje": forms.NumberInput(
@@ -48,6 +52,11 @@ class VendedorForm(_BasePersonaForm):
         self.fields["vendedores_a_cargo"].required = False
         self.fields["vendedores_a_cargo"].help_text = (
             "Elegí los vendedores cuyas ventas generan comisión adicional para este vendedor."
+        )
+        self.fields["aplica_comision_por_defecto"].label = "Aplicar comisión por defecto"
+        self.fields["aplica_comision_por_defecto"].help_text = (
+            "En presupuestos y ventas nuevos con este vendedor, la opción «Aplicar comisión» viene "
+            "marcada si el switch está activo."
         )
 
     def clean(self):

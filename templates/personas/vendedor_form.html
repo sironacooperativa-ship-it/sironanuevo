@@ -51,6 +51,18 @@
             {{ form.comision_porcentaje }}
             {% if form.comision_porcentaje.errors %}<div class="text-danger small">{{ form.comision_porcentaje.errors }}</div>{% endif %}
           </div>
+          <div class="col-12 col-md-8 d-flex align-items-end">
+            <div>
+              <div class="form-check form-switch sirona-switch mb-0">
+                {{ form.aplica_comision_por_defecto }}
+                <label class="form-check-label" for="{{ form.aplica_comision_por_defecto.id_for_label }}">
+                  {{ form.aplica_comision_por_defecto.label }}
+                </label>
+              </div>
+              {% if form.aplica_comision_por_defecto.errors %}<div class="text-danger small">{{ form.aplica_comision_por_defecto.errors }}</div>{% endif %}
+              {% if form.aplica_comision_por_defecto.help_text %}<div class="form-text">{{ form.aplica_comision_por_defecto.help_text }}</div>{% endif %}
+            </div>
+          </div>
           <div class="col-12">
             <hr class="my-2" />
             <div class="form-check">

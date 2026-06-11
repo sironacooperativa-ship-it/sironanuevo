@@ -132,7 +132,7 @@ def vendedor_home(request):
         post["vendedor"] = str(vendedor.pk)
         # Comisión inamovible en modo vendedor: viene del perfil del vendedor.
         post["comision_porcentaje"] = str(vendedor.comision_porcentaje)
-        post["aplica_comision"] = "0"
+        post["aplica_comision"] = "1" if vendedor.aplica_comision_por_defecto else "0"
         # En portal vendedor: si mandan comprador, debe ser uno asignado a este vendedor.
         cid = (post.get("comprador") or "").strip()
         if cid:
@@ -157,7 +157,7 @@ def vendedor_home(request):
                     subtotal_lineas=subtotal,
                     descuento_monto=descuento,
                     comision_porcentaje=vendedor.comision_porcentaje,
-                    aplica_comision=False,
+                    aplica_comision=bool(vendedor.aplica_comision_por_defecto),
                     creado_por=request.user,
                     actualizado_por=request.user,
                 )

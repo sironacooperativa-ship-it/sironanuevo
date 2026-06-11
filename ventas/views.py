@@ -266,6 +266,7 @@ def venta_nueva(request):
             messages.error(request, err)
         lista_rep = _lista_precios_desde_post(request)
         cat_rep = productos_payload_para_lineas(lineas_iniciales_desde_post(request))
+        repoblar = repoblar_campos_cabecera_desde_post(request)
         return render(
             request,
             "ventas/nueva.html",
@@ -275,9 +276,12 @@ def venta_nueva(request):
                 "listas_precio": listas_precio,
                 "productos_catalogo": cat_rep,
                 "lineas_iniciales": lineas_iniciales_desde_post(request),
-                "repoblar": repoblar_campos_cabecera_desde_post(request),
+                "repoblar": repoblar,
                 "comision_default": COMISION_PORCENTAJE_DEFECTO,
                 "lista_default": lista_default,
+                "vendedor_default_aplica_comision": Vendedor.aplica_comision_por_defecto_para(
+                    repoblar.get("vendedor_id")
+                ),
             },
         )
 
@@ -293,6 +297,7 @@ def venta_nueva(request):
             "repoblar": None,
             "comision_default": COMISION_PORCENTAJE_DEFECTO,
             "lista_default": lista_default,
+            "vendedor_default_aplica_comision": True,
         },
     )
 
