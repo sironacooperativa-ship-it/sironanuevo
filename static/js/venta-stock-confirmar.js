@@ -494,6 +494,8 @@
 
           const modalEl = ensureModal();
           const body = document.getElementById("sironaStockVentaModalBody");
+          const modal =
+            w.bootstrap && w.bootstrap.Modal ? w.bootstrap.Modal.getOrCreateInstance(modalEl) : null;
 
           function renderBody(currentIssues) {
             let html =
@@ -609,9 +611,6 @@
               });
             });
           }
-
-          const modal =
-            w.bootstrap && w.bootstrap.Modal ? w.bootstrap.Modal.getOrCreateInstance(modalEl) : null;
 
           function wireOk() {
             const btnOk = document.getElementById("sironaStockVentaModalOk");

@@ -268,7 +268,7 @@
         </a>
         <a class="btn btn-primary btn-sm" href="{% url 'venta_registrar_pago' venta.pk %}">Registrar pago</a>
       {% endif %}
-      {% if user.is_staff %}
+      {% if puede_eliminar_pedidos %}
         <form
           method="post"
           action="{% url 'venta_eliminar' venta.pk %}"

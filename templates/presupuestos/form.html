@@ -195,7 +195,7 @@
   </form>
   </div>
 
-  <script src="{% static 'js/venta-stock-confirmar.js' %}?v=4"></script>
+  <script src="{% static 'js/venta-stock-confirmar.js' %}?v=6"></script>
   <script>
     (function () {
       const catalogoPreciosUrl = "{% url 'presupuesto_catalogo_precios' %}";
@@ -803,7 +803,9 @@
           chkAplica.checked = opt.dataset.aplicaComisionDefault === "1";
         }
         selVend.addEventListener("change", syncAplicaComisionFromVendedor);
+        {% if modo == "nuevo" and not repoblar %}
         syncAplicaComisionFromVendedor();
+        {% endif %}
       })();
     })();
   </script>

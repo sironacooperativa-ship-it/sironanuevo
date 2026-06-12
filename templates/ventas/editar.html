@@ -7,7 +7,7 @@
     <h1 class="h3 mb-0">Editar pedido #{{ venta.pk }}</h1>
     <a class="btn btn-outline-secondary btn-sm" href="{% url 'venta_detalle' venta.pk %}">Ver comprobante</a>
     <a class="btn btn-outline-secondary btn-sm" href="{% url 'ventas_historial' %}">Historial</a>
-    {% if user.is_staff %}
+    {% if puede_eliminar_pedidos %}
       <form
         method="post"
         action="{% url 'venta_eliminar' venta.pk %}"
@@ -161,7 +161,7 @@
     </div>
   </form>
 
-    <script src="{% static 'js/venta-stock-confirmar.js' %}?v=4"></script>
+    <script src="{% static 'js/venta-stock-confirmar.js' %}?v=6"></script>
   <script>
     (function () {
       const catalogoCompletoUrl = "{% url 'venta_catalogo_completo' %}";

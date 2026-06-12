@@ -10,13 +10,19 @@
         delete form.dataset.sironaConfirmOk;
         return;
       }
+      const submitter = ev.submitter || null;
       ev.preventDefault();
-      ev.stopPropagation();
       if (window.confirm(msg)) {
         form.dataset.sironaConfirmOk = "1";
-        if (typeof form.requestSubmit === "function") {
-          form.requestSubmit();
-        } else {
+        try {
+          if (submitter && typeof form.requestSubmit === "function") {
+            form.requestSubmit(submitter);
+          } else if (typeof form.requestSubmit === "function") {
+            form.requestSubmit();
+          } else {
+            form.submit();
+          }
+        } catch (e) {
           form.submit();
         }
       }

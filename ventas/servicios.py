@@ -292,37 +292,40 @@ def eliminar_venta_admin(venta: Venta) -> None:
     Elimina un pedido y revierte efectos: stock, evento de calendario, movimiento de caja si estaba pagado.
     Uso administrativo (corrección de datos).
     """
-    vid = venta.pk
+    vid = int(venta.pk)
     with transaction.atomic():
-        # En Postgres, `FOR UPDATE` no puede aplicarse sobre el lado nullable de un OUTER JOIN.
-        # Como `pago_movimiento` es nullable, evitamos `select_related()` al lockear.
-        qs = Venta.objects
         try:
-            qs = qs.select_for_update(of=("self",))
+            qs = Venta.objects.select_for_update(of=("self",))
         except TypeError:
-            qs = qs.select_for_update()
-        v = qs.prefetch_related("lineas").get(pk=vid)
+            qs = Venta.objects.select_for_update()
+        v = qs.get(pk=vid)
+        lineas = list(VentaLinea.objects.filter(venta_id=vid).only("producto_id", "cantidad"))
         pm_id = v.pago_movimiento_id
-        for ln in v.lineas.all():
+
+        for ln in lineas:
             Producto.objects.filter(pk=ln.producto_id).update(stock=F("stock") + ln.cantidad)
+
         Evento.objects.filter(
             tipo=Evento.Tipo.PEDIDO,
-            titulo=f"Pago pendiente — Pedido #{v.pk}",
+            titulo=f"Pago pendiente — Pedido #{vid}",
         ).delete()
-        # Si el pedido vino de un presupuesto, lo “desaprueba” para que no quede inconsistente.
-        try:
-            pr = v.presupuesto_origen
-        except Presupuesto.DoesNotExist:
-            pr = None
-        if pr is not None:
-            pr.estado = Presupuesto.Estado.ACTIVO
-            pr.venta = None
-            pr.aprobado_en = None
-            pr.aprobado_por = None
-            pr.save(update_fields=["estado", "venta", "aprobado_en", "aprobado_por"])
 
-        # Borra cualquier movimiento de caja asociado a la venta (incluye el pago si estaba vinculado).
+        Presupuesto.objects.filter(venta_id=vid).update(
+            estado=Presupuesto.Estado.ACTIVO,
+            venta_id=None,
+            aprobado_en=None,
+            aprobado_por_id=None,
+        )
+
+        Venta.objects.filter(pk=vid).update(
+            pago_movimiento_id=None,
+            comision_liquidacion_pago_id=None,
+        )
+
         MovimientoCaja.objects.filter(venta_id=vid).delete()
         if pm_id:
             MovimientoCaja.objects.filter(pk=pm_id).delete()
-        v.delete()
+
+        deleted, _ = Venta.objects.filter(pk=vid).delete()
+        if not deleted:
+            raise ValidationError("El pedido ya no existe o no pudo borrarse.")

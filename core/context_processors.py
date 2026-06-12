@@ -8,6 +8,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Exists, F, OuterRef, Q
 
 from core.models import NotaAdmin
+from core.authz import is_staff_user
 from personas.models import Vendedor
 from presupuestos.models import Presupuesto, PresupuestoLinea
 
@@ -187,6 +188,9 @@ def vendor_mode(request):
         "presupuestos_alerta_count": presupuestos_alerta_count,
         "presupuestos_alerta": presupuestos_alerta_count > 0,
         "logout_on_tab_close_enabled": bool(getattr(settings, "SIRONA_LOGOUT_ON_TAB_CLOSE", False)),
+        "puede_eliminar_pedidos": is_staff_user(user)
+        if user is not None and getattr(user, "is_authenticated", False)
+        else False,
     }
 
 

@@ -11,6 +11,7 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import F, Prefetch
+from django.db.utils import IntegrityError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -18,7 +19,7 @@ from django.utils import timezone
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.http import require_http_methods
 
-from core.authz import staff_required
+from core.authz import is_staff_user, staff_required
 from core.export_utils import parse_export, pdf_response, xlsx_response
 from core.money_decimal import (
     COMISION_PORCENTAJE_DEFECTO,
@@ -1035,13 +1036,25 @@ def venta_historial(request):
 
 
 @login_required
-@staff_required
 @require_http_methods(["POST"])
 def venta_eliminar(request, pk: int):
+    if not is_staff_user(request.user):
+        messages.error(request, "Solo administradores (staff) pueden eliminar pedidos.")
+        return redirect("ventas_historial")
     venta = get_object_or_404(Venta, pk=pk)
     nid = venta.pk
     try:
         eliminar_venta_admin(venta)
+    except ValidationError as exc:
+        messages.error(request, "; ".join(getattr(exc, "messages", [str(exc)])))
+        return redirect("ventas_historial")
+    except IntegrityError as exc:
+        detalle = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
+        messages.error(
+            request,
+            "No se pudo eliminar el pedido porque tiene datos vinculados en el sistema." + detalle,
+        )
+        return redirect("ventas_historial")
     except Exception as exc:
         detalle = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
         messages.error(request, "No se pudo eliminar el pedido." + detalle)

@@ -222,10 +222,30 @@
                         <td class="text-end col-money small tabular-nums">{{ fila.costo_mercaderia|ars }}</td>
                         <td class="text-end col-money small tabular-nums">{{ fila.neto|ars }}</td>
                         <td class="text-end col-money small fw-semibold tabular-nums {% if fila.ganancia < 0 %}text-danger{% else %}text-success{% endif %}">{{ fila.ganancia|ars }}</td>
-                        <td class="text-end py-0">
-                          <a class="btn-icon btn-view btn-sm" href="{% url 'venta_detalle' v.pk %}" title="Ver pedido" aria-label="Ver pedido">
-                            <i data-lucide="eye" aria-hidden="true"></i>
-                          </a>
+                        <td class="text-end py-0 col-presu-acciones">
+                          <div class="table-actions presu-row-actions d-flex ventas-hist-actions justify-content-end">
+                            <a class="btn-icon btn-view btn-sm" href="{% url 'venta_detalle' v.pk %}" title="Ver pedido" aria-label="Ver pedido">
+                              <i data-lucide="eye" aria-hidden="true"></i>
+                            </a>
+                            {% if puede_eliminar_pedidos %}
+                              <form
+                                class="d-inline m-0 presu-accion-form"
+                                method="post"
+                                action="{% url 'venta_eliminar' v.pk %}"
+                                data-sirona-confirm="¿Eliminar el pedido #{{ v.pk }}? Se revierte stock y, si estaba pagado, el ingreso en caja."
+                              >
+                                {% csrf_token %}
+                                <button
+                                  type="submit"
+                                  class="btn-icon btn-delete btn-sm"
+                                  title="Eliminar pedido"
+                                  aria-label="Eliminar pedido"
+                                >
+                                  <i data-lucide="trash-2" aria-hidden="true"></i>
+                                </button>
+                              </form>
+                            {% endif %}
+                          </div>
                         </td>
                       </tr>
                     {% endwith %}
@@ -394,7 +414,7 @@
                       <i data-lucide="eye" aria-hidden="true"></i>
                     </a>
                   {% endif %}
-                  {% if user.is_staff %}
+                  {% if puede_eliminar_pedidos %}
                     <form
                       class="d-inline m-0 presu-accion-form"
                       method="post"
