@@ -273,10 +273,16 @@
           method="post"
           action="{% url 'venta_eliminar' venta.pk %}"
           class="d-inline"
-          data-sirona-confirm="¿Eliminar el pedido #{{ venta.pk }}? Se revierte stock, calendario y caja (si estaba pagado)."
         >
           {% csrf_token %}
-          <button type="submit" class="btn btn-outline-danger btn-sm px-2" title="Eliminar" aria-label="Eliminar">
+          <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+          <button
+            type="button"
+            class="btn btn-outline-danger btn-sm px-2"
+            title="Eliminar"
+            aria-label="Eliminar"
+            data-sirona-confirm-submit="¿Eliminar el pedido #{{ venta.pk }}? Se revierte stock, calendario y caja (si estaba pagado)."
+          >
             <i data-lucide="x" class="text-danger"></i>
           </button>
         </form>

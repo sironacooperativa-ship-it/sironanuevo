@@ -1,8 +1,29 @@
 /**
- * Confirmación antes de enviar formularios con data-sirona-confirm.
- * Tras confirmar, quita el atributo y reenvía: así el segundo envío no vuelve a interceptarse.
+ * Confirmación antes de borrar/enviar acciones sensibles.
+ * Usa form.submit() nativo (no dispara listeners submit) para evitar bucles.
  */
 (function () {
+  function enviarFormulario(form) {
+    if (!form) return;
+    HTMLFormElement.prototype.submit.call(form);
+  }
+
+  document.addEventListener(
+    "click",
+    function (ev) {
+      const btn = ev.target && ev.target.closest ? ev.target.closest("[data-sirona-confirm-submit]") : null;
+      if (!btn) return;
+      const form = btn.form || (btn.closest ? btn.closest("form") : null);
+      if (!form) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const msg = (btn.getAttribute("data-sirona-confirm-submit") || "").trim();
+      if (!msg || !window.confirm(msg)) return;
+      enviarFormulario(form);
+    },
+    true
+  );
+
   document.addEventListener(
     "submit",
     function (ev) {
@@ -10,21 +31,10 @@
       if (!(form instanceof HTMLFormElement)) return;
       const msg = (form.getAttribute("data-sirona-confirm") || "").trim();
       if (!msg) return;
-
       ev.preventDefault();
-
       if (!window.confirm(msg)) return;
-
       form.removeAttribute("data-sirona-confirm");
-      try {
-        if (typeof form.requestSubmit === "function") {
-          form.requestSubmit();
-        } else {
-          form.submit();
-        }
-      } catch (e) {
-        form.submit();
-      }
+      enviarFormulario(form);
     },
     true
   );

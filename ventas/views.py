@@ -1041,26 +1041,33 @@ def venta_eliminar(request, pk: int):
     if not is_staff_user(request.user):
         messages.error(request, "Solo administradores (staff) pueden eliminar pedidos.")
         return redirect("ventas_historial")
+
+    def _redirect_despues():
+        next_url = (request.POST.get("next") or "").strip()
+        if next_url.startswith("/") and not next_url.startswith("//"):
+            return redirect(next_url)
+        return redirect("ventas_historial")
+
     venta = get_object_or_404(Venta, pk=pk)
     nid = venta.pk
     try:
         eliminar_venta_admin(venta)
     except ValidationError as exc:
         messages.error(request, "; ".join(getattr(exc, "messages", [str(exc)])))
-        return redirect("ventas_historial")
+        return _redirect_despues()
     except IntegrityError as exc:
         detalle = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
         messages.error(
             request,
             "No se pudo eliminar el pedido porque tiene datos vinculados en el sistema." + detalle,
         )
-        return redirect("ventas_historial")
+        return _redirect_despues()
     except Exception as exc:
         detalle = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
         messages.error(request, "No se pudo eliminar el pedido." + detalle)
-        return redirect("ventas_historial")
+        return _redirect_despues()
     messages.success(request, f"Pedido #{nid} eliminado (stock y caja/calendario revertidos si correspondía).")
-    return redirect("ventas_historial")
+    return _redirect_despues()
 
 
 @login_required

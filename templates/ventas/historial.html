@@ -232,14 +232,15 @@
                                 class="d-inline m-0 presu-accion-form"
                                 method="post"
                                 action="{% url 'venta_eliminar' v.pk %}"
-                                data-sirona-confirm="¿Eliminar el pedido #{{ v.pk }}? Se revierte stock y, si estaba pagado, el ingreso en caja."
                               >
                                 {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}" />
                                 <button
-                                  type="submit"
+                                  type="button"
                                   class="btn-icon btn-delete btn-sm"
                                   title="Eliminar pedido"
                                   aria-label="Eliminar pedido"
+                                  data-sirona-confirm-submit="¿Eliminar el pedido #{{ v.pk }}? Se revierte stock y, si estaba pagado, el ingreso en caja."
                                 >
                                   <i data-lucide="trash-2" aria-hidden="true"></i>
                                 </button>
@@ -419,14 +420,15 @@
                       class="d-inline m-0 presu-accion-form"
                       method="post"
                       action="{% url 'venta_eliminar' v.pk %}"
-                      data-sirona-confirm="¿Eliminar el pedido #{{ v.pk }}? Se revierte stock y, si estaba pagado, el ingreso en caja."
                     >
                       {% csrf_token %}
+                      <input type="hidden" name="next" value="{{ request.get_full_path }}" />
                       <button
-                        type="submit"
+                        type="button"
                         class="btn-icon btn-delete"
                         title="Eliminar pedido"
                         aria-label="Eliminar pedido"
+                        data-sirona-confirm-submit="¿Eliminar el pedido #{{ v.pk }}? Se revierte stock y, si estaba pagado, el ingreso en caja."
                       >
                         <i data-lucide="trash-2" aria-hidden="true"></i>
                       </button>
