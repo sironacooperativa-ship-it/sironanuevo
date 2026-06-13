@@ -1,6 +1,28 @@
 (function (global) {
   var CHANNEL_NAME = "sirona-despacho-sync";
   var STORAGE_KEY = "sirona-despacho-sync";
+  var ESTADO_CLASSES = [
+    "venta-despacho-ico--no_armado",
+    "venta-despacho-ico--armado",
+    "venta-despacho-ico--despachado",
+  ];
+  var ESTADO_VARS = {
+    no_armado: {
+      fg: "#ef4444",
+      border: "rgba(239, 68, 68, 0.35)",
+      bg: "rgba(239, 68, 68, 0.08)",
+    },
+    armado: {
+      fg: "#22c55e",
+      border: "rgba(34, 197, 94, 0.35)",
+      bg: "rgba(34, 197, 94, 0.08)",
+    },
+    despachado: {
+      fg: "#3b82f6",
+      border: "rgba(59, 130, 246, 0.35)",
+      bg: "rgba(59, 130, 246, 0.08)",
+    },
+  };
   var channel = null;
 
   try {
@@ -17,6 +39,22 @@
       despacho_despachado: !!data.despacho_despachado,
       despacho_despachado_en: data.despacho_despachado_en || null,
     };
+  }
+
+  function applyEstadoClasses(el, estado) {
+    if (!el) return;
+    ESTADO_CLASSES.forEach(function (cls) {
+      el.classList.remove(cls);
+    });
+    el.classList.add("venta-despacho-ico--" + estado);
+  }
+
+  function applyBtnIconVars(btn, estado) {
+    if (!btn || !btn.classList.contains("btn-icon")) return;
+    var vars = ESTADO_VARS[estado] || ESTADO_VARS.no_armado;
+    btn.style.setProperty("--ib-fg", vars.fg);
+    btn.style.setProperty("--ib-border", vars.border);
+    btn.style.setProperty("--ib-bg", vars.bg);
   }
 
   function applyToDespachosRow(row, data) {
@@ -41,12 +79,7 @@
 
     var icon = row.querySelector(".venta-despacho-ico");
     if (icon) {
-      icon.classList.remove(
-        "venta-despacho-ico--no_armado",
-        "venta-despacho-ico--armado",
-        "venta-despacho-ico--despachado"
-      );
-      icon.classList.add("venta-despacho-ico--" + estado);
+      applyEstadoClasses(icon, estado);
       if (data.label) {
         icon.setAttribute("title", data.label);
         icon.setAttribute("aria-label", data.label);
@@ -75,12 +108,19 @@
       btn.setAttribute("title", data.label);
       btn.setAttribute("aria-label", "Cambiar estado de despacho: " + data.label);
     }
-    btn.classList.remove(
-      "venta-despacho-ico--no_armado",
-      "venta-despacho-ico--armado",
-      "venta-despacho-ico--despachado"
+    applyEstadoClasses(btn, estado);
+    applyBtnIconVars(btn, estado);
+  }
+
+  function findHistorialButtons(ventaId) {
+    var id = String(ventaId);
+    var buttons = Array.prototype.slice.call(
+      document.querySelectorAll('.venta-despacho-ico-btn[data-venta-id="' + id + '"]')
     );
-    btn.classList.add("venta-despacho-ico--" + estado);
+    if (buttons.length) return buttons;
+    var row = document.querySelector('[data-venta-id="' + id + '"]');
+    if (!row) return [];
+    return Array.prototype.slice.call(row.querySelectorAll(".venta-despacho-ico-btn"));
   }
 
   function applyAll(data) {
@@ -89,7 +129,7 @@
     var id = String(payload.venta_id);
     var row = document.getElementById("pedido-" + id);
     if (row) applyToDespachosRow(row, payload);
-    document.querySelectorAll('.venta-despacho-ico-btn[data-venta-id="' + id + '"]').forEach(function (btn) {
+    findHistorialButtons(id).forEach(function (btn) {
       applyToHistorialButton(btn, payload);
     });
   }
@@ -106,7 +146,11 @@
     }
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(msg));
-      localStorage.removeItem(STORAGE_KEY);
+      setTimeout(function () {
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch (e2) {}
+      }, 250);
     } catch (e) {}
   }
 

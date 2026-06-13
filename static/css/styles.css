@@ -3514,6 +3514,58 @@ button.btn-icon.btn-ink,
   background: rgba(59, 130, 246, 0.08);
 }
 
+/* Historial: el botón usa btn-icon (mayor especificidad); forzar colores por estado */
+button.btn-icon.venta-despacho-ico.venta-despacho-ico-btn.venta-despacho-ico--no_armado {
+  --ib-fg: #ef4444;
+  --ib-border: rgba(239, 68, 68, 0.35);
+  --ib-bg: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+button.btn-icon.venta-despacho-ico.venta-despacho-ico-btn.venta-despacho-ico--armado {
+  --ib-fg: #22c55e;
+  --ib-border: rgba(34, 197, 94, 0.35);
+  --ib-bg: rgba(34, 197, 94, 0.08);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+button.btn-icon.venta-despacho-ico.venta-despacho-ico-btn.venta-despacho-ico--despachado {
+  --ib-fg: #3b82f6;
+  --ib-border: rgba(59, 130, 246, 0.35);
+  --ib-bg: rgba(59, 130, 246, 0.08);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+button.btn-icon.venta-despacho-ico.venta-despacho-ico-btn.venta-despacho-ico--no_armado:hover {
+  --ib-fg: #ef4444;
+  --ib-bg: rgba(239, 68, 68, 0.14);
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+button.btn-icon.venta-despacho-ico.venta-despacho-ico-btn.venta-despacho-ico--armado:hover {
+  --ib-fg: #22c55e;
+  --ib-bg: rgba(34, 197, 94, 0.14);
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.45);
+}
+
+button.btn-icon.venta-despacho-ico.venta-despacho-ico-btn.venta-despacho-ico--despachado:hover {
+  --ib-fg: #3b82f6;
+  --ib-bg: rgba(59, 130, 246, 0.14);
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.14);
+  border-color: rgba(59, 130, 246, 0.45);
+}
+
 .venta-despacho-estado-badge {
   display: inline-flex;
   flex-direction: column;
@@ -3577,8 +3629,8 @@ button.btn-icon.btn-ink,
 
 .ventas-armado-colectivo-tabla col.armado-col-desc,
 .ventas-armado-colectivo-tabla .armado-col-desc {
-  width: 10.5rem;
-  max-width: 10.5rem;
+  width: 21rem;
+  max-width: 21rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3611,10 +3663,14 @@ button.btn-icon.btn-ink,
   color: var(--s-muted, #64748b);
 }
 
-/* Sin ancho fijo: reparten el espacio libre de la tabla entre los puntos de stock */
+/* Columnas de puntos de stock: ancho fijo y compacto (sin repartir espacio libre) */
+.ventas-armado-colectivo-tabla col.armado-col-punto {
+  width: 2.85rem;
+}
+
 .ventas-armado-colectivo-tabla th.armado-col-punto {
-  padding-left: 3px;
-  padding-right: 3px;
+  padding-left: 1px;
+  padding-right: 1px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3624,7 +3680,7 @@ button.btn-icon.btn-ink,
 }
 
 .ventas-armado-colectivo-tabla td.armado-col-punto-cell {
-  padding: 2px 3px;
+  padding: 2px 1px;
   white-space: nowrap;
 }
 
@@ -3635,9 +3691,9 @@ button.btn-icon.btn-ink,
 
 .ventas-armado-colectivo-tabla .armado-alloc-input {
   width: 100%;
-  max-width: 3.75rem;
-  min-width: 2.75rem;
-  padding: 2px 3px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 2px 2px;
   font-size: 0.72rem;
   height: 1.6rem;
   line-height: 1.2;
@@ -3652,16 +3708,16 @@ button.btn-icon.btn-ink,
 @media (min-width: 992px) {
   .ventas-armado-colectivo-tabla col.armado-col-desc,
   .ventas-armado-colectivo-tabla .armado-col-desc {
-    width: 11.5rem;
-    max-width: 11.5rem;
+    width: 23rem;
+    max-width: 23rem;
+  }
+
+  .ventas-armado-colectivo-tabla col.armado-col-punto {
+    width: 3rem;
   }
 
   .ventas-armado-colectivo-tabla th.armado-col-punto {
     font-size: 0.64rem;
-  }
-
-  .ventas-armado-colectivo-tabla .armado-alloc-input {
-    max-width: 4rem;
   }
 }
 

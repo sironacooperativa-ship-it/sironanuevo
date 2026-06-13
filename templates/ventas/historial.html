@@ -288,7 +288,7 @@
         </thead>
         <tbody>
           {% for v in ventas %}
-            <tr>
+            <tr data-venta-id="{{ v.pk }}">
               <td class="col-ped col-id-num">
                 <div class="ventas-hist-cell-title">Pedido #{{ v.pk }}</div>
                 <div class="ventas-hist-cell-sub text-muted small">{{ v.creado_en|date:"d/m/Y H:i" }}</div>
@@ -484,5 +484,5 @@
 {% endblock %}
 
 {% block page_scripts %}
-  <script src="{% static 'js/sirona-despacho-historial.js' %}?v=2"></script>
+  <script src="{% static 'js/sirona-despacho-historial.js' %}?v=3"></script>
 {% endblock %}

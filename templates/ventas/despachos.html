@@ -51,7 +51,7 @@
         </thead>
         <tbody>
           {% for v in ventas %}
-            <tr id="pedido-{{ v.pk }}" class="venta-despacho-row venta-despacho-row--{{ v.despacho_estado }}">
+            <tr id="pedido-{{ v.pk }}" data-venta-id="{{ v.pk }}" class="venta-despacho-row venta-despacho-row--{{ v.despacho_estado }}">
               <td class="tabular-nums">
                 <a href="{% url 'venta_detalle' v.pk %}">#{{ v.pk }}</a>
               </td>

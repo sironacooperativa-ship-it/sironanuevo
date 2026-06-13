@@ -46,6 +46,14 @@
       "venta-despacho-ico--despachado"
     );
     btn.classList.add("venta-despacho-ico--" + estado);
+    if (window.SironaDespachoSync && window.SironaDespachoSync.applyToHistorialButton) {
+      window.SironaDespachoSync.applyToHistorialButton(btn, {
+        estado: estado,
+        label: label,
+        despacho_armado: estado !== "no_armado",
+        despacho_despachado: estado === "despachado",
+      });
+    }
   }
 
   function buildModalHtml(ventaId, estadoActual) {
