@@ -1,105 +1,121 @@
 {% extends "base.html" %}
 {% load money %}
 {% load static %}
-{% block title %}Armado colectivo{% endblock %}
+{% block title %}{% if solo_lectura %}Armado guardado{% else %}Armado colectivo{% endif %}{% endblock %}
 {% block content %}
   <div class="app-page-header mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div>
-      <h1 class="app-page-title mb-1">Armado colectivo</h1>
+      <h1 class="app-page-title mb-1">
+        {% if solo_lectura %}{{ armado_guardado.nombre }}{% else %}Armado colectivo{% endif %}
+      </h1>
       <p class="text-muted small mb-0">
-        Pedidos incluidos:
-        {% for v in ventas %}
-          <a href="{% url 'venta_detalle' v.pk %}">#{{ v.pk }}</a>{% if not forloop.last %}, {% endif %}
-        {% endfor %}
+        {% if solo_lectura %}
+          Guardado el {{ armado_guardado.creado_en|date:"d/m/Y H:i" }}
+        {% else %}
+          Pedidos incluidos:
+          {% for v in ventas %}
+            <a href="{% url 'venta_detalle' v.pk %}">#{{ v.pk }}</a>{% if not forloop.last %}, {% endif %}
+          {% endfor %}
+        {% endif %}
       </p>
     </div>
     <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'armado_pedidos_lista' %}">Volver</a>
   </div>
 
-  <form method="post" action="{% url 'armado_colectivo_pdf' %}?inline=1" id="armado-colectivo-form" target="_blank">
-    {% csrf_token %}
-    {% for vid in venta_ids %}
-      <input type="hidden" name="venta_id" value="{{ vid }}" />
-    {% endfor %}
+  {% if solo_lectura and armado_guardado.requiere_revision %}
+    <div class="alert alert-warning d-flex align-items-start gap-2 mb-3" role="alert">
+      <i data-lucide="alert-triangle" class="flex-shrink-0 mt-1" aria-hidden="true"></i>
+      <div>
+        <strong>Requiere revisión</strong>
+        <div class="small mb-0">{{ armado_guardado.nota_revision|default:"Revise las cantidades y vuelva a asignar el stock por punto." }}</div>
+      </div>
+    </div>
+  {% endif %}
 
+  {% if solo_lectura %}
     <div class="table-card ui-force-productos presu-lista-modern mb-3">
       <div class="table-card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
         <h2 class="table-card-title mb-0">Productos consolidados</h2>
-        {% if user.is_staff %}
-          <button
-            type="button"
-            class="btn btn-outline-secondary btn-sm rounded-pill"
-            data-sirona-modal-url="{% url 'puntos_stock_modal' %}"
-          >
-            Stocks
-          </button>
-        {% endif %}
       </div>
-      <div class="table-responsive presu-lista-table-wrap ventas-armado-colectivo-wrap">
-        <table class="modern-table ventas-armado-colectivo-tabla" id="armado-colectivo-tabla">
-          <thead>
-            <tr>
-              <th scope="col">Código</th>
-              <th scope="col">Descripción</th>
-              <th scope="col" class="text-end">Cant. total</th>
-              <th scope="col" class="text-end col-money">Costo</th>
-              <th scope="col" class="text-end col-money">P. venta</th>
-              {% for p in puntos %}
-                <th scope="col" class="text-center armado-col-punto" data-punto-id="{{ p.pk }}">{{ p.nombre }}</th>
-              {% endfor %}
-              <th scope="col" class="text-end">Asignado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for ln in lineas %}
-              <tr data-producto-id="{{ ln.producto_id }}" data-cant-max="{{ ln.cantidad_total }}">
-                <td class="tabular-nums">{{ ln.codigo }}</td>
-                <td class="small presu-col-ellipsis" title="{{ ln.descripcion }}">{{ ln.descripcion }}</td>
-                <td class="text-end tabular-nums armado-cant-total">{{ ln.cantidad_total }}</td>
-                <td class="text-end col-money tabular-nums">{{ ln.costo_unitario|ars }}</td>
-                <td class="text-end col-money tabular-nums">{{ ln.precio_venta|ars }}</td>
-                {% for cell in ln.alloc_cells %}
-                  <td class="text-center p-1">
-                    <input
-                      type="number"
-                      class="form-control form-control-sm armado-alloc-input text-center mx-auto"
-                      name="alloc_{{ ln.producto_id }}_{{ cell.punto.pk }}"
-                      min="0"
-                      max="{{ ln.cantidad_total }}"
-                      step="1"
-                      value="{{ cell.value }}"
-                      data-punto-id="{{ cell.punto.pk }}"
-                      aria-label="{{ cell.punto.nombre }} — {{ ln.codigo }}"
-                    />
-                  </td>
-                {% endfor %}
-                <td class="text-end tabular-nums armado-asignado-sum fw-semibold">0</td>
-              </tr>
-            {% empty %}
-              <tr>
-                <td colspan="20" class="table-empty">No hay productos en los pedidos seleccionados.</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+      {% include "ventas/includes/armado_colectivo_tabla.html" %}
       <div class="p-3 border-top d-flex flex-wrap gap-2 align-items-center">
-        <button type="submit" class="btn btn-primary rounded-pill d-inline-flex align-items-center gap-1" id="btn-armado-imprimir">
+        <a
+          class="btn btn-primary rounded-pill d-inline-flex align-items-center gap-1"
+          href="{% url 'armado_colectivo_guardado_pdf' armado_guardado.pk %}"
+          target="_blank"
+          rel="noopener"
+        >
           <i data-lucide="printer" aria-hidden="true"></i>
           Imprimir
-        </button>
-        <span class="text-muted small" id="armado-colectivo-hint">
-          La suma por fila en los puntos de stock no puede superar la cantidad total.
-        </span>
+        </a>
+        <form method="post" action="{% url 'armado_colectivo_editar' armado_guardado.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-primary rounded-pill">
+            {% if armado_guardado.requiere_revision %}Corregir{% else %}Editar{% endif %}
+          </button>
+        </form>
+        <form method="post" action="{% url 'armado_colectivo_eliminar' armado_guardado.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button
+            type="submit"
+            class="btn btn-outline-danger rounded-pill"
+            data-sirona-confirm-submit="¿Desea eliminar este armado colectivo?"
+          >
+            Eliminar
+          </button>
+        </form>
       </div>
     </div>
-  </form>
+  {% else %}
+    <form method="post" action="{% url 'armado_colectivo_pdf' %}?inline=1" id="armado-colectivo-form" target="_blank">
+      {% csrf_token %}
+      {% for vid in venta_ids %}
+        <input type="hidden" name="venta_id" value="{{ vid }}" />
+      {% endfor %}
 
-  {% if user.is_staff %}
+      <div class="table-card ui-force-productos presu-lista-modern mb-3">
+        <div class="table-card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <h2 class="table-card-title mb-0">Productos consolidados</h2>
+          {% if user.is_staff %}
+            <button
+              type="button"
+              class="btn btn-outline-secondary btn-sm rounded-pill"
+              data-sirona-modal-url="{% url 'puntos_stock_modal' %}"
+            >
+              Stocks
+            </button>
+          {% endif %}
+        </div>
+        {% include "ventas/includes/armado_colectivo_tabla.html" %}
+        <div class="p-3 border-top d-flex flex-wrap gap-2 align-items-center">
+          <button
+            type="submit"
+            class="btn btn-outline-primary rounded-pill d-inline-flex align-items-center gap-1"
+            id="btn-armado-guardar"
+            formaction="{% url 'armado_colectivo_guardar' %}"
+            formtarget="_self"
+          >
+            Guardar configuración
+          </button>
+          <button type="submit" class="btn btn-primary rounded-pill d-inline-flex align-items-center gap-1" id="btn-armado-imprimir">
+            <i data-lucide="printer" aria-hidden="true"></i>
+            Imprimir
+          </button>
+          <span class="text-muted small" id="armado-colectivo-hint">
+            Guardá la configuración para reservar los pedidos. La suma por fila en stock no puede superar la cantidad total.
+          </span>
+        </div>
+      </div>
+    </form>
+  {% endif %}
+
+  {% if user.is_staff and not solo_lectura %}
     <script>
       window.SIRONA_PUNTOS_STOCK_URL = "{% url 'puntos_stock_guardar' %}";
     </script>
     <script src="{% static 'js/sirona-puntos-stock.js' %}?v=1"></script>
   {% endif %}
-  <script src="{% static 'js/sirona-armado-colectivo.js' %}?v=1"></script>
+  {% if not solo_lectura %}
+    <script src="{% static 'js/sirona-armado-colectivo.js' %}?v=2"></script>
+  {% endif %}
 {% endblock %}

@@ -8,7 +8,34 @@ from decimal import Decimal
 
 from core.money_decimal import q2
 
-from .models import PuntoStockArmado, Venta, VentaLinea
+from .models import (
+    ArmadoColectivoAsignacion,
+    ArmadoColectivoGuardado,
+    ArmadoColectivoLineaGuardada,
+    PuntoStockArmado,
+    Venta,
+    VentaLinea,
+)
+
+
+def construir_nombre_armado_colectivo(venta_ids: list[int]) -> str:
+    ids = sorted({int(x) for x in venta_ids})
+    return ", ".join(f"Pedido #{i}" for i in ids)
+
+
+def venta_ids_en_armado_guardado() -> set[int]:
+    return set(
+        Venta.objects.filter(armados_colectivos_guardados__isnull=False)
+        .values_list("pk", flat=True)
+        .distinct()
+    )
+
+
+def armados_colectivos_guardados_lista(limit: int = 50):
+    return (
+        ArmadoColectivoGuardado.objects.prefetch_related("ventas")
+        .order_by("-creado_en", "-id")[:limit]
+    )
 
 
 @dataclass
@@ -35,7 +62,10 @@ def ventas_no_armadas_queryset():
 def ventas_validas_para_armado_colectivo(venta_ids: list[int]) -> list[Venta]:
     if not venta_ids:
         return []
-    qs = ventas_no_armadas_queryset().filter(pk__in=venta_ids)
+    reservados = venta_ids_en_armado_guardado()
+    if reservados.intersection(venta_ids):
+        return []
+    qs = ventas_no_armadas_queryset().filter(pk__in=venta_ids).exclude(pk__in=reservados)
     return list(qs)
 
 
@@ -137,7 +167,175 @@ def lineas_con_celdas_alloc(
         celdas = []
         for p in puntos:
             key = f"alloc_{ln.producto_id}_{p.pk}"
-            val = (post.get(key) or "").strip() if post is not None else ""
+            if post is None:
+                val = ""
+            elif hasattr(post, "get"):
+                val = (post.get(key) or "").strip()
+            elif isinstance(post, dict):
+                val = str(post.get(key) or "").strip()
+            else:
+                val = ""
             celdas.append({"punto": p, "value": val})
         ln.alloc_cells = celdas  # type: ignore[attr-defined]
     return lineas
+
+
+def guardar_armado_colectivo(
+    *,
+    venta_ids: list[int],
+    lineas: list[LineaArmadoColectivo],
+    asignaciones: dict[int, dict[int, int]],
+    puntos: list[PuntoStockArmado],
+    usuario,
+) -> ArmadoColectivoGuardado:
+    from django.db import transaction
+
+    with transaction.atomic():
+        armado = ArmadoColectivoGuardado.objects.create(
+            nombre=construir_nombre_armado_colectivo(venta_ids),
+            creado_por=usuario if getattr(usuario, "is_authenticated", False) else None,
+        )
+        armado.ventas.set(venta_ids)
+        punto_by_id = {p.pk: p for p in puntos}
+        for orden, ln in enumerate(lineas):
+            linea_db = ArmadoColectivoLineaGuardada.objects.create(
+                armado=armado,
+                producto_id=ln.producto_id,
+                codigo=ln.codigo,
+                descripcion=ln.descripcion,
+                cantidad_total=ln.cantidad_total,
+                costo_unitario=ln.costo_unitario,
+                precio_venta=ln.precio_venta,
+                orden=orden,
+            )
+            for punto_id, qty in (asignaciones.get(ln.producto_id) or {}).items():
+                if qty <= 0:
+                    continue
+                punto = punto_by_id.get(punto_id)
+                if punto is None:
+                    continue
+                ArmadoColectivoAsignacion.objects.create(
+                    linea=linea_db,
+                    punto=punto,
+                    cantidad=int(qty),
+                )
+        return armado
+
+
+def lineas_desde_armado_guardado(armado: ArmadoColectivoGuardado, puntos: list[PuntoStockArmado]):
+    """Construye filas de visualización desde un armado guardado."""
+    filas = []
+    for linea_db in armado.lineas.select_related("producto").prefetch_related("asignaciones__punto"):
+        asig_map = {a.punto_id: a.cantidad for a in linea_db.asignaciones.all()}
+        celdas = []
+        for p in puntos:
+            qty = asig_map.get(p.pk, 0)
+            celdas.append({"punto": p, "value": str(qty) if qty else ""})
+        filas.append(
+            {
+                "producto_id": linea_db.producto_id,
+                "codigo": linea_db.codigo,
+                "descripcion": linea_db.descripcion,
+                "cantidad_total": linea_db.cantidad_total,
+                "costo_unitario": linea_db.costo_unitario,
+                "precio_venta": linea_db.precio_venta,
+                "alloc_cells": celdas,
+                "asignado_sum": sum(asig_map.values()),
+            }
+        )
+    return filas
+
+
+def lineas_armado_colectivo_desde_guardado(armado: ArmadoColectivoGuardado) -> list[LineaArmadoColectivo]:
+    out: list[LineaArmadoColectivo] = []
+    for linea_db in armado.lineas.select_related("producto"):
+        sub = q2(linea_db.precio_venta) * int(linea_db.cantidad_total)
+        out.append(
+            LineaArmadoColectivo(
+                producto_id=linea_db.producto_id,
+                codigo=linea_db.codigo,
+                descripcion=linea_db.descripcion,
+                marca=(getattr(linea_db.producto, "laboratorio", None) or "").strip(),
+                cantidad_total=int(linea_db.cantidad_total),
+                costo_unitario=q2(linea_db.costo_unitario),
+                precio_venta=q2(linea_db.precio_venta),
+                subtotal_precio=sub,
+            )
+        )
+    return out
+
+
+def asignaciones_desde_armado_guardado(armado: ArmadoColectivoGuardado) -> dict[int, dict[int, int]]:
+    out: dict[int, dict[int, int]] = {}
+    for linea_db in armado.lineas.prefetch_related("asignaciones"):
+        por_punto: dict[int, int] = {}
+        for a in linea_db.asignaciones.all():
+            por_punto[a.punto_id] = int(a.cantidad)
+        out[linea_db.producto_id] = por_punto
+    return out
+
+
+SESSION_ARMADO_PRESELECT = "armado_colectivo_preselect_ids"
+SESSION_ARMADO_PREFILL = "armado_colectivo_prefill"
+
+
+def reconstruir_lineas_armado_guardado(armado: ArmadoColectivoGuardado, venta_ids: list[int]) -> None:
+    """Recalcula líneas del armado guardado sin asignaciones de stock."""
+    armado.lineas.all().delete()
+    lineas = agregar_lineas_armado_colectivo(venta_ids)
+    for orden, ln in enumerate(lineas):
+        ArmadoColectivoLineaGuardada.objects.create(
+            armado=armado,
+            producto_id=ln.producto_id,
+            codigo=ln.codigo,
+            descripcion=ln.descripcion,
+            cantidad_total=ln.cantidad_total,
+            costo_unitario=ln.costo_unitario,
+            precio_venta=ln.precio_venta,
+            orden=orden,
+        )
+
+
+def sincronizar_armados_al_eliminar_venta(venta_id: int) -> None:
+    """
+    Quita la venta de armados guardados y recalcula cantidades.
+    Marca el armado para revisión si quedan pedidos; lo borra si no queda ninguno.
+    """
+    from django.db import transaction
+
+    armados = list(
+        ArmadoColectivoGuardado.objects.filter(ventas__pk=venta_id).distinct()
+    )
+    if not armados:
+        return
+
+    with transaction.atomic():
+        for armado in armados:
+            armado.ventas.remove(venta_id)
+            restantes = list(armado.ventas.values_list("pk", flat=True))
+            if not restantes:
+                armado.delete()
+                continue
+            reconstruir_lineas_armado_guardado(armado, restantes)
+            armado.nombre = construir_nombre_armado_colectivo(restantes)
+            armado.requiere_revision = True
+            armado.nota_revision = (
+                f"Se eliminó el pedido #{venta_id} del historial de ventas. "
+                "Revise las cantidades y vuelva a asignar el stock por punto."
+            )
+            armado.save(
+                update_fields=["nombre", "requiere_revision", "nota_revision"]
+            )
+
+
+def preparar_edicion_armado(armado: ArmadoColectivoGuardado) -> tuple[list[int], dict[str, str]]:
+    """Datos para reabrir un armado: pedidos y asignaciones previas (si no requiere revisión)."""
+    venta_ids = list(armado.ventas.values_list("pk", flat=True))
+    prefill: dict[str, str] = {}
+    if not armado.requiere_revision:
+        asig = asignaciones_desde_armado_guardado(armado)
+        for pid, por_punto in asig.items():
+            for punto_id, qty in por_punto.items():
+                if qty > 0:
+                    prefill[f"alloc_{pid}_{punto_id}"] = str(qty)
+    return venta_ids, prefill

@@ -1,0 +1,54 @@
+      <div class="table-responsive presu-lista-table-wrap ventas-armado-colectivo-wrap">
+        <table class="modern-table ventas-armado-colectivo-tabla" id="armado-colectivo-tabla">
+          <thead>
+            <tr>
+              <th scope="col">Código</th>
+              <th scope="col">Descripción</th>
+              <th scope="col" class="text-end">Cant. total</th>
+              <th scope="col" class="text-end col-money">Costo</th>
+              <th scope="col" class="text-end col-money">P. venta</th>
+              {% for p in puntos %}
+                <th scope="col" class="text-center armado-col-punto" data-punto-id="{{ p.pk }}">{{ p.nombre }}</th>
+              {% endfor %}
+              <th scope="col" class="text-end">Asignado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ln in lineas %}
+              <tr data-producto-id="{{ ln.producto_id }}" data-cant-max="{{ ln.cantidad_total }}">
+                <td class="tabular-nums">{{ ln.codigo }}</td>
+                <td class="small presu-col-ellipsis" title="{{ ln.descripcion }}">{{ ln.descripcion }}</td>
+                <td class="text-end tabular-nums armado-cant-total">{{ ln.cantidad_total }}</td>
+                <td class="text-end col-money tabular-nums">{{ ln.costo_unitario|ars }}</td>
+                <td class="text-end col-money tabular-nums">{{ ln.precio_venta|ars }}</td>
+                {% for cell in ln.alloc_cells %}
+                  <td class="text-center p-1">
+                    {% if solo_lectura %}
+                      <span class="tabular-nums d-inline-block py-1">{{ cell.value|default:"—" }}</span>
+                    {% else %}
+                      <input
+                        type="number"
+                        class="form-control form-control-sm armado-alloc-input text-center mx-auto"
+                        name="alloc_{{ ln.producto_id }}_{{ cell.punto.pk }}"
+                        min="0"
+                        max="{{ ln.cantidad_total }}"
+                        step="1"
+                        value="{{ cell.value }}"
+                        data-punto-id="{{ cell.punto.pk }}"
+                        aria-label="{{ cell.punto.nombre }} — {{ ln.codigo }}"
+                      />
+                    {% endif %}
+                  </td>
+                {% endfor %}
+                <td class="text-end tabular-nums armado-asignado-sum fw-semibold">
+                  {% if solo_lectura %}{{ ln.asignado_sum|default:0 }}{% else %}0{% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="20" class="table-empty">No hay productos en los pedidos seleccionados.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>

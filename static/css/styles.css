@@ -3564,6 +3564,103 @@ button.btn-icon.btn-ink,
   opacity: 0.55;
 }
 
+.armados-guardados-panel .card-subtle {
+  margin-top: 0.15rem;
+}
+
+.armados-guardados-grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.armado-guardado-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.04);
+  color: inherit;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.armado-guardado-card--revision {
+  border-color: rgba(245, 158, 11, 0.55);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.armado-guardado-card__link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.armado-guardado-card__link:hover {
+  color: inherit;
+}
+
+.armado-guardado-card:hover {
+  border-color: rgba(59, 130, 246, 0.45);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.armado-guardado-card--revision:hover {
+  border-color: rgba(245, 158, 11, 0.65);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.armado-guardado-card__alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: #92400e;
+}
+
+.armado-guardado-card__alert svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+
+.armado-guardado-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+}
+
+.armado-guardado-card__title {
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.25;
+  color: var(--s-ink, #0f172a);
+}
+
+.armado-guardado-card__meta {
+  font-size: 0.72rem;
+  color: rgba(100, 116, 139, 0.95);
+}
+
+.armado-pedido-reservado {
+  opacity: 0.55;
+  background: rgba(148, 163, 184, 0.08) !important;
+}
+
+.armado-pedido-reservado td {
+  color: rgba(100, 116, 139, 0.95);
+}
+
+.armado-pedido-reservado a {
+  color: inherit;
+}
+
 /* Evitar que "Neto" agrande el alto y el ancho */
 .ventas-historial-modern .ventas-hist-caja-sub {
   font-size: 0.75rem;

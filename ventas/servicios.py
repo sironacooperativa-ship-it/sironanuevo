@@ -328,6 +328,10 @@ def eliminar_venta_admin(venta: Venta) -> None:
         if pm_id:
             MovimientoCaja.objects.filter(pk=pm_id).delete()
 
+        from .armado_servicios import sincronizar_armados_al_eliminar_venta
+
+        sincronizar_armados_al_eliminar_venta(vid)
+
         deleted, _ = Venta.objects.filter(pk=vid).delete()
         if not deleted:
             raise ValidationError("El pedido ya no existe o no pudo borrarse.")

@@ -276,3 +276,79 @@ class PuntoStockArmado(models.Model):
     def __str__(self) -> str:
         return self.nombre
 
+
+class ArmadoColectivoGuardado(models.Model):
+    """Configuración guardada de un armado colectivo (pedidos + asignación por punto de stock)."""
+
+    nombre = models.CharField(max_length=500)
+    ventas = models.ManyToManyField(Venta, related_name="armados_colectivos_guardados")
+    creado_en = models.DateTimeField(auto_now_add=True)
+    creado_por = models.ForeignKey(
+        "auth.User",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="armados_colectivos_guardados",
+    )
+    requiere_revision = models.BooleanField(
+        default=False,
+        help_text="True si cambió la composición del armado (p. ej. se eliminó un pedido del historial).",
+    )
+    nota_revision = models.TextField(blank=True, default="")
+
+    class Meta:
+        ordering = ["-creado_en", "-id"]
+
+    def __str__(self) -> str:
+        return self.nombre
+
+
+class ArmadoColectivoLineaGuardada(models.Model):
+    armado = models.ForeignKey(
+        ArmadoColectivoGuardado,
+        on_delete=models.CASCADE,
+        related_name="lineas",
+    )
+    producto = models.ForeignKey(
+        "productos.Producto",
+        on_delete=models.PROTECT,
+        related_name="lineas_armado_colectivo",
+    )
+    codigo = models.CharField(max_length=32)
+    descripcion = models.CharField(max_length=255)
+    cantidad_total = models.PositiveIntegerField()
+    costo_unitario = models.DecimalField(max_digits=12, decimal_places=2)
+    precio_venta = models.DecimalField(max_digits=12, decimal_places=2)
+    orden = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["orden", "id"]
+
+    def __str__(self) -> str:
+        return f"{self.codigo} x{self.cantidad_total}"
+
+
+class ArmadoColectivoAsignacion(models.Model):
+    linea = models.ForeignKey(
+        ArmadoColectivoLineaGuardada,
+        on_delete=models.CASCADE,
+        related_name="asignaciones",
+    )
+    punto = models.ForeignKey(
+        PuntoStockArmado,
+        on_delete=models.PROTECT,
+        related_name="asignaciones_armado",
+    )
+    cantidad = models.PositiveIntegerField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["linea", "punto"],
+                name="ventas_armado_asignacion_linea_punto_unique",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.punto.nombre}: {self.cantidad}"
+

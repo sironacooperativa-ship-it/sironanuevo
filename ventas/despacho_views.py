@@ -15,14 +15,23 @@ from core.authz import staff_required
 from .armado_colectivo_pdf import armado_colectivo_pdf_response
 from .armado_servicios import (
     agregar_lineas_armado_colectivo,
+    armados_colectivos_guardados_lista,
+    asignaciones_desde_armado_guardado,
+    guardar_armado_colectivo,
+    lineas_armado_colectivo_desde_guardado,
     lineas_con_celdas_alloc,
+    lineas_desde_armado_guardado,
     parse_asignaciones_post,
+    preparar_edicion_armado,
     puntos_stock_armado_lista,
     validar_asignaciones,
+    venta_ids_en_armado_guardado,
     ventas_no_armadas_queryset,
     ventas_validas_para_armado_colectivo,
+    SESSION_ARMADO_PREFILL,
+    SESSION_ARMADO_PRESELECT,
 )
-from .models import PuntoStockArmado, Venta
+from .models import ArmadoColectivoGuardado, PuntoStockArmado, Venta
 
 SESSION_ARMADO_VENTAS = "armado_colectivo_venta_ids"
 
@@ -41,10 +50,30 @@ def _ventas_sesion(request) -> list[int]:
     return [int(x) for x in raw if str(x).isdigit()]
 
 
+def _error_ventas_no_disponibles(request, venta_ids: list[int]) -> None:
+    reservados = venta_ids_en_armado_guardado()
+    if reservados.intersection(venta_ids):
+        messages.error(
+            request,
+            "Uno o más pedidos ya figuran en un armado colectivo guardado.",
+        )
+    else:
+        messages.error(
+            request,
+            "Algunos pedidos ya no están disponibles para armado (armados o despachados).",
+        )
+
+
 @login_required
 @require_http_methods(["GET"])
 def armado_pedidos_lista(request):
     qs = ventas_no_armadas_queryset()
+    ventas_reservadas = venta_ids_en_armado_guardado()
+    preselect_ids = [
+        int(x) for x in (request.session.pop(SESSION_ARMADO_PRESELECT, None) or []) if str(x).isdigit()
+    ]
+    if preselect_ids:
+        request.session.modified = True
     page = (request.GET.get("page") or "").strip()
     paginator = Paginator(qs, 120)
     page_obj = paginator.get_page(page or 1)
@@ -58,6 +87,9 @@ def armado_pedidos_lista(request):
             "page_obj": page_obj,
             "querystring": qcopy.urlencode(),
             "n_no_armados": qs.count(),
+            "ventas_reservadas": ventas_reservadas,
+            "armados_guardados": list(armados_colectivos_guardados_lista()),
+            "preselect_ids": preselect_ids,
         },
     )
 
@@ -65,21 +97,25 @@ def armado_pedidos_lista(request):
 @login_required
 @require_http_methods(["POST"])
 def armado_colectivo(request):
-    venta_ids = _parse_venta_ids_post(request)
+    venta_ids = _parse_venta_ids_post(request.POST)
     if not venta_ids:
         messages.warning(request, "Seleccioná al menos un pedido no armado.")
         return redirect("armado_pedidos_lista")
 
     ventas = ventas_validas_para_armado_colectivo(venta_ids)
     if len(ventas) != len(set(venta_ids)):
-        messages.error(request, "Algunos pedidos ya no están disponibles para armado (armados o despachados).")
+        _error_ventas_no_disponibles(request, venta_ids)
         return redirect("armado_pedidos_lista")
 
     ids_ok = [v.pk for v in ventas]
     _guardar_ventas_sesion(request, ids_ok)
     lineas = agregar_lineas_armado_colectivo(ids_ok)
     puntos = puntos_stock_armado_lista()
-    lineas_con_celdas_alloc(lineas, puntos)
+    prefill_wrap = request.session.pop(SESSION_ARMADO_PREFILL, None)
+    prefill = None
+    if isinstance(prefill_wrap, dict) and set(prefill_wrap.get("venta_ids") or []) == set(ids_ok):
+        prefill = prefill_wrap.get("alloc") or {}
+    lineas_con_celdas_alloc(lineas, puntos, prefill if prefill else None)
 
     return render(
         request,
@@ -95,8 +131,141 @@ def armado_colectivo(request):
 
 @login_required
 @require_http_methods(["POST"])
+def armado_colectivo_guardar(request):
+    venta_ids = _parse_venta_ids_post(request.POST)
+    if not venta_ids:
+        messages.warning(request, "No hay pedidos para guardar.")
+        return redirect("armado_pedidos_lista")
+
+    ventas = ventas_validas_para_armado_colectivo(venta_ids)
+    if len(ventas) != len(set(venta_ids)):
+        _error_ventas_no_disponibles(request, venta_ids)
+        return redirect("armado_pedidos_lista")
+
+    ids_ok = [v.pk for v in ventas]
+    lineas = agregar_lineas_armado_colectivo(ids_ok)
+    puntos = puntos_stock_armado_lista()
+    producto_ids = {ln.producto_id for ln in lineas}
+
+    try:
+        asignaciones = parse_asignaciones_post(request.POST, producto_ids, puntos)
+        err = validar_asignaciones(lineas, asignaciones)
+        if err:
+            raise ValueError(err)
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        lineas_con_celdas_alloc(lineas, puntos, request.POST)
+        return render(
+            request,
+            "ventas/armado_colectivo.html",
+            {
+                "ventas": ventas,
+                "venta_ids": ids_ok,
+                "lineas": lineas,
+                "puntos": puntos,
+            },
+        )
+
+    guardar_armado_colectivo(
+        venta_ids=ids_ok,
+        lineas=lineas,
+        asignaciones=asignaciones,
+        puntos=puntos,
+        usuario=request.user,
+    )
+    request.session.pop(SESSION_ARMADO_VENTAS, None)
+    request.session.pop(SESSION_ARMADO_PREFILL, None)
+    request.session.modified = True
+    messages.success(request, "Armado colectivo guardado. Los pedidos ya no se pueden volver a seleccionar.")
+    return redirect("armado_pedidos_lista")
+
+
+@login_required
+@require_http_methods(["GET"])
+def armado_colectivo_ver(request, pk: int):
+    armado = get_object_or_404(
+        ArmadoColectivoGuardado.objects.prefetch_related("ventas__vendedor", "ventas__comprador"),
+        pk=pk,
+    )
+    puntos = puntos_stock_armado_lista()
+    lineas = lineas_desde_armado_guardado(armado, puntos)
+    ventas = list(armado.ventas.all())
+    return render(
+        request,
+        "ventas/armado_colectivo.html",
+        {
+            "ventas": ventas,
+            "venta_ids": [v.pk for v in ventas],
+            "lineas": lineas,
+            "puntos": puntos,
+            "armado_guardado": armado,
+            "solo_lectura": True,
+        },
+    )
+
+
+@login_required
+@require_http_methods(["POST"])
+def armado_colectivo_eliminar(request, pk: int):
+    armado = get_object_or_404(ArmadoColectivoGuardado, pk=pk)
+    nombre = armado.nombre
+    armado.delete()
+    messages.success(
+        request,
+        f"Se eliminó el armado colectivo «{nombre}». Los pedidos vuelven a estar disponibles.",
+    )
+    return redirect("armado_pedidos_lista")
+
+
+@login_required
+@require_http_methods(["POST"])
+def armado_colectivo_editar(request, pk: int):
+    armado = get_object_or_404(
+        ArmadoColectivoGuardado.objects.prefetch_related("ventas"),
+        pk=pk,
+    )
+    venta_ids, prefill = preparar_edicion_armado(armado)
+    if not venta_ids:
+        armado.delete()
+        messages.warning(request, "El armado no tenía pedidos y fue eliminado.")
+        return redirect("armado_pedidos_lista")
+
+    armado.delete()
+    request.session[SESSION_ARMADO_PRESELECT] = venta_ids
+    if prefill:
+        request.session[SESSION_ARMADO_PREFILL] = {"venta_ids": venta_ids, "alloc": prefill}
+    request.session.modified = True
+    messages.info(
+        request,
+        "Armado liberado. Los pedidos quedaron seleccionados para que pueda modificarlos.",
+    )
+    return redirect("armado_pedidos_lista")
+
+
+@login_required
+@require_http_methods(["GET"])
+def armado_colectivo_guardado_pdf(request, pk: int):
+    armado = get_object_or_404(
+        ArmadoColectivoGuardado.objects.prefetch_related("ventas", "lineas__asignaciones__punto"),
+        pk=pk,
+    )
+    puntos = puntos_stock_armado_lista()
+    ventas = list(armado.ventas.all())
+    asignaciones = asignaciones_desde_armado_guardado(armado)
+    lineas = lineas_armado_colectivo_desde_guardado(armado)
+
+    return armado_colectivo_pdf_response(
+        ventas=ventas,
+        lineas=lineas,
+        puntos=puntos,
+        asignaciones=asignaciones,
+    )
+
+
+@login_required
+@require_http_methods(["POST"])
 def armado_colectivo_pdf(request):
-    venta_ids = _parse_venta_ids_post(request)
+    venta_ids = _parse_venta_ids_post(request.POST)
     if not venta_ids:
         venta_ids = _ventas_sesion(request)
     if not venta_ids:
@@ -105,7 +274,7 @@ def armado_colectivo_pdf(request):
 
     ventas = ventas_validas_para_armado_colectivo(venta_ids)
     if len(ventas) != len(set(venta_ids)):
-        messages.error(request, "Los pedidos seleccionados cambiaron. Volvé a generar el armado colectivo.")
+        _error_ventas_no_disponibles(request, venta_ids)
         return redirect("armado_pedidos_lista")
 
     ids_ok = [v.pk for v in ventas]

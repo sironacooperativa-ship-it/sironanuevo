@@ -11,6 +11,49 @@
     <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'despachos_lista' %}">Volver a Despachos</a>
   </div>
 
+  {% if armados_guardados %}
+    <section class="armados-guardados-panel dashboard-card mb-3" aria-label="Armados colectivos guardados">
+      <div class="card-head px-3 pt-3 pb-2">
+        <h2 class="card-title h6 mb-0">Armados colectivos guardados</h2>
+        <div class="card-subtle small">Pedidos con origen de mercadería ya definido</div>
+      </div>
+      <div class="card-body pt-0 px-3 pb-3">
+        <div class="armados-guardados-grid">
+          {% for ag in armados_guardados %}
+            <div class="armado-guardado-card{% if ag.requiere_revision %} armado-guardado-card--revision{% endif %}">
+              <a class="armado-guardado-card__link" href="{% url 'armado_colectivo_ver' ag.pk %}" title="{{ ag.nombre }}">
+                <span class="armado-guardado-card__title">{{ ag.nombre }}</span>
+                <span class="armado-guardado-card__meta">{{ ag.creado_en|date:"d/m/Y H:i" }}</span>
+              </a>
+              {% if ag.requiere_revision %}
+                <div class="armado-guardado-card__alert" role="alert">
+                  <i data-lucide="alert-triangle" aria-hidden="true"></i>
+                  {{ ag.nota_revision|default:"Requiere revisión de cantidades." }}
+                </div>
+              {% endif %}
+              <div class="armado-guardado-card__actions">
+                <form method="post" action="{% url 'armado_colectivo_editar' ag.pk %}" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill">Editar</button>
+                </form>
+                <form method="post" action="{% url 'armado_colectivo_eliminar' ag.pk %}" class="d-inline">
+                  {% csrf_token %}
+                  <button
+                    type="submit"
+                    class="btn btn-outline-danger btn-sm rounded-pill"
+                    data-sirona-confirm-submit="¿Desea eliminar este armado colectivo?"
+                  >
+                    Eliminar
+                  </button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  {% endif %}
+
   <form method="post" action="{% url 'armado_colectivo' %}" id="armado-seleccion-form">
     {% csrf_token %}
     <div class="table-card ui-force-productos presu-lista-modern ventas-armado-lista mb-3">
@@ -37,7 +80,7 @@
           <thead>
             <tr>
               <th scope="col" class="text-center" style="width: 2.5rem">
-                <input type="checkbox" class="form-check-input m-0" id="armado-sel-todos" title="Seleccionar todos" aria-label="Seleccionar todos" />
+                <input type="checkbox" class="form-check-input m-0" id="armado-sel-todos" title="Seleccionar todos disponibles" aria-label="Seleccionar todos disponibles" />
               </th>
               <th scope="col">Pedido</th>
               <th scope="col">Fecha</th>
@@ -48,18 +91,32 @@
           </thead>
           <tbody>
             {% for v in ventas %}
-              <tr>
+              <tr class="{% if v.pk in ventas_reservadas %}armado-pedido-reservado{% endif %}">
                 <td class="text-center align-middle">
-                  <input
-                    type="checkbox"
-                    class="form-check-input m-0 armado-sel-pedido"
-                    name="venta_id"
-                    value="{{ v.pk }}"
-                    aria-label="Seleccionar pedido {{ v.pk }}"
-                  />
+                  {% if v.pk in ventas_reservadas %}
+                    <input
+                      type="checkbox"
+                      class="form-check-input m-0"
+                      disabled
+                      checked
+                      title="Ya incluido en un armado colectivo guardado"
+                      aria-label="Pedido {{ v.pk }} reservado"
+                    />
+                  {% else %}
+                    <input
+                      type="checkbox"
+                      class="form-check-input m-0 armado-sel-pedido"
+                      name="venta_id"
+                      value="{{ v.pk }}"
+                      aria-label="Seleccionar pedido {{ v.pk }}"
+                    />
+                  {% endif %}
                 </td>
                 <td class="tabular-nums">
                   <a href="{% url 'venta_detalle' v.pk %}">#{{ v.pk }}</a>
+                  {% if v.pk in ventas_reservadas %}
+                    <span class="badge text-bg-secondary ms-1">En armado guardado</span>
+                  {% endif %}
                 </td>
                 <td class="col-muted">{{ v.creado_en|date:"d/m/Y H:i" }}</td>
                 <td class="presu-col-ellipsis small">{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}</td>
@@ -82,11 +139,14 @@
     </div>
   </form>
 
+  {% if preselect_ids %}
+    {{ preselect_ids|json_script:"armado-preselect-data" }}
+  {% endif %}
   {% if user.is_staff %}
     <script>
       window.SIRONA_PUNTOS_STOCK_URL = "{% url 'puntos_stock_guardar' %}";
     </script>
     <script src="{% static 'js/sirona-puntos-stock.js' %}?v=1"></script>
   {% endif %}
-  <script src="{% static 'js/sirona-armado-lista.js' %}?v=1"></script>
+  <script src="{% static 'js/sirona-armado-lista.js' %}?v=3"></script>
 {% endblock %}
