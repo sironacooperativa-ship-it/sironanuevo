@@ -3548,16 +3548,102 @@ button.btn-icon.btn-ink,
   overflow-x: auto;
 }
 
-.ventas-armado-colectivo-tabla .armado-alloc-input {
-  width: 3.25rem;
-  min-width: 3rem;
-  padding-left: 0.25rem;
-  padding-right: 0.25rem;
+.ventas-armado-colectivo-tabla {
+  table-layout: fixed;
+  width: 100%;
+  font-size: 0.78rem;
+  line-height: 1.2;
 }
 
-.ventas-armado-colectivo-tabla th.armado-col-punto,
-.ventas-armado-colectivo-tabla td {
+.ventas-armado-colectivo-tabla thead th {
+  padding: 5px 3px;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  white-space: normal;
+  line-height: 1.15;
+  vertical-align: bottom;
+}
+
+.ventas-armado-colectivo-tabla tbody td {
+  padding: 3px 3px;
+  vertical-align: middle;
+}
+
+.ventas-armado-colectivo-tabla .armado-col-codigo {
+  width: 3.4rem;
   white-space: nowrap;
+}
+
+.ventas-armado-colectivo-tabla .armado-col-desc {
+  width: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ventas-armado-colectivo-tabla .armado-col-cant {
+  width: 2.2rem;
+  white-space: nowrap;
+}
+
+.ventas-armado-colectivo-tabla .armado-col-precios {
+  width: 4.6rem;
+  white-space: nowrap;
+}
+
+.armado-precio-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  line-height: 1.1;
+}
+
+.armado-precio-venta {
+  font-size: 0.74rem;
+  font-weight: 650;
+}
+
+.armado-precio-costo {
+  font-size: 0.66rem;
+  color: var(--s-muted, #64748b);
+}
+
+.ventas-armado-colectivo-tabla th.armado-col-punto {
+  width: 2.55rem;
+  max-width: 2.75rem;
+  padding-left: 1px;
+  padding-right: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.ventas-armado-colectivo-tabla td.armado-col-punto-cell {
+  padding: 1px;
+  white-space: nowrap;
+}
+
+.ventas-armado-colectivo-tabla .armado-col-asignado {
+  width: 2.2rem;
+  white-space: nowrap;
+}
+
+.ventas-armado-colectivo-tabla .armado-alloc-input {
+  width: 2.35rem;
+  min-width: 2.2rem;
+  max-width: 100%;
+  padding: 1px 2px;
+  font-size: 0.72rem;
+  height: 1.55rem;
+  line-height: 1.2;
+}
+
+.ventas-armado-colectivo-tabla .armado-alloc-read {
+  display: inline-block;
+  font-size: 0.74rem;
+  line-height: 1.2;
 }
 
 .ventas-armado-toolbar .btn:disabled {
