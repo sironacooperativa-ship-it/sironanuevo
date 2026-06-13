@@ -6,23 +6,6 @@
     "venta-despacho-ico--armado",
     "venta-despacho-ico--despachado",
   ];
-  var ESTADO_VARS = {
-    no_armado: {
-      fg: "#ef4444",
-      border: "rgba(239, 68, 68, 0.35)",
-      bg: "rgba(239, 68, 68, 0.08)",
-    },
-    armado: {
-      fg: "#22c55e",
-      border: "rgba(34, 197, 94, 0.35)",
-      bg: "rgba(34, 197, 94, 0.08)",
-    },
-    despachado: {
-      fg: "#3b82f6",
-      border: "rgba(59, 130, 246, 0.35)",
-      bg: "rgba(59, 130, 246, 0.08)",
-    },
-  };
   var channel = null;
 
   try {
@@ -49,12 +32,19 @@
     el.classList.add("venta-despacho-ico--" + estado);
   }
 
-  function applyBtnIconVars(btn, estado) {
-    if (!btn || !btn.classList.contains("btn-icon")) return;
-    var vars = ESTADO_VARS[estado] || ESTADO_VARS.no_armado;
-    btn.style.setProperty("--ib-fg", vars.fg);
-    btn.style.setProperty("--ib-border", vars.border);
-    btn.style.setProperty("--ib-bg", vars.bg);
+  function applyToIconEl(icon, data) {
+    if (!icon || !data) return;
+    var estado = data.estado || "no_armado";
+    applyEstadoClasses(icon, estado);
+    if (data.label) {
+      icon.setAttribute("title", data.label);
+      icon.setAttribute("aria-label", data.label);
+    }
+  }
+
+  function historialIconEl(btn) {
+    if (!btn) return null;
+    return btn.querySelector(".venta-despacho-ico") || (btn.classList.contains("venta-despacho-ico") ? btn : null);
   }
 
   function applyToDespachosRow(row, data) {
@@ -77,14 +67,7 @@
       badge.classList.add("venta-despacho-estado-badge--" + estado);
     }
 
-    var icon = row.querySelector(".venta-despacho-ico");
-    if (icon) {
-      applyEstadoClasses(icon, estado);
-      if (data.label) {
-        icon.setAttribute("title", data.label);
-        icon.setAttribute("aria-label", data.label);
-      }
-    }
+    applyToIconEl(row.querySelector(".venta-despacho-ico"), data);
 
     var text = row.querySelector(".venta-despacho-estado-text");
     if (text && data.label) text.textContent = data.label;
@@ -105,11 +88,12 @@
     var estado = data.estado || "no_armado";
     btn.setAttribute("data-despacho-estado", estado);
     if (data.label) {
-      btn.setAttribute("title", data.label);
       btn.setAttribute("aria-label", "Cambiar estado de despacho: " + data.label);
     }
-    applyEstadoClasses(btn, estado);
-    applyBtnIconVars(btn, estado);
+    applyToIconEl(historialIconEl(btn), data);
+    if (btn.classList.contains("venta-despacho-ico")) {
+      applyToIconEl(btn, data);
+    }
   }
 
   function findHistorialButtons(ventaId) {
@@ -131,6 +115,45 @@
     if (row) applyToDespachosRow(row, payload);
     findHistorialButtons(id).forEach(function (btn) {
       applyToHistorialButton(btn, payload);
+    });
+  }
+
+  function initFromDom() {
+    document.querySelectorAll(".venta-despacho-ico-btn[data-venta-id]").forEach(function (btn) {
+      var estado = btn.getAttribute("data-despacho-estado") || "no_armado";
+      var icon = historialIconEl(btn);
+      var label =
+        (icon && icon.getAttribute("title")) ||
+        btn.getAttribute("aria-label") ||
+        "";
+      if (label.indexOf("Cambiar estado de despacho: ") === 0) {
+        label = label.slice("Cambiar estado de despacho: ".length);
+      }
+      applyToHistorialButton(btn, {
+        venta_id: btn.getAttribute("data-venta-id"),
+        estado: estado,
+        label: label,
+        despacho_armado: estado !== "no_armado",
+        despacho_despachado: estado === "despachado",
+      });
+    });
+
+    document.querySelectorAll(".venta-despacho-row[data-venta-id], .venta-despacho-row[id^='pedido-']").forEach(function (row) {
+      var id = row.getAttribute("data-venta-id") || (row.id || "").replace("pedido-", "");
+      if (!id) return;
+      var icon = row.querySelector(".venta-despacho-ico");
+      if (!icon) return;
+      var estado = "no_armado";
+      ESTADO_CLASSES.forEach(function (cls) {
+        if (icon.classList.contains(cls)) estado = cls.replace("venta-despacho-ico--", "");
+      });
+      applyToDespachosRow(row, {
+        venta_id: id,
+        estado: estado,
+        label: icon.getAttribute("title") || "",
+        despacho_armado: estado !== "no_armado",
+        despacho_despachado: estado === "despachado",
+      });
     });
   }
 
@@ -172,9 +195,16 @@
     } catch (e) {}
   });
 
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initFromDom);
+  } else {
+    initFromDom();
+  }
+
   global.SironaDespachoSync = {
     applyAll: applyAll,
     publish: publish,
+    initFromDom: initFromDom,
     applyToDespachosRow: applyToDespachosRow,
     applyToHistorialButton: applyToHistorialButton,
   };

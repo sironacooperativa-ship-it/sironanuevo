@@ -392,14 +392,13 @@
                 <div class="table-actions presu-row-actions d-flex ventas-hist-actions">
                   <button
                     type="button"
-                    class="btn-icon venta-despacho-ico venta-despacho-ico-btn venta-despacho-ico--{{ v.despacho_estado }}"
+                    class="venta-despacho-ico-btn"
                     data-venta-despacho-url="{% url 'venta_actualizar_despacho' v.pk %}"
                     data-venta-id="{{ v.pk }}"
                     data-despacho-estado="{{ v.despacho_estado }}"
-                    title="{{ v.despacho_estado_label }}"
                     aria-label="Cambiar estado de despacho: {{ v.despacho_estado_label }}"
                   >
-                    <i data-lucide="package" aria-hidden="true"></i>
+                    {% include "includes/venta_despacho_icon.html" with venta=v %}
                   </button>
                   <a
                     class="btn-icon btn-view"
@@ -484,5 +483,5 @@
 {% endblock %}
 
 {% block page_scripts %}
-  <script src="{% static 'js/sirona-despacho-historial.js' %}?v=3"></script>
+  <script src="{% static 'js/sirona-despacho-historial.js' %}?v=4"></script>
 {% endblock %}

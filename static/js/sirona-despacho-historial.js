@@ -37,15 +37,6 @@
 
   function applyIconState(btn, estado, label) {
     if (!btn) return;
-    btn.setAttribute("data-despacho-estado", estado);
-    btn.setAttribute("title", label);
-    btn.setAttribute("aria-label", "Cambiar estado de despacho: " + label);
-    btn.classList.remove(
-      "venta-despacho-ico--no_armado",
-      "venta-despacho-ico--armado",
-      "venta-despacho-ico--despachado"
-    );
-    btn.classList.add("venta-despacho-ico--" + estado);
     if (window.SironaDespachoSync && window.SironaDespachoSync.applyToHistorialButton) {
       window.SironaDespachoSync.applyToHistorialButton(btn, {
         estado: estado,
@@ -53,6 +44,20 @@
         despacho_armado: estado !== "no_armado",
         despacho_despachado: estado === "despachado",
       });
+      return;
+    }
+    btn.setAttribute("data-despacho-estado", estado);
+    btn.setAttribute("aria-label", "Cambiar estado de despacho: " + label);
+    var icon = btn.querySelector(".venta-despacho-ico");
+    if (icon) {
+      icon.classList.remove(
+        "venta-despacho-ico--no_armado",
+        "venta-despacho-ico--armado",
+        "venta-despacho-ico--despachado"
+      );
+      icon.classList.add("venta-despacho-ico--" + estado);
+      icon.setAttribute("title", label);
+      icon.setAttribute("aria-label", label);
     }
   }
 
