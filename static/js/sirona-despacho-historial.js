@@ -70,7 +70,7 @@
         '" data-estado="' +
         st.clave +
         '">' +
-        '<span class="btn-icon venta-despacho-ico ' +
+        '<span class="venta-despacho-ico ' +
         st.css +
         '" aria-hidden="true"><i data-lucide="package"></i></span>' +
         '<span class="venta-despacho-opcion-text">' +
