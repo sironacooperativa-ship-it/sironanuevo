@@ -141,6 +141,12 @@ class Venta(models.Model):
         default=False,
         help_text="Pedido entregado o despachado al cliente.",
     )
+    despacho_despachado_en = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Momento en que se marcó como despachado (para archivar al historial).",
+    )
 
     class Meta:
         ordering = ["-creado_en", "-id"]
@@ -185,12 +191,19 @@ class Venta(models.Model):
         return "No armado"
 
     def aplicar_estado_despacho(self, *, armado: bool, despachado: bool) -> None:
+        from django.utils import timezone as tz
+
         if despachado:
             armado = True
         elif not armado:
             despachado = False
+        era_despachado = bool(self.despacho_despachado)
         self.despacho_armado = armado
         self.despacho_despachado = despachado
+        if despachado and not era_despachado:
+            self.despacho_despachado_en = tz.now()
+        elif not despachado:
+            self.despacho_despachado_en = None
 
     @classmethod
     def parse_estado_despacho_clave(cls, clave: str) -> tuple[bool, bool] | None:

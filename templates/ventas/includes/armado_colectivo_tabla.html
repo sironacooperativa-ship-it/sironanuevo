@@ -1,6 +1,16 @@
 {% load money %}
       <div class="table-responsive presu-lista-table-wrap ventas-armado-colectivo-wrap">
         <table class="modern-table ventas-armado-colectivo-tabla" id="armado-colectivo-tabla">
+          <colgroup>
+            <col class="armado-col-codigo" />
+            <col class="armado-col-desc" />
+            <col class="armado-col-cant" />
+            <col class="armado-col-precios" />
+            {% for p in puntos %}
+              <col class="armado-col-punto" />
+            {% endfor %}
+            <col class="armado-col-asignado" />
+          </colgroup>
           <thead>
             <tr>
               <th scope="col" class="armado-col-codigo">Cód.</th>

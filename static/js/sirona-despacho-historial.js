@@ -109,7 +109,11 @@
         });
       })
       .then(function (data) {
-        applyIconState(btn, data.estado, data.label);
+        if (window.SironaDespachoSync) {
+          window.SironaDespachoSync.publish(data, "historial");
+        } else {
+          applyIconState(btn, data.estado, data.label);
+        }
         parts.modal.hide();
       })
       .catch(function () {

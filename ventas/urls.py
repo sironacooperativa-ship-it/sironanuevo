@@ -5,6 +5,7 @@ from . import despacho_views, views
 urlpatterns = [
     path("", views.venta_historial, name="ventas_historial"),
     path("despachos/", views.despachos_lista, name="despachos_lista"),
+    path("despachos/historial/", views.despachos_historial, name="despachos_historial"),
     path("despachos/armado/", despacho_views.armado_pedidos_lista, name="armado_pedidos_lista"),
     path("despachos/armado/colectivo/", despacho_views.armado_colectivo, name="armado_colectivo"),
     path("despachos/armado/colectivo/guardar/", despacho_views.armado_colectivo_guardar, name="armado_colectivo_guardar"),
@@ -12,6 +13,7 @@ urlpatterns = [
     path("despachos/armado/guardado/<int:pk>/", despacho_views.armado_colectivo_ver, name="armado_colectivo_ver"),
     path("despachos/armado/guardado/<int:pk>/editar/", despacho_views.armado_colectivo_editar, name="armado_colectivo_editar"),
     path("despachos/armado/guardado/<int:pk>/eliminar/", despacho_views.armado_colectivo_eliminar, name="armado_colectivo_eliminar"),
+    path("despachos/armado/edicion/cancelar/", despacho_views.armado_colectivo_cancelar_edicion, name="armado_colectivo_cancelar_edicion"),
     path("despachos/armado/guardado/<int:pk>/pdf/", despacho_views.armado_colectivo_guardado_pdf, name="armado_colectivo_guardado_pdf"),
     path("despachos/puntos-stock/", despacho_views.puntos_stock_modal, name="puntos_stock_modal"),
     path("despachos/puntos-stock/guardar/", despacho_views.puntos_stock_guardar, name="puntos_stock_guardar"),

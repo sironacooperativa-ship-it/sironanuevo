@@ -1,18 +1,33 @@
 {% extends "base.html" %}
 {% load money %}
 {% load static %}
-{% block title %}Despachos{% endblock %}
+{% block title %}{% if historial_despachos %}Historial de despachos{% else %}Despachos{% endif %}{% endblock %}
 {% block content %}
-  <div class="app-page-header mb-3">
-    <h1 class="app-page-title mb-1">Despachos</h1>
-    <p class="text-muted small mb-0">
-      Seguimiento de pedidos: armado y despacho. Los cambios se reflejan en el historial de ventas.
-    </p>
+  <div class="app-page-header mb-3 d-flex flex-wrap align-items-start justify-content-between gap-2">
+    <div>
+      <h1 class="app-page-title mb-1">
+        {% if historial_despachos %}Historial de despachos{% else %}Despachos{% endif %}
+      </h1>
+      <p class="text-muted small mb-0">
+        {% if historial_despachos %}
+          Pedidos marcados como despachados hace más de {{ despacho_historial_dias }} días.
+        {% else %}
+          Seguimiento de pedidos: armado y despacho. Los despachados hace más de {{ despacho_historial_dias }} días pasan al historial.
+        {% endif %}
+      </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      {% if historial_despachos %}
+        <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'despachos_lista' %}">Volver a Despachos</a>
+      {% else %}
+        <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'despachos_historial' %}">Historial de despachos</a>
+      {% endif %}
+    </div>
   </div>
 
   <div class="table-card ui-force-productos presu-lista-modern ventas-despachos-modern mb-3">
     <div class="table-card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
-      <h2 class="table-card-title mb-0">Pedidos</h2>
+      <h2 class="table-card-title mb-0">{% if historial_despachos %}Archivo{% else %}Pedidos{% endif %}</h2>
       {% if page_obj %}
         <span class="table-card-count text-nowrap">{{ page_obj.paginator.count }} pedido(s)</span>
       {% endif %}
@@ -22,7 +37,10 @@
         <thead>
           <tr>
             <th scope="col" class="th-ped">Pedido</th>
-            <th scope="col">Fecha</th>
+            <th scope="col">Fecha pedido</th>
+            {% if historial_despachos %}
+              <th scope="col">Despachado el</th>
+            {% endif %}
             <th scope="col" class="presu-col-ellipsis">Vendedor</th>
             <th scope="col" class="presu-col-ellipsis d-none d-md-table-cell">Comprador</th>
             <th scope="col" class="text-end col-money">Monto</th>
@@ -38,8 +56,13 @@
                 <a href="{% url 'venta_detalle' v.pk %}">#{{ v.pk }}</a>
               </td>
               <td class="col-muted">{{ v.creado_en|date:"d/m/Y H:i" }}</td>
-              <td class="presu-col-ellipsis small" title="{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}">
-                {{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}
+              {% if historial_despachos %}
+                <td class="col-muted tabular-nums venta-despacho-despachado-en">
+                  {% if v.despacho_despachado_en %}{{ v.despacho_despachado_en|date:"d/m/Y H:i" }}{% else %}—{% endif %}
+                </td>
+              {% endif %}
+              <td class="presu-col-ellipsis small" title="{% if v.vendedor %}{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}{% endif %}">
+                {% if v.vendedor %}{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}{% else %}—{% endif %}
               </td>
               <td class="presu-col-ellipsis small d-none d-md-table-cell" title="{% if v.comprador %}{{ v.comprador.apellido }}, {{ v.comprador.nombre }}{% endif %}">
                 {% if v.comprador %}
@@ -56,12 +79,7 @@
                 </span>
               </td>
               <td class="text-center align-middle">
-                <input
-                  form="despacho-form-{{ v.pk }}"
-                  type="hidden"
-                  name="despacho_armado"
-                  value="0"
-                />
+                <input form="despacho-form-{{ v.pk }}" type="hidden" name="despacho_armado" value="0" />
                 <input
                   form="despacho-form-{{ v.pk }}"
                   class="form-check-input venta-despacho-armado m-0"
@@ -74,12 +92,7 @@
                 />
               </td>
               <td class="text-center align-middle">
-                <input
-                  form="despacho-form-{{ v.pk }}"
-                  type="hidden"
-                  name="despacho_despachado"
-                  value="0"
-                />
+                <input form="despacho-form-{{ v.pk }}" type="hidden" name="despacho_despachado" value="0" />
                 <input
                   form="despacho-form-{{ v.pk }}"
                   class="form-check-input venta-despacho-despachado m-0"
@@ -104,7 +117,13 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="8" class="table-empty">No hay pedidos registrados.</td>
+              <td colspan="{% if historial_despachos %}9{% else %}8{% endif %}" class="table-empty">
+                {% if historial_despachos %}
+                  No hay pedidos archivados en el historial de despachos.
+                {% else %}
+                  No hay pedidos pendientes de seguimiento en despachos.
+                {% endif %}
+              </td>
             </tr>
           {% endfor %}
         </tbody>
@@ -131,6 +150,8 @@
       </span>
     </div>
   </div>
+{% endblock %}
 
-  <script src="{% static 'js/sirona-despachos.js' %}?v=1"></script>
+{% block page_scripts %}
+  <script src="{% static 'js/sirona-despachos.js' %}?v=3"></script>
 {% endblock %}

@@ -20,7 +20,7 @@
     />
     <!-- theme: ios-2026r29 -->
     <link href="{% static 'css/theme.css' %}?v=ios-2026r48" rel="stylesheet" />
-    <link href="{% static 'css/styles.css' %}?v=saas-2026r28" rel="stylesheet" />
+    <link href="{% static 'css/styles.css' %}?v=saas-2026r29" rel="stylesheet" />
     <link href="{% static 'css/ui-force-productos.css' %}?v=3" rel="stylesheet" />
     <link href="{% static 'css/sirona-calc.css' %}" rel="stylesheet" />
     <style>
@@ -503,6 +503,10 @@
                   <span class="app-sidebar-icon-wrap"><i data-lucide="package-check"></i></span>
                   <span class="app-sidebar-label sidebar-label">Armado de pedidos</span>
                 </a>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'despachos_historial' %}" title="Pedidos despachados archivados">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="archive"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Historial de despachos</span>
+                </a>
               </div>
             </div>
 
@@ -832,6 +836,10 @@
                   <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'armado_pedidos_lista' %}">
                     <span class="app-sidebar-icon-wrap"><i data-lucide="package-check"></i></span>
                     <span class="app-sidebar-label">Armado de pedidos</span>
+                  </a>
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'despachos_historial' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="archive"></i></span>
+                    <span class="app-sidebar-label">Historial de despachos</span>
                   </a>
                 </div>
               </div>
@@ -2026,6 +2034,7 @@
       <script src="{% static 'js/sirona-global-search.js' %}?v=1"></script>
       <script src="{% static 'js/sirona-calc.js' %}?v=4"></script>
       <script src="{% static 'js/sirona-scroll-restore.js' %}?v=1"></script>
+      <script src="{% static 'js/sirona-despacho-sync.js' %}?v=1"></script>
       {% if logout_on_tab_close_enabled %}
         <script src="{% static 'js/sirona-sesion-cerrar-ventana.js' %}?v=4"></script>
       {% endif %}

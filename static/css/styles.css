@@ -3551,45 +3551,47 @@ button.btn-icon.btn-ink,
 .ventas-armado-colectivo-tabla {
   table-layout: fixed;
   width: 100%;
+  min-width: 42rem;
   font-size: 0.78rem;
   line-height: 1.2;
 }
 
 .ventas-armado-colectivo-tabla thead th {
-  padding: 5px 3px;
-  font-size: 0.62rem;
-  letter-spacing: 0.04em;
-  white-space: normal;
-  line-height: 1.15;
+  padding: 5px 4px;
+  font-size: 0.64rem;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  line-height: 1.2;
   vertical-align: bottom;
 }
 
 .ventas-armado-colectivo-tabla tbody td {
-  padding: 3px 3px;
+  padding: 3px 4px;
   vertical-align: middle;
 }
 
+.ventas-armado-colectivo-tabla col.armado-col-codigo,
 .ventas-armado-colectivo-tabla .armado-col-codigo {
-  width: 3.4rem;
-  white-space: nowrap;
+  width: 3.25rem;
 }
 
+.ventas-armado-colectivo-tabla col.armado-col-desc,
 .ventas-armado-colectivo-tabla .armado-col-desc {
-  width: auto;
-  min-width: 0;
+  width: 10.5rem;
+  max-width: 10.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.ventas-armado-colectivo-tabla col.armado-col-cant,
 .ventas-armado-colectivo-tabla .armado-col-cant {
-  width: 2.2rem;
-  white-space: nowrap;
+  width: 2.35rem;
 }
 
+.ventas-armado-colectivo-tabla col.armado-col-precios,
 .ventas-armado-colectivo-tabla .armado-col-precios {
-  width: 4.6rem;
-  white-space: nowrap;
+  width: 4.75rem;
 }
 
 .armado-precio-stack {
@@ -3609,34 +3611,35 @@ button.btn-icon.btn-ink,
   color: var(--s-muted, #64748b);
 }
 
+/* Sin ancho fijo: reparten el espacio libre de la tabla entre los puntos de stock */
 .ventas-armado-colectivo-tabla th.armado-col-punto {
-  width: 2.55rem;
-  max-width: 2.75rem;
-  padding-left: 1px;
-  padding-right: 1px;
+  padding-left: 3px;
+  padding-right: 3px;
   overflow: hidden;
   text-overflow: ellipsis;
-  word-break: break-word;
-  hyphens: auto;
+  white-space: nowrap;
+  font-size: 0.62rem;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
 }
 
 .ventas-armado-colectivo-tabla td.armado-col-punto-cell {
-  padding: 1px;
+  padding: 2px 3px;
   white-space: nowrap;
 }
 
+.ventas-armado-colectivo-tabla col.armado-col-asignado,
 .ventas-armado-colectivo-tabla .armado-col-asignado {
-  width: 2.2rem;
-  white-space: nowrap;
+  width: 2.35rem;
 }
 
 .ventas-armado-colectivo-tabla .armado-alloc-input {
-  width: 2.35rem;
-  min-width: 2.2rem;
-  max-width: 100%;
-  padding: 1px 2px;
+  width: 100%;
+  max-width: 3.75rem;
+  min-width: 2.75rem;
+  padding: 2px 3px;
   font-size: 0.72rem;
-  height: 1.55rem;
+  height: 1.6rem;
   line-height: 1.2;
 }
 
@@ -3644,6 +3647,22 @@ button.btn-icon.btn-ink,
   display: inline-block;
   font-size: 0.74rem;
   line-height: 1.2;
+}
+
+@media (min-width: 992px) {
+  .ventas-armado-colectivo-tabla col.armado-col-desc,
+  .ventas-armado-colectivo-tabla .armado-col-desc {
+    width: 11.5rem;
+    max-width: 11.5rem;
+  }
+
+  .ventas-armado-colectivo-tabla th.armado-col-punto {
+    font-size: 0.64rem;
+  }
+
+  .ventas-armado-colectivo-tabla .armado-alloc-input {
+    max-width: 4rem;
+  }
 }
 
 .ventas-armado-toolbar .btn:disabled {
@@ -3697,6 +3716,16 @@ button.btn-icon.btn-ink,
 .armado-guardado-card--revision:hover {
   border-color: rgba(245, 158, 11, 0.65);
   background: rgba(245, 158, 11, 0.1);
+}
+
+.armado-guardado-card--editando {
+  border-color: rgba(59, 130, 246, 0.55);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.armado-guardado-card--editando:hover {
+  border-color: rgba(59, 130, 246, 0.65);
+  background: rgba(59, 130, 246, 0.14);
 }
 
 .armado-guardado-card__alert {

@@ -1,16 +1,18 @@
 {% extends "base.html" %}
 {% load money %}
 {% load static %}
-{% block title %}{% if solo_lectura %}Armado guardado{% else %}Armado colectivo{% endif %}{% endblock %}
+{% block title %}{% if solo_lectura %}Armado guardado{% elif modo_edicion %}Editar armado colectivo{% else %}Armado colectivo{% endif %}{% endblock %}
 {% block content %}
   <div class="app-page-header mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div>
       <h1 class="app-page-title mb-1">
-        {% if solo_lectura %}{{ armado_guardado.nombre }}{% else %}Armado colectivo{% endif %}
+        {% if solo_lectura %}{{ armado_guardado.nombre }}{% elif modo_edicion %}Editar armado colectivo{% else %}Armado colectivo{% endif %}
       </h1>
       <p class="text-muted small mb-0">
         {% if solo_lectura %}
           Guardado el {{ armado_guardado.creado_en|date:"d/m/Y H:i" }}
+        {% elif modo_edicion and armado_editando %}
+          Editando: {{ armado_editando.nombre }}
         {% else %}
           Pedidos incluidos:
           {% for v in ventas %}
@@ -19,8 +21,17 @@
         {% endif %}
       </p>
     </div>
-    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'armado_pedidos_lista' %}">Volver</a>
+    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'armado_pedidos_lista' %}?retomo=1">Volver</a>
   </div>
+
+  {% if modo_edicion and not solo_lectura %}
+    <div class="alert alert-info d-flex align-items-start gap-2 mb-3" role="status">
+      <i data-lucide="info" class="flex-shrink-0 mt-1" aria-hidden="true"></i>
+      <div class="small mb-0">
+        Los cambios <strong>no se guardan solos</strong>. Modificá pedidos o cantidades y pulsá <strong>Guardar cambios</strong> para aplicarlos.
+      </div>
+    </div>
+  {% endif %}
 
   {% if solo_lectura and armado_guardado.requiere_revision %}
     <div class="alert alert-warning d-flex align-items-start gap-2 mb-3" role="alert">
@@ -72,6 +83,9 @@
       {% for vid in venta_ids %}
         <input type="hidden" name="venta_id" value="{{ vid }}" />
       {% endfor %}
+      {% if armado_edit_id %}
+        <input type="hidden" name="armado_edit_id" value="{{ armado_edit_id }}" />
+      {% endif %}
 
       <div class="table-card ui-force-productos presu-lista-modern mb-3">
         <div class="table-card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
@@ -88,25 +102,52 @@
         </div>
         {% include "ventas/includes/armado_colectivo_tabla.html" %}
         <div class="p-3 border-top d-flex flex-wrap gap-2 align-items-center">
-          <button
-            type="submit"
-            class="btn btn-outline-primary rounded-pill d-inline-flex align-items-center gap-1"
-            id="btn-armado-guardar"
-            formaction="{% url 'armado_colectivo_guardar' %}"
-            formtarget="_self"
-          >
-            Guardar configuración
-          </button>
-          <button type="submit" class="btn btn-primary rounded-pill d-inline-flex align-items-center gap-1" id="btn-armado-imprimir">
+          {% if modo_edicion %}
+            <button
+              type="submit"
+              class="btn btn-primary rounded-pill d-inline-flex align-items-center gap-1"
+              id="btn-armado-guardar"
+              formaction="{% url 'armado_colectivo_guardar' %}"
+              formtarget="_self"
+            >
+              Guardar cambios
+            </button>
+            <span class="text-muted small" id="armado-colectivo-hint">
+              Hasta que no pulse «Guardar cambios», el armado colectivo original no se modifica.
+            </span>
+          {% else %}
+            <button
+              type="submit"
+              class="btn btn-outline-primary rounded-pill d-inline-flex align-items-center gap-1"
+              id="btn-armado-guardar"
+              formaction="{% url 'armado_colectivo_guardar' %}"
+              formtarget="_self"
+            >
+              Guardar configuración
+            </button>
+            <span class="text-muted small" id="armado-colectivo-hint">
+              Guardá la configuración para reservar los pedidos. La suma por fila en stock no puede superar la cantidad total.
+            </span>
+          {% endif %}
+          <button type="submit" class="btn btn-outline-primary rounded-pill d-inline-flex align-items-center gap-1" id="btn-armado-imprimir">
             <i data-lucide="printer" aria-hidden="true"></i>
             Imprimir
           </button>
-          <span class="text-muted small" id="armado-colectivo-hint">
-            Guardá la configuración para reservar los pedidos. La suma por fila en stock no puede superar la cantidad total.
-          </span>
         </div>
       </div>
     </form>
+    {% if modo_edicion %}
+      <form method="post" action="{% url 'armado_colectivo_cancelar_edicion' %}" class="mb-3">
+        {% csrf_token %}
+        <button
+          type="submit"
+          class="btn btn-outline-secondary btn-sm rounded-pill"
+          data-sirona-confirm-submit="¿Descartar los cambios y volver al armado guardado?"
+        >
+          Cancelar edición
+        </button>
+      </form>
+    {% endif %}
   {% endif %}
 
   {% if user.is_staff and not solo_lectura %}

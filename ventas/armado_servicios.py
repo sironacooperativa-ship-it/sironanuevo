@@ -31,6 +31,22 @@ def venta_ids_en_armado_guardado() -> set[int]:
     )
 
 
+def venta_ids_armado(armado_id: int) -> set[int]:
+    return set(
+        Venta.objects.filter(armados_colectivos_guardados__pk=armado_id)
+        .values_list("pk", flat=True)
+        .distinct()
+    )
+
+
+def venta_ids_reservados_para_lista(armado_edit_id: int | None = None) -> set[int]:
+    """Pedidos reservados en armados guardados, excepto los del armado en edición."""
+    reservados = venta_ids_en_armado_guardado()
+    if armado_edit_id:
+        reservados -= venta_ids_armado(armado_edit_id)
+    return reservados
+
+
 def armados_colectivos_guardados_lista(limit: int = 50):
     return (
         ArmadoColectivoGuardado.objects.prefetch_related("ventas")
@@ -59,10 +75,16 @@ def ventas_no_armadas_queryset():
     )
 
 
-def ventas_validas_para_armado_colectivo(venta_ids: list[int]) -> list[Venta]:
+def ventas_validas_para_armado_colectivo(
+    venta_ids: list[int],
+    *,
+    armado_edit_id: int | None = None,
+) -> list[Venta]:
     if not venta_ids:
         return []
     reservados = venta_ids_en_armado_guardado()
+    if armado_edit_id:
+        reservados -= venta_ids_armado(armado_edit_id)
     if reservados.intersection(venta_ids):
         return []
     qs = ventas_no_armadas_queryset().filter(pk__in=venta_ids).exclude(pk__in=reservados)
@@ -180,6 +202,38 @@ def lineas_con_celdas_alloc(
     return lineas
 
 
+def _persistir_lineas_y_asignaciones(
+    armado: ArmadoColectivoGuardado,
+    lineas: list[LineaArmadoColectivo],
+    asignaciones: dict[int, dict[int, int]],
+    puntos: list[PuntoStockArmado],
+) -> None:
+    armado.lineas.all().delete()
+    punto_by_id = {p.pk: p for p in puntos}
+    for orden, ln in enumerate(lineas):
+        linea_db = ArmadoColectivoLineaGuardada.objects.create(
+            armado=armado,
+            producto_id=ln.producto_id,
+            codigo=ln.codigo,
+            descripcion=ln.descripcion,
+            cantidad_total=ln.cantidad_total,
+            costo_unitario=ln.costo_unitario,
+            precio_venta=ln.precio_venta,
+            orden=orden,
+        )
+        for punto_id, qty in (asignaciones.get(ln.producto_id) or {}).items():
+            if qty <= 0:
+                continue
+            punto = punto_by_id.get(punto_id)
+            if punto is None:
+                continue
+            ArmadoColectivoAsignacion.objects.create(
+                linea=linea_db,
+                punto=punto,
+                cantidad=int(qty),
+            )
+
+
 def guardar_armado_colectivo(
     *,
     venta_ids: list[int],
@@ -196,29 +250,28 @@ def guardar_armado_colectivo(
             creado_por=usuario if getattr(usuario, "is_authenticated", False) else None,
         )
         armado.ventas.set(venta_ids)
-        punto_by_id = {p.pk: p for p in puntos}
-        for orden, ln in enumerate(lineas):
-            linea_db = ArmadoColectivoLineaGuardada.objects.create(
-                armado=armado,
-                producto_id=ln.producto_id,
-                codigo=ln.codigo,
-                descripcion=ln.descripcion,
-                cantidad_total=ln.cantidad_total,
-                costo_unitario=ln.costo_unitario,
-                precio_venta=ln.precio_venta,
-                orden=orden,
-            )
-            for punto_id, qty in (asignaciones.get(ln.producto_id) or {}).items():
-                if qty <= 0:
-                    continue
-                punto = punto_by_id.get(punto_id)
-                if punto is None:
-                    continue
-                ArmadoColectivoAsignacion.objects.create(
-                    linea=linea_db,
-                    punto=punto,
-                    cantidad=int(qty),
-                )
+        _persistir_lineas_y_asignaciones(armado, lineas, asignaciones, puntos)
+        return armado
+
+
+def actualizar_armado_colectivo(
+    armado_id: int,
+    *,
+    venta_ids: list[int],
+    lineas: list[LineaArmadoColectivo],
+    asignaciones: dict[int, dict[int, int]],
+    puntos: list[PuntoStockArmado],
+) -> ArmadoColectivoGuardado:
+    from django.db import transaction
+
+    with transaction.atomic():
+        armado = ArmadoColectivoGuardado.objects.select_for_update().get(pk=armado_id)
+        armado.nombre = construir_nombre_armado_colectivo(venta_ids)
+        armado.requiere_revision = False
+        armado.nota_revision = ""
+        armado.save(update_fields=["nombre", "requiere_revision", "nota_revision"])
+        armado.ventas.set(venta_ids)
+        _persistir_lineas_y_asignaciones(armado, lineas, asignaciones, puntos)
         return armado
 
 
@@ -277,6 +330,54 @@ def asignaciones_desde_armado_guardado(armado: ArmadoColectivoGuardado) -> dict[
 
 SESSION_ARMADO_PRESELECT = "armado_colectivo_preselect_ids"
 SESSION_ARMADO_PREFILL = "armado_colectivo_prefill"
+SESSION_ARMADO_EDIT_ID = "armado_colectivo_edit_id"
+
+
+def normalizar_ids_sesion(raw) -> list[int]:
+    """Convierte valores de sesión (lista, int suelto, etc.) a IDs de pedido."""
+    if raw is None:
+        return []
+    if isinstance(raw, int):
+        candidatos = [raw]
+    elif isinstance(raw, (list, tuple, set)):
+        candidatos = list(raw)
+    else:
+        try:
+            candidatos = list(raw)
+        except TypeError:
+            return []
+    out: list[int] = []
+    for x in candidatos:
+        xs = str(x).strip()
+        if xs.isdigit():
+            out.append(int(xs))
+    return out
+
+
+def tomar_preselect_ids(request) -> list[int]:
+    """Lee y limpia IDs preseleccionados guardados en sesión."""
+    raw = request.session.pop(SESSION_ARMADO_PRESELECT, None)
+    ids = normalizar_ids_sesion(raw)
+    if raw is not None:
+        request.session.modified = True
+    return ids
+
+
+def armado_edit_id_desde_sesion(session) -> int | None:
+    raw = session.get(SESSION_ARMADO_EDIT_ID)
+    if raw is None:
+        return None
+    if isinstance(raw, int):
+        pk = raw
+    elif str(raw).strip().isdigit():
+        pk = int(str(raw).strip())
+    else:
+        session.pop(SESSION_ARMADO_EDIT_ID, None)
+        return None
+    if not ArmadoColectivoGuardado.objects.filter(pk=pk).exists():
+        session.pop(SESSION_ARMADO_EDIT_ID, None)
+        return None
+    return pk
 
 
 def reconstruir_lineas_armado_guardado(armado: ArmadoColectivoGuardado, venta_ids: list[int]) -> None:

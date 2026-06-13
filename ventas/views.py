@@ -44,6 +44,11 @@ from productos.models import ListaPrecios, Producto
 from .forms import VentaCabeceraEditForm, VentaPagoForm
 from .models import ComisionLiquidacionPago, Venta, VentaLinea
 from .comision_constancia_pdf_sirona import comision_constancia_pdf_response
+from .despacho_servicios import (
+    DESPACHO_HISTORIAL_DIAS,
+    ventas_despachos_activos_queryset,
+    ventas_despachos_historial_queryset,
+)
 from .remito_pdf import remito_venta_pdf_response
 from .servicios import (
     crear_venta_confirmada,
@@ -1572,10 +1577,7 @@ def venta_registrar_pago(request, pk: int):
 @login_required
 @require_http_methods(["GET"])
 def despachos_lista(request):
-    qs = (
-        Venta.objects.select_related("vendedor", "comprador")
-        .order_by("-creado_en", "-id")
-    )
+    qs = ventas_despachos_activos_queryset()
     page = (request.GET.get("page") or "").strip()
     paginator = Paginator(qs, 120)
     page_obj = paginator.get_page(page or 1)
@@ -1588,6 +1590,30 @@ def despachos_lista(request):
             "ventas": list(page_obj),
             "page_obj": page_obj,
             "querystring": qcopy.urlencode(),
+            "historial_despachos": False,
+            "despacho_historial_dias": DESPACHO_HISTORIAL_DIAS,
+        },
+    )
+
+
+@login_required
+@require_http_methods(["GET"])
+def despachos_historial(request):
+    qs = ventas_despachos_historial_queryset()
+    page = (request.GET.get("page") or "").strip()
+    paginator = Paginator(qs, 120)
+    page_obj = paginator.get_page(page or 1)
+    qcopy = request.GET.copy()
+    qcopy.pop("page", None)
+    return render(
+        request,
+        "ventas/despachos.html",
+        {
+            "ventas": list(page_obj),
+            "page_obj": page_obj,
+            "querystring": qcopy.urlencode(),
+            "historial_despachos": True,
+            "despacho_historial_dias": DESPACHO_HISTORIAL_DIAS,
         },
     )
 
@@ -1621,18 +1647,13 @@ def venta_actualizar_despacho(request, pk: int):
         update_fields=[
             "despacho_armado",
             "despacho_despachado",
+            "despacho_despachado_en",
             "actualizado_por",
             "actualizado_en",
         ]
     )
     if ajax:
-        return JsonResponse(
-            {
-                "ok": True,
-                "venta_id": venta.pk,
-                "estado": venta.despacho_estado,
-                "label": venta.despacho_estado_label,
-            }
-        )
-    messages.success(request, f"Despacho actualizado — pedido #{venta.pk}: {venta.despacho_estado_label}.")
+        from .despacho_servicios import venta_despacho_json_payload
+
+        return JsonResponse(venta_despacho_json_payload(venta))
     return _redirect_response()

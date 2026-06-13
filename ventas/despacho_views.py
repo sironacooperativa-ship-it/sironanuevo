@@ -6,28 +6,35 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
+from django.db.utils import OperationalError, ProgrammingError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import NoReverseMatch, reverse
 from django.views.decorators.http import require_http_methods
 
 from core.authz import staff_required
 
 from .armado_colectivo_pdf import armado_colectivo_pdf_response
 from .armado_servicios import (
+    actualizar_armado_colectivo,
     agregar_lineas_armado_colectivo,
+    armado_edit_id_desde_sesion,
     armados_colectivos_guardados_lista,
     asignaciones_desde_armado_guardado,
     guardar_armado_colectivo,
     lineas_armado_colectivo_desde_guardado,
     lineas_con_celdas_alloc,
     lineas_desde_armado_guardado,
+    normalizar_ids_sesion,
     parse_asignaciones_post,
     preparar_edicion_armado,
     puntos_stock_armado_lista,
+    tomar_preselect_ids,
     validar_asignaciones,
-    venta_ids_en_armado_guardado,
+    venta_ids_reservados_para_lista,
     ventas_no_armadas_queryset,
     ventas_validas_para_armado_colectivo,
+    SESSION_ARMADO_EDIT_ID,
     SESSION_ARMADO_PREFILL,
     SESSION_ARMADO_PRESELECT,
 )
@@ -47,11 +54,52 @@ def _guardar_ventas_sesion(request, venta_ids: list[int]) -> None:
 
 def _ventas_sesion(request) -> list[int]:
     raw = request.session.get(SESSION_ARMADO_VENTAS) or []
-    return [int(x) for x in raw if str(x).isdigit()]
+    return normalizar_ids_sesion(raw)
 
 
-def _error_ventas_no_disponibles(request, venta_ids: list[int]) -> None:
-    reservados = venta_ids_en_armado_guardado()
+def _armado_edit_id_activo(request) -> int | None:
+    return armado_edit_id_desde_sesion(request.session)
+
+
+def _parse_armado_edit_id_post(post) -> int | None:
+    raw = (post.get("armado_edit_id") or "").strip()
+    return int(raw) if raw.isdigit() else None
+
+
+def _limpiar_sesion_armado_colectivo(request) -> None:
+    for key in (
+        SESSION_ARMADO_VENTAS,
+        SESSION_ARMADO_PREFILL,
+        SESSION_ARMADO_PRESELECT,
+        SESSION_ARMADO_EDIT_ID,
+    ):
+        request.session.pop(key, None)
+    request.session.modified = True
+
+
+def _ctx_armado_colectivo(
+    *,
+    ventas,
+    venta_ids: list[int],
+    lineas,
+    puntos,
+    armado_edit_id: int | None = None,
+) -> dict:
+    ctx = {
+        "ventas": ventas,
+        "venta_ids": venta_ids,
+        "lineas": lineas,
+        "puntos": puntos,
+        "modo_edicion": bool(armado_edit_id),
+        "armado_edit_id": armado_edit_id,
+    }
+    if armado_edit_id:
+        ctx["armado_editando"] = get_object_or_404(ArmadoColectivoGuardado, pk=armado_edit_id)
+    return ctx
+
+
+def _error_ventas_no_disponibles(request, venta_ids: list[int], armado_edit_id: int | None = None) -> None:
+    reservados = venta_ids_reservados_para_lista(armado_edit_id)
     if reservados.intersection(venta_ids):
         messages.error(
             request,
@@ -64,21 +112,47 @@ def _error_ventas_no_disponibles(request, venta_ids: list[int]) -> None:
         )
 
 
+def _urls_armado_gestion_disponibles() -> bool:
+    try:
+        reverse("armado_colectivo_editar", kwargs={"pk": 1})
+        reverse("armado_colectivo_eliminar", kwargs={"pk": 1})
+        return True
+    except NoReverseMatch:
+        return False
+
+
+def _armados_guardados_para_lista(request) -> list:
+    try:
+        return list(armados_colectivos_guardados_lista())
+    except (OperationalError, ProgrammingError):
+        messages.error(
+            request,
+            "No se pudieron cargar los armados guardados. Ejecutá las migraciones pendientes de ventas.",
+        )
+        return []
+
+
 @login_required
 @require_http_methods(["GET"])
 def armado_pedidos_lista(request):
     qs = ventas_no_armadas_queryset()
-    ventas_reservadas = venta_ids_en_armado_guardado()
-    preselect_ids = [
-        int(x) for x in (request.session.pop(SESSION_ARMADO_PRESELECT, None) or []) if str(x).isdigit()
-    ]
-    if preselect_ids:
-        request.session.modified = True
+    armado_edit_id = _armado_edit_id_activo(request)
+    ventas_reservadas = venta_ids_reservados_para_lista(armado_edit_id)
+    preselect_ids = tomar_preselect_ids(request)
+    if not preselect_ids and request.GET.get("retomo") == "1":
+        preselect_ids = normalizar_ids_sesion(request.session.get(SESSION_ARMADO_VENTAS))
     page = (request.GET.get("page") or "").strip()
     paginator = Paginator(qs, 120)
     page_obj = paginator.get_page(page or 1)
     qcopy = request.GET.copy()
     qcopy.pop("page", None)
+    armado_editando = None
+    if armado_edit_id:
+        armado_editando = ArmadoColectivoGuardado.objects.filter(pk=armado_edit_id).first()
+        if armado_editando is None:
+            request.session.pop(SESSION_ARMADO_EDIT_ID, None)
+            request.session.modified = True
+            armado_edit_id = None
     return render(
         request,
         "ventas/armado_lista.html",
@@ -88,8 +162,12 @@ def armado_pedidos_lista(request):
             "querystring": qcopy.urlencode(),
             "n_no_armados": qs.count(),
             "ventas_reservadas": ventas_reservadas,
-            "armados_guardados": list(armados_colectivos_guardados_lista()),
+            "armados_guardados": _armados_guardados_para_lista(request),
             "preselect_ids": preselect_ids,
+            "armado_gestion_urls_ok": _urls_armado_gestion_disponibles(),
+            "modo_edicion": bool(armado_edit_id),
+            "armado_edit_id": armado_edit_id,
+            "armado_editando": armado_editando,
         },
     )
 
@@ -102,9 +180,10 @@ def armado_colectivo(request):
         messages.warning(request, "Seleccioná al menos un pedido no armado.")
         return redirect("armado_pedidos_lista")
 
-    ventas = ventas_validas_para_armado_colectivo(venta_ids)
+    armado_edit_id = _armado_edit_id_activo(request)
+    ventas = ventas_validas_para_armado_colectivo(venta_ids, armado_edit_id=armado_edit_id)
     if len(ventas) != len(set(venta_ids)):
-        _error_ventas_no_disponibles(request, venta_ids)
+        _error_ventas_no_disponibles(request, venta_ids, armado_edit_id)
         return redirect("armado_pedidos_lista")
 
     ids_ok = [v.pk for v in ventas]
@@ -120,12 +199,13 @@ def armado_colectivo(request):
     return render(
         request,
         "ventas/armado_colectivo.html",
-        {
-            "ventas": ventas,
-            "venta_ids": ids_ok,
-            "lineas": lineas,
-            "puntos": puntos,
-        },
+        _ctx_armado_colectivo(
+            ventas=ventas,
+            venta_ids=ids_ok,
+            lineas=lineas,
+            puntos=puntos,
+            armado_edit_id=armado_edit_id,
+        ),
     )
 
 
@@ -137,9 +217,10 @@ def armado_colectivo_guardar(request):
         messages.warning(request, "No hay pedidos para guardar.")
         return redirect("armado_pedidos_lista")
 
-    ventas = ventas_validas_para_armado_colectivo(venta_ids)
+    armado_edit_id = _parse_armado_edit_id_post(request.POST) or _armado_edit_id_activo(request)
+    ventas = ventas_validas_para_armado_colectivo(venta_ids, armado_edit_id=armado_edit_id)
     if len(ventas) != len(set(venta_ids)):
-        _error_ventas_no_disponibles(request, venta_ids)
+        _error_ventas_no_disponibles(request, venta_ids, armado_edit_id)
         return redirect("armado_pedidos_lista")
 
     ids_ok = [v.pk for v in ventas]
@@ -158,13 +239,26 @@ def armado_colectivo_guardar(request):
         return render(
             request,
             "ventas/armado_colectivo.html",
-            {
-                "ventas": ventas,
-                "venta_ids": ids_ok,
-                "lineas": lineas,
-                "puntos": puntos,
-            },
+            _ctx_armado_colectivo(
+                ventas=ventas,
+                venta_ids=ids_ok,
+                lineas=lineas,
+                puntos=puntos,
+                armado_edit_id=armado_edit_id,
+            ),
         )
+
+    if armado_edit_id:
+        actualizar_armado_colectivo(
+            armado_edit_id,
+            venta_ids=ids_ok,
+            lineas=lineas,
+            asignaciones=asignaciones,
+            puntos=puntos,
+        )
+        _limpiar_sesion_armado_colectivo(request)
+        messages.success(request, "Cambios guardados en el armado colectivo.")
+        return redirect("armado_colectivo_ver", pk=armado_edit_id)
 
     guardar_armado_colectivo(
         venta_ids=ids_ok,
@@ -173,9 +267,7 @@ def armado_colectivo_guardar(request):
         puntos=puntos,
         usuario=request.user,
     )
-    request.session.pop(SESSION_ARMADO_VENTAS, None)
-    request.session.pop(SESSION_ARMADO_PREFILL, None)
-    request.session.modified = True
+    _limpiar_sesion_armado_colectivo(request)
     messages.success(request, "Armado colectivo guardado. Los pedidos ya no se pueden volver a seleccionar.")
     return redirect("armado_pedidos_lista")
 
@@ -209,6 +301,8 @@ def armado_colectivo_ver(request, pk: int):
 def armado_colectivo_eliminar(request, pk: int):
     armado = get_object_or_404(ArmadoColectivoGuardado, pk=pk)
     nombre = armado.nombre
+    if _armado_edit_id_activo(request) == pk:
+        _limpiar_sesion_armado_colectivo(request)
     armado.delete()
     messages.success(
         request,
@@ -230,15 +324,26 @@ def armado_colectivo_editar(request, pk: int):
         messages.warning(request, "El armado no tenía pedidos y fue eliminado.")
         return redirect("armado_pedidos_lista")
 
-    armado.delete()
-    request.session[SESSION_ARMADO_PRESELECT] = venta_ids
+    request.session[SESSION_ARMADO_EDIT_ID] = armado.pk
+    request.session[SESSION_ARMADO_PRESELECT] = list(venta_ids)
     if prefill:
         request.session[SESSION_ARMADO_PREFILL] = {"venta_ids": venta_ids, "alloc": prefill}
     request.session.modified = True
     messages.info(
         request,
-        "Armado liberado. Los pedidos quedaron seleccionados para que pueda modificarlos.",
+        "Modificá pedidos o cantidades. Los cambios solo se aplican al pulsar «Guardar cambios».",
     )
+    return redirect("armado_pedidos_lista")
+
+
+@login_required
+@require_http_methods(["POST"])
+def armado_colectivo_cancelar_edicion(request):
+    armado_edit_id = _armado_edit_id_activo(request)
+    _limpiar_sesion_armado_colectivo(request)
+    messages.info(request, "Se descartaron los cambios. El armado colectivo quedó como estaba.")
+    if armado_edit_id:
+        return redirect("armado_colectivo_ver", pk=armado_edit_id)
     return redirect("armado_pedidos_lista")
 
 
@@ -272,9 +377,10 @@ def armado_colectivo_pdf(request):
         messages.error(request, "No hay pedidos seleccionados para imprimir.")
         return redirect("armado_pedidos_lista")
 
-    ventas = ventas_validas_para_armado_colectivo(venta_ids)
+    armado_edit_id = _parse_armado_edit_id_post(request.POST) or _armado_edit_id_activo(request)
+    ventas = ventas_validas_para_armado_colectivo(venta_ids, armado_edit_id=armado_edit_id)
     if len(ventas) != len(set(venta_ids)):
-        _error_ventas_no_disponibles(request, venta_ids)
+        _error_ventas_no_disponibles(request, venta_ids, armado_edit_id)
         return redirect("armado_pedidos_lista")
 
     ids_ok = [v.pk for v in ventas]
@@ -290,12 +396,13 @@ def armado_colectivo_pdf(request):
         return render(
             request,
             "ventas/armado_colectivo.html",
-            {
-                "ventas": ventas,
-                "venta_ids": ids_ok,
-                "lineas": lineas,
-                "puntos": puntos,
-            },
+            _ctx_armado_colectivo(
+                ventas=ventas,
+                venta_ids=ids_ok,
+                lineas=lineas,
+                puntos=puntos,
+                armado_edit_id=armado_edit_id,
+            ),
         )
 
     err = validar_asignaciones(lineas, asignaciones)
@@ -305,12 +412,13 @@ def armado_colectivo_pdf(request):
         return render(
             request,
             "ventas/armado_colectivo.html",
-            {
-                "ventas": ventas,
-                "venta_ids": ids_ok,
-                "lineas": lineas,
-                "puntos": puntos,
-            },
+            _ctx_armado_colectivo(
+                ventas=ventas,
+                venta_ids=ids_ok,
+                lineas=lineas,
+                puntos=puntos,
+                armado_edit_id=armado_edit_id,
+            ),
         )
 
     inline = request.GET.get("inline") == "1" or request.POST.get("inline") == "1"
