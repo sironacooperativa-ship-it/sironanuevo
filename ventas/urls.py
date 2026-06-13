@@ -1,9 +1,15 @@
 from django.urls import path
 
-from . import views
+from . import despacho_views, views
 
 urlpatterns = [
     path("", views.venta_historial, name="ventas_historial"),
+    path("despachos/", views.despachos_lista, name="despachos_lista"),
+    path("despachos/armado/", despacho_views.armado_pedidos_lista, name="armado_pedidos_lista"),
+    path("despachos/armado/colectivo/", despacho_views.armado_colectivo, name="armado_colectivo"),
+    path("despachos/armado/colectivo/pdf/", despacho_views.armado_colectivo_pdf, name="armado_colectivo_pdf"),
+    path("despachos/puntos-stock/", despacho_views.puntos_stock_modal, name="puntos_stock_modal"),
+    path("despachos/puntos-stock/guardar/", despacho_views.puntos_stock_guardar, name="puntos_stock_guardar"),
     path("comisiones/", views.venta_comisiones, name="ventas_comisiones"),
     path("comisiones/historial/", views.venta_comisiones_historial, name="ventas_comisiones_historial"),
     path(
@@ -20,6 +26,11 @@ urlpatterns = [
         "<int:pk>/comision/",
         views.venta_actualizar_comision,
         name="venta_actualizar_comision",
+    ),
+    path(
+        "<int:pk>/despacho/",
+        views.venta_actualizar_despacho,
+        name="venta_actualizar_despacho",
     ),
     path("<int:pk>/pago/", views.venta_registrar_pago, name="venta_registrar_pago"),
     path("<int:pk>/eliminar/", views.venta_eliminar, name="venta_eliminar"),

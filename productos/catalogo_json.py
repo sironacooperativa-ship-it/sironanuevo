@@ -40,6 +40,36 @@ def _cached(key: str, ttl: int, builder):
     return val
 
 
+def _cache_key_catalogo_lista(lista_id: int) -> str:
+    return f"sirona:cat:lista:{lista_id}:v1"
+
+
+def invalidar_cache_catalogo_lista(lista_id: int) -> None:
+    cache.delete(_cache_key_catalogo_lista(lista_id))
+
+
+def invalidar_cache_catalogo_todos() -> None:
+    cache.delete("sirona:cat:todos:v1")
+
+
+def invalidar_cache_catalogo_por_cambio_precios(
+    *lista_ids: int,
+    incluir_todos: bool = True,
+) -> None:
+    """Tras cambiar precios en listas o catálogo, evita servir el catálogo AJAX desactualizado."""
+    vistos: set[int] = set()
+    for raw in lista_ids:
+        if not raw:
+            continue
+        lid = int(raw)
+        if lid in vistos:
+            continue
+        vistos.add(lid)
+        invalidar_cache_catalogo_lista(lid)
+    if incluir_todos:
+        invalidar_cache_catalogo_todos()
+
+
 def productos_payload_todos(*, use_cache: bool = True) -> list[dict]:
     def build():
         qs = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
@@ -84,7 +114,7 @@ def productos_payload_para_lineas(lineas: list[dict]) -> list[dict]:
 
 
 def productos_payload_para_lista(lista: ListaPrecios, *, use_cache: bool = True) -> list[dict]:
-    cache_key = f"sirona:cat:lista:{lista.pk}:v1"
+    cache_key = _cache_key_catalogo_lista(lista.pk)
 
     def build():
         if lista.es_farmacia:

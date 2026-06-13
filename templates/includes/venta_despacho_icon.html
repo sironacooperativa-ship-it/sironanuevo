@@ -1,0 +1,8 @@
+{# Icono de caja según estado de despacho: rojo=no armado, verde=armado, azul=despachado #}
+<span
+  class="btn-icon venta-despacho-ico venta-despacho-ico--{{ venta.despacho_estado }}"
+  title="{{ venta.despacho_estado_label }}"
+  aria-label="{{ venta.despacho_estado_label }}"
+>
+  <i data-lucide="package" aria-hidden="true"></i>
+</span>

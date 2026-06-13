@@ -48,6 +48,7 @@ from reportlab.lib.units import mm
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 
 from .forms import ProductoForm
+from .catalogo_json import invalidar_cache_catalogo_por_cambio_precios
 from .listas_precios_views import (
     producto_listas_extra_context,
     producto_listas_ids_post,
@@ -843,6 +844,14 @@ def productos_aumento(request):
                 messages.error(request, "Algún producto ya no existe.")
                 return _redirect_productos_aumento_filtros(request)
 
+            farmacia_id = (
+                ListaPrecios.objects.filter(es_farmacia=True).order_by("id").values_list("pk", flat=True).first()
+            )
+            if farmacia_id:
+                invalidar_cache_catalogo_por_cambio_precios(farmacia_id)
+            elif actualizados:
+                invalidar_cache_catalogo_por_cambio_precios()
+
             messages.success(
                 request,
                 f"Aumento del {pct}% aplicado sobre el costo en {actualizados} producto(s).",
@@ -1234,6 +1243,15 @@ def producto_update(request, pk: int):
                         request,
                         f"Precio de catálogo aplicado en {n} lista(s) de precio por rubro.",
                     )
+            elif producto.en_lista_precios:
+                farmacia_id = (
+                    ListaPrecios.objects.filter(es_farmacia=True)
+                    .order_by("id")
+                    .values_list("pk", flat=True)
+                    .first()
+                )
+                if farmacia_id:
+                    invalidar_cache_catalogo_por_cambio_precios(farmacia_id)
             messages.success(request, f"Producto actualizado: {producto.codigo}")
             if request.GET.get("modal") == "1":
                 return HttpResponse(
@@ -1419,12 +1437,15 @@ def productos_acciones_masa(request):
             else:
                 n = Producto.objects.filter(pk__in=ids).update(en_lista_precios=False)
                 messages.success(request, f"Se quitó «{lista.nombre}» en {n} producto(s).")
+            invalidar_cache_catalogo_por_cambio_precios(lista.pk)
             return _redirect_productos_con_filtros(request)
 
         # Listas de rubro: through table con precio.
         if modo == "remove":
             n, _ = ListaPrecioItem.objects.filter(lista_id=lista.pk, producto_id__in=ids).delete()
             messages.success(request, f"Se quitaron {n} producto(s) de «{lista.nombre}».")
+            if n:
+                invalidar_cache_catalogo_por_cambio_precios(lista.pk)
             return _redirect_productos_con_filtros(request)
 
         # add: detectar conflictos (ya existe item)
@@ -1503,6 +1524,8 @@ def productos_acciones_masa(request):
             messages.warning(request, f"Se actualizaron {sobrescritos} precio(s) en «{lista.nombre}».")
         if mantenidos:
             messages.info(request, f"{mantenidos} producto(s) ya estaban en «{lista.nombre}» (se mantuvo su precio).")
+        if creados or sobrescritos:
+            invalidar_cache_catalogo_por_cambio_precios(lista.pk)
     elif accion == "eliminar":
         ok = 0
         protegidos = []

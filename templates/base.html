@@ -485,6 +485,27 @@
               </div>
             </div>
 
+            <div class="sidebar-section-title">Despachos</div>
+            <div class="sidebar-group" data-group="despachos">
+              <div class="sidebar-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+                <span class="app-sidebar-icon-wrap"><i data-lucide="package"></i></span>
+                <span class="app-sidebar-label sidebar-label">Despachos</span>
+                <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                  <i data-lucide="chevron-down"></i>
+                </span>
+              </div>
+              <div class="sidebar-subnav" aria-label="Submenú Despachos">
+                <a class="sidebar-link app-sidebar-link" href="{% url 'despachos_lista' %}" title="Seguimiento de despachos">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="clipboard-list"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Despachos</span>
+                </a>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'armado_pedidos_lista' %}" title="Armado colectivo de pedidos">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="package-check"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Armado de pedidos</span>
+                </a>
+              </div>
+            </div>
+
             <div class="sidebar-section-title">Ventas</div>
             <div class="sidebar-group" data-group="ventas">
               <div class="sidebar-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
@@ -790,6 +811,27 @@
                   <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'stock_home' %}">
                     <span class="app-sidebar-icon-wrap"><i data-lucide="boxes"></i></span>
                     <span class="app-sidebar-label">Stock</span>
+                  </a>
+                </div>
+              </div>
+
+              <div class="sidebar-section-title">Despachos</div>
+              <div class="sidebar-group offcanvas-group" data-group="despachos">
+                <div class="app-sidebar-link sirona-offcanvas-nav-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="package"></i></span>
+                  <span class="app-sidebar-label">Despachos</span>
+                  <span class="app-sidebar-icon-wrap" style="width: 18px; height: 18px; justify-content: flex-end">
+                    <i data-lucide="chevron-down"></i>
+                  </span>
+                </div>
+                <div class="sidebar-subnav offcanvas-subnav" aria-label="Submenú Despachos">
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'despachos_lista' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="clipboard-list"></i></span>
+                    <span class="app-sidebar-label">Despachos</span>
+                  </a>
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'armado_pedidos_lista' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="package-check"></i></span>
+                    <span class="app-sidebar-label">Armado de pedidos</span>
                   </a>
                 </div>
               </div>

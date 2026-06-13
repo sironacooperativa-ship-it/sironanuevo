@@ -1567,3 +1567,72 @@ def venta_registrar_pago(request, pk: int):
         )
 
     return render(request, "ventas/pago.html", {"venta": venta, "form": form})
+
+
+@login_required
+@require_http_methods(["GET"])
+def despachos_lista(request):
+    qs = (
+        Venta.objects.select_related("vendedor", "comprador")
+        .order_by("-creado_en", "-id")
+    )
+    page = (request.GET.get("page") or "").strip()
+    paginator = Paginator(qs, 120)
+    page_obj = paginator.get_page(page or 1)
+    qcopy = request.GET.copy()
+    qcopy.pop("page", None)
+    return render(
+        request,
+        "ventas/despachos.html",
+        {
+            "ventas": list(page_obj),
+            "page_obj": page_obj,
+            "querystring": qcopy.urlencode(),
+        },
+    )
+
+
+@login_required
+@require_http_methods(["POST"])
+def venta_actualizar_despacho(request, pk: int):
+    venta = get_object_or_404(Venta, pk=pk)
+    next_url = (request.POST.get("next") or "").strip()
+    ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+    def _redirect_response():
+        if next_url.startswith("/") and not next_url.startswith("//"):
+            return redirect(next_url)
+        return redirect("despachos_lista")
+
+    estado_clave = (request.POST.get("estado") or "").strip()
+    if estado_clave:
+        if not venta.set_estado_despacho_clave(estado_clave):
+            if ajax:
+                return JsonResponse({"error": "Estado no válido"}, status=400)
+            messages.error(request, "Estado de despacho no válido.")
+            return _redirect_response()
+    else:
+        armado = request.POST.get("despacho_armado") == "1"
+        despachado = request.POST.get("despacho_despachado") == "1"
+        venta.aplicar_estado_despacho(armado=armado, despachado=despachado)
+
+    venta.actualizado_por = request.user
+    venta.save(
+        update_fields=[
+            "despacho_armado",
+            "despacho_despachado",
+            "actualizado_por",
+            "actualizado_en",
+        ]
+    )
+    if ajax:
+        return JsonResponse(
+            {
+                "ok": True,
+                "venta_id": venta.pk,
+                "estado": venta.despacho_estado,
+                "label": venta.despacho_estado_label,
+            }
+        )
+    messages.success(request, f"Despacho actualizado — pedido #{venta.pk}: {venta.despacho_estado_label}.")
+    return _redirect_response()

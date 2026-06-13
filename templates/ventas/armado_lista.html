@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% load money %}
+{% load static %}
+{% block title %}Armado de pedidos{% endblock %}
+{% block content %}
+  <div class="app-page-header mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <div>
+      <h1 class="app-page-title mb-1">Armado de pedidos</h1>
+      <p class="text-muted small mb-0">Pedidos sin armar. Seleccioná uno o más para generar un armado colectivo.</p>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'despachos_lista' %}">Volver a Despachos</a>
+  </div>
+
+  <form method="post" action="{% url 'armado_colectivo' %}" id="armado-seleccion-form">
+    {% csrf_token %}
+    <div class="table-card ui-force-productos presu-lista-modern ventas-armado-lista mb-3">
+      <div class="table-card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <h2 class="table-card-title mb-0">Pedidos no armados</h2>
+        <span class="table-card-count">{{ n_no_armados }} pedido(s)</span>
+      </div>
+      <div class="ventas-armado-toolbar px-2 py-2 border-bottom d-flex flex-wrap align-items-center gap-2">
+        <button type="submit" class="btn btn-primary btn-sm rounded-pill" id="btn-armado-colectivo" disabled>
+          Armado colectivo
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm rounded-pill"
+          id="btn-puntos-stock"
+          data-sirona-modal-url="{% url 'puntos_stock_modal' %}"
+        >
+          Stocks
+        </button>
+        <span class="text-muted small ms-auto" id="armado-seleccion-count">0 seleccionados</span>
+      </div>
+      <div class="table-responsive presu-lista-table-wrap">
+        <table class="modern-table ventas-armado-tabla">
+          <thead>
+            <tr>
+              <th scope="col" class="text-center" style="width: 2.5rem">
+                <input type="checkbox" class="form-check-input m-0" id="armado-sel-todos" title="Seleccionar todos" aria-label="Seleccionar todos" />
+              </th>
+              <th scope="col">Pedido</th>
+              <th scope="col">Fecha</th>
+              <th scope="col" class="presu-col-ellipsis">Vendedor</th>
+              <th scope="col" class="presu-col-ellipsis d-none d-md-table-cell">Comprador</th>
+              <th scope="col" class="text-end col-money">Monto</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for v in ventas %}
+              <tr>
+                <td class="text-center align-middle">
+                  <input
+                    type="checkbox"
+                    class="form-check-input m-0 armado-sel-pedido"
+                    name="venta_id"
+                    value="{{ v.pk }}"
+                    aria-label="Seleccionar pedido {{ v.pk }}"
+                  />
+                </td>
+                <td class="tabular-nums">
+                  <a href="{% url 'venta_detalle' v.pk %}">#{{ v.pk }}</a>
+                </td>
+                <td class="col-muted">{{ v.creado_en|date:"d/m/Y H:i" }}</td>
+                <td class="presu-col-ellipsis small">{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}</td>
+                <td class="presu-col-ellipsis small d-none d-md-table-cell">
+                  {% if v.comprador %}{{ v.comprador.apellido }}, {{ v.comprador.nombre }}{% else %}—{% endif %}
+                </td>
+                <td class="text-end col-money tabular-nums">{{ v.neto|ars }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="table-empty">No hay pedidos pendientes de armado.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if page_obj %}
+        {% include "includes/pagination_footer.html" %}
+      {% endif %}
+    </div>
+  </form>
+
+  {% if user.is_staff %}
+    <script>
+      window.SIRONA_PUNTOS_STOCK_URL = "{% url 'puntos_stock_guardar' %}";
+    </script>
+    <script src="{% static 'js/sirona-puntos-stock.js' %}?v=1"></script>
+  {% endif %}
+  <script src="{% static 'js/sirona-armado-lista.js' %}?v=1"></script>
+{% endblock %}

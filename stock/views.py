@@ -236,10 +236,6 @@ def stock_home(request):
     page_obj = paginator.get_page(page or 1)
     productos = list(page_obj)
     for p in productos:
-        try:
-            p.valor_total_stock = (p.costo or 0) * (p.stock or 0)
-        except Exception:
-            p.valor_total_stock = 0
         # "Marca / Proveedor": mostrar un proveedor asociado por compras (si existe).
         try:
             pr = None

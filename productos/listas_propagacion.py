@@ -8,6 +8,7 @@ from django.db import transaction
 
 from core.money_decimal import q2, redondear_precio_mostrador_ars
 
+from .catalogo_json import invalidar_cache_catalogo_por_cambio_precios
 from .models import ListaPrecioItem, ListaPrecios, Producto
 
 
@@ -96,6 +97,8 @@ def aplicar_precio_a_listas(producto: Producto, lista_ids: set[int], precio: Dec
         actualizados = ListaPrecioItem.objects.filter(
             producto=producto, lista_id__in=rubro_ids
         ).update(precio_venta=precio_q)
+    if actualizados:
+        invalidar_cache_catalogo_por_cambio_precios(*rubro_ids)
     return actualizados
 
 

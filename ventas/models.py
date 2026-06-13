@@ -133,6 +133,14 @@ class Venta(models.Model):
         blank=True,
         help_text="Ganancia al cobrar: neto − costo de mercadería (congelada; no se recalcula si cambian costos).",
     )
+    despacho_armado = models.BooleanField(
+        default=False,
+        help_text="Pedido preparado / armado para entrega.",
+    )
+    despacho_despachado = models.BooleanField(
+        default=False,
+        help_text="Pedido entregado o despachado al cliente.",
+    )
 
     class Meta:
         ordering = ["-creado_en", "-id"]
@@ -158,6 +166,50 @@ class Venta(models.Model):
         if self.aplica_comision and self.comision_descontada_en_pedido:
             return _q2(max(neto - self.monto_comision, Decimal("0.00")))
         return _q2(neto)
+
+    @property
+    def despacho_estado(self) -> str:
+        """no_armado | armado | despachado — para iconos y badges."""
+        if self.despacho_despachado:
+            return "despachado"
+        if self.despacho_armado:
+            return "armado"
+        return "no_armado"
+
+    @property
+    def despacho_estado_label(self) -> str:
+        if self.despacho_despachado:
+            return "Pedido despachado"
+        if self.despacho_armado:
+            return "Pedido armado"
+        return "No armado"
+
+    def aplicar_estado_despacho(self, *, armado: bool, despachado: bool) -> None:
+        if despachado:
+            armado = True
+        elif not armado:
+            despachado = False
+        self.despacho_armado = armado
+        self.despacho_despachado = despachado
+
+    @classmethod
+    def parse_estado_despacho_clave(cls, clave: str) -> tuple[bool, bool] | None:
+        clave = (clave or "").strip()
+        if clave == "no_armado":
+            return False, False
+        if clave == "armado":
+            return True, False
+        if clave == "despachado":
+            return True, True
+        return None
+
+    def set_estado_despacho_clave(self, clave: str) -> bool:
+        parsed = self.parse_estado_despacho_clave(clave)
+        if parsed is None:
+            return False
+        armado, despachado = parsed
+        self.aplicar_estado_despacho(armado=armado, despachado=despachado)
+        return True
 
     def clean(self):
         super().clean()
@@ -207,3 +259,20 @@ class VentaLinea(models.Model):
 
     def __str__(self) -> str:
         return f"{self.texto_codigo} x{self.cantidad}"
+
+
+class PuntoStockArmado(models.Model):
+    """Depósito o punto de retiro para armado colectivo de pedidos."""
+
+    nombre = models.CharField(max_length=80, unique=True)
+    orden = models.PositiveIntegerField(default=0)
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["orden", "nombre", "id"]
+        verbose_name = "Punto de stock (armado)"
+        verbose_name_plural = "Puntos de stock (armado)"
+
+    def __str__(self) -> str:
+        return self.nombre
+

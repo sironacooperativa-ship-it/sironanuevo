@@ -3420,6 +3420,150 @@ button.btn-icon.btn-ink,
   height: 16px;
 }
 
+/* Despacho: icono caja en historial y pantalla Despachos */
+.venta-despacho-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.venta-despacho-ico-btn {
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.venta-despacho-ico-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+}
+
+.venta-despacho-estado-opciones {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.venta-despacho-opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.65rem 0.75rem;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.venta-despacho-opcion:hover {
+  border-color: rgba(59, 130, 246, 0.45);
+  background: rgba(59, 130, 246, 0.04);
+}
+
+.venta-despacho-opcion.is-active {
+  border-color: rgba(59, 130, 246, 0.55);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.venta-despacho-opcion-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.venta-despacho-opcion-label {
+  font-weight: 650;
+  font-size: 0.92rem;
+  color: var(--s-ink, #0f172a);
+}
+
+.venta-despacho-opcion-hint {
+  font-size: 0.78rem;
+  color: rgba(100, 116, 139, 0.95);
+}
+
+.venta-despacho-modal-busy {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.venta-despacho-ico--no_armado {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.venta-despacho-ico--armado {
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.venta-despacho-ico--despachado {
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.venta-despacho-estado-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 9rem;
+}
+
+.venta-despacho-estado-text {
+  font-size: 0.72rem;
+  line-height: 1.15;
+  font-weight: 600;
+}
+
+.venta-despacho-estado-badge--no_armado .venta-despacho-estado-text {
+  color: #ef4444;
+}
+
+.venta-despacho-estado-badge--armado .venta-despacho-estado-text {
+  color: #16a34a;
+}
+
+.venta-despacho-estado-badge--despachado .venta-despacho-estado-text {
+  color: #2563eb;
+}
+
+.ventas-despachos-tabla .th-despacho-checks {
+  width: 4.5rem;
+}
+
+.ventas-armado-colectivo-wrap {
+  overflow-x: auto;
+}
+
+.ventas-armado-colectivo-tabla .armado-alloc-input {
+  width: 3.25rem;
+  min-width: 3rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+.ventas-armado-colectivo-tabla th.armado-col-punto,
+.ventas-armado-colectivo-tabla td {
+  white-space: nowrap;
+}
+
+.ventas-armado-toolbar .btn:disabled {
+  opacity: 0.55;
+}
+
 /* Evitar que "Neto" agrande el alto y el ancho */
 .ventas-historial-modern .ventas-hist-caja-sub {
   font-size: 0.75rem;

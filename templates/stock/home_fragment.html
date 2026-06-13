@@ -84,7 +84,7 @@
       <div class="dashboard-card mb-0">
         <div class="card-head">
           <h2 class="card-title">Stock de productos</h2>
-          <div class="card-subtle">Stock, costo, valor total y estado</div>
+          <div class="card-subtle">Stock, costo, precio de venta y estado</div>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
@@ -94,7 +94,7 @@
                   <th>Producto</th>
                   <th class="text-end">Stock disp.</th>
                   <th class="text-end col-hide-xs">Costo</th>
-                  <th class="text-end col-hide-xs">Valor total</th>
+                  <th class="text-end col-hide-xs">Precio venta</th>
                   <th>Estado</th>
                   <th class="text-end">Acciones</th>
                 </tr>
@@ -124,7 +124,7 @@
                       {% endif %}
                     </td>
                     <td class="num col-hide-xs">{{ p.costo|ars }}</td>
-                    <td class="num col-hide-xs">{{ p.valor_total_stock|ars }}</td>
+                    <td class="num col-hide-xs">{{ p.precio_venta|ars }}</td>
                     <td class="stock-status-td">
                       <div class="stock-status-row">
                         {% if p.stock <= 0 %}

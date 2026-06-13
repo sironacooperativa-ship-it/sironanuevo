@@ -1,0 +1,48 @@
+{% load static %}
+<div
+  class="p-0"
+  data-sirona-dialog-class="modal-lg"
+  data-sirona-dialog-centered="1"
+  data-sirona-dialog-no-scroll="0"
+  id="puntos-stock-modal-root"
+>
+  <div class="modal-header border-0 pb-0">
+    <h5 class="modal-title mb-0">Puntos de stock</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+  </div>
+  <div class="modal-body pt-2">
+    <p class="text-muted small mb-3">
+      Depósitos o ubicaciones desde donde se retira mercadería para armar pedidos.
+      {% if not user.is_staff %}
+        Solo administradores pueden editar esta lista.
+      {% endif %}
+    </p>
+
+    <ul class="list-group list-group-flush mb-3" id="puntos-stock-lista">
+      {% for p in puntos %}
+        <li class="list-group-item px-0 d-flex flex-wrap align-items-center gap-2 punto-stock-fila" data-punto-id="{{ p.pk }}">
+          {% if user.is_staff %}
+            <input type="text" class="form-control form-control-sm punto-stock-nombre flex-grow-1" value="{{ p.nombre }}" maxlength="80" />
+            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill punto-stock-guardar">Guardar</button>
+            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill punto-stock-eliminar">Eliminar</button>
+          {% else %}
+            <span class="fw-semibold">{{ p.nombre }}</span>
+          {% endif %}
+        </li>
+      {% empty %}
+        <li class="list-group-item px-0 text-muted small">No hay puntos configurados.</li>
+      {% endfor %}
+    </ul>
+
+    {% if user.is_staff %}
+      <form id="puntos-stock-nuevo-form" class="d-flex flex-wrap gap-2 align-items-center border-top pt-3">
+        <input type="text" class="form-control form-control-sm" name="nombre" placeholder="Nuevo punto de stock" maxlength="80" required />
+        <button type="submit" class="btn btn-sm btn-primary rounded-pill">Agregar</button>
+      </form>
+      <div class="text-danger small mt-2 d-none" id="puntos-stock-error"></div>
+    {% endif %}
+  </div>
+  <div class="modal-footer border-0 pt-0">
+    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cerrar</button>
+  </div>
+</div>

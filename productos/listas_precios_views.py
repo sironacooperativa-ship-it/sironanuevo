@@ -22,6 +22,7 @@ from django.views.decorators.http import require_http_methods
 from core.authz import staff_required
 from core.money_decimal import format_monto_ars, q2
 
+from .catalogo_json import invalidar_cache_catalogo_por_cambio_precios
 from .lista_precios_pdf import (
     _order_by_lista_precios,
     build_png_export_payload,
@@ -142,6 +143,12 @@ def sync_producto_listas_extras_from_post(request, producto: Producto) -> None:
             producto=producto,
             defaults={"precio_venta": producto.precio_venta},
         )
+    ids_invalidar = list(listas_ids)
+    farmacia_id = _farmacia_lista_id_cached()
+    if farmacia_id and producto.en_lista_precios:
+        ids_invalidar.append(farmacia_id)
+    if ids_invalidar:
+        invalidar_cache_catalogo_por_cambio_precios(*ids_invalidar)
 
 
 def _parse_precio(raw: str) -> Decimal | None:
@@ -304,6 +311,8 @@ def lista_precios_trabajar(request, pk: int):
                         actualizados += 1
                 if to_update:
                     Producto.objects.bulk_update(to_update, ["precio_venta", "precio_venta_editado"])
+            if actualizados:
+                invalidar_cache_catalogo_por_cambio_precios(lista.pk)
             messages.success(request, f"Se actualizaron {actualizados} precio(s) de Farmacia.")
             return redirect(f"{request.path}?q={q}" if q else request.path)
 
@@ -338,6 +347,7 @@ def lista_precios_trabajar(request, pk: int):
             return redirect(f"{request.path}?q={q}" if q else request.path)
         if quitar.isdigit():
             ListaPrecioItem.objects.filter(pk=int(quitar), lista=lista).delete()
+            invalidar_cache_catalogo_por_cambio_precios(lista.pk)
             messages.info(request, "Producto quitado de la lista.")
             return redirect(f"{request.path}?q={q}" if q else request.path)
         if accion == "agregar":
@@ -350,6 +360,7 @@ def lista_precios_trabajar(request, pk: int):
                         producto=prod,
                         defaults={"precio_venta": prod.precio_venta},
                     )
+                    invalidar_cache_catalogo_por_cambio_precios(lista.pk)
                     messages.success(request, f"Agregado a la lista: {prod.codigo}")
                 else:
                     messages.warning(request, "Producto no encontrado o deshabilitado.")
@@ -372,6 +383,8 @@ def lista_precios_trabajar(request, pk: int):
                     n += 1
             if to_update:
                 ListaPrecioItem.objects.bulk_update(to_update, ["precio_venta"])
+        if n:
+            invalidar_cache_catalogo_por_cambio_precios(lista.pk)
         messages.success(request, f"Se guardaron {n} precio(s) de la lista.")
         return redirect(f"{request.path}?q={q}" if q else request.path)
 

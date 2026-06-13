@@ -14,6 +14,7 @@ from django.db.models import F
 from calendario.models import Evento
 from caja.models import MovimientoCaja
 from core.money_decimal import format_monto_ars, q2
+from productos.catalogo_json import invalidar_cache_catalogo_por_cambio_precios
 from productos.models import ListaPrecioItem, ListaPrecios, Producto
 
 from presupuestos.models import Presupuesto
@@ -230,6 +231,7 @@ def sincronizar_productos_lista_elegida_en_venta(
                     producto_id=pid,
                     defaults={"precio_venta": pu},
                 )
+    invalidar_cache_catalogo_por_cambio_precios(lista.pk)
 
 
 def crear_venta_confirmada(
