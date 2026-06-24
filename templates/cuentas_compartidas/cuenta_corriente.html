@@ -68,6 +68,16 @@
             <option value="todos" {% if cc_estado == "todos" %}selected{% endif %}>Todos</option>
           </select>
         </div>
+        {% if filtro_par_activo %}
+        <div class="col-12 col-lg-2 col-md-3">
+          <label class="form-label small text-muted mb-1" for="cc-venc">Vencimiento</label>
+          <select id="cc-venc" class="form-select" name="venc">
+            <option value="" {% if not cc_venc %}selected{% endif %}>Todos</option>
+            <option value="vencidos" {% if cc_venc == "vencidos" %}selected{% endif %}>Vencidos</option>
+            <option value="a_vencer" {% if cc_venc == "a_vencer" %}selected{% endif %}>A vencer</option>
+          </select>
+        </div>
+        {% endif %}
         <div class="col-12 col-lg-3 d-flex flex-wrap gap-2 align-items-end">
           <button class="btn btn-primary rounded-pill px-3" type="submit">Aplicar</button>
           <a class="btn btn-outline-secondary rounded-pill px-3" href="{% url 'cuentas_cuenta_corriente' %}?estado=pendiente{% if not es_hoy %}&amp;al={{ fecha_corte_iso }}{% endif %}">Limpiar</a>
@@ -92,10 +102,11 @@
         <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'cuentas_cuenta_corriente_export' %}?export=pdf&amp;{{ cc_export_query }}">PDF</a>
       </div>
     </div>
-    {% if cc_q or cc_estado != "pendiente" %}
+    {% if cc_q or cc_estado != "pendiente" or cc_venc %}
       <p class="small text-muted px-3 mb-0">
         {% if cc_q %}Búsqueda: «{{ cc_q }}».{% endif %}
         {% if cc_estado == "archivado" %} Solo movimientos <strong>archivados</strong>.{% elif cc_estado == "todos" %} Mostrando <strong>todos</strong> los movimientos.{% endif %}
+        {% if cc_venc == "vencidos" %} Solo operaciones <strong>vencidas</strong> con saldo pendiente{% if not es_hoy %} al {{ fecha_corte|date:"d/m/Y" }}{% endif %}.{% elif cc_venc == "a_vencer" %} Solo operaciones <strong>a vencer</strong> (orden: la más próxima primero).{% endif %}
       </p>
     {% endif %}
     {% if puede_admin_gastos_compartidos %}
@@ -122,9 +133,14 @@
         </button>
       </form>
     {% endif %}
-    {% if cc_sort_ord %}
+    {% if cc_sort_ord and cc_sort_ord != "vencimiento" %}
       <p class="small text-muted px-3 mb-0">
         <a href="{% url 'cuentas_cuenta_corriente' %}{% if cc_querystring_sin_orden %}?{{ cc_querystring_sin_orden }}{% endif %}">Volver al orden por fecha (más reciente primero)</a>
+      </p>
+    {% elif cc_venc %}
+      <p class="small text-muted px-3 mb-0">
+        Ordenado por vencimiento ({% if cc_venc == "vencidos" %}los vencidos más recientes primero{% else %}los que vencen antes, primero{% endif %}).
+        <a href="{% url 'cuentas_cuenta_corriente' %}?{{ cc_querystring_sin_orden }}">Cambiar orden</a>
       </p>
     {% endif %}
     <div class="table-responsive">
@@ -148,6 +164,11 @@
             <th>
               <a class="app-th-sort" href="?{{ cc_sort_links.detalle }}" title="Ordenar por detalle">Detalle{% if cc_sort_ord == "detalle" %}<span class="ms-1 th-sort-caret" aria-hidden="true">{% if cc_sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
             </th>
+            {% if filtro_par_activo %}
+            <th>
+              <a class="app-th-sort" href="?{{ cc_sort_links.vencimiento }}" title="Ordenar por vencimiento">Vence{% if cc_sort_ord == "vencimiento" %}<span class="ms-1 th-sort-caret" aria-hidden="true">{% if cc_sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            </th>
+            {% endif %}
             {% for col in negocios_cc_columnas %}
               <th class="text-end">
                 <a class="app-th-sort d-inline-flex w-100 justify-content-end" href="?{{ col.sort_link }}" title="Ordenar por {{ col.negocio.nombre }}">
@@ -185,6 +206,19 @@
                 </div>
                 <div class="text-muted small">{{ row.subdetalle }}</div>
               </td>
+              {% if filtro_par_activo %}
+              <td class="text-nowrap small">
+                {% if row.vencimiento %}
+                  {% if row.vencimiento < fecha_corte %}
+                    <span class="text-danger">{{ row.vencimiento|date:"d/m/Y" }}</span>
+                  {% else %}
+                    {{ row.vencimiento|date:"d/m/Y" }}
+                  {% endif %}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              {% endif %}
               {% for valor in row.valores %}
                 <td class="text-end col-money">
                   {% if valor > 0 %}
@@ -206,7 +240,14 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="{% if puede_admin_gastos_compartidos %}{{ negocios|length|add:4 }}{% else %}{{ negocios|length|add:3 }}{% endif %}" class="table-empty">{% if cc_q or cc_estado != "pendiente" %}No hay movimientos con los filtros actuales.{% else %}No hay movimientos pendientes.{% endif %}</td></tr>
+            <tr>
+              <td
+                colspan="{% if puede_admin_gastos_compartidos %}{% if filtro_par_activo %}{{ negocios|length|add:5 }}{% else %}{{ negocios|length|add:4 }}{% endif %}{% else %}{% if filtro_par_activo %}{{ negocios|length|add:4 }}{% else %}{{ negocios|length|add:3 }}{% endif %}{% endif %}"
+                class="table-empty"
+              >
+                {% if cc_q or cc_estado != "pendiente" or cc_venc %}No hay movimientos con los filtros actuales.{% else %}No hay movimientos pendientes.{% endif %}
+              </td>
+            </tr>
           {% endfor %}
         </tbody>
         {% if cuenta_corriente_rows %}
@@ -214,6 +255,7 @@
             <tr>
               {% if puede_admin_gastos_compartidos %}<th></th>{% endif %}
               <th colspan="2">Saldo (movimientos listados)</th>
+              {% if filtro_par_activo %}<th></th>{% endif %}
               {% for total in cuenta_corriente_totales %}
                 <th class="text-end col-money">{{ total|ars }}</th>
               {% endfor %}

@@ -111,6 +111,20 @@
         >
           Ver movimientos
         </a>
+        <div class="d-flex flex-wrap gap-2 mt-2">
+          <a
+            class="btn btn-outline-danger btn-sm rounded-pill"
+            href="{% url 'cuentas_cuenta_corriente' %}?negocio_a={{ par.deudor_id }}&amp;negocio_b={{ par.acreedor_id }}&amp;venc=vencidos{% if not es_hoy %}&amp;al={{ fecha_corte_iso }}{% endif %}"
+          >
+            Vencidos
+          </a>
+          <a
+            class="btn btn-outline-primary btn-sm rounded-pill"
+            href="{% url 'cuentas_cuenta_corriente' %}?negocio_a={{ par.deudor_id }}&amp;negocio_b={{ par.acreedor_id }}&amp;venc=a_vencer{% if not es_hoy %}&amp;al={{ fecha_corte_iso }}{% endif %}"
+          >
+            A vencer
+          </a>
+        </div>
       </article>
     {% empty %}
       <div class="table-card ui-force-productos">

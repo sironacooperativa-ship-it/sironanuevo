@@ -270,7 +270,7 @@
           <col style="width: 132px" />  {# Comisión: switch + monto en fila #}
           <col style="width: 156px" />  {# Ingreso caja (mediana) #}
           <col style="width: 56px" />   {# Estado (muy angosta) #}
-          <col style="width: 170px" />  {# Acciones (angosta, sin wrap) #}
+          <col style="width: 230px" />  {# Acciones #}
         </colgroup>
         <thead>
           <tr>
@@ -392,7 +392,7 @@
                 <div class="table-actions presu-row-actions d-flex ventas-hist-actions">
                   {% if v.estado == "PEN" %}
                     <a
-                      class="btn-icon btn-approve ventas-hist-accion-principal d-md-none"
+                      class="btn-icon btn-approve ventas-hist-solo-mobile"
                       href="{% url 'venta_registrar_pago' v.pk %}"
                       title="Pagar"
                       aria-label="Pagar"
@@ -401,7 +401,7 @@
                     </a>
                   {% elif v.estado == "CAN" %}
                     <span
-                      class="estado-ico estado-ico--cancel ventas-hist-estado-mobile d-md-none"
+                      class="estado-ico estado-ico--cancel ventas-hist-solo-mobile"
                       title="Cancelado"
                       aria-label="Cancelado"
                     >
@@ -409,7 +409,7 @@
                     </span>
                   {% else %}
                     <span
-                      class="estado-ico estado-ico--approved ventas-hist-estado-mobile d-md-none"
+                      class="estado-ico estado-ico--approved ventas-hist-solo-mobile"
                       title="Aprobado / Pagada"
                       aria-label="Aprobado / Pagada"
                     >
@@ -427,7 +427,7 @@
                     {% include "includes/venta_despacho_icon.html" with venta=v %}
                   </button>
                   <a
-                    class="btn-icon btn-view ventas-hist-accion-principal"
+                    class="btn-icon btn-view"
                     href="{% url 'venta_detalle' v.pk %}"
                     title="Ver pedido"
                     aria-label="Ver pedido"
@@ -436,7 +436,7 @@
                   </a>
                   {% if not v.despacho_despachado %}
                   <a
-                    class="btn-icon btn-edit ventas-hist-accion-principal"
+                    class="btn-icon btn-edit"
                     href="{% url 'venta_editar' v.pk %}"
                     title="Editar pedido"
                     aria-label="Editar pedido"
@@ -446,7 +446,7 @@
                   {% endif %}
                   {% if v.estado != "PEN" and v.pago_movimiento %}
                     <a
-                      class="btn-icon btn-view ventas-hist-accion-extra d-none d-md-inline-flex"
+                      class="btn-icon btn-view ventas-hist-solo-desktop"
                       href="{% url 'caja_detail' v.pago_movimiento.pk %}"
                       title="Ver movimiento en caja"
                       aria-label="Ver movimiento en caja"
@@ -456,7 +456,7 @@
                   {% endif %}
                   {% if puede_eliminar_pedidos and not v.despacho_despachado %}
                     <form
-                      class="d-inline m-0 presu-accion-form"
+                      class="d-inline m-0 presu-accion-form ventas-hist-solo-desktop"
                       method="post"
                       action="{% url 'venta_eliminar' v.pk %}"
                     >
@@ -464,7 +464,7 @@
                       <input type="hidden" name="next" value="{{ request.get_full_path }}" />
                       <button
                         type="button"
-                        class="btn-icon btn-delete ventas-hist-accion-extra d-none d-md-inline-flex"
+                        class="btn-icon btn-delete"
                         title="Eliminar pedido"
                         aria-label="Eliminar pedido"
                         data-sirona-confirm-submit="¿Eliminar el pedido #{{ v.pk }}? Se revierte stock y, si estaba pagado, el ingreso en caja."

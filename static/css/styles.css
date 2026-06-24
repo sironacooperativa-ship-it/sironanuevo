@@ -3374,6 +3374,7 @@ button.btn-icon.btn-ink,
   right: auto;
   background: transparent;
   backdrop-filter: none;
+  overflow: visible;
 }
 
 .ventas-historial-tabla .table-actions-cell .table-actions {
@@ -3418,6 +3419,23 @@ button.btn-icon.btn-ink,
 .ventas-historial-modern .ventas-hist-actions svg {
   width: 16px;
   height: 16px;
+}
+
+/* Escritorio: Pagar/estado van en su columna; móvil: solo en acciones */
+@media (min-width: 768px) {
+  .ventas-historial-modern.ui-force-productos .ventas-hist-solo-mobile,
+  .ventas-historial-modern.ui-force-productos .table-actions .ventas-hist-solo-mobile,
+  .ventas-historial-modern.ui-force-productos .table-actions a.ventas-hist-solo-mobile {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .ventas-historial-modern.ui-force-productos .ventas-hist-solo-desktop,
+  .ventas-historial-modern.ui-force-productos .table-actions .ventas-hist-solo-desktop,
+  .ventas-historial-modern.ui-force-productos .table-actions form.ventas-hist-solo-desktop {
+    display: none !important;
+  }
 }
 
 /* Despacho: icono caja en historial y pantalla Despachos */
@@ -4060,7 +4078,7 @@ button.btn-icon.venta-despacho-ico.venta-despacho-ico-btn.venta-despacho-ico--de
   .ventas-historial-modern .ventas-hist-actions button.btn-icon,
   .ventas-historial-modern .ventas-hist-actions .venta-despacho-ico-btn,
   .ventas-historial-modern .ventas-hist-actions .venta-despacho-ico,
-  .ventas-historial-modern .ventas-hist-actions .ventas-hist-estado-mobile {
+  .ventas-historial-modern .ventas-hist-actions .ventas-hist-solo-mobile {
     width: 42px !important;
     height: 42px !important;
     min-width: 42px !important;

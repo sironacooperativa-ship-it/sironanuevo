@@ -265,6 +265,26 @@ def _cc_estado_desde_request(request) -> str:
     return "pendiente"
 
 
+def _cc_venc_desde_request(request) -> str:
+    venc = (request.GET.get("venc") or "").strip().lower()
+    if venc in ("vencidos", "a_vencer"):
+        return venc
+    return ""
+
+
+def _vencimiento_operacion_par(operacion, *, par_ids: set[int] | None, fecha_corte: date) -> tuple[date | None, bool]:
+    """Vencimiento más próximo entre deudas pendientes del par (si aplica)."""
+    vencimientos: list[date] = []
+    for deuda in operacion.deudas.all():
+        if par_ids and {operacion.pagador_id, deuda.deudor_id} != par_ids:
+            continue
+        if _deuda_pendiente_al(deuda, fecha_corte) > 0:
+            vencimientos.append(deuda.vencimiento)
+    if not vencimientos:
+        return None, False
+    return min(vencimientos), True
+
+
 def _parse_cc_seleccion(post) -> list[tuple[str, int]]:
     out: list[tuple[str, int]] = []
     for raw in post.getlist("seleccion"):
@@ -312,6 +332,9 @@ def _cuenta_corriente_rows(
 
         mov_key = (CC_MOV_OPERACION, operacion.pk)
         archivado = marcaciones.get(mov_key, False)
+        vencimiento, tiene_pendiente_par = _vencimiento_operacion_par(
+            operacion, par_ids=par_ids, fecha_corte=fecha_corte
+        )
         rows.append(
             {
                 "fecha": operacion.fecha,
@@ -326,6 +349,8 @@ def _cuenta_corriente_rows(
                 "puede_pagar": _operacion_tiene_pendiente(operacion, fecha_corte),
                 "seleccion": f"{CC_MOV_OPERACION}:{operacion.pk}",
                 "valores": [valores[negocio.pk] for negocio in negocios],
+                "vencimiento": vencimiento,
+                "tiene_pendiente_par": tiene_pendiente_par,
             }
         )
 
@@ -366,6 +391,8 @@ def _cuenta_corriente_rows(
                 "puede_pagar": False,
                 "seleccion": f"{CC_MOV_CANCELACION}:{cancelacion.pk}",
                 "valores": [valores[negocio.pk] for negocio in negocios],
+                "vencimiento": None,
+                "tiene_pendiente_par": False,
             }
         )
 
@@ -373,7 +400,7 @@ def _cuenta_corriente_rows(
 
 
 def _cuenta_corriente_ord_keys(negocios: list[Negocio]) -> set[str]:
-    keys = {"fecha", "detalle"}
+    keys = {"fecha", "detalle", "vencimiento"}
     keys.update(f"n{negocio.pk}" for negocio in negocios)
     return keys
 
@@ -400,6 +427,8 @@ def _ordenar_cuenta_corriente_rows(
         key = lambda row: (row["fecha"], row["orden"])
     elif ord_key == "detalle":
         key = lambda row: (row["detalle"].casefold(), row["orden"])
+    elif ord_key == "vencimiento":
+        key = lambda row: (row.get("vencimiento") or date.max, row["orden"])
     else:
         idx = negocio_idx[int(ord_key[1:])]
         key = lambda row: (row["valores"][idx], row["orden"])
@@ -479,6 +508,34 @@ def _filtrar_cuenta_corriente_por_estado(rows: list[dict], estado: str) -> list[
     return rows
 
 
+def _filtrar_cuenta_corriente_por_venc(
+    rows: list[dict], venc: str, *, fecha_corte: date, par_ids: set[int] | None
+) -> list[dict]:
+    if not venc or not par_ids:
+        return rows
+    out: list[dict] = []
+    for row in rows:
+        if row.get("mov_tipo") != CC_MOV_OPERACION:
+            continue
+        if not row.get("tiene_pendiente_par"):
+            continue
+        vencimiento = row.get("vencimiento")
+        if vencimiento is None:
+            continue
+        if venc == "vencidos" and vencimiento < fecha_corte:
+            out.append(row)
+        elif venc == "a_vencer" and vencimiento >= fecha_corte:
+            out.append(row)
+    return out
+
+
+def _ordenar_cuenta_corriente_por_venc(rows: list[dict], venc: str) -> None:
+    if venc == "vencidos":
+        rows.sort(key=lambda row: (row.get("vencimiento") or date.min, row["orden"]), reverse=True)
+    elif venc == "a_vencer":
+        rows.sort(key=lambda row: (row.get("vencimiento") or date.max, row["orden"]))
+
+
 def _cuenta_corriente_totales_desde_filas(rows: list[dict], n_cols: int) -> list[Decimal]:
     totales = [Decimal("0.00")] * n_cols
     for row in rows:
@@ -491,15 +548,28 @@ def _cuenta_corriente_preparada(
     request, negocios: list[Negocio], *, par_ids: set[int] | None, fecha_corte: date
 ):
     rows, totales = _cuenta_corriente_rows(negocios, par_ids=par_ids, fecha_corte=fecha_corte)
-    rows, cc_sort_ord, cc_sort_dir = _ordenar_cuenta_corriente_rows(rows, request, negocios)
     cc_q = (request.GET.get("q") or "").strip()
     if cc_q:
         rows = _filtrar_cuenta_corriente_por_q(rows, cc_q)
     cc_estado = _cc_estado_desde_request(request)
     if cc_estado in ("pendiente", "archivado"):
         rows = _filtrar_cuenta_corriente_por_estado(rows, cc_estado)
+    cc_venc = _cc_venc_desde_request(request)
+    if cc_venc and par_ids:
+        rows = _filtrar_cuenta_corriente_por_venc(
+            rows, cc_venc, fecha_corte=fecha_corte, par_ids=par_ids
+        )
+    if cc_estado in ("pendiente", "archivado") or (cc_venc and par_ids):
         totales = _cuenta_corriente_totales_desde_filas(rows, len(negocios))
-    return rows, totales, cc_sort_ord, cc_sort_dir, cc_q, cc_estado
+
+    ord_key = (request.GET.get("ord") or "").strip()
+    if cc_venc and par_ids and ord_key not in _cuenta_corriente_ord_keys(negocios):
+        _ordenar_cuenta_corriente_por_venc(rows, cc_venc)
+        cc_sort_ord = "vencimiento"
+        cc_sort_dir = "desc" if cc_venc == "vencidos" else "asc"
+    else:
+        rows, cc_sort_ord, cc_sort_dir = _ordenar_cuenta_corriente_rows(rows, request, negocios)
+    return rows, totales, cc_sort_ord, cc_sort_dir, cc_q, cc_estado, cc_venc
 
 
 def _cc_export_querystring(request) -> str:
@@ -513,7 +583,7 @@ def _cuenta_corriente_context(request) -> dict:
     fecha_corte = _fecha_corte_desde_request(request)
     es_hoy = fecha_corte == hoy
     negocio_a, negocio_b, par_ids, todos_negocios, negocios = _filtro_par_desde_request(request)
-    cuenta_corriente_rows, cuenta_corriente_totales, cc_sort_ord, cc_sort_dir, cc_q, cc_estado = (
+    cuenta_corriente_rows, cuenta_corriente_totales, cc_sort_ord, cc_sort_dir, cc_q, cc_estado, cc_venc = (
         _cuenta_corriente_preparada(request, negocios, par_ids=par_ids, fecha_corte=fecha_corte)
     )
     cc_paginator = Paginator(cuenta_corriente_rows, CC_PAGE_SIZE)
@@ -545,6 +615,7 @@ def _cuenta_corriente_context(request) -> dict:
         "cc_sort_dir": cc_sort_dir,
         "cc_q": cc_q,
         "cc_estado": cc_estado,
+        "cc_venc": cc_venc,
         "cc_acciones_url": reverse("cuentas_cuenta_corriente_acciones"),
         "cc_sort_links": cc_sort_links,
         "negocios_cc_columnas": negocios_cc_columnas,
@@ -617,7 +688,7 @@ def cuenta_corriente_export(request):
         else:
             par_ids = None
 
-    rows, totales, _, _, cc_q, cc_estado = _cuenta_corriente_preparada(
+    rows, totales, _, _, cc_q, cc_estado, cc_venc = _cuenta_corriente_preparada(
         request, negocios, par_ids=par_ids, fecha_corte=fecha_corte
     )
     headers = ["Estado", "Fecha", "Detalle", "Subdetalle"] + [n.nombre for n in negocios]
@@ -647,6 +718,10 @@ def cuenta_corriente_export(request):
         titulo += " — solo archivados"
     elif cc_estado == "pendiente":
         titulo += " — solo pendientes"
+    if cc_venc == "vencidos":
+        titulo += " — vencidos"
+    elif cc_venc == "a_vencer":
+        titulo += " — a vencer"
     fname = f"gastos_compartidos_cc_{fecha_corte.isoformat()}"
 
     if exp == "xlsx":
