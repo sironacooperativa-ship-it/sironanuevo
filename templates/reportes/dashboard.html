@@ -376,8 +376,8 @@
                   <tr>
                     <td>
                       <div class="who">
-                        <span class="avatar" aria-hidden="true">{{ p.lineas__producto__descripcion|default:"?"|slice:":1" }}</span>
-                        <span class="name">{{ p.lineas__producto__descripcion|default:p.lineas__producto__codigo }}</span>
+                        <span class="avatar" aria-hidden="true">{{ p.descripcion_ef|default:"?"|slice:":1" }}</span>
+                        <span class="name">{{ p.descripcion_ef|default:p.codigo_ef }}</span>
                       </div>
                     </td>
                     <td class="num">{{ p.unidades }}</td>

@@ -4,6 +4,7 @@ from decimal import Decimal
 from django import forms
 
 from core.date_fields import DATE_INPUT_FORMATS, date_input_widget
+from core.money_decimal import q2
 
 from .models import CancelacionDeuda, Negocio, OperacionCompartida
 
@@ -22,12 +23,18 @@ class OperacionCompartidaForm(forms.ModelForm):
     class Meta:
         model = OperacionCompartida
         fields = ["fecha", "concepto", "tipo", "pagador", "monto_total", "observaciones"]
+        labels = {
+            "pagador": "Local que pagó",
+            "monto_total": "Monto pagado",
+        }
         widgets = {
             "fecha": date_input_widget(),
             "concepto": forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej.: Compra mayorista"}),
             "tipo": forms.Select(attrs={"class": "form-select"}),
-            "pagador": forms.Select(attrs={"class": "form-select"}),
-            "monto_total": forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "min": "0.01"}),
+            "pagador": forms.Select(attrs={"class": "form-select", "id": "id_pagador"}),
+            "monto_total": forms.NumberInput(
+                attrs={"class": "form-control", "step": "0.01", "min": "0.01", "id": "id_monto_total"}
+            ),
             "observaciones": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
         }
 
@@ -50,13 +57,25 @@ class OperacionCompartidaForm(forms.ModelForm):
                 required=False,
                 label=negocio.nombre,
                 initial=bool(deuda_actual),
-                widget=forms.CheckboxInput(attrs={"class": "form-check-input deuda-toggle"}),
+                widget=forms.CheckboxInput(
+                    attrs={
+                        "class": "form-check-input deuda-toggle",
+                        "data-negocio-id": str(negocio.pk),
+                    }
+                ),
             )
             self.fields[f"monto_{negocio.pk}"] = forms.DecimalField(
                 required=False,
                 min_value=Decimal("0.01"),
                 initial=deuda_actual.monto if deuda_actual else None,
-                widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "min": "0.01"}),
+                widget=forms.NumberInput(
+                    attrs={
+                        "class": "form-control deuda-monto",
+                        "step": "0.01",
+                        "min": "0.01",
+                        "data-negocio-id": str(negocio.pk),
+                    }
+                ),
             )
             self.fields[f"vencimiento_{negocio.pk}"] = forms.DateField(
                 required=False,
@@ -65,37 +84,32 @@ class OperacionCompartidaForm(forms.ModelForm):
                 widget=date_input_widget(),
             )
 
-    def _fecha_operacion(self, cleaned) -> date:
-        fecha = cleaned.get("fecha")
-        if fecha:
-            return fecha
-        if self.instance and self.instance.pk and self.instance.fecha:
-            return self.instance.fecha
-        return date.today()
-
     def clean(self):
         cleaned = super().clean()
         pagador = cleaned.get("pagador")
-        fecha_operacion = self._fecha_operacion(cleaned)
+        monto_total = cleaned.get("monto_total")
         deudas = []
         for negocio in self.negocios:
             incluido = cleaned.get(f"incluir_{negocio.pk}")
             monto = cleaned.get(f"monto_{negocio.pk}")
             vencimiento = cleaned.get(f"vencimiento_{negocio.pk}")
             if pagador and negocio.pk == pagador.pk and incluido:
-                self.add_error(f"incluir_{negocio.pk}", "El pagador no puede deberse a sí mismo.")
+                self.add_error(f"incluir_{negocio.pk}", "El local que pagó no puede figurar como deudor.")
                 continue
-            if incluido and monto and not vencimiento:
-                vencimiento = fecha_operacion
-                cleaned[f"vencimiento_{negocio.pk}"] = vencimiento
             if incluido and not monto:
-                self.add_error(f"monto_{negocio.pk}", "Indicá el monto.")
+                self.add_error(f"monto_{negocio.pk}", "Indicá el monto que debe reintegrar.")
             if not incluido and (monto or vencimiento):
-                self.add_error(f"incluir_{negocio.pk}", "Marcá el negocio para cargar esta deuda.")
-            if incluido and monto and vencimiento and (not pagador or negocio.pk != pagador.pk):
+                self.add_error(f"incluir_{negocio.pk}", "Marcá el local para cargar su parte.")
+            if incluido and monto and (not pagador or negocio.pk != pagador.pk):
                 deudas.append({"negocio": negocio, "monto": monto, "vencimiento": vencimiento})
         if not deudas:
-            raise forms.ValidationError("Cargá al menos una parte que deba pagar.")
+            raise forms.ValidationError("Seleccioná al menos un local que deba reintegrar el pago.")
+        if monto_total is not None:
+            suma = sum(Decimal(item["monto"]) for item in deudas)
+            if q2(suma) != q2(monto_total):
+                raise forms.ValidationError(
+                    f"La suma de los montos parciales ({q2(suma)}) debe coincidir con el monto pagado ({q2(monto_total)})."
+                )
         cleaned["deudas"] = deudas
         return cleaned
 

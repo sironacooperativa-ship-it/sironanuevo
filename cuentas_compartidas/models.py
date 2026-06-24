@@ -67,7 +67,7 @@ class DeudaCompartida(models.Model):
     operacion = models.ForeignKey(OperacionCompartida, on_delete=models.CASCADE, related_name="deudas")
     deudor = models.ForeignKey(Negocio, on_delete=models.PROTECT, related_name="deudas_compartidas")
     monto = models.DecimalField(max_digits=14, decimal_places=2)
-    vencimiento = models.DateField()
+    vencimiento = models.DateField(null=True, blank=True)
     creado_en = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -20,7 +20,13 @@
           <span class="stat-ico"><i data-lucide="circle-dollar-sign"></i></span>
         </div>
         <div class="stat-value">{{ deuda.pendiente|ars }}</div>
-        <div class="text-muted small">Vence {{ deuda.vencimiento|date:"d/m/Y" }}</div>
+        <div class="text-muted small">
+          {% if deuda.vencimiento %}
+            Vence {{ deuda.vencimiento|date:"d/m/Y" }}
+          {% else %}
+            Sin fecha de vencimiento
+          {% endif %}
+        </div>
       </div>
     </div>
     <div class="col-12 col-lg-8">

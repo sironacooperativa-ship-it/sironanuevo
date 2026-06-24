@@ -73,7 +73,10 @@ def _saldos_netos(deudas, *, fecha_corte: date, par_ids: set[int] | None = None)
         deudor = deuda.deudor
         if par_ids and {acreedor.pk, deudor.pk} != par_ids:
             continue
-        dirigidos = dirigidos_hoy if deuda.vencimiento <= fecha_corte else dirigidos_futuro
+        if deuda.vencimiento is None or deuda.vencimiento <= fecha_corte:
+            dirigidos = dirigidos_hoy
+        else:
+            dirigidos = dirigidos_futuro
         dirigidos[(deudor.pk, acreedor.pk)] += deuda.pendiente_calc
         nombres[deudor.pk] = deudor.nombre
         nombres[acreedor.pk] = acreedor.nombre
@@ -278,7 +281,7 @@ def _vencimiento_operacion_par(operacion, *, par_ids: set[int] | None, fecha_cor
     for deuda in operacion.deudas.all():
         if par_ids and {operacion.pagador_id, deuda.deudor_id} != par_ids:
             continue
-        if _deuda_pendiente_al(deuda, fecha_corte) > 0:
+        if _deuda_pendiente_al(deuda, fecha_corte) > 0 and deuda.vencimiento is not None:
             vencimientos.append(deuda.vencimiento)
     if not vencimientos:
         return None, False

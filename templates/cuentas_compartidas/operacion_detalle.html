@@ -17,21 +17,21 @@
     <div class="col-12 col-md-6">
       <div class="stat-card h-100">
         <div class="stat-row">
-          <div class="stat-label">Monto total</div>
+          <div class="stat-label">Monto pagado</div>
           <span class="stat-ico"><i data-lucide="receipt"></i></span>
         </div>
         <div class="stat-value">{{ operacion.monto_total|ars }}</div>
-        <div class="text-muted small">Referencia de la operación</div>
+        <div class="text-muted small">Pagó {{ operacion.pagador.nombre }}</div>
       </div>
     </div>
     <div class="col-12 col-md-6">
       <div class="stat-card h-100">
         <div class="stat-row">
-          <div class="stat-label">Asignado a terceros</div>
+          <div class="stat-label">Repartido entre locales</div>
           <span class="stat-ico"><i data-lucide="users"></i></span>
         </div>
         <div class="stat-value">{{ operacion.monto_asignado|ars }}</div>
-        <div class="text-muted small">Suma de partes que deben pagar</div>
+        <div class="text-muted small">Suma de lo que deben reintegrar</div>
       </div>
     </div>
   </div>
@@ -61,7 +61,13 @@
           {% for deuda in operacion.deudas.all %}
             <tr>
               <td>{{ deuda.deudor.nombre }}</td>
-              <td>{{ deuda.vencimiento|date:"d/m/Y" }}</td>
+              <td>
+                {% if deuda.vencimiento %}
+                  {{ deuda.vencimiento|date:"d/m/Y" }}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
               <td class="text-end col-money">{{ deuda.monto|ars }}</td>
               <td class="text-end col-money">{{ deuda.pagado|ars }}</td>
               <td class="text-end col-money">{{ deuda.pendiente|ars }}</td>
