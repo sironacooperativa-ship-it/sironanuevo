@@ -237,7 +237,11 @@ class Venta(models.Model):
 class VentaLinea(models.Model):
     venta = models.ForeignKey(Venta, on_delete=models.CASCADE, related_name="lineas")
     producto = models.ForeignKey(
-        "productos.Producto", on_delete=models.PROTECT, related_name="lineas_venta"
+        "productos.Producto",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="lineas_venta",
     )
     cantidad = models.PositiveIntegerField()
     precio_unitario = models.DecimalField(max_digits=12, decimal_places=2)
@@ -254,21 +258,39 @@ class VentaLinea(models.Model):
         default="",
         help_text="Descripción tal como figuraba al confirmar el pedido.",
     )
+    marca_snapshot = models.CharField(
+        max_length=120,
+        blank=True,
+        default="",
+        help_text="Laboratorio/marca congelado al archivar el pedido despachado.",
+    )
 
     class Meta:
         ordering = ["id"]
 
     @property
     def texto_codigo(self) -> str:
-        return self.codigo_snapshot or self.producto.codigo
+        if self.codigo_snapshot:
+            return self.codigo_snapshot
+        if self.producto_id:
+            return self.producto.codigo
+        return ""
 
     @property
     def texto_descripcion(self) -> str:
-        return self.descripcion_snapshot or self.producto.descripcion
+        if self.descripcion_snapshot:
+            return self.descripcion_snapshot
+        if self.producto_id:
+            return self.producto.descripcion
+        return ""
 
     @property
     def texto_marca(self) -> str:
-        return (getattr(self.producto, "laboratorio", None) or "").strip()
+        if self.marca_snapshot:
+            return self.marca_snapshot
+        if self.producto_id:
+            return (getattr(self.producto, "laboratorio", None) or "").strip()
+        return ""
 
     def __str__(self) -> str:
         return f"{self.texto_codigo} x{self.cantidad}"

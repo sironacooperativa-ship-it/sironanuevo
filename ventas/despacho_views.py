@@ -40,7 +40,24 @@ from .armado_servicios import (
 )
 from .models import ArmadoColectivoGuardado, PuntoStockArmado, Venta
 
+from .despacho_servicios import marcar_pedidos_armados, marcar_pedidos_despachados
+
 SESSION_ARMADO_VENTAS = "armado_colectivo_venta_ids"
+SESSION_DESPACHO_SYNC_PENDING = "sirona_despacho_sync_pending"
+
+
+def _encolar_sync_despacho(request, payloads: list[dict]) -> None:
+    if payloads:
+        request.session[SESSION_DESPACHO_SYNC_PENDING] = payloads
+        request.session.modified = True
+
+
+def _tomar_sync_despacho_pendiente(request) -> list[dict]:
+    payloads = request.session.pop(SESSION_DESPACHO_SYNC_PENDING, None)
+    if payloads:
+        request.session.modified = True
+        return payloads
+    return []
 
 
 def _parse_venta_ids_post(post) -> list[int]:
@@ -168,6 +185,7 @@ def armado_pedidos_lista(request):
             "modo_edicion": bool(armado_edit_id),
             "armado_edit_id": armado_edit_id,
             "armado_editando": armado_editando,
+            "despacho_sync_pending": _tomar_sync_despacho_pendiente(request),
         },
     )
 
@@ -249,25 +267,31 @@ def armado_colectivo_guardar(request):
         )
 
     if armado_edit_id:
-        actualizar_armado_colectivo(
-            armado_edit_id,
+        with transaction.atomic():
+            actualizar_armado_colectivo(
+                armado_edit_id,
+                venta_ids=ids_ok,
+                lineas=lineas,
+                asignaciones=asignaciones,
+                puntos=puntos,
+            )
+            sync_payloads = marcar_pedidos_armados(ids_ok)
+        _limpiar_sesion_armado_colectivo(request)
+        _encolar_sync_despacho(request, sync_payloads)
+        messages.success(request, "Cambios guardados en el armado colectivo.")
+        return redirect("armado_colectivo_ver", pk=armado_edit_id)
+
+    with transaction.atomic():
+        guardar_armado_colectivo(
             venta_ids=ids_ok,
             lineas=lineas,
             asignaciones=asignaciones,
             puntos=puntos,
+            usuario=request.user,
         )
-        _limpiar_sesion_armado_colectivo(request)
-        messages.success(request, "Cambios guardados en el armado colectivo.")
-        return redirect("armado_colectivo_ver", pk=armado_edit_id)
-
-    guardar_armado_colectivo(
-        venta_ids=ids_ok,
-        lineas=lineas,
-        asignaciones=asignaciones,
-        puntos=puntos,
-        usuario=request.user,
-    )
+        sync_payloads = marcar_pedidos_armados(ids_ok)
     _limpiar_sesion_armado_colectivo(request)
+    _encolar_sync_despacho(request, sync_payloads)
     messages.success(request, "Armado colectivo guardado. Los pedidos ya no se pueden volver a seleccionar.")
     return redirect("armado_pedidos_lista")
 
@@ -292,8 +316,37 @@ def armado_colectivo_ver(request, pk: int):
             "puntos": puntos,
             "armado_guardado": armado,
             "solo_lectura": True,
+            "todos_despachados": all(v.despacho_despachado for v in ventas) if ventas else True,
+            "despacho_sync_pending": _tomar_sync_despacho_pendiente(request),
         },
     )
+
+
+@login_required
+@require_http_methods(["POST"])
+def armado_colectivo_marcar_despachados(request, pk: int):
+    armado = get_object_or_404(
+        ArmadoColectivoGuardado.objects.prefetch_related("ventas"),
+        pk=pk,
+    )
+    venta_ids = list(armado.ventas.values_list("pk", flat=True))
+    if not venta_ids:
+        messages.warning(request, "Este armado no tiene pedidos asociados.")
+        return redirect("armado_colectivo_ver", pk=pk)
+
+    ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+    with transaction.atomic():
+        payloads = marcar_pedidos_despachados(venta_ids, usuario=request.user)
+
+    if ajax:
+        return JsonResponse({"ok": True, "ventas": payloads})
+
+    n = sum(1 for p in payloads if p.get("despacho_despachado"))
+    messages.success(
+        request,
+        f"Se marcaron {n} pedido(s) como despachados y quedaron archivados.",
+    )
+    return redirect("armado_colectivo_ver", pk=pk)
 
 
 @login_required
@@ -422,6 +475,18 @@ def armado_colectivo_pdf(request):
         )
 
     inline = request.GET.get("inline") == "1" or request.POST.get("inline") == "1"
+    ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+    pdf_only = request.POST.get("_pdf_only") == "1"
+
+    if not pdf_only:
+        with transaction.atomic():
+            sync_payloads = marcar_pedidos_armados(ids_ok)
+    else:
+        sync_payloads = []
+
+    if ajax:
+        return JsonResponse({"ok": True, "ventas": sync_payloads})
+
     resp = armado_colectivo_pdf_response(
         ventas=ventas,
         lineas=lineas,
@@ -430,9 +495,6 @@ def armado_colectivo_pdf(request):
     )
     if not inline:
         resp["Content-Disposition"] = 'attachment; filename="armado-colectivo.pdf"'
-
-    with transaction.atomic():
-        Venta.objects.filter(pk__in=ids_ok).update(despacho_armado=True)
 
     request.session.pop(SESSION_ARMADO_VENTAS, None)
     request.session.modified = True

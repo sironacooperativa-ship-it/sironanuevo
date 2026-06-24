@@ -5,7 +5,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q, Sum, Value
+from django.db.models import Count, F, Q, Sum, Value
 from django.db.models.functions import Coalesce, TruncDate, TruncMonth
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -32,12 +32,24 @@ TOP_PRODUCTOS_CHART_MAX = 150
 
 def _chart_label_producto(row: dict) -> str:
     """Etiqueta para gráficos: descripción del producto (no el código)."""
-    desc = (row.get("lineas__producto__descripcion") or "").strip()
+    desc = (
+        row.get("descripcion_ef")
+        or row.get("lineas__producto__descripcion")
+        or ""
+    ).strip()
     if not desc:
-        return row.get("lineas__producto__codigo") or "—"
+        return row.get("codigo_ef") or row.get("lineas__producto__codigo") or "—"
     if len(desc) > 80:
         return desc[:77] + "…"
     return desc
+
+
+def _venta_lineas_con_snapshot(ventas):
+    """Líneas de venta con código/descripción efectivos (incluye pedidos archivados al despachar)."""
+    return VentaLinea.objects.filter(venta__in=ventas).annotate(
+        codigo_ef=Coalesce(F("codigo_snapshot"), F("producto__codigo"), Value("")),
+        descripcion_ef=Coalesce(F("descripcion_snapshot"), F("producto__descripcion"), Value("")),
+    )
 
 
 def _chart_label_vendedor(row: dict) -> str:
@@ -170,13 +182,13 @@ def _ventas_queryset_reportes(request, *, aplicar_fechas: bool):
 
 def _productos_vendidos_total_rows(ventas) -> list[list]:
     qs = (
-        VentaLinea.objects.filter(venta__in=ventas)
-        .values("producto__codigo", "producto__descripcion")
+        _venta_lineas_con_snapshot(ventas)
+        .values("codigo_ef", "descripcion_ef")
         .annotate(unidades=Coalesce(Sum("cantidad"), Value(0)))
-        .order_by("-unidades", "producto__descripcion")
+        .order_by("-unidades", "descripcion_ef")
     )
     return [
-        [r["producto__codigo"] or "", r["producto__descripcion"] or "", int(r["unidades"] or 0)]
+        [r["codigo_ef"] or "", r["descripcion_ef"] or "", int(r["unidades"] or 0)]
         for r in qs
         if int(r["unidades"] or 0) > 0
     ]
@@ -184,9 +196,9 @@ def _productos_vendidos_total_rows(ventas) -> list[list]:
 
 def _productos_vendidos_periodos_tabla(ventas) -> tuple[list[str], list[list]]:
     qs = (
-        VentaLinea.objects.filter(venta__in=ventas)
+        _venta_lineas_con_snapshot(ventas)
         .annotate(mes=TruncMonth("venta__creado_en"))
-        .values("producto__codigo", "producto__descripcion", "mes")
+        .values("codigo_ef", "descripcion_ef", "mes")
         .annotate(unidades=Coalesce(Sum("cantidad"), Value(0)))
     )
     months_set: set[date] = set()
@@ -199,7 +211,7 @@ def _productos_vendidos_periodos_tabla(ventas) -> tuple[list[str], list[list]]:
         mes_key = trunc_to_month_start(r["mes"])
         if mes_key is None:
             continue
-        prod_key = (r["producto__codigo"] or "", r["producto__descripcion"] or "")
+        prod_key = (r["codigo_ef"] or "", r["descripcion_ef"] or "")
         months_set.add(mes_key)
         by_prod[prod_key][mes_key] += unidades
 
@@ -322,8 +334,9 @@ def reportes_dashboard(request):
     )
 
     top_productos_qs = (
-        ventas.values("lineas__producto_id", "lineas__producto__codigo", "lineas__producto__descripcion")
-        .annotate(unidades=Coalesce(Sum("lineas__cantidad"), Value(0)))
+        _venta_lineas_con_snapshot(ventas)
+        .values("codigo_ef", "descripcion_ef")
+        .annotate(unidades=Coalesce(Sum("cantidad"), Value(0)))
         .order_by("-unidades")
     )
     top_productos_chart = list(top_productos_qs[:TOP_PRODUCTOS_CHART_MAX])

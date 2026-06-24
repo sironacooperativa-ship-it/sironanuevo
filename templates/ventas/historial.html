@@ -228,7 +228,7 @@
                             <a class="btn-icon btn-view btn-sm" href="{% url 'venta_detalle' v.pk %}" title="Ver pedido" aria-label="Ver pedido">
                               <i data-lucide="eye" aria-hidden="true"></i>
                             </a>
-                            {% if puede_eliminar_pedidos %}
+                            {% if puede_eliminar_pedidos and not v.despacho_despachado %}
                               <form
                                 class="d-inline m-0 presu-accion-form"
                                 method="post"
@@ -277,12 +277,12 @@
             <th scope="col" class="col-ped th-pedido">Pedido / fecha</th>
             <th scope="col" class="th-vend presu-col-ellipsis">Vendedor</th>
             <th scope="col" class="th-compra presu-col-ellipsis d-none d-md-table-cell">Comprador</th>
-            <th scope="col" class="text-center th-comision col-comision-switch small">
+            <th scope="col" class="text-center th-comision col-comision-switch small col-hide-sm">
               <span class="d-block">Comisión</span>
               <span class="fw-normal text-muted" style="font-size: 0.7rem">vendedor 5%</span>
             </th>
-            <th scope="col" class="text-end th-caja col-money">Ingreso caja</th>
-            <th scope="col" class="text-center th-estado col-center" title="Estado" aria-label="Estado"> </th>
+            <th scope="col" class="text-end th-caja col-money col-hide-sm">Ingreso caja</th>
+            <th scope="col" class="text-center th-estado col-center col-hide-sm" title="Estado" aria-label="Estado"> </th>
             <th scope="col" class="text-end th-acciones presu-th-acciones col-presu-acciones" aria-label="Acciones"> </th>
           </tr>
         </thead>
@@ -313,7 +313,7 @@
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td class="text-center align-middle comision-cel col-comision-switch py-2">
+              <td class="text-center align-middle comision-cel col-comision-switch py-2 col-hide-sm">
                 <form
                   method="post"
                   action="{% url 'venta_actualizar_comision' v.pk %}"
@@ -362,13 +362,13 @@
                   </div>
                 </form>
               </td>
-              <td class="text-end col-money ventas-hist-caja">
+              <td class="text-end col-money ventas-hist-caja col-hide-sm">
                 <div class="ventas-hist-caja-main">{{ v.monto_ingreso_caja|ars }}</div>
                 {% if v.aplica_comision and v.comision_descontada_en_pedido %}
                   <div class="ventas-hist-caja-sub text-muted">Neto − comisión</div>
                 {% endif %}
               </td>
-              <td class="text-center col-center">
+              <td class="text-center col-center col-hide-sm">
                 {% if v.estado == "PEN" %}
                   <a
                     class="btn-icon btn-approve"
@@ -388,8 +388,34 @@
                   </span>
                 {% endif %}
               </td>
-              <td class="col-presu-acciones text-end table-actions-cell">
+              <td class="col-presu-acciones text-end table-actions-cell ventas-hist-acciones-cell">
                 <div class="table-actions presu-row-actions d-flex ventas-hist-actions">
+                  {% if v.estado == "PEN" %}
+                    <a
+                      class="btn-icon btn-approve ventas-hist-accion-principal d-md-none"
+                      href="{% url 'venta_registrar_pago' v.pk %}"
+                      title="Pagar"
+                      aria-label="Pagar"
+                    >
+                      <i data-lucide="badge-dollar-sign" aria-hidden="true"></i>
+                    </a>
+                  {% elif v.estado == "CAN" %}
+                    <span
+                      class="estado-ico estado-ico--cancel ventas-hist-estado-mobile d-md-none"
+                      title="Cancelado"
+                      aria-label="Cancelado"
+                    >
+                      <i data-lucide="x-circle" aria-hidden="true"></i>
+                    </span>
+                  {% else %}
+                    <span
+                      class="estado-ico estado-ico--approved ventas-hist-estado-mobile d-md-none"
+                      title="Aprobado / Pagada"
+                      aria-label="Aprobado / Pagada"
+                    >
+                      <i data-lucide="check-circle-2" aria-hidden="true"></i>
+                    </span>
+                  {% endif %}
                   <button
                     type="button"
                     class="venta-despacho-ico-btn"
@@ -401,24 +427,26 @@
                     {% include "includes/venta_despacho_icon.html" with venta=v %}
                   </button>
                   <a
-                    class="btn-icon btn-view"
+                    class="btn-icon btn-view ventas-hist-accion-principal"
                     href="{% url 'venta_detalle' v.pk %}"
                     title="Ver pedido"
                     aria-label="Ver pedido"
                   >
                     <i data-lucide="eye" aria-hidden="true"></i>
                   </a>
+                  {% if not v.despacho_despachado %}
                   <a
-                    class="btn-icon btn-edit"
+                    class="btn-icon btn-edit ventas-hist-accion-principal"
                     href="{% url 'venta_editar' v.pk %}"
                     title="Editar pedido"
                     aria-label="Editar pedido"
                   >
                     <i data-lucide="pencil" aria-hidden="true"></i>
                   </a>
+                  {% endif %}
                   {% if v.estado != "PEN" and v.pago_movimiento %}
                     <a
-                      class="btn-icon btn-view"
+                      class="btn-icon btn-view ventas-hist-accion-extra d-none d-md-inline-flex"
                       href="{% url 'caja_detail' v.pago_movimiento.pk %}"
                       title="Ver movimiento en caja"
                       aria-label="Ver movimiento en caja"
@@ -426,7 +454,7 @@
                       <i data-lucide="eye" aria-hidden="true"></i>
                     </a>
                   {% endif %}
-                  {% if puede_eliminar_pedidos %}
+                  {% if puede_eliminar_pedidos and not v.despacho_despachado %}
                     <form
                       class="d-inline m-0 presu-accion-form"
                       method="post"
@@ -436,7 +464,7 @@
                       <input type="hidden" name="next" value="{{ request.get_full_path }}" />
                       <button
                         type="button"
-                        class="btn-icon btn-delete"
+                        class="btn-icon btn-delete ventas-hist-accion-extra d-none d-md-inline-flex"
                         title="Eliminar pedido"
                         aria-label="Eliminar pedido"
                         data-sirona-confirm-submit="¿Eliminar el pedido #{{ v.pk }}? Se revierte stock y, si estaba pagado, el ingreso en caja."

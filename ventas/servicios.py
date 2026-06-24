@@ -26,6 +26,8 @@ def venta_costo_mercaderia_actual(venta: Venta) -> Decimal:
     """Suma cantidad × costo vigente del producto por línea (requiere líneas con producto cargado)."""
     total = Decimal("0.00")
     for ln in venta.lineas.all():
+        if not ln.producto_id:
+            continue
         cu = q2(ln.producto.costo or Decimal("0.00"))
         total += q2(Decimal(ln.cantidad) * cu)
     return q2(total)
@@ -305,7 +307,8 @@ def eliminar_venta_admin(venta: Venta) -> None:
         pm_id = v.pago_movimiento_id
 
         for ln in lineas:
-            Producto.objects.filter(pk=ln.producto_id).update(stock=F("stock") + ln.cantidad)
+            if ln.producto_id:
+                Producto.objects.filter(pk=ln.producto_id).update(stock=F("stock") + ln.cantidad)
 
         Evento.objects.filter(
             tipo=Evento.Tipo.PEDIDO,

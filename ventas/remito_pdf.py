@@ -2,7 +2,7 @@
 
 Reglas nuevas:
 - A4 vertical.
-- Máximo 15 productos por página.
+- Máximo 25 productos por página.
 - PEDIDO y REMITO como copias dentro del mismo PDF (cada copia empieza en página nueva).
 - Totales solo en la última página del PEDIDO (no confundir en páginas intermedias).
 """

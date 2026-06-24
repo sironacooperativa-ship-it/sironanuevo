@@ -1,0 +1,14 @@
+{% if despacho_sync_pending %}
+  {{ despacho_sync_pending|json_script:"sirona-despacho-sync-pending" }}
+  <script>
+    (function () {
+      var el = document.getElementById("sirona-despacho-sync-pending");
+      if (!el || !window.SironaDespachoSync) return;
+      try {
+        JSON.parse(el.textContent).forEach(function (payload) {
+          window.SironaDespachoSync.publish(payload, "armado");
+        });
+      } catch (e) {}
+    })();
+  </script>
+{% endif %}

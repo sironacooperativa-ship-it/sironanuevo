@@ -5,7 +5,7 @@ Objetivo:
 - Mismo formato para Presupuestos / Pedidos / Remitos / Ventas / Duplicados.
 - Header compacto en columnas.
 - Tabla compacta con wrapping de Descripción (sin superposición).
-- Máximo 15 productos por página.
+- Máximo 25 productos por página.
 - Totales solo en la última página (por copia).
 - Pie en 1 línea: disclaimer | generado | página X de Y (por copia).
 
@@ -29,7 +29,7 @@ from .money_decimal import format_monto_ars
 from .pdf_membrete import emission_datetime_str, proportional_logo
 
 
-MAX_ITEMS_PER_PAGE = 15
+MAX_ITEMS_PER_PAGE = 25
 
 
 @dataclass(frozen=True)
@@ -318,7 +318,7 @@ def build_story_for_commercial_doc(
 ) -> tuple[list[Any], list[PageMeta]]:
     """
     Devuelve: (story, pages_meta)
-    - story: platypus story ya paginada (15 items por página)
+    - story: platypus story ya paginada (25 items por página)
     - pages_meta: mapeo 1:1 con páginas físicas para footer/paginación por copia
     """
     chunks = _chunked(list(items), MAX_ITEMS_PER_PAGE)

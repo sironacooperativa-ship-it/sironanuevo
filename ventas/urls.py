@@ -14,6 +14,7 @@ urlpatterns = [
     path("despachos/armado/guardado/<int:pk>/editar/", despacho_views.armado_colectivo_editar, name="armado_colectivo_editar"),
     path("despachos/armado/guardado/<int:pk>/eliminar/", despacho_views.armado_colectivo_eliminar, name="armado_colectivo_eliminar"),
     path("despachos/armado/edicion/cancelar/", despacho_views.armado_colectivo_cancelar_edicion, name="armado_colectivo_cancelar_edicion"),
+    path("despachos/armado/guardado/<int:pk>/despachar/", despacho_views.armado_colectivo_marcar_despachados, name="armado_colectivo_marcar_despachados"),
     path("despachos/armado/guardado/<int:pk>/pdf/", despacho_views.armado_colectivo_guardado_pdf, name="armado_colectivo_guardado_pdf"),
     path("despachos/puntos-stock/", despacho_views.puntos_stock_modal, name="puntos_stock_modal"),
     path("despachos/puntos-stock/guardar/", despacho_views.puntos_stock_guardar, name="puntos_stock_guardar"),

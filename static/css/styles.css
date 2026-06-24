@@ -4025,6 +4025,94 @@ button.btn-icon.venta-despacho-ico.venta-despacho-ico-btn.venta-despacho-ico--de
   }
 }
 
+@media (max-width: 767.98px) {
+  .ventas-historial-modern .ventas-historial-tabla .col-ped,
+  .ventas-historial-modern .ventas-historial-tabla .th-pedido {
+    width: 34% !important;
+    max-width: 34% !important;
+  }
+
+  .ventas-historial-modern .ventas-historial-tabla .th-vend,
+  .ventas-historial-modern .ventas-historial-tabla td:nth-child(2) {
+    width: 26% !important;
+    max-width: 26% !important;
+  }
+
+  .ventas-historial-modern .ventas-historial-tabla .ventas-hist-acciones-cell {
+    width: 40% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding-left: 4px !important;
+    padding-right: 6px !important;
+    vertical-align: middle !important;
+  }
+
+  .ventas-historial-modern .ventas-hist-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-content: flex-start;
+    gap: 8px;
+    max-width: 100%;
+  }
+
+  .ventas-historial-modern .ventas-hist-actions .btn-icon,
+  .ventas-historial-modern .ventas-hist-actions a.btn-icon,
+  .ventas-historial-modern .ventas-hist-actions button.btn-icon,
+  .ventas-historial-modern .ventas-hist-actions .venta-despacho-ico-btn,
+  .ventas-historial-modern .ventas-hist-actions .venta-despacho-ico,
+  .ventas-historial-modern .ventas-hist-actions .ventas-hist-estado-mobile {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    min-height: 42px !important;
+    border-radius: 12px;
+    flex: 0 0 42px;
+  }
+
+  .ventas-historial-modern .ventas-hist-actions i[data-lucide],
+  .ventas-historial-modern .ventas-hist-actions svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .ventas-historial-modern .ventas-hist-actions .venta-despacho-ico svg,
+  .ventas-historial-modern .ventas-hist-actions .venta-despacho-ico i[data-lucide] svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .ui-force-productos.ventas-historial-modern .table-actions {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    max-width: 100% !important;
+  }
+
+  .ui-force-productos.ventas-historial-modern .table-actions .btn-icon,
+  .ui-force-productos.ventas-historial-modern .table-actions a.btn-icon,
+  .ui-force-productos.ventas-historial-modern .table-actions button.btn-icon {
+    width: 42px !important;
+    min-width: 42px !important;
+    height: 42px !important;
+  }
+
+  .ui-force-productos.ventas-historial-modern .table-actions .btn-icon svg,
+  .ui-force-productos.ventas-historial-modern .table-actions a.btn-icon svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .ventas-historial-modern .col-muted.presu-col-ellipsis .ventas-hist-cell-sub {
+    display: none;
+  }
+
+  .ventas-historial-modern .modern-table th,
+  .ventas-historial-modern .modern-table td {
+    padding: 8px 6px !important;
+  }
+}
+
 /* ===== Optional dark mode (visual only) ===== */
 .theme-dark {
   color-scheme: dark;

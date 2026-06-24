@@ -46,6 +46,8 @@ from .models import ComisionLiquidacionPago, Venta, VentaLinea
 from .comision_constancia_pdf_sirona import comision_constancia_pdf_response
 from .despacho_servicios import (
     DESPACHO_HISTORIAL_DIAS,
+    archivar_lineas_pedido_despachado,
+    venta_despacho_json_payload,
     ventas_despachos_activos_queryset,
     ventas_despachos_historial_queryset,
 )
@@ -1054,6 +1056,12 @@ def venta_eliminar(request, pk: int):
         return redirect("ventas_historial")
 
     venta = get_object_or_404(Venta, pk=pk)
+    if venta.despacho_despachado:
+        messages.error(
+            request,
+            f"El pedido #{venta.pk} está archivado (despachado) y no se puede eliminar desde acá.",
+        )
+        return _redirect_despues()
     nid = venta.pk
     try:
         eliminar_venta_admin(venta)
@@ -1127,6 +1135,15 @@ def venta_producto_listas_precio(request, pk: int, producto_pk: int):
 @require_http_methods(["GET", "POST"])
 def venta_editar(request, pk: int):
     venta = get_object_or_404(Venta.objects.select_related("vendedor", "comprador"), pk=pk)
+    if venta.despacho_despachado:
+        return render(
+            request,
+            "ventas/editar_bloqueado.html",
+            {
+                "venta": venta,
+                "motivo": "despachado",
+            },
+        )
     pedido_pagado = venta.estado == Venta.Estado.PAGADA
     if venta.estado not in (Venta.Estado.PENDIENTE, Venta.Estado.PAGADA):
         return render(request, "ventas/editar_bloqueado.html", {"venta": venta})
@@ -1140,9 +1157,9 @@ def venta_editar(request, pk: int):
             "producto_id": ln.producto_id,
             "cantidad": ln.cantidad,
             "precio_unitario": str(ln.precio_unitario),
-            "codigo": (ln.codigo_snapshot or (ln.producto.codigo if ln.producto_id else "")),
-            "descripcion": (ln.descripcion_snapshot or (ln.producto.descripcion if ln.producto_id else "")),
-            "stock": int(getattr(ln.producto, "stock", 0) or 0),
+            "codigo": ln.texto_codigo,
+            "descripcion": ln.texto_descripcion,
+            "stock": int(getattr(ln.producto, "stock", 0) or 0) if ln.producto_id else 0,
         }
         for ln in lineas_qs
     ]
@@ -1652,8 +1669,8 @@ def venta_actualizar_despacho(request, pk: int):
             "actualizado_en",
         ]
     )
+    if venta.despacho_despachado:
+        archivar_lineas_pedido_despachado(venta)
     if ajax:
-        from .despacho_servicios import venta_despacho_json_payload
-
         return JsonResponse(venta_despacho_json_payload(venta))
     return _redirect_response()

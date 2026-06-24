@@ -48,7 +48,7 @@ from reportlab.lib.units import mm
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 
 from .forms import ProductoForm
-from .catalogo_json import invalidar_cache_catalogo_por_cambio_precios
+from .catalogo_json import invalidar_cache_catalogo_por_cambio_precios, invalidar_cache_catalogo_todos
 from .listas_precios_views import (
     producto_listas_extra_context,
     producto_listas_ids_post,
@@ -1316,13 +1316,54 @@ def producto_inline_update(request, pk: int):
     return _redirect_productos_con_filtros(request)
 
 
+def _referencias_producto(producto: Producto) -> list[str]:
+    """Motivos por los que no conviene borrar (FK PROTECT u otros usos)."""
+    refs: list[str] = []
+    if producto.movimientos_stock.exists():
+        refs.append("movimientos de stock")
+    if producto.lineas_venta.exists():
+        refs.append("ventas")
+    if producto.lineas_presupuesto.exists():
+        refs.append("presupuestos")
+    if producto.compras_origen.exists():
+        refs.append("compras")
+    if producto.lineas_armado_colectivo.exists():
+        refs.append("armados colectivos guardados")
+    return refs
+
+
+def _eliminar_producto_si_es_posible(producto: Producto) -> tuple[bool, str]:
+    """
+    Devuelve (eliminado, mensaje).
+    Si eliminó: mensaje = código del producto.
+    Si no: mensaje de error para mostrar al usuario.
+    """
+    refs = _referencias_producto(producto)
+    if refs:
+        return False, (
+            f"No se puede eliminar «{producto.codigo}»: está usado en {', '.join(refs)}. "
+            "Podés dejarlo deshabilitado."
+        )
+    codigo = producto.codigo
+    try:
+        producto.delete()
+    except ProtectedError:
+        return False, (
+            f"No se puede eliminar «{codigo}»: está referenciado en otros registros del sistema."
+        )
+    invalidar_cache_catalogo_todos()
+    return True, codigo
+
+
 @staff_required
 @require_http_methods(["POST"])
 def producto_delete(request, pk: int):
     producto = get_object_or_404(Producto, pk=pk)
-    codigo = producto.codigo
-    producto.delete()
-    messages.success(request, f"Producto eliminado: {codigo}")
+    ok, msg = _eliminar_producto_si_es_posible(producto)
+    if ok:
+        messages.success(request, f"Producto eliminado: {msg}")
+    else:
+        messages.error(request, msg)
     return _redirect_productos_con_filtros(request)
 
 
@@ -1528,22 +1569,23 @@ def productos_acciones_masa(request):
             invalidar_cache_catalogo_por_cambio_precios(lista.pk)
     elif accion == "eliminar":
         ok = 0
-        protegidos = []
+        errores: list[str] = []
         for pid in ids:
-            try:
-                Producto.objects.get(pk=pid).delete()
+            producto = Producto.objects.filter(pk=pid).first()
+            if not producto:
+                continue
+            eliminado, msg = _eliminar_producto_si_es_posible(producto)
+            if eliminado:
                 ok += 1
-            except ProtectedError:
-                protegidos.append(str(pid))
+            else:
+                errores.append(msg)
         if ok:
             messages.success(request, f"Se eliminaron {ok} producto(s).")
-        if protegidos:
-            messages.warning(
-                request,
-                "No se pudieron eliminar algunos ítems porque están referenciados en ventas, presupuestos u otros registros "
-                f"(ids: {', '.join(protegidos)}).",
-            )
-        if not ok and not protegidos:
+        for err in errores[:5]:
+            messages.error(request, err)
+        if len(errores) > 5:
+            messages.error(request, f"…y {len(errores) - 5} producto(s) más no se pudieron eliminar.")
+        if not ok and not errores:
             messages.info(request, "No hubo productos para eliminar.")
     else:
         messages.error(request, "Acción no reconocida.")

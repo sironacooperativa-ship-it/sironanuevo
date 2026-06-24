@@ -59,6 +59,26 @@
           <i data-lucide="printer" aria-hidden="true"></i>
           Imprimir
         </a>
+        {% if not todos_despachados %}
+          <form
+            method="post"
+            action="{% url 'armado_colectivo_marcar_despachados' armado_guardado.pk %}"
+            class="d-inline"
+            id="armado-marcar-despachados-form"
+          >
+            {% csrf_token %}
+            <button
+              type="submit"
+              class="btn btn-success rounded-pill d-inline-flex align-items-center gap-1"
+              id="btn-armado-marcar-despachados"
+            >
+              <i data-lucide="truck" aria-hidden="true"></i>
+              Marcar como despachados
+            </button>
+          </form>
+        {% else %}
+          <span class="badge text-bg-secondary align-self-center">Todos los pedidos despachados</span>
+        {% endif %}
         <form method="post" action="{% url 'armado_colectivo_editar' armado_guardado.pk %}" class="d-inline">
           {% csrf_token %}
           <button type="submit" class="btn btn-outline-primary rounded-pill">
@@ -156,7 +176,6 @@
     </script>
     <script src="{% static 'js/sirona-puntos-stock.js' %}?v=1"></script>
   {% endif %}
-  {% if not solo_lectura %}
-    <script src="{% static 'js/sirona-armado-colectivo.js' %}?v=2"></script>
-  {% endif %}
+  <script src="{% static 'js/sirona-armado-colectivo.js' %}?v=3"></script>
+  {% include "includes/despacho_sync_pending.html" %}
 {% endblock %}

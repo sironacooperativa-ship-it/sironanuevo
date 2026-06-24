@@ -262,13 +262,16 @@
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'ventas_historial' %}">Volver al historial</a>
       <a class="btn btn-outline-danger btn-sm" href="{% url 'venta_detalle' venta.pk %}?export=pdf">Exportar PDF</a>
       <a class="btn btn-outline-dark btn-sm" href="{% url 'venta_detalle' venta.pk %}?export=pdf&inline=1" target="_blank" rel="noopener">Abrir PDF</a>
-      {% if venta.estado == "PEN" %}
+      {% if venta.estado == "PEN" and not venta.despacho_despachado %}
         <a class="btn btn-outline-primary btn-sm px-2" href="{% url 'venta_editar' venta.pk %}" title="Editar" aria-label="Editar">
           <i data-lucide="pencil"></i>
         </a>
         <a class="btn btn-primary btn-sm" href="{% url 'venta_registrar_pago' venta.pk %}">Registrar pago</a>
       {% endif %}
-      {% if puede_eliminar_pedidos %}
+      {% if venta.despacho_despachado %}
+        <span class="badge text-bg-secondary align-self-center">Archivado (despachado)</span>
+      {% endif %}
+      {% if puede_eliminar_pedidos and not venta.despacho_despachado %}
         <form
           method="post"
           action="{% url 'venta_eliminar' venta.pk %}"

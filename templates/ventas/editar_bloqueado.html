@@ -7,7 +7,12 @@
   </div>
 
   <div class="alert alert-info">
-    Este pedido no se puede editar desde esta pantalla (estado no permitido).
+    {% if motivo == "despachado" %}
+      Este pedido ya fue <strong>despachado</strong> y quedó archivado: no se puede editar ni modificar sus productos.
+      Los datos del comprobante siguen disponibles en «Ver comprobante».
+    {% else %}
+      Este pedido no se puede editar desde esta pantalla (estado no permitido).
+    {% endif %}
   </div>
 
   <div class="d-flex flex-wrap gap-2">
