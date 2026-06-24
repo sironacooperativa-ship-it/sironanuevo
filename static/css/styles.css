@@ -3428,6 +3428,27 @@ button.btn-icon.btn-ink,
   .ventas-historial-modern.ui-force-productos .table-actions a.ventas-hist-solo-mobile {
     display: none !important;
   }
+
+  .ventas-historial-modern.ui-force-productos .ventas-hist-acciones-cell {
+    min-width: 230px !important;
+    width: 230px !important;
+    max-width: none !important;
+    overflow: visible !important;
+  }
+
+  .ventas-historial-modern.ui-force-productos .ventas-hist-actions {
+    flex-wrap: wrap !important;
+    justify-content: flex-end !important;
+    row-gap: 4px !important;
+    column-gap: 6px !important;
+  }
+}
+
+.ventas-historial-modern .ventas-hist-accion-disabled {
+  opacity: 0.38;
+  pointer-events: none;
+  cursor: not-allowed;
+  filter: grayscale(0.35);
 }
 
 @media (max-width: 767.98px) {
@@ -4044,32 +4065,99 @@ button.btn-icon.venta-despacho-ico.venta-despacho-ico-btn.venta-despacho-ico--de
 }
 
 @media (max-width: 767.98px) {
-  .ventas-historial-modern .ventas-historial-tabla .col-ped,
-  .ventas-historial-modern .ventas-historial-tabla .th-pedido {
-    width: 34% !important;
-    max-width: 34% !important;
+  .ventas-historial-modern .venta-hist-table-wrap {
+    overflow-x: visible !important;
+    max-height: none;
   }
 
-  .ventas-historial-modern .ventas-historial-tabla .th-vend,
-  .ventas-historial-modern .ventas-historial-tabla td:nth-child(2) {
-    width: 26% !important;
-    max-width: 26% !important;
-  }
-
-  .ventas-historial-modern .ventas-historial-tabla .ventas-hist-acciones-cell {
-    width: 40% !important;
+  .ventas-historial-modern .ventas-historial-tabla,
+  .ventas-historial-modern.presu-lista-modern .ventas-historial-tabla {
+    display: block;
     min-width: 0 !important;
-    max-width: none !important;
-    padding-left: 4px !important;
-    padding-right: 6px !important;
-    vertical-align: middle !important;
+    width: 100% !important;
+    table-layout: auto !important;
   }
 
-  .ventas-historial-modern .ventas-hist-actions {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    align-content: flex-start;
+  .ventas-historial-modern .ventas-historial-tabla colgroup {
+    display: none;
+  }
+
+  .ventas-historial-modern .ventas-historial-tabla thead {
+    display: none;
+  }
+
+  .ventas-historial-modern .ventas-historial-tabla tbody {
+    display: block;
+  }
+
+  .ventas-historial-modern .ventas-historial-tabla tbody tr {
+    display: block;
+    margin-bottom: 12px;
+    padding: 12px;
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05);
+  }
+
+  .ventas-historial-modern .ventas-historial-tabla tbody td {
+    display: block;
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 0 10px 0 !important;
+    border: none !important;
+    text-align: left !important;
+    white-space: normal !important;
+  }
+
+  .ventas-historial-modern .ventas-historial-tabla tbody td:last-child {
+    padding-bottom: 0 !important;
+  }
+
+  /* Mostrar comisión e ingreso caja en móvil (card apilada) */
+  .ventas-historial-modern .ventas-historial-tabla .col-hide-sm {
+    display: block !important;
+  }
+
+  .ventas-historial-modern .ventas-historial-tabla .ventas-hist-td-estado {
+    display: none !important;
+  }
+
+  .ventas-historial-modern .ventas-hist-td-comision::before,
+  .ventas-historial-modern .ventas-hist-td-caja::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(100, 116, 139, 0.95);
+    margin-bottom: 4px;
+    font-weight: 700;
+  }
+
+  .ventas-historial-modern .ventas-hist-td-comision .ventas-hist-comision-stack {
+    max-width: none;
+    align-items: flex-start;
+  }
+
+  .ventas-historial-modern .ventas-hist-td-caja .ventas-hist-caja-main {
+    font-size: 1rem;
+    font-weight: 650;
+  }
+
+  .ventas-historial-modern .ventas-hist-td-acciones {
+    padding-top: 4px !important;
+    border-top: 1px solid rgba(226, 232, 240, 0.85) !important;
+    margin-top: 2px;
+  }
+
+  .ventas-historial-modern .ventas-hist-td-acciones .ventas-hist-actions {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
     gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
     max-width: 100%;
   }
 
@@ -4078,7 +4166,8 @@ button.btn-icon.venta-despacho-ico.venta-despacho-ico-btn.venta-despacho-ico--de
   .ventas-historial-modern .ventas-hist-actions button.btn-icon,
   .ventas-historial-modern .ventas-hist-actions .venta-despacho-ico-btn,
   .ventas-historial-modern .ventas-hist-actions .venta-despacho-ico,
-  .ventas-historial-modern .ventas-hist-actions .ventas-hist-solo-mobile {
+  .ventas-historial-modern .ventas-hist-actions .ventas-hist-solo-mobile,
+  .ventas-historial-modern .ventas-hist-actions .ventas-hist-accion-disabled {
     width: 42px !important;
     height: 42px !important;
     min-width: 42px !important;
@@ -4100,9 +4189,9 @@ button.btn-icon.venta-despacho-ico.venta-despacho-ico-btn.venta-despacho-ico--de
   }
 
   .ui-force-productos.ventas-historial-modern .table-actions {
-    flex-wrap: wrap !important;
+    flex-wrap: nowrap !important;
     gap: 8px !important;
-    justify-content: flex-end !important;
+    justify-content: flex-start !important;
     align-items: center !important;
     max-width: 100% !important;
   }
@@ -4122,12 +4211,12 @@ button.btn-icon.venta-despacho-ico.venta-despacho-ico-btn.venta-despacho-ico--de
   }
 
   .ventas-historial-modern .col-muted.presu-col-ellipsis .ventas-hist-cell-sub {
-    display: none;
+    display: block;
   }
 
   .ventas-historial-modern .modern-table th,
   .ventas-historial-modern .modern-table td {
-    padding: 8px 6px !important;
+    padding: 0 !important;
   }
 }
 

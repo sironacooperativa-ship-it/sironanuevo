@@ -289,11 +289,11 @@
         <tbody>
           {% for v in ventas %}
             <tr data-venta-id="{{ v.pk }}">
-              <td class="col-ped col-id-num">
+              <td class="col-ped col-id-num ventas-hist-td-ped">
                 <div class="ventas-hist-cell-title">Pedido #{{ v.pk }}</div>
                 <div class="ventas-hist-cell-sub text-muted small">{{ v.creado_en|date:"d/m/Y H:i" }}</div>
               </td>
-              <td class="col-muted presu-col-ellipsis" title="{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}">
+              <td class="col-muted presu-col-ellipsis ventas-hist-td-vend" title="{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}">
                 <div class="ventas-hist-cell-title">{{ v.vendedor.apellido }}, {{ v.vendedor.nombre }}</div>
                 <div class="ventas-hist-cell-sub text-muted small">Código: {{ v.vendedor.codigo }}</div>
               </td>
@@ -313,7 +313,7 @@
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td class="text-center align-middle comision-cel col-comision-switch py-2 col-hide-sm">
+              <td class="text-center align-middle comision-cel col-comision-switch py-2 col-hide-sm ventas-hist-td-comision" data-label="Comisión vendedor">
                 <form
                   method="post"
                   action="{% url 'venta_actualizar_comision' v.pk %}"
@@ -362,13 +362,13 @@
                   </div>
                 </form>
               </td>
-              <td class="text-end col-money ventas-hist-caja col-hide-sm">
+              <td class="text-end col-money ventas-hist-caja col-hide-sm ventas-hist-td-caja" data-label="Ingreso caja">
                 <div class="ventas-hist-caja-main">{{ v.monto_ingreso_caja|ars }}</div>
                 {% if v.aplica_comision and v.comision_descontada_en_pedido %}
                   <div class="ventas-hist-caja-sub text-muted">Neto − comisión</div>
                 {% endif %}
               </td>
-              <td class="text-center col-center col-hide-sm">
+              <td class="text-center col-center col-hide-sm ventas-hist-td-estado ventas-hist-solo-desktop">
                 {% if v.estado == "PEN" %}
                   <a
                     class="btn-icon btn-approve"
@@ -388,7 +388,7 @@
                   </span>
                 {% endif %}
               </td>
-              <td class="col-presu-acciones text-end table-actions-cell ventas-hist-acciones-cell">
+              <td class="col-presu-acciones text-end table-actions-cell ventas-hist-acciones-cell ventas-hist-td-acciones">
                 <div class="table-actions presu-row-actions d-flex ventas-hist-actions">
                   {% if v.estado == "PEN" %}
                     <a
@@ -434,7 +434,15 @@
                   >
                     <i data-lucide="eye" aria-hidden="true"></i>
                   </a>
-                  {% if not v.despacho_despachado %}
+                  {% if v.despacho_despachado %}
+                    <span
+                      class="btn-icon btn-edit ventas-hist-accion-disabled"
+                      title="Pedido archivado (despachado)"
+                      aria-label="Pedido archivado (despachado)"
+                    >
+                      <i data-lucide="pencil" aria-hidden="true"></i>
+                    </span>
+                  {% else %}
                   <a
                     class="btn-icon btn-edit"
                     href="{% url 'venta_editar' v.pk %}"
@@ -454,7 +462,16 @@
                       <i data-lucide="eye" aria-hidden="true"></i>
                     </a>
                   {% endif %}
-                  {% if puede_eliminar_pedidos and not v.despacho_despachado %}
+                  {% if puede_eliminar_pedidos %}
+                    {% if v.despacho_despachado %}
+                      <span
+                        class="btn-icon btn-delete ventas-hist-accion-disabled ventas-hist-solo-desktop"
+                        title="Pedido archivado (despachado)"
+                        aria-label="Pedido archivado (despachado)"
+                      >
+                        <i data-lucide="trash-2" aria-hidden="true"></i>
+                      </span>
+                    {% else %}
                     <form
                       class="d-inline m-0 presu-accion-form ventas-hist-solo-desktop"
                       method="post"
@@ -472,6 +489,7 @@
                         <i data-lucide="trash-2" aria-hidden="true"></i>
                       </button>
                     </form>
+                    {% endif %}
                   {% endif %}
                 </div>
               </td>
