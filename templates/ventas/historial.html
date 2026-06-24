@@ -465,7 +465,7 @@
                   {% if puede_eliminar_pedidos %}
                     {% if v.despacho_despachado %}
                       <span
-                        class="btn-icon btn-delete ventas-hist-accion-disabled ventas-hist-solo-desktop"
+                        class="btn-icon btn-delete ventas-hist-accion-disabled"
                         title="Pedido archivado (despachado)"
                         aria-label="Pedido archivado (despachado)"
                       >
@@ -473,7 +473,7 @@
                       </span>
                     {% else %}
                     <form
-                      class="d-inline m-0 presu-accion-form ventas-hist-solo-desktop"
+                      class="d-inline m-0 presu-accion-form"
                       method="post"
                       action="{% url 'venta_eliminar' v.pk %}"
                     >

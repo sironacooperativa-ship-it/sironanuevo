@@ -33,6 +33,7 @@ urlpatterns = [
         name="productos_import_excel_modelo",
     ),
     path("lista-precios.pdf", views.productos_export_pdf, name="productos_export_pdf"),
+    path("export/costos.xlsx", views.productos_export_costos_excel, name="productos_export_costos_excel"),
     path("listas/guardar/", views.lista_precios_guardar, name="lista_precios_guardar"),
     path("listas/aplicar/", views.lista_precios_aplicar, name="lista_precios_aplicar"),
     path("listas-precio/", listas_precios_views.listas_precios_menu, name="productos_listas_precios"),

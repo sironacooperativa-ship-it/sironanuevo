@@ -157,6 +157,22 @@
         grid-template-columns: 1fr 1fr;
       }
     }
+    .productos-header-actions {
+      display: grid;
+      grid-template-columns: repeat(3, auto);
+      gap: 8px;
+      justify-content: end;
+      align-content: start;
+    }
+    @media (max-width: 767.98px) {
+      .productos-header-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+      }
+      .productos-header-actions .action-button {
+        width: 100%;
+      }
+    }
   </style>
 {% endblock %}
 {% block title %}Productos{% endblock %}
@@ -171,7 +187,7 @@
         </p>
       </div>
     </div>
-    <div class="d-flex flex-wrap gap-2 justify-content-end">
+    <div class="productos-header-actions">
       <button class="action-button btn btn-outline-secondary" type="button" id="btnProductosStats">
         <i data-lucide="bar-chart-3" aria-hidden="true"></i>
         Estadísticas
@@ -187,6 +203,10 @@
       <a class="action-button btn btn-outline-secondary" href="{% url 'productos_import_excel' %}">
         <i data-lucide="upload" aria-hidden="true"></i>
         Importar Excel
+      </a>
+      <a class="action-button btn btn-outline-secondary" href="{% url 'productos_export_costos_excel' %}">
+        <i data-lucide="file-spreadsheet" aria-hidden="true"></i>
+        Costos
       </a>
       <a class="action-button btn btn-outline-secondary" href="{% url 'productos_aumento' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}">
         <i data-lucide="trending-up" aria-hidden="true"></i>

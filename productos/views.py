@@ -240,6 +240,10 @@ def _get_lista_param_get(request) -> str:
     return non[-1]
 
 
+def _estado_muestra_deshabilitados(estado: str) -> bool:
+    return estado in ("0", "stock", "manual")
+
+
 def _filtrar_productos_queryset(request, *, use_post: bool = False):
     """Filtra por búsqueda, tipo y proveedor (productos con al menos una compra a ese proveedor)."""
     if use_post:
@@ -258,8 +262,9 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
     vencimiento = _get_param_last_nonempty(request, "vencimiento")
 
     farmacia = _lista_precios_farmacia()
+    muestra_deshabilitados = _estado_muestra_deshabilitados(estado)
     if lista == "" and farmacia is not None:
-        lista = str(farmacia.pk)
+        lista = "all" if muestra_deshabilitados else str(farmacia.pk)
 
     lista_obj: ListaPrecios | None = None
     lista_modo = "all"
@@ -281,13 +286,17 @@ def _filtrar_productos_queryset(request, *, use_post: bool = False):
             lista_obj = lobj
             if lobj.es_farmacia:
                 lista_modo = "farmacia"
-                productos = productos.filter(habilitado=True, en_lista_precios=True)
+                if not muestra_deshabilitados:
+                    productos = productos.filter(habilitado=True, en_lista_precios=True)
             else:
                 lista_modo = "rubro"
-                productos = productos.filter(
-                    habilitado=True,
-                    items_lista_precio__lista_id=lid,
-                ).distinct()
+                if muestra_deshabilitados:
+                    productos = productos.filter(items_lista_precio__lista_id=lid).distinct()
+                else:
+                    productos = productos.filter(
+                        habilitado=True,
+                        items_lista_precio__lista_id=lid,
+                    ).distinct()
 
     if estado == "1":
         productos = productos.filter(habilitado=True)
@@ -643,7 +652,8 @@ def _aplicar_snapshot_excel_a_producto(producto: Producto, snap: dict) -> None:
 def productos_list(request):
     farmacia = _lista_precios_farmacia()
     raw_lista = _get_lista_param_get(request)
-    if farmacia is not None and raw_lista == "":
+    estado = _get_param_last_nonempty(request, "estado")
+    if farmacia is not None and raw_lista == "" and not _estado_muestra_deshabilitados(estado):
         q = request.GET.copy()
         q["lista"] = str(farmacia.pk)
         return redirect(reverse("productos_list") + "?" + q.urlencode())
@@ -1848,6 +1858,64 @@ def productos_import_excel_modelo(request):
         ]
     ]
     return xlsx_response("modelo_import_productos", [("Productos", headers, ejemplo)])
+
+
+def _margen_desde_costo_precio(costo, precio_venta, fallback) -> str:
+    costo_d = Decimal(costo or 0)
+    precio_d = Decimal(precio_venta or 0)
+    if costo_d > 0:
+        pct = (precio_d - costo_d) * (Decimal("100.0") / costo_d)
+        return str(pct.quantize(Decimal("0.01")))
+    return str(fallback or Decimal("0.00"))
+
+
+def _filas_export_costos_productos() -> list[list]:
+    """Productos habilitados con fila por cada lista de precio asignada."""
+    rows: list[list] = []
+    farmacia = _lista_precios_farmacia()
+    farmacia_nombre = farmacia.nombre if farmacia else "Farmacia"
+
+    for p in Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
+        "descripcion", "codigo"
+    ):
+        rows.append(
+            [
+                p.descripcion,
+                farmacia_nombre,
+                str(p.costo),
+                str(p.porcentaje_ganancia),
+                str(p.precio_venta),
+            ]
+        )
+
+    items = (
+        ListaPrecioItem.objects.filter(producto__habilitado=True)
+        .exclude(lista__es_farmacia=True)
+        .select_related("producto", "lista")
+        .order_by("producto__descripcion", "producto__codigo", "lista__nombre")
+    )
+    for item in items:
+        p = item.producto
+        rows.append(
+            [
+                p.descripcion,
+                item.lista.nombre,
+                str(p.costo),
+                _margen_desde_costo_precio(p.costo, item.precio_venta, p.porcentaje_ganancia),
+                str(item.precio_venta),
+            ]
+        )
+
+    rows.sort(key=lambda r: (r[0].casefold(), r[1].casefold()))
+    return rows
+
+
+@login_required
+def productos_export_costos_excel(request):
+    headers = ["Producto", "Lista de precio", "Precio costo", "Margen de ganancia", "Precio venta"]
+    rows = _filas_export_costos_productos()
+    fecha = timezone.localtime().strftime("%Y-%m-%d")
+    return xlsx_response(f"costos_productos_{fecha}", [("Costos", headers, rows)])
 
 
 @login_required
