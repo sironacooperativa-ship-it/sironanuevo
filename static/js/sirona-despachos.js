@@ -72,21 +72,29 @@
     }
   }
 
+  function despachoBody(form, armado, despachado) {
+    var body = new URLSearchParams(new FormData(form));
+    body.set("despacho_armado", armado && armado.checked ? "1" : "0");
+    body.set("despacho_despachado", despachado && despachado.checked ? "1" : "0");
+    return body;
+  }
+
   function submitRow(changed) {
     var row = rowFor(changed);
     var form = formForRow(row);
-    if (!row || !form) return;
+    if (!row || !form || row.getAttribute("data-despacho-saving") === "1") return;
 
     syncCheckboxes(changed);
 
     var armado = row.querySelector(".venta-despacho-armado");
     var despachado = row.querySelector(".venta-despacho-despachado");
 
+    var body = despachoBody(form, armado, despachado);
+
+    row.setAttribute("data-despacho-saving", "1");
     row.classList.add("venta-despacho-row--saving");
     if (armado) armado.disabled = true;
     if (despachado) despachado.disabled = true;
-
-    var body = new URLSearchParams(new FormData(form));
 
     fetch(form.action, {
       method: "POST",
@@ -116,6 +124,7 @@
         window.alert("No se pudo actualizar el despacho. Intentá de nuevo.");
       })
       .finally(function () {
+        row.removeAttribute("data-despacho-saving");
         row.classList.remove("venta-despacho-row--saving");
         if (armado) armado.disabled = false;
         if (despachado) despachado.disabled = false;

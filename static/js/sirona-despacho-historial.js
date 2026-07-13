@@ -61,6 +61,32 @@
     }
   }
 
+  function cleanupModalShell() {
+    try {
+      if (document.querySelector(".modal.show")) return;
+      document.querySelectorAll(".modal-backdrop").forEach(function (bd) {
+        if (bd.parentNode) bd.parentNode.removeChild(bd);
+      });
+      document.body.classList.remove("modal-open");
+      document.body.style.removeProperty("padding-right");
+      document.body.style.removeProperty("overflow");
+    } catch (e) {}
+  }
+
+  function hideModal(parts) {
+    if (!parts || !parts.modalEl || !parts.modal) return;
+    parts.modalEl.addEventListener("hidden.bs.modal", cleanupModalShell, { once: true });
+    parts.modal.hide();
+    setTimeout(cleanupModalShell, 450);
+  }
+
+  function setOptionsDisabled(parts, disabled) {
+    if (!parts || !parts.contentEl) return;
+    parts.contentEl.querySelectorAll(".venta-despacho-opcion").forEach(function (op) {
+      op.disabled = !!disabled;
+    });
+  }
+
   function buildModalHtml(ventaId, estadoActual) {
     var opciones = ESTADOS.map(function (st) {
       var active = st.clave === estadoActual ? " is-active" : "";
@@ -103,7 +129,10 @@
 
   function guardarEstado(btn, url, estado, parts) {
     var ventaId = btn.getAttribute("data-venta-id");
+    if (parts.contentEl.getAttribute("data-despacho-saving") === "1") return;
+    parts.contentEl.setAttribute("data-despacho-saving", "1");
     parts.contentEl.classList.add("venta-despacho-modal-busy");
+    setOptionsDisabled(parts, true);
     fetch(url, {
       method: "POST",
       credentials: "same-origin",
@@ -127,12 +156,14 @@
         } else {
           applyIconState(btn, data.estado, data.label);
         }
-        parts.modal.hide();
+        hideModal(parts);
       })
       .catch(function () {
+        setOptionsDisabled(parts, false);
         window.alert("No se pudo actualizar el estado del pedido #" + ventaId + ".");
       })
       .finally(function () {
+        parts.contentEl.removeAttribute("data-despacho-saving");
         parts.contentEl.classList.remove("venta-despacho-modal-busy");
       });
   }
@@ -147,6 +178,8 @@
     if (!ventaId || !url) return;
 
     parts.contentEl.innerHTML = buildModalHtml(ventaId, estadoActual);
+    parts.contentEl.removeAttribute("data-despacho-saving");
+    parts.contentEl.classList.remove("venta-despacho-modal-busy");
     try {
       var dlg = parts.modalEl.querySelector(".modal-dialog");
       if (dlg) {
