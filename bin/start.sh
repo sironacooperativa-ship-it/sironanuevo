@@ -2,6 +2,7 @@
 set -euo pipefail
 
 python manage.py migrate
+python manage.py createcachetable 2>/dev/null || true
 python manage.py collectstatic --noinput
 python manage.py ensure_superuser
 

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load money %}
+{% load l10n %}
 {% load static %}
 {% block title %}Historial de ventas{% endblock %}
 {% block content %}
@@ -83,7 +84,13 @@
       </form>
       <p class="small text-muted mb-0 mt-2">
         Fechas según <strong>fecha de registro</strong> del pedido.
-        {% if filtros.pestana == "ganancia" %}
+        {% if filtros.pestana == "a_pagar" %}
+          {% if filtros.vendedor %}
+            Marcá pedidos con la casilla y usá <strong>Cobrar seleccionados</strong> para registrar varios cobros juntos.
+          {% else %}
+            Elegí un <strong>vendedor</strong> en el filtro para seleccionar varios pedidos y cobrarlos juntos.
+          {% endif %}
+        {% elif filtros.pestana == "ganancia" %}
           En <strong>Ganancia por pedido</strong>: los <strong>pagados</strong> usan costo y ganancia <strong>fijados al cobrar</strong> (no cambian si actualizás costos en productos). Los <strong>pendientes</strong> se estiman con el costo actual. Los presupuestos se editan en su flujo propio.
         {% else %}
           Las pestañas separan pendientes de cobro y pedidos ya pagados.
@@ -261,9 +268,35 @@
         {% endfor %}
       </div>
     {% else %}
+    {% if filtros.pestana == "a_pagar" and filtros.vendedor %}
+      <div
+        id="ventasPagoMasivoBar"
+        class="ventas-pago-masivo-bar px-3 py-2 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2 bg-light"
+      >
+        <div class="small">
+          <span class="text-muted">Seleccionados:</span>
+          <strong id="ventasPagoMasivoCount">0</strong>
+          <span class="text-muted ms-2">Total:</span>
+          <strong id="ventasPagoMasivoTotal" class="tabular-nums">$ 0,00</strong>
+        </div>
+        <button
+          type="button"
+          class="btn btn-sm btn-primary rounded-pill"
+          id="ventasPagoMasivoGo"
+          disabled
+          data-url="{% url 'venta_registrar_pago_masivo' %}"
+          data-retorno="{{ request.get_full_path|escape }}"
+        >
+          Cobrar seleccionados
+        </button>
+      </div>
+    {% endif %}
     <div class="table-responsive presu-lista-table-wrap venta-hist-table-wrap">
       <table class="modern-table ventas-historial-tabla" id="venta-hist-tabla">
         <colgroup>
+          {% if filtros.pestana == "a_pagar" and filtros.vendedor %}
+            <col style="width: 2.5rem" />
+          {% endif %}
           <col style="width: 138px" />  {# Pedido/fecha #}
           <col style="width: 22%" />    {# Vendedor (ancha) #}
           <col style="width: 25%" />    {# Comprador (más ancha) #}
@@ -274,6 +307,17 @@
         </colgroup>
         <thead>
           <tr>
+            {% if filtros.pestana == "a_pagar" and filtros.vendedor %}
+              <th scope="col" class="text-center" style="width: 2.5rem">
+                <input
+                  type="checkbox"
+                  class="form-check-input m-0"
+                  id="ventasPagoMasivoTodo"
+                  title="Seleccionar todos en esta página"
+                  aria-label="Seleccionar todos en esta página"
+                />
+              </th>
+            {% endif %}
             <th scope="col" class="col-ped th-pedido">Pedido / fecha</th>
             <th scope="col" class="th-vend presu-col-ellipsis">Vendedor</th>
             <th scope="col" class="th-compra presu-col-ellipsis d-none d-md-table-cell">Comprador</th>
@@ -289,6 +333,19 @@
         <tbody>
           {% for v in ventas %}
             <tr data-venta-id="{{ v.pk }}">
+              {% if filtros.pestana == "a_pagar" and filtros.vendedor %}
+                <td class="text-center align-middle">
+                  {% if v.estado == "PEN" %}
+                    <input
+                      type="checkbox"
+                      class="form-check-input m-0 js-venta-pago-sel"
+                      value="{{ v.pk }}"
+                      data-monto="{{ v.monto_ingreso_caja|unlocalize }}"
+                      aria-label="Seleccionar pedido #{{ v.pk }}"
+                    />
+                  {% endif %}
+                </td>
+              {% endif %}
               <td class="col-ped col-id-num ventas-hist-td-ped">
                 <div class="ventas-hist-cell-title">Pedido #{{ v.pk }}</div>
                 <div class="ventas-hist-cell-sub text-muted small">{{ v.creado_en|date:"d/m/Y H:i" }}</div>
@@ -496,7 +553,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="7" class="table-empty">No hay ventas con los filtros actuales.</td>
+              <td colspan="{% if filtros.pestana == 'a_pagar' and filtros.vendedor %}8{% else %}7{% endif %}" class="table-empty">No hay ventas con los filtros actuales.</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -530,4 +587,7 @@
 
 {% block page_scripts %}
   <script src="{% static 'js/sirona-despacho-historial.js' %}?v=5"></script>
+  {% if filtros.pestana == "a_pagar" and filtros.vendedor %}
+    <script src="{% static 'js/ventas-historial-pago-masivo.js' %}?v=1"></script>
+  {% endif %}
 {% endblock %}

@@ -377,13 +377,13 @@ def lista_precios_trabajar(request, pk: int):
                 pr = _parse_precio(request.POST.get(key) or "")
                 if pr is None:
                     continue
-                if it.precio_venta != pr:
+                if q2(it.precio_venta) != pr:
                     it.precio_venta = pr
                     to_update.append(it)
                     n += 1
             if to_update:
                 ListaPrecioItem.objects.bulk_update(to_update, ["precio_venta"])
-        if n:
+        if n or any(k.startswith("ip_") for k in request.POST):
             invalidar_cache_catalogo_por_cambio_precios(lista.pk)
         messages.success(request, f"Se guardaron {n} precio(s) de la lista.")
         return redirect(f"{request.path}?q={q}" if q else request.path)

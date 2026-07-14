@@ -59,6 +59,7 @@ from .listas_propagacion import (
     aplicar_precio_a_listas,
     comparativa_listas_producto,
     listas_del_producto,
+    listas_precio_ids_del_producto,
     parse_aplicar_precio_listas_post,
     precio_propuesto_desde_post,
 )
@@ -206,6 +207,17 @@ def _retorno_params_desde_post(request) -> dict:
     if pgn.isdigit():
         params["page"] = pgn
     return params
+
+
+def _lista_rubro_desde_retorno(request) -> ListaPrecios | None:
+    """Lista de rubro activa en filtros de /productos/ (p. ej. Kioscos)."""
+    raw_lista = (_retorno_params_desde_post(request).get("lista") or "").strip()
+    if not raw_lista.isdigit():
+        return None
+    lista = ListaPrecios.objects.filter(pk=int(raw_lista)).first()
+    if lista is None or lista.es_farmacia:
+        return None
+    return lista
 
 
 def _redirect_productos_con_filtros(request):
@@ -1237,6 +1249,7 @@ def producto_update(request, pk: int):
         repetido = _producto_repite_en_misma_lista(request, form, producto) if form_ok else False
         if form_ok and not falta_lista and not repetido:
             prev_stock = int(producto.stock or 0)
+            prev_precio = q2(producto.precio_venta)
             producto = form.save(commit=False)
             producto.precio_venta_editado = bool(form.cleaned_data.get("precio_venta_editado"))
             producto.save()
@@ -1246,6 +1259,7 @@ def producto_update(request, pk: int):
 
                 encolar_prompt_stock_cero(request, [producto.pk])
             aplicar_ids = parse_aplicar_precio_listas_post(request.POST)
+            nuevo_precio = q2(producto.precio_venta)
             if aplicar_ids:
                 n = aplicar_precio_a_listas(producto, aplicar_ids, producto.precio_venta)
                 if n:
@@ -1253,15 +1267,19 @@ def producto_update(request, pk: int):
                         request,
                         f"Precio de catálogo aplicado en {n} lista(s) de precio por rubro.",
                     )
-            elif producto.en_lista_precios:
-                farmacia_id = (
-                    ListaPrecios.objects.filter(es_farmacia=True)
-                    .order_by("id")
-                    .values_list("pk", flat=True)
-                    .first()
+            elif nuevo_precio != prev_precio:
+                rubro_ids = list(
+                    ListaPrecioItem.objects.filter(producto=producto)
+                    .exclude(lista__es_farmacia=True)
+                    .values_list("lista_id", flat=True)
                 )
-                if farmacia_id:
-                    invalidar_cache_catalogo_por_cambio_precios(farmacia_id)
+                if len(rubro_ids) == 1:
+                    ListaPrecioItem.objects.filter(
+                        producto=producto, lista_id=rubro_ids[0]
+                    ).update(precio_venta=nuevo_precio)
+            lista_ids = listas_precio_ids_del_producto(producto)
+            if lista_ids:
+                invalidar_cache_catalogo_por_cambio_precios(*lista_ids)
             messages.success(request, f"Producto actualizado: {producto.codigo}")
             if request.GET.get("modal") == "1":
                 return HttpResponse(
@@ -1302,14 +1320,28 @@ def producto_update(request, pk: int):
 @login_required
 @require_http_methods(["POST"])
 def producto_inline_update(request, pk: int):
-    """Guardado desde la tabla (edición en línea). No sincroniza listas de rubro extra."""
+    """Guardado desde la tabla (edición en línea)."""
     producto = get_object_or_404(Producto, pk=pk)
+    lista_rubro = _lista_rubro_desde_retorno(request)
+    prev_precio_catalogo = q2(producto.precio_venta)
     form = ProductoForm(request.POST, instance=producto)
     if form.is_valid():
         prev_stock = int(producto.stock or 0)
         producto = form.save(commit=False)
         producto.precio_venta_editado = bool(form.cleaned_data.get("precio_venta_editado"))
         producto.save()
+        precio_lista = _parse_precio_venta_input(request.POST.get("precio_venta") or "")
+        if lista_rubro and precio_lista is not None:
+            ListaPrecioItem.objects.filter(lista=lista_rubro, producto=producto).update(
+                precio_venta=precio_lista
+            )
+            if q2(producto.precio_venta) != prev_precio_catalogo:
+                Producto.objects.filter(pk=producto.pk).update(precio_venta=prev_precio_catalogo)
+            invalidar_cache_catalogo_por_cambio_precios(lista_rubro.pk)
+        elif q2(producto.precio_venta) != prev_precio_catalogo:
+            lista_ids = listas_precio_ids_del_producto(producto)
+            if lista_ids:
+                invalidar_cache_catalogo_por_cambio_precios(*lista_ids)
         if prev_stock > 0 and int(producto.stock or 0) <= 0:
             from .stock_cero import encolar_prompt_stock_cero
 
@@ -1383,6 +1415,7 @@ def producto_toggle_habilitado(request, pk: int):
     producto = get_object_or_404(Producto, pk=pk)
     if producto.habilitado:
         Producto.deshabilitar_manual([producto.pk])
+        producto.refresh_from_db()
         messages.success(request, f"Producto deshabilitado: {producto.codigo}")
     else:
         if producto.stock <= 0:
@@ -1398,6 +1431,9 @@ def producto_toggle_habilitado(request, pk: int):
         producto.listas_stock_snapshot = None
         producto.save(update_fields=["habilitado", "deshabilitado_por_stock", "listas_stock_snapshot"])
         messages.success(request, f"Producto habilitado: {producto.codigo}")
+    lista_ids = listas_precio_ids_del_producto(producto)
+    if lista_ids:
+        invalidar_cache_catalogo_por_cambio_precios(*lista_ids)
     dest = safe_internal_path(request.POST.get("retorno") or "") or safe_internal_path(
         request.META.get("HTTP_REFERER") or ""
     )

@@ -165,13 +165,22 @@ CSRF_COOKIE_SAMESITE = "Lax"
 SIRONA_LOGOUT_ON_TAB_CLOSE = os.environ.get("SIRONA_LOGOUT_ON_TAB_CLOSE", "1") == "1"
 SIRONA_LOGOUT_PENDING_GRACE_SECONDS = int(os.environ.get("SIRONA_LOGOUT_PENDING_GRACE_SECONDS", "3"))
 
-# Caché en memoria (proceso): rate-limit de login, conteos del layout (vendor_mode), etc.
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "sirona-default",
+# Caché: en producción (Postgres) usar tabla compartida entre workers de Render.
+# En local, memoria del proceso alcanza.
+if os.environ.get("DATABASE_URL"):
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+            "LOCATION": "sirona_django_cache",
+        }
     }
-}
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "sirona-default",
+        }
+    }
 
 # Logs a consola (Render)
 LOGGING = {

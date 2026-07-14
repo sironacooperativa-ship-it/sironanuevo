@@ -582,10 +582,10 @@
                     name="precio_venta"
                     class="form-control form-control-sm text-end rounded-3"
                     form="producto-inline-{{ p.pk }}"
-                    value="{{ p.precio_venta|unlocalize }}"
+                    value="{% if lista_modo == 'rubro' %}{{ p.precio_lista_vista|unlocalize }}{% else %}{{ p.precio_venta|unlocalize }}{% endif %}"
                     step="0.01"
                     min="0"
-                    title="Precio de venta"
+                    title="{% if lista_modo == 'rubro' and lista_obj %}Precio en {{ lista_obj.nombre }}{% else %}Precio de venta{% endif %}"
                     inputmode="decimal"
                     autocomplete="off"
                   />

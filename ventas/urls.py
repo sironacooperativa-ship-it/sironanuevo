@@ -40,6 +40,7 @@ urlpatterns = [
         views.venta_actualizar_despacho,
         name="venta_actualizar_despacho",
     ),
+    path("pago-masivo/", views.venta_registrar_pago_masivo, name="venta_registrar_pago_masivo"),
     path("<int:pk>/pago/", views.venta_registrar_pago, name="venta_registrar_pago"),
     path("<int:pk>/eliminar/", views.venta_eliminar, name="venta_eliminar"),
     path(

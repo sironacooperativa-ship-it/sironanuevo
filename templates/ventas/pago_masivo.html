@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Cobro múltiple — {{ ventas|length }} pedido(s){% endblock %}
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Cobrar pedidos seleccionados</h1>
+    <a class="btn btn-outline-secondary btn-sm" href="{{ retorno }}">Volver</a>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <div class="row g-2 small mb-3">
+        {% if vendedor %}
+          <div class="col-md-6">
+            <span class="text-muted">Vendedor</span>
+            <div class="fw-semibold">{{ vendedor.apellido }}, {{ vendedor.nombre }}</div>
+          </div>
+        {% endif %}
+        <div class="col-md-6">
+          <span class="text-muted">Pedidos a cobrar</span>
+          <div class="fw-semibold">{{ ventas|length }}</div>
+        </div>
+        <div class="col-md-6">
+          <span class="text-muted">Total a ingresar en caja</span>
+          <div class="fw-semibold fs-5">{{ total|ars }}</div>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="modern-table table-sm mb-0">
+          <thead>
+            <tr>
+              <th scope="col">Pedido</th>
+              <th scope="col">Comprador</th>
+              <th scope="col" class="text-end col-money">Ingreso caja</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for v in ventas %}
+              <tr>
+                <td class="tabular-nums">#{{ v.pk }}</td>
+                <td class="small">
+                  {% if v.comprador %}
+                    {{ v.comprador.apellido }}, {{ v.comprador.nombre }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td class="text-end col-money tabular-nums">{{ v.monto_ingreso_caja|ars }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="small text-muted mb-0 mt-3">
+        Se registrará un ingreso en caja por cada pedido, con la misma fecha y medio de pago.
+      </p>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="retorno" value="{{ retorno }}" />
+        {% for v in ventas %}
+          <input type="hidden" name="venta_id" value="{{ v.pk }}" />
+        {% endfor %}
+        <div class="row g-3">
+          <div class="col-12 col-md-4">
+            <label class="form-label">Fecha del cobro</label>
+            {{ form.fecha }}
+            {% if form.fecha.errors %}<div class="text-danger small">{{ form.fecha.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label">Medio de pago</label>
+            {{ form.medio_pago }}
+            {% if form.medio_pago.errors %}<div class="text-danger small">{{ form.medio_pago.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div id="trfFields" class="border rounded p-3 mt-3 bg-light">
+          <div class="fw-semibold mb-2">Transferencia / MercadoPago</div>
+          <div class="mb-3">
+            <label class="form-label">Cuenta bancaria</label>
+            {{ form.cuenta_bancaria }}
+            {% if form.cuenta_bancaria.errors %}<div class="text-danger small">{{ form.cuenta_bancaria.errors }}</div>{% endif %}
+          </div>
+          <label class="form-label">Banco / MP (texto libre)</label>
+          {{ form.banco }}
+          {% if form.banco.errors %}<div class="text-danger small">{{ form.banco.errors }}</div>{% endif %}
+        </div>
+
+        <div id="chqFields" class="border rounded p-3 mt-3 bg-light">
+          <div class="fw-semibold mb-2">Cheque</div>
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label">Número de cheque</label>
+              {{ form.numero_cheque }}
+              {% if form.numero_cheque.errors %}<div class="text-danger small">{{ form.numero_cheque.errors }}</div>{% endif %}
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Vencimiento del cheque</label>
+              {{ form.fecha_vencimiento_cheque }}
+              {% if form.fecha_vencimiento_cheque.errors %}<div class="text-danger small">{{ form.fecha_vencimiento_cheque.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <a class="btn btn-outline-secondary" href="{{ retorno }}">Cancelar</a>
+          <button class="btn btn-primary" type="submit">Confirmar cobro de {{ ventas|length }} pedido(s)</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const medio = document.getElementById("id_medio_pago");
+      const trf = document.getElementById("trfFields");
+      const chq = document.getElementById("chqFields");
+      function refresh() {
+        const v = medio.value;
+        trf.style.display = v === "TRF" || v === "MP" ? "block" : "none";
+        chq.style.display = v === "CHQ" ? "block" : "none";
+      }
+      if (medio) {
+        medio.addEventListener("change", refresh);
+        refresh();
+      }
+    })();
+  </script>
+{% endblock %}

@@ -3,7 +3,7 @@ services:
     name: sirona
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate && python manage.py createcachetable
     startCommand: gunicorn coop_manager.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
       - key: DEBUG

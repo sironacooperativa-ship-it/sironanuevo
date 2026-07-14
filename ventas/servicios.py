@@ -42,6 +42,33 @@ def venta_aplicar_snapshot_ganancia_cobro(venta: Venta) -> None:
     venta.ganancia_cobro = q2(net - cm)
 
 
+def venta_registrar_cobro_caja(*, venta: Venta, mov: MovimientoCaja, user) -> None:
+    """Marca el pedido como pagado y vincula el ingreso en caja (sin transaction externa)."""
+    mov.tipo = MovimientoCaja.Tipo.INGRESO
+    mov.monto = venta.monto_ingreso_caja
+    mov.operacion = f"Cobro pedido #{venta.pk}"
+    mov.vendedor = venta.vendedor
+    mov.venta = venta
+    mov.creado_por = user
+    mov.actualizado_por = user
+    mov.full_clean()
+    mov.save()
+    venta.estado = Venta.Estado.PAGADA
+    venta.pago_movimiento = mov
+    venta.actualizado_por = user
+    venta_aplicar_snapshot_ganancia_cobro(venta)
+    venta.save(
+        update_fields=[
+            "estado",
+            "pago_movimiento",
+            "actualizado_por",
+            "neto_cobro",
+            "costo_mercaderia_cobro",
+            "ganancia_cobro",
+        ]
+    )
+
+
 def sync_evento_pedido_pendiente(venta: Venta) -> None:
     """Crea, actualiza o elimina el evento de calendario según la fecha de vencimiento del pedido."""
     titulo = f"Pago pendiente — Pedido #{venta.pk}"

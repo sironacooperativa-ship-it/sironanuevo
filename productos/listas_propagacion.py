@@ -104,3 +104,14 @@ def aplicar_precio_a_listas(producto: Producto, lista_ids: set[int], precio: Dec
 
 def parse_aplicar_precio_listas_post(post) -> set[int]:
     return {int(x) for x in post.getlist("aplicar_precio_listas") if str(x).isdigit()}
+
+
+def listas_precio_ids_del_producto(producto: Producto) -> list[int]:
+    """IDs de listas donde el producto tiene precio (Farmacia + rubros)."""
+    ids = list(
+        ListaPrecioItem.objects.filter(producto=producto).values_list("lista_id", flat=True)
+    )
+    farmacia = _farmacia_lista()
+    if farmacia and producto.en_lista_precios:
+        ids.append(farmacia.pk)
+    return list({int(x) for x in ids if x})

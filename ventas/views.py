@@ -61,6 +61,7 @@ from .servicios import (
     sync_evento_pedido_pendiente,
     venta_aplicar_snapshot_ganancia_cobro,
     venta_costo_mercaderia_actual,
+    venta_registrar_cobro_caja,
 )
 
 
@@ -1540,15 +1541,9 @@ def venta_registrar_pago(request, pk: int):
         form = VentaPagoForm(request.POST)
         if form.is_valid():
             mov = form.save(commit=False)
-            mov.tipo = MovimientoCaja.Tipo.INGRESO
-            mov.monto = venta.monto_ingreso_caja
-            mov.operacion = f"Cobro pedido #{venta.pk}"
-            mov.vendedor = venta.vendedor
-            mov.venta = venta
-            mov.creado_por = request.user
-            mov.actualizado_por = request.user
             try:
-                mov.full_clean()
+                with transaction.atomic():
+                    venta_registrar_cobro_caja(venta=venta, mov=mov, user=request.user)
             except ValidationError as e:
                 if getattr(e, "error_dict", None):
                     for msgs in e.error_dict.values():
@@ -1562,22 +1557,6 @@ def venta_registrar_pago(request, pk: int):
                     "ventas/pago.html",
                     {"venta": venta, "form": form},
                 )
-            with transaction.atomic():
-                mov.save()
-                venta.estado = Venta.Estado.PAGADA
-                venta.pago_movimiento = mov
-                venta.actualizado_por = request.user
-                venta_aplicar_snapshot_ganancia_cobro(venta)
-                venta.save(
-                    update_fields=[
-                        "estado",
-                        "pago_movimiento",
-                        "actualizado_por",
-                        "neto_cobro",
-                        "costo_mercaderia_cobro",
-                        "ganancia_cobro",
-                    ]
-                )
             messages.success(request, "Pago registrado en caja.")
             return redirect("venta_detalle", pk=venta.pk)
     else:
@@ -1589,6 +1568,130 @@ def venta_registrar_pago(request, pk: int):
         )
 
     return render(request, "ventas/pago.html", {"venta": venta, "form": form})
+
+
+def _venta_ids_desde_request(request) -> list[int]:
+    raw = request.POST.getlist("venta_id") if request.method == "POST" else request.GET.getlist("venta_id")
+    return sorted({int(x) for x in raw if str(x).strip().isdigit()})
+
+
+def _ventas_pendientes_para_cobro(ids: list[int]) -> list[Venta]:
+    if not ids:
+        return []
+    qs = (
+        Venta.objects.filter(pk__in=ids, estado=Venta.Estado.PENDIENTE)
+        .select_related("vendedor", "comprador")
+        .order_by("creado_en", "id")
+    )
+    by_id = {v.pk: v for v in qs}
+    return [by_id[i] for i in ids if i in by_id]
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def venta_registrar_pago_masivo(request):
+    """Cobra varios pedidos pendientes con los mismos datos de medio de pago."""
+    ids = _venta_ids_desde_request(request)
+    ventas_list = _ventas_pendientes_para_cobro(ids)
+    retorno = (request.GET.get("retorno") or request.POST.get("retorno") or "").strip()
+    if not retorno:
+        retorno = reverse("ventas_historial") + "?pestana=a_pagar"
+
+    if not ids:
+        messages.warning(request, "Seleccioná al menos un pedido pendiente de cobro.")
+        return redirect(retorno)
+    if len(ventas_list) != len(ids):
+        messages.error(
+            request,
+            "Algunos pedidos no están pendientes de cobro o ya no existen. Revisá la selección.",
+        )
+        return redirect(retorno)
+
+    total = q2(sum(v.monto_ingreso_caja for v in ventas_list))
+    vendedores = {v.vendedor_id for v in ventas_list}
+    vendedor = ventas_list[0].vendedor if len(vendedores) == 1 else None
+
+    if request.method == "POST":
+        form = VentaPagoForm(request.POST)
+        if form.is_valid():
+            errores: list[str] = []
+            ok = 0
+            try:
+                with transaction.atomic():
+                    qs = (
+                        Venta.objects.filter(pk__in=ids, estado=Venta.Estado.PENDIENTE)
+                        .select_related("vendedor", "comprador")
+                        .prefetch_related(
+                            Prefetch("lineas", queryset=VentaLinea.objects.select_related("producto"))
+                        )
+                    )
+                    try:
+                        qs = qs.select_for_update(of=("self",))
+                    except TypeError:
+                        qs = qs.select_for_update()
+                    locked = {v.pk: v for v in qs}
+                    if set(locked.keys()) != set(ids):
+                        raise ValidationError("Algunos pedidos dejaron de estar pendientes.")
+                    for vid in ids:
+                        venta = locked[vid]
+                        mov = MovimientoCaja(
+                            fecha=form.cleaned_data["fecha"],
+                            medio_pago=form.cleaned_data["medio_pago"],
+                            cuenta_bancaria=form.cleaned_data.get("cuenta_bancaria"),
+                            banco=form.cleaned_data.get("banco") or "",
+                            numero_cheque=form.cleaned_data.get("numero_cheque") or "",
+                            fecha_vencimiento_cheque=form.cleaned_data.get("fecha_vencimiento_cheque"),
+                        )
+                        venta_registrar_cobro_caja(venta=venta, mov=mov, user=request.user)
+                        ok += 1
+            except ValidationError as e:
+                if getattr(e, "error_dict", None):
+                    for msgs in e.error_dict.values():
+                        for m in msgs:
+                            errores.append(str(m))
+                elif getattr(e, "messages", None):
+                    errores.extend(str(m) for m in e.messages)
+                else:
+                    errores.append(str(e))
+            if errores and ok == 0:
+                for msg in errores[:5]:
+                    messages.error(request, msg)
+                return render(
+                    request,
+                    "ventas/pago_masivo.html",
+                    {
+                        "ventas": ventas_list,
+                        "total": total,
+                        "vendedor": vendedor,
+                        "form": form,
+                        "retorno": retorno,
+                    },
+                )
+            if ok:
+                messages.success(
+                    request,
+                    f"Se registraron {ok} cobro(s) en caja por un total de {format_monto_ars(total)}.",
+                )
+            return redirect(retorno)
+    else:
+        form = VentaPagoForm(
+            initial={
+                "fecha": datetime.now().strftime("%Y-%m-%d"),
+                "medio_pago": MovimientoCaja.MedioPago.EFECTIVO,
+            }
+        )
+
+    return render(
+        request,
+        "ventas/pago_masivo.html",
+        {
+            "ventas": ventas_list,
+            "total": total,
+            "vendedor": vendedor,
+            "form": form,
+            "retorno": retorno,
+        },
+    )
 
 
 @login_required

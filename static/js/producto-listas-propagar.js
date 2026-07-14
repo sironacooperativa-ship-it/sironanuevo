@@ -126,7 +126,7 @@
     function abrirComparativa(formEl, soloVista) {
       var url = formEl.getAttribute("data-comparativa-url");
       var minListas = parseInt(formEl.getAttribute("data-listas-count") || "0", 10);
-      if (!url || minListas < 2) return Promise.resolve(null);
+      if (!url || minListas < 1) return Promise.resolve(null);
       pendingForm = formEl;
       pendingSoloVista = !!soloVista;
       if (hint) {
@@ -191,7 +191,7 @@
         }
         try {
           var minListas = parseInt(formEl.getAttribute("data-listas-count") || "0", 10);
-          if (minListas < 2) return;
+          if (minListas < 1) return;
           if (!hayCambioPrecio(formEl)) return;
           var present = formEl.querySelector('input[name="listas_extra_present"]');
           if (!present) return;
