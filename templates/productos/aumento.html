@@ -26,7 +26,7 @@
   <div class="app-page-header mb-3">
     <h1 class="app-page-title mb-1">Aumento de costos</h1>
     <p class="text-muted small mb-2">
-      Se aplica el porcentaje sobre el <strong>costo actual</strong> de cada producto. El precio sugerido usa el mismo % de ganancia configurado; tocá el <strong>lapicito</strong> en una fila para editar costo y precio a mano antes de confirmar.
+      Se aplica el porcentaje sobre el <strong>costo actual</strong> de cada producto. Con el lapicito podés editar a mano: al cambiar el <strong>costo</strong> se sugiere el precio con <strong>30% de ganancia</strong>; al cambiar el <strong>precio</strong> se recalcula el % implícito.
     </p>
     <div class="d-flex flex-wrap gap-2">
       <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'productos_list' %}">Volver a productos</a>
@@ -81,7 +81,7 @@
                     type="text"
                     name="costo_{{ row.producto.pk }}"
                     id="costo-{{ row.producto.pk }}"
-                    class="form-control form-control-sm text-end aumento-edit d-none"
+                    class="form-control form-control-sm text-end aumento-edit d-none js-aumento-costo-inp"
                     value="{{ row.nuevo_costo|unlocalize }}"
                     inputmode="decimal"
                     autocomplete="off"
@@ -89,7 +89,9 @@
                     disabled
                   />
                 </td>
-                <td class="text-end small">{{ row.producto.porcentaje_ganancia }}%</td>
+                <td class="text-end small">
+                  <span class="js-aumento-pct">{{ row.producto.porcentaje_ganancia }}%</span>
+                </td>
                 <td class="text-end">
                   <span class="aumento-view fw-medium">{{ row.precio_sugerido|ars }}</span>
                   <label class="visually-hidden" for="precio-{{ row.producto.pk }}">Precio final {{ row.producto.codigo }}</label>
@@ -97,7 +99,7 @@
                     type="text"
                     name="precio_{{ row.producto.pk }}"
                     id="precio-{{ row.producto.pk }}"
-                    class="form-control form-control-sm text-end aumento-edit d-none"
+                    class="form-control form-control-sm text-end aumento-edit d-none js-aumento-precio-inp"
                     value="{{ row.precio_sugerido|unlocalize }}"
                     inputmode="decimal"
                     autocomplete="off"
@@ -266,14 +268,16 @@
                       type="text"
                       name="costo_{{ p.pk }}"
                       id="costo-sel-{{ p.pk }}"
-                      class="form-control form-control-sm text-end aumento-edit d-none"
+                      class="form-control form-control-sm text-end aumento-edit d-none js-aumento-costo-inp"
                       value="{{ p.costo|unlocalize }}"
                       inputmode="decimal"
                       autocomplete="off"
                       disabled
                     />
                   </td>
-                  <td class="text-end small">{{ p.porcentaje_ganancia }}%</td>
+                  <td class="text-end small">
+                    <span class="js-aumento-pct">{{ p.porcentaje_ganancia }}%</span>
+                  </td>
                   <td class="text-end small">
                     <span class="aumento-view fw-medium">{{ p.precio_lista_vista|ars }}</span>
                     <label class="visually-hidden" for="precio-ref-{{ p.pk }}">Precio actual {{ p.codigo }}</label>
@@ -281,7 +285,7 @@
                       type="text"
                       name="precio_ref_{{ p.pk }}"
                       id="precio-ref-{{ p.pk }}"
-                      class="form-control form-control-sm text-end aumento-edit d-none"
+                      class="form-control form-control-sm text-end aumento-edit d-none js-aumento-precio-inp"
                       value="{{ p.precio_lista_vista|unlocalize }}"
                       inputmode="decimal"
                       autocomplete="off"
@@ -356,5 +360,5 @@
 {% endblock %}
 
 {% block page_scripts %}
-  <script src="{% static 'js/productos-aumento-edit.js' %}?v=1"></script>
+  <script src="{% static 'js/productos-aumento-edit.js' %}?v=2"></script>
 {% endblock %}

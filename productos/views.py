@@ -870,6 +870,10 @@ def productos_aumento(request):
                             p.costo = q2(p.costo * factor)
                         p.precio_venta = precio
                         p.precio_venta_editado = True
+                        if p.costo > 0:
+                            p.porcentaje_ganancia = q2(
+                                (precio - p.costo) / p.costo * Decimal("100")
+                            )
                         p.save()
                         actualizados += 1
             except Producto.DoesNotExist:
