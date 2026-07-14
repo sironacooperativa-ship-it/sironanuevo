@@ -849,6 +849,12 @@ def productos_aumento(request):
                         f"Revisá el precio final del producto #{sid} (debe ser un importe válido).",
                     )
                     return _redirect_productos_aumento_filtros(request)
+                if _parse_precio_venta_input(request.POST.get(f"costo_{sid}") or "") is None:
+                    messages.error(
+                        request,
+                        f"Revisá el nuevo costo del producto #{sid} (debe ser un importe válido).",
+                    )
+                    return _redirect_productos_aumento_filtros(request)
 
             factor = Decimal("1.0") + (pct / Decimal("100"))
             actualizados = 0
@@ -856,8 +862,12 @@ def productos_aumento(request):
                 with transaction.atomic():
                     for sid in ids:
                         precio = _parse_precio_venta_input(request.POST.get(f"precio_{sid}") or "")
+                        costo_post = _parse_precio_venta_input(request.POST.get(f"costo_{sid}") or "")
                         p = Producto.objects.select_for_update().get(pk=sid)
-                        p.costo = q2(p.costo * factor)
+                        if costo_post is not None:
+                            p.costo = costo_post
+                        else:
+                            p.costo = q2(p.costo * factor)
                         p.precio_venta = precio
                         p.precio_venta_editado = True
                         p.save()
@@ -896,11 +906,22 @@ def productos_aumento(request):
             )
             rows = []
             for p in productos_sel:
-                nuevo_costo = q2(p.costo * factor)
+                costo_base = q2(p.costo)
+                raw_costo = (request.POST.get(f"costo_{p.pk}") or "").strip()
+                if raw_costo:
+                    parsed_costo = _parse_precio_venta_input(raw_costo)
+                    if parsed_costo is not None:
+                        costo_base = parsed_costo
+                nuevo_costo = q2(costo_base * factor)
                 sugerido = redondear_precio_mostrador_ars(
                     nuevo_costo
                     * (Decimal("1.0") + (p.porcentaje_ganancia / Decimal("100")))
                 )
+                raw_precio = (request.POST.get(f"precio_ref_{p.pk}") or "").strip()
+                if raw_precio:
+                    parsed_precio = _parse_precio_venta_input(raw_precio)
+                    if parsed_precio is not None:
+                        sugerido = parsed_precio
                 rows.append(
                     {
                         "producto": p,

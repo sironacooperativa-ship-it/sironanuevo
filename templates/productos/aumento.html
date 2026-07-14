@@ -1,12 +1,32 @@
 {% extends "base.html" %}
 {% load money %}
+{% load l10n %}
 {% load static %}
 {% block title %}Aumento de costos{% endblock %}
+{% block extra_head %}
+  <style>
+    tr.aumento-row.is-editing .aumento-view {
+      display: none !important;
+    }
+    tr.aumento-row:not(.is-editing) .aumento-edit {
+      display: none !important;
+    }
+    tr.aumento-row.is-editing .aumento-edit.d-none {
+      display: block !important;
+    }
+    tr.aumento-row.is-editing .aumento-edit.form-control {
+      display: block !important;
+    }
+    .js-aumento-editar[aria-pressed="true"] {
+      box-shadow: 0 0 0 2px rgba(var(--bs-primary-rgb), 0.35);
+    }
+  </style>
+{% endblock %}
 {% block content %}
   <div class="app-page-header mb-3">
     <h1 class="app-page-title mb-1">Aumento de costos</h1>
     <p class="text-muted small mb-2">
-      Se aplica el porcentaje sobre el <strong>costo actual</strong> de cada producto. El precio sugerido usa el mismo % de ganancia configurado; podés ajustar el precio final a mano antes de confirmar.
+      Se aplica el porcentaje sobre el <strong>costo actual</strong> de cada producto. El precio sugerido usa el mismo % de ganancia configurado; tocá el <strong>lapicito</strong> en una fila para editar costo y precio a mano antes de confirmar.
     </p>
     <div class="d-flex flex-wrap gap-2">
       <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'productos_list' %}">Volver a productos</a>
@@ -18,7 +38,7 @@
 
   {% if step == "confirm" %}
     <div class="alert alert-light border mb-3 small">
-      Aumento aplicado sobre costo: <strong>{{ pct }}%</strong>. Revisá los precios finales y tocá <strong>Guardar cambios</strong>.
+      Aumento aplicado sobre costo: <strong>{{ pct }}%</strong>. Revisá los valores y tocá el lapicito para ajustar costo o precio a mano antes de <strong>Guardar cambios</strong>.
     </div>
 
     <form method="post" class="card app-card presu-lista-modern border-0 shadow-sm">
@@ -45,28 +65,56 @@
               <th scope="col" class="text-end col-money">Nuevo costo</th>
               <th scope="col" class="text-end col-money">% gan.</th>
               <th scope="col" class="text-end" style="min-width: 9rem">Precio final</th>
+              <th scope="col" class="text-end presu-th-acciones" style="width: 3rem" aria-label="Editar"> </th>
             </tr>
           </thead>
           <tbody>
             {% for row in rows %}
-              <tr>
+              <tr class="aumento-row" data-producto-id="{{ row.producto.pk }}">
                 <td class="font-monospace small">{{ row.producto.codigo }}</td>
                 <td class="small">{{ row.producto.descripcion }}</td>
                 <td class="text-end small">{{ row.costo_anterior|ars }}</td>
-                <td class="text-end small fw-semibold">{{ row.nuevo_costo|ars }}</td>
+                <td class="text-end small">
+                  <span class="aumento-view fw-semibold">{{ row.nuevo_costo|ars }}</span>
+                  <label class="visually-hidden" for="costo-{{ row.producto.pk }}">Nuevo costo {{ row.producto.codigo }}</label>
+                  <input
+                    type="text"
+                    name="costo_{{ row.producto.pk }}"
+                    id="costo-{{ row.producto.pk }}"
+                    class="form-control form-control-sm text-end aumento-edit d-none"
+                    value="{{ row.nuevo_costo|unlocalize }}"
+                    inputmode="decimal"
+                    autocomplete="off"
+                    required
+                    disabled
+                  />
+                </td>
                 <td class="text-end small">{{ row.producto.porcentaje_ganancia }}%</td>
                 <td class="text-end">
+                  <span class="aumento-view fw-medium">{{ row.precio_sugerido|ars }}</span>
                   <label class="visually-hidden" for="precio-{{ row.producto.pk }}">Precio final {{ row.producto.codigo }}</label>
                   <input
                     type="text"
                     name="precio_{{ row.producto.pk }}"
                     id="precio-{{ row.producto.pk }}"
-                    class="form-control form-control-sm text-end"
-                    value="{{ row.precio_sugerido }}"
+                    class="form-control form-control-sm text-end aumento-edit d-none"
+                    value="{{ row.precio_sugerido|unlocalize }}"
                     inputmode="decimal"
                     autocomplete="off"
                     required
+                    disabled
                   />
+                </td>
+                <td class="text-end py-0">
+                  <button
+                    type="button"
+                    class="btn-icon btn-edit js-aumento-editar"
+                    title="Editar costo y precio"
+                    aria-label="Editar costo y precio de {{ row.producto.codigo }}"
+                    aria-pressed="false"
+                  >
+                    <i data-lucide="pencil" aria-hidden="true"></i>
+                  </button>
                 </td>
               </tr>
             {% endfor %}
@@ -199,24 +247,62 @@
                 <th scope="col" class="text-end col-money">Costo</th>
                 <th scope="col" class="text-end col-money">% gan.</th>
                 <th scope="col" class="text-end col-money">Precio actual</th>
+                <th scope="col" class="text-end presu-th-acciones" style="width: 3rem" aria-label="Editar"> </th>
               </tr>
             </thead>
             <tbody>
               {% for p in productos %}
-                <tr>
+                <tr class="aumento-row" data-producto-id="{{ p.pk }}">
                   <td class="text-center">
                     <input type="checkbox" class="form-check-input sel-producto" name="sel" value="{{ p.pk }}" />
                   </td>
                   <td class="font-monospace small">{{ p.codigo }}</td>
                   <td class="small">{{ p.descripcion }}</td>
                   <td class="small text-muted">{{ p.get_tipo_display }}</td>
-                  <td class="text-end small">{{ p.costo|ars }}</td>
+                  <td class="text-end small">
+                    <span class="aumento-view">{{ p.costo|ars }}</span>
+                    <label class="visually-hidden" for="costo-sel-{{ p.pk }}">Costo {{ p.codigo }}</label>
+                    <input
+                      type="text"
+                      name="costo_{{ p.pk }}"
+                      id="costo-sel-{{ p.pk }}"
+                      class="form-control form-control-sm text-end aumento-edit d-none"
+                      value="{{ p.costo|unlocalize }}"
+                      inputmode="decimal"
+                      autocomplete="off"
+                      disabled
+                    />
+                  </td>
                   <td class="text-end small">{{ p.porcentaje_ganancia }}%</td>
-                  <td class="text-end small fw-medium">{{ p.precio_lista_vista|ars }}</td>
+                  <td class="text-end small">
+                    <span class="aumento-view fw-medium">{{ p.precio_lista_vista|ars }}</span>
+                    <label class="visually-hidden" for="precio-ref-{{ p.pk }}">Precio actual {{ p.codigo }}</label>
+                    <input
+                      type="text"
+                      name="precio_ref_{{ p.pk }}"
+                      id="precio-ref-{{ p.pk }}"
+                      class="form-control form-control-sm text-end aumento-edit d-none"
+                      value="{{ p.precio_lista_vista|unlocalize }}"
+                      inputmode="decimal"
+                      autocomplete="off"
+                      disabled
+                    />
+                  </td>
+                  <td class="text-end py-0">
+                    <button
+                      type="button"
+                      class="btn-icon btn-edit js-aumento-editar"
+                      title="Editar costo y precio"
+                      aria-label="Editar costo y precio de {{ p.codigo }}"
+                      aria-pressed="false"
+                    >
+                      <i data-lucide="pencil" aria-hidden="true"></i>
+                    </button>
+                  </td>
                 </tr>
               {% empty %}
                 <tr>
-                  <td colspan="7" class="table-empty">
+                  <td colspan="8" class="table-empty">
                     No hay productos con estos filtros. Probá otra búsqueda o quitá el filtro por proveedor.
                   </td>
                 </tr>
@@ -267,4 +353,8 @@
       })();
     </script>
   {% endif %}
+{% endblock %}
+
+{% block page_scripts %}
+  <script src="{% static 'js/productos-aumento-edit.js' %}?v=1"></script>
 {% endblock %}
