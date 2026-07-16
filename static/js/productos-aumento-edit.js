@@ -3,7 +3,6 @@
  */
 (function (w) {
   var PCT_PREESTABLECIDO = 30;
-  var DELEGATE_FLAG = "__aumentoDelegated";
 
   function parseNum(raw) {
     var v = String(raw == null ? "" : raw)
@@ -73,8 +72,8 @@
   }
 
   function bindRowCalculations(tr) {
-    if (!tr || tr.__aumentoCalcBound) return;
-    tr.__aumentoCalcBound = true;
+    if (!tr || tr.dataset.aumentoCalcBound === "1") return;
+    tr.dataset.aumentoCalcBound = "1";
     var costoInp = tr.querySelector(".js-aumento-costo-inp");
     var precioInp = tr.querySelector(".js-aumento-precio-inp");
     if (!costoInp || !precioInp) return;
@@ -94,7 +93,9 @@
       if (fromCosto) return;
       syncPctDisplay(tr);
     });
-    precioInp.addEventListener("change", syncPctDisplay.bind(null, tr));
+    precioInp.addEventListener("change", function () {
+      syncPctDisplay(tr);
+    });
   }
 
   function setRowEditing(tr, on) {
@@ -115,10 +116,11 @@
     if (saveBtn) saveBtn.classList.toggle("d-none", !on);
     if (on) {
       syncPctDisplay(tr);
-      var focusInp = tr.querySelector(".js-aumento-costo-inp, .js-aumento-precio-inp");
-      if (focusInp && typeof focusInp.focus === "function") {
+      var focusInp = tr.querySelector(".js-aumento-costo-inp");
+      if (focusInp) {
         try {
           focusInp.focus();
+          focusInp.select();
         } catch (e) {}
       }
     }
@@ -145,7 +147,7 @@
     if (form.id === "formAumento" && step === "guardar_manual") {
       form.querySelectorAll(".sel-producto:checked").forEach(function (cb) {
         var tr = cb.closest("tr.aumento-row");
-        if (tr) rows.push(tr);
+        if (tr && rows.indexOf(tr) === -1) rows.push(tr);
       });
       form.querySelectorAll("tr.aumento-row.is-editing").forEach(function (tr) {
         if (rows.indexOf(tr) === -1) rows.push(tr);
@@ -165,16 +167,22 @@
     return rows;
   }
 
-  function disableAllEditInputs(form) {
+  function restoreDisabledState(form) {
+    form.querySelectorAll("tr.aumento-row").forEach(function (tr) {
+      tr.querySelectorAll(".aumento-edit").forEach(function (el) {
+        if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
+          el.disabled = !rowEditing(tr);
+        }
+      });
+    });
+  }
+
+  function enableInputsForSubmit(form, step) {
     form.querySelectorAll(".aumento-edit").forEach(function (el) {
       if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
         el.disabled = true;
       }
     });
-  }
-
-  function enableInputsForSubmit(form, step) {
-    disableAllEditInputs(form);
     rowsForSubmit(form, step).forEach(function (tr) {
       tr.querySelectorAll(".aumento-edit").forEach(function (el) {
         if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
@@ -192,8 +200,8 @@
   }
 
   function bindFormSubmit(form) {
-    if (!form || form.__aumentoSubmitBound) return;
-    form.__aumentoSubmitBound = true;
+    if (!form || form.dataset.aumentoSubmitBound === "1") return;
+    form.dataset.aumentoSubmitBound = "1";
 
     form.querySelectorAll("[data-aumento-step]").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -243,71 +251,54 @@
     });
   }
 
-  function restoreDisabledState(form) {
-    form.querySelectorAll("tr.aumento-row").forEach(function (tr) {
-      tr.querySelectorAll(".aumento-edit").forEach(function (el) {
-        if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
-          el.disabled = !rowEditing(tr);
+  function bindEditButtons(root) {
+    root.querySelectorAll(".js-aumento-editar").forEach(function (btn) {
+      if (btn.dataset.aumentoEditBound === "1") return;
+      btn.dataset.aumentoEditBound = "1";
+      btn.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        var tr = btn.closest("tr.aumento-row");
+        if (!tr) return;
+        if (rowEditing(tr)) {
+          setRowEditing(tr, false);
+          return;
         }
+        closeOtherEditingRows(tr);
+        resetFilterFormStep();
+        setRowEditing(tr, true);
       });
     });
   }
 
-  function handleEditClick(btn) {
-    var tr = btn.closest("tr.aumento-row");
-    if (!tr) return;
-    var opening = !rowEditing(tr);
-    if (opening) {
-      closeOtherEditingRows(tr);
-      resetFilterFormStep();
-      setRowEditing(tr, true);
-      return;
-    }
-    setRowEditing(tr, false);
-  }
-
-  function handleSaveRowClick(btn) {
-    var tr = btn.closest("tr.aumento-row");
-    var form = tr && tr.closest("form");
-    if (!tr || !form) return;
-
-    if (!rowEditing(tr)) setRowEditing(tr, true);
-
-    var cb = tr.querySelector(".sel-producto");
-    if (cb) cb.checked = true;
-
-    if (form.id === "formAumento") {
-      setFormStep(form, "guardar_manual");
-    }
-
-    if (typeof form.requestSubmit === "function") form.requestSubmit();
-    else form.submit();
-  }
-
-  function bindDelegated(root) {
-    root = root || document;
-    if (root[DELEGATE_FLAG]) return;
-    root[DELEGATE_FLAG] = true;
-
-    root.addEventListener("click", function (ev) {
-      var editBtn = ev.target.closest(".js-aumento-editar");
-      if (editBtn) {
+  function bindSaveButtons(root) {
+    root.querySelectorAll(".js-aumento-guardar-fila").forEach(function (btn) {
+      if (btn.dataset.aumentoSaveBound === "1") return;
+      btn.dataset.aumentoSaveBound = "1";
+      btn.addEventListener("click", function (ev) {
         ev.preventDefault();
-        handleEditClick(editBtn);
-        return;
-      }
-      var saveBtn = ev.target.closest(".js-aumento-guardar-fila");
-      if (saveBtn) {
-        ev.preventDefault();
-        handleSaveRowClick(saveBtn);
-      }
+        var tr = btn.closest("tr.aumento-row");
+        var form = tr && tr.closest("form");
+        if (!tr || !form) return;
+
+        if (!rowEditing(tr)) setRowEditing(tr, true);
+
+        var cb = tr.querySelector(".sel-producto");
+        if (cb) cb.checked = true;
+
+        if (form.id === "formAumento") {
+          setFormStep(form, "guardar_manual");
+        }
+
+        enableInputsForSubmit(form, form.id === "formAumento" ? "guardar_manual" : "confirm");
+
+        if (typeof form.requestSubmit === "function") form.requestSubmit();
+        else form.submit();
+      });
     });
   }
 
   function bind(root) {
     root = root || document;
-
-    bindDelegated(root);
 
     root.querySelectorAll("tr.aumento-row").forEach(function (tr) {
       bindRowCalculations(tr);
@@ -318,31 +309,18 @@
       });
     });
 
+    bindEditButtons(root);
+    bindSaveButtons(root);
+
     root.querySelectorAll("form").forEach(function (form) {
       if (!form.querySelector("tr.aumento-row")) return;
       bindFormSubmit(form);
     });
 
-    if (w.lucide && typeof w.lucide.createIcons === "function") {
-      try {
-        w.lucide.createIcons();
-      } catch (e) {}
+    if (typeof w.sironaPaintIcons === "function") {
+      w.sironaPaintIcons();
     }
   }
 
   w.sironaInitAumentoEdit = bind;
-
-  function boot() {
-    bind(document);
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
-  } else {
-    boot();
-  }
-
-  window.addEventListener("pageshow", function (ev) {
-    if (ev.persisted) boot();
-  });
 })(typeof window !== "undefined" ? window : this);

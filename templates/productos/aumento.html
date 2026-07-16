@@ -11,7 +11,7 @@
     tr.aumento-row:not(.is-editing) .aumento-edit {
       display: none !important;
     }
-    tr.aumento-row.is-editing .aumento-edit.d-none {
+    tr.aumento-row.is-editing .aumento-edit {
       display: block !important;
     }
     tr.aumento-row.is-editing .aumento-edit.form-control {
@@ -374,5 +374,19 @@
 {% endblock %}
 
 {% block page_scripts %}
-  <script src="{% static 'js/productos-aumento-edit.js' %}?v=4"></script>
+  <script src="{% static 'js/productos-aumento-edit.js' %}?v=5"></script>
+  <script>
+    (function () {
+      function initAumentoEdit() {
+        if (typeof window.sironaInitAumentoEdit === "function") {
+          window.sironaInitAumentoEdit(document);
+        }
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initAumentoEdit);
+      } else {
+        initAumentoEdit();
+      }
+    })();
+  </script>
 {% endblock %}
