@@ -20,6 +20,9 @@
     .js-aumento-editar[aria-pressed="true"] {
       box-shadow: 0 0 0 2px rgba(var(--bs-primary-rgb), 0.35);
     }
+    tr.aumento-row:not(.is-editing) .js-aumento-guardar-fila {
+      display: none !important;
+    }
   </style>
 {% endblock %}
 {% block content %}
@@ -41,7 +44,7 @@
       Aumento aplicado sobre costo: <strong>{{ pct }}%</strong>. Revisá los valores y tocá el lapicito para ajustar costo o precio a mano antes de <strong>Guardar cambios</strong>.
     </div>
 
-    <form method="post" class="card app-card presu-lista-modern border-0 shadow-sm">
+    <form method="post" class="card app-card presu-lista-modern border-0 shadow-sm" id="formAumentoConfirm">
       {% csrf_token %}
       <input type="hidden" name="step" value="confirm" />
       <input type="hidden" name="pct_aumento" value="{{ pct }}" />
@@ -108,15 +111,25 @@
                   />
                 </td>
                 <td class="text-end py-0">
-                  <button
-                    type="button"
-                    class="btn-icon btn-edit js-aumento-editar"
-                    title="Editar costo y precio"
-                    aria-label="Editar costo y precio de {{ row.producto.codigo }}"
-                    aria-pressed="false"
-                  >
-                    <i data-lucide="pencil" aria-hidden="true"></i>
-                  </button>
+                  <div class="table-actions d-inline-flex gap-1 justify-content-end">
+                    <button
+                      type="button"
+                      class="btn-icon btn-edit js-aumento-editar"
+                      title="Editar costo y precio"
+                      aria-label="Editar costo y precio de {{ row.producto.codigo }}"
+                      aria-pressed="false"
+                    >
+                      <i data-lucide="pencil" aria-hidden="true"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-icon btn-save js-aumento-guardar-fila d-none"
+                      title="Guardar fila"
+                      aria-label="Guardar cambios de {{ row.producto.codigo }}"
+                    >
+                      <i data-lucide="check" aria-hidden="true"></i>
+                    </button>
+                  </div>
                 </td>
               </tr>
             {% endfor %}
@@ -206,7 +219,7 @@
 
     <form method="post" action="{% url 'productos_aumento' %}" id="formAumento">
       {% csrf_token %}
-      <input type="hidden" name="step" value="preview" />
+      <input type="hidden" name="step" value="preview" id="formAumentoStep" />
       <input type="hidden" name="filtro_q" value="{{ q }}" />
       <input type="hidden" name="filtro_tipo" value="{{ tipo }}" />
       <input type="hidden" name="filtro_proveedor" value="{{ proveedor }}" />
@@ -229,7 +242,9 @@
             />
           </div>
           <div class="col-12 col-md-auto">
-            <button type="submit" class="btn btn-primary rounded-pill px-4">Calcular precios sugeridos</button>
+            <button type="submit" class="btn btn-primary rounded-pill px-4" data-aumento-step="preview">
+              Calcular precios sugeridos
+            </button>
           </div>
         </div>
       </div>
@@ -293,15 +308,25 @@
                     />
                   </td>
                   <td class="text-end py-0">
-                    <button
-                      type="button"
-                      class="btn-icon btn-edit js-aumento-editar"
-                      title="Editar costo y precio"
-                      aria-label="Editar costo y precio de {{ p.codigo }}"
-                      aria-pressed="false"
-                    >
-                      <i data-lucide="pencil" aria-hidden="true"></i>
-                    </button>
+                    <div class="table-actions d-inline-flex gap-1 justify-content-end">
+                      <button
+                        type="button"
+                        class="btn-icon btn-edit js-aumento-editar"
+                        title="Editar costo y precio"
+                        aria-label="Editar costo y precio de {{ p.codigo }}"
+                        aria-pressed="false"
+                      >
+                        <i data-lucide="pencil" aria-hidden="true"></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-icon btn-save js-aumento-guardar-fila d-none"
+                        title="Guardar fila"
+                        aria-label="Guardar cambios de {{ p.codigo }}"
+                      >
+                        <i data-lucide="check" aria-hidden="true"></i>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               {% empty %}
@@ -313,6 +338,11 @@
               {% endfor %}
             </tbody>
           </table>
+        </div>
+        <div class="card-body border-top d-flex flex-wrap gap-2 justify-content-end">
+          <button type="submit" class="btn btn-success rounded-pill px-4" data-aumento-step="guardar_manual">
+            Guardar cambios
+          </button>
         </div>
       </div>
     </form>
@@ -326,22 +356,6 @@
           form.querySelectorAll(".sel-producto").forEach(function (cb) {
             cb.checked = master.checked;
           });
-        });
-        form.addEventListener("submit", function (ev) {
-          var any = false;
-          form.querySelectorAll(".sel-producto:checked").forEach(function () {
-            any = true;
-          });
-          if (!any) {
-            ev.preventDefault();
-            alert("Seleccioná al menos un producto.");
-            return;
-          }
-          var pct = (document.getElementById("pct_aumento") || {}).value;
-          if (!String(pct || "").trim()) {
-            ev.preventDefault();
-            alert("Indicá el porcentaje de aumento sobre el costo.");
-          }
         });
       })();
     </script>
@@ -360,5 +374,5 @@
 {% endblock %}
 
 {% block page_scripts %}
-  <script src="{% static 'js/productos-aumento-edit.js' %}?v=2"></script>
+  <script src="{% static 'js/productos-aumento-edit.js' %}?v=3"></script>
 {% endblock %}

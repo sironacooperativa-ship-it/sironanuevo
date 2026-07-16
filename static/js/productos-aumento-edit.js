@@ -110,7 +110,103 @@
       btn.setAttribute("aria-pressed", on ? "true" : "false");
       btn.title = on ? "Dejar de editar" : "Editar costo y precio";
     }
+    var saveBtn = tr.querySelector(".js-aumento-guardar-fila");
+    if (saveBtn) saveBtn.classList.toggle("d-none", !on);
     if (on) syncPctDisplay(tr);
+  }
+
+  function setFormStep(form, step) {
+    var stepInp = form.querySelector("#formAumentoStep");
+    if (stepInp) stepInp.value = step;
+  }
+
+  function enableAllEditInputs(form) {
+    form.querySelectorAll(".aumento-edit").forEach(function (el) {
+      el.disabled = false;
+    });
+  }
+
+  function autoSelectEditingRows(form) {
+    form.querySelectorAll("tr.aumento-row.is-editing").forEach(function (tr) {
+      var cb = tr.querySelector(".sel-producto");
+      if (cb) cb.checked = true;
+    });
+  }
+
+  function bindFormSubmit(form) {
+    if (!form || form.__aumentoSubmitBound) return;
+    form.__aumentoSubmitBound = true;
+
+    form.querySelectorAll("[data-aumento-step]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        setFormStep(form, btn.getAttribute("data-aumento-step") || "preview");
+      });
+    });
+
+    form.addEventListener("submit", function (ev) {
+      enableAllEditInputs(form);
+
+      if (form.id !== "formAumento") return;
+
+      var stepInp = form.querySelector("#formAumentoStep");
+      var step = stepInp ? stepInp.value : "preview";
+
+      if (step === "guardar_manual") {
+        autoSelectEditingRows(form);
+        var any = false;
+        form.querySelectorAll(".sel-producto:checked").forEach(function () {
+          any = true;
+        });
+        if (!any) {
+          ev.preventDefault();
+          alert("Seleccioná al menos un producto para guardar.");
+        }
+        return;
+      }
+
+      var anySel = false;
+      form.querySelectorAll(".sel-producto:checked").forEach(function () {
+        anySel = true;
+      });
+      if (!anySel) {
+        ev.preventDefault();
+        alert("Seleccioná al menos un producto.");
+        return;
+      }
+      var pct = (document.getElementById("pct_aumento") || {}).value;
+      if (!String(pct || "").trim()) {
+        ev.preventDefault();
+        alert("Indicá el porcentaje de aumento sobre el costo.");
+      }
+    });
+  }
+
+  function bindRowSaveButtons(root) {
+    root.querySelectorAll(".js-aumento-guardar-fila").forEach(function (btn) {
+      if (btn.__aumentoSaveBound) return;
+      btn.__aumentoSaveBound = true;
+      btn.addEventListener("click", function () {
+        var tr = btn.closest("tr.aumento-row");
+        var form = tr && tr.closest("form");
+        if (!tr || !form) return;
+
+        tr.querySelectorAll(".aumento-edit").forEach(function (el) {
+          if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
+            el.disabled = false;
+          }
+        });
+
+        var cb = tr.querySelector(".sel-producto");
+        if (cb) cb.checked = true;
+
+        if (form.id === "formAumento") {
+          setFormStep(form, "guardar_manual");
+        }
+
+        if (typeof form.requestSubmit === "function") form.requestSubmit();
+        else form.submit();
+      });
+    });
   }
 
   function bind(root) {
@@ -138,14 +234,11 @@
     });
 
     root.querySelectorAll("form").forEach(function (form) {
-      if (!form.querySelector("tr.aumento-row") || form.__aumentoSubmitBound) return;
-      form.__aumentoSubmitBound = true;
-      form.addEventListener("submit", function () {
-        form.querySelectorAll(".aumento-edit").forEach(function (el) {
-          el.disabled = false;
-        });
-      });
+      if (!form.querySelector("tr.aumento-row")) return;
+      bindFormSubmit(form);
     });
+
+    bindRowSaveButtons(root);
   }
 
   w.sironaInitAumentoEdit = bind;

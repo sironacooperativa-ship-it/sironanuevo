@@ -424,6 +424,65 @@ def _redirect_productos_lista_tras_aumento_guardado(request):
     return redirect(url)
 
 
+def _lista_aumento_desde_filtros_post(request) -> tuple[str, ListaPrecios | None]:
+    raw = (request.POST.get("filtro_lista") or "").strip()
+    if raw == "all" or not raw.isdigit():
+        return "all", None
+    lista = ListaPrecios.objects.filter(pk=int(raw)).first()
+    if lista is None:
+        return "all", None
+    if lista.es_farmacia:
+        return "farmacia", lista
+    return "rubro", lista
+
+
+def _aplicar_costo_precio_producto_aumento(
+    *,
+    producto: Producto,
+    costo: Decimal,
+    precio: Decimal,
+    lista_modo: str,
+    lista_obj: ListaPrecios | None,
+) -> None:
+    """Persiste costo y precio editados desde la pantalla de aumentos."""
+    producto.costo = costo
+    producto.precio_venta_editado = True
+    if lista_modo == "rubro" and lista_obj is not None:
+        n = ListaPrecioItem.objects.filter(lista=lista_obj, producto=producto).update(
+            precio_venta=precio
+        )
+        if n == 0:
+            producto.precio_venta = precio
+    else:
+        producto.precio_venta = precio
+    if producto.costo > 0:
+        producto.porcentaje_ganancia = q2(
+            (precio - producto.costo) / producto.costo * Decimal("100")
+        )
+    producto.save(
+        update_fields=[
+            "costo",
+            "precio_venta",
+            "precio_venta_editado",
+            "porcentaje_ganancia",
+        ]
+    )
+
+
+def _invalidar_cache_tras_aumento(
+    *,
+    lista_modo: str,
+    lista_obj: ListaPrecios | None,
+    actualizados: int,
+) -> None:
+    if actualizados <= 0:
+        return
+    if lista_obj is not None:
+        invalidar_cache_catalogo_por_cambio_precios(lista_obj.pk)
+    elif actualizados:
+        invalidar_cache_catalogo_por_cambio_precios()
+
+
 def _celda_texto(v) -> str:
     if v is None:
         return ""
@@ -857,6 +916,7 @@ def productos_aumento(request):
                     return _redirect_productos_aumento_filtros(request)
 
             factor = Decimal("1.0") + (pct / Decimal("100"))
+            lista_modo, lista_obj = _lista_aumento_desde_filtros_post(request)
             actualizados = 0
             try:
                 with transaction.atomic():
@@ -864,35 +924,85 @@ def productos_aumento(request):
                         precio = _parse_precio_venta_input(request.POST.get(f"precio_{sid}") or "")
                         costo_post = _parse_precio_venta_input(request.POST.get(f"costo_{sid}") or "")
                         p = Producto.objects.select_for_update().get(pk=sid)
-                        if costo_post is not None:
-                            p.costo = costo_post
-                        else:
-                            p.costo = q2(p.costo * factor)
-                        p.precio_venta = precio
-                        p.precio_venta_editado = True
-                        if p.costo > 0:
-                            p.porcentaje_ganancia = q2(
-                                (precio - p.costo) / p.costo * Decimal("100")
-                            )
-                        p.save()
+                        if costo_post is None:
+                            costo_post = q2(p.costo * factor)
+                        _aplicar_costo_precio_producto_aumento(
+                            producto=p,
+                            costo=costo_post,
+                            precio=precio,
+                            lista_modo=lista_modo,
+                            lista_obj=lista_obj,
+                        )
                         actualizados += 1
             except Producto.DoesNotExist:
                 messages.error(request, "Algún producto ya no existe.")
                 return _redirect_productos_aumento_filtros(request)
 
-            farmacia_id = (
-                ListaPrecios.objects.filter(es_farmacia=True).order_by("id").values_list("pk", flat=True).first()
+            _invalidar_cache_tras_aumento(
+                lista_modo=lista_modo,
+                lista_obj=lista_obj,
+                actualizados=actualizados,
             )
-            if farmacia_id:
-                invalidar_cache_catalogo_por_cambio_precios(farmacia_id)
-            elif actualizados:
-                invalidar_cache_catalogo_por_cambio_precios()
 
             messages.success(
                 request,
                 f"Aumento del {pct}% aplicado sobre el costo en {actualizados} producto(s).",
             )
             return _redirect_productos_lista_tras_aumento_guardado(request)
+
+        if step == "guardar_manual":
+            ids = sorted({int(x) for x in request.POST.getlist("sel") if str(x).isdigit()})
+            if not ids:
+                messages.error(request, "Seleccioná al menos un producto para guardar.")
+                return _redirect_productos_aumento_filtros(request)
+
+            lista_modo, lista_obj = _lista_aumento_desde_filtros_post(request)
+            for sid in ids:
+                if _parse_precio_venta_input(request.POST.get(f"costo_{sid}") or "") is None:
+                    messages.error(
+                        request,
+                        f"Revisá el costo del producto #{sid} (debe ser un importe válido).",
+                    )
+                    return _redirect_productos_aumento_filtros(request)
+                precio_key = f"precio_ref_{sid}"
+                if _parse_precio_venta_input(request.POST.get(precio_key) or "") is None:
+                    messages.error(
+                        request,
+                        f"Revisá el precio del producto #{sid} (debe ser un importe válido).",
+                    )
+                    return _redirect_productos_aumento_filtros(request)
+
+            actualizados = 0
+            try:
+                with transaction.atomic():
+                    for sid in ids:
+                        costo = _parse_precio_venta_input(request.POST.get(f"costo_{sid}") or "")
+                        precio = _parse_precio_venta_input(
+                            request.POST.get(f"precio_ref_{sid}") or ""
+                        )
+                        p = Producto.objects.select_for_update().get(pk=sid)
+                        _aplicar_costo_precio_producto_aumento(
+                            producto=p,
+                            costo=costo,
+                            precio=precio,
+                            lista_modo=lista_modo,
+                            lista_obj=lista_obj,
+                        )
+                        actualizados += 1
+            except Producto.DoesNotExist:
+                messages.error(request, "Algún producto ya no existe.")
+                return _redirect_productos_aumento_filtros(request)
+
+            _invalidar_cache_tras_aumento(
+                lista_modo=lista_modo,
+                lista_obj=lista_obj,
+                actualizados=actualizados,
+            )
+            messages.success(
+                request,
+                f"Se guardaron costo y precio en {actualizados} producto(s).",
+            )
+            return _redirect_productos_aumento_filtros(request)
 
         if step == "preview":
             ids = [int(x) for x in request.POST.getlist("sel") if str(x).isdigit()]
