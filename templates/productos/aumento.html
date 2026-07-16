@@ -8,20 +8,36 @@
     tr.aumento-row.is-editing .aumento-view {
       display: none !important;
     }
-    tr.aumento-row:not(.is-editing) .aumento-edit {
-      display: none !important;
-    }
     tr.aumento-row.is-editing .aumento-edit {
       display: block !important;
     }
-    tr.aumento-row.is-editing .aumento-edit.form-control {
+    tr.aumento-row.is-editing .aumento-edit.d-none {
       display: block !important;
+    }
+    tr.aumento-row.is-editing .js-aumento-guardar-fila {
+      display: inline-flex !important;
+    }
+    tr.aumento-row:not(.is-editing) .js-aumento-guardar-fila {
+      display: none !important;
+    }
+    tr.aumento-row.is-editing .js-aumento-costo-inp,
+    tr.aumento-row.is-editing .js-aumento-precio-inp {
+      width: 100%;
+      min-width: 5.5rem;
+      max-width: 8rem;
+      margin-left: auto;
+    }
+    tr.aumento-row.is-editing td.col-money {
+      min-width: 6.5rem;
     }
     .js-aumento-editar[aria-pressed="true"] {
       box-shadow: 0 0 0 2px rgba(var(--bs-primary-rgb), 0.35);
     }
-    tr.aumento-row:not(.is-editing) .js-aumento-guardar-fila {
-      display: none !important;
+    .productos-aumento-sel .table-actions-cell,
+    .productos-aumento-confirm .table-actions-cell {
+      width: 1%;
+      min-width: 5.5rem;
+      white-space: nowrap;
     }
   </style>
 {% endblock %}
@@ -68,7 +84,7 @@
               <th scope="col" class="text-end col-money">Nuevo costo</th>
               <th scope="col" class="text-end col-money">% gan.</th>
               <th scope="col" class="text-end" style="min-width: 9rem">Precio final</th>
-              <th scope="col" class="text-end presu-th-acciones" style="width: 3rem" aria-label="Editar"> </th>
+              <th scope="col" class="text-end presu-th-acciones table-actions-cell" aria-label="Editar"> </th>
             </tr>
           </thead>
           <tbody>
@@ -77,7 +93,7 @@
                 <td class="font-monospace small">{{ row.producto.codigo }}</td>
                 <td class="small">{{ row.producto.descripcion }}</td>
                 <td class="text-end small">{{ row.costo_anterior|ars }}</td>
-                <td class="text-end small">
+                <td class="text-end small col-money">
                   <span class="aumento-view fw-semibold">{{ row.nuevo_costo|ars }}</span>
                   <label class="visually-hidden" for="costo-{{ row.producto.pk }}">Nuevo costo {{ row.producto.codigo }}</label>
                   <input
@@ -95,7 +111,7 @@
                 <td class="text-end small">
                   <span class="js-aumento-pct">{{ row.producto.porcentaje_ganancia }}%</span>
                 </td>
-                <td class="text-end">
+                <td class="text-end col-money">
                   <span class="aumento-view fw-medium">{{ row.precio_sugerido|ars }}</span>
                   <label class="visually-hidden" for="precio-{{ row.producto.pk }}">Precio final {{ row.producto.codigo }}</label>
                   <input
@@ -110,7 +126,7 @@
                     disabled
                   />
                 </td>
-                <td class="text-end py-0">
+                <td class="text-end py-0 table-actions-cell">
                   <div class="table-actions d-inline-flex gap-1 justify-content-end">
                     <button
                       type="button"
@@ -264,7 +280,7 @@
                 <th scope="col" class="text-end col-money">Costo</th>
                 <th scope="col" class="text-end col-money">% gan.</th>
                 <th scope="col" class="text-end col-money">Precio actual</th>
-                <th scope="col" class="text-end presu-th-acciones" style="width: 3rem" aria-label="Editar"> </th>
+                <th scope="col" class="text-end presu-th-acciones table-actions-cell" aria-label="Editar"> </th>
               </tr>
             </thead>
             <tbody>
@@ -276,7 +292,7 @@
                   <td class="font-monospace small">{{ p.codigo }}</td>
                   <td class="small">{{ p.descripcion }}</td>
                   <td class="small text-muted">{{ p.get_tipo_display }}</td>
-                  <td class="text-end small">
+                  <td class="text-end small col-money">
                     <span class="aumento-view">{{ p.costo|ars }}</span>
                     <label class="visually-hidden" for="costo-sel-{{ p.pk }}">Costo {{ p.codigo }}</label>
                     <input
@@ -293,7 +309,7 @@
                   <td class="text-end small">
                     <span class="js-aumento-pct">{{ p.porcentaje_ganancia }}%</span>
                   </td>
-                  <td class="text-end small">
+                  <td class="text-end small col-money">
                     <span class="aumento-view fw-medium">{{ p.precio_lista_vista|ars }}</span>
                     <label class="visually-hidden" for="precio-ref-{{ p.pk }}">Precio actual {{ p.codigo }}</label>
                     <input
@@ -307,7 +323,7 @@
                       disabled
                     />
                   </td>
-                  <td class="text-end py-0">
+                  <td class="text-end py-0 table-actions-cell">
                     <div class="table-actions d-inline-flex gap-1 justify-content-end">
                       <button
                         type="button"
@@ -374,19 +390,21 @@
 {% endblock %}
 
 {% block page_scripts %}
-  <script src="{% static 'js/productos-aumento-edit.js' %}?v=5"></script>
+  <script src="{% static 'js/productos-aumento-edit.js' %}?v=6"></script>
   <script>
     (function () {
-      function initAumentoEdit() {
+      function bootAumentoEdit() {
         if (typeof window.sironaInitAumentoEdit === "function") {
           window.sironaInitAumentoEdit(document);
         }
       }
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", initAumentoEdit);
-      } else {
-        initAumentoEdit();
-      }
+      bootAumentoEdit();
+      window.addEventListener("pageshow", function (ev) {
+        if (ev.persisted) {
+          document.documentElement.removeAttribute("data-aumento-click-bound");
+          bootAumentoEdit();
+        }
+      });
     })();
   </script>
 {% endblock %}

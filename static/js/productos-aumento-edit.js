@@ -1,8 +1,9 @@
 /**
- * Edición manual en aumentos: lapicito por fila, costo → precio al 30%, precio → % implícito.
+ * Edición manual en aumentos (lapicito por fila).
  */
 (function (w) {
   var PCT_PREESTABLECIDO = 30;
+  var ROOT_SEL = ".productos-aumento-sel, .productos-aumento-confirm";
 
   function parseNum(raw) {
     var v = String(raw == null ? "" : raw)
@@ -79,7 +80,6 @@
     if (!costoInp || !precioInp) return;
 
     var fromCosto = false;
-
     costoInp.addEventListener("input", function () {
       fromCosto = true;
       applyPrecioDesdeCosto(tr);
@@ -88,7 +88,6 @@
     costoInp.addEventListener("change", function () {
       applyPrecioDesdeCosto(tr);
     });
-
     precioInp.addEventListener("input", function () {
       if (fromCosto) return;
       syncPctDisplay(tr);
@@ -98,37 +97,38 @@
     });
   }
 
+  function setInputsEnabled(tr, on) {
+    tr.querySelectorAll(".js-aumento-costo-inp, .js-aumento-precio-inp").forEach(function (inp) {
+      inp.disabled = !on;
+    });
+  }
+
   function setRowEditing(tr, on) {
     if (!tr) return;
     tr.classList.toggle("is-editing", !!on);
-    tr.querySelectorAll(".aumento-edit").forEach(function (el) {
-      el.classList.toggle("d-none", !on);
-      if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
-        el.disabled = !on;
-      }
-    });
+    setInputsEnabled(tr, on);
     var btn = tr.querySelector(".js-aumento-editar");
     if (btn) {
       btn.setAttribute("aria-pressed", on ? "true" : "false");
       btn.title = on ? "Dejar de editar" : "Editar costo y precio";
     }
-    var saveBtn = tr.querySelector(".js-aumento-guardar-fila");
-    if (saveBtn) saveBtn.classList.toggle("d-none", !on);
     if (on) {
       syncPctDisplay(tr);
       var focusInp = tr.querySelector(".js-aumento-costo-inp");
       if (focusInp) {
-        try {
-          focusInp.focus();
-          focusInp.select();
-        } catch (e) {}
+        window.requestAnimationFrame(function () {
+          try {
+            focusInp.focus();
+            focusInp.select();
+          } catch (e) {}
+        });
       }
     }
   }
 
-  function closeOtherEditingRows(activeTr) {
+  function closeAllEditingRows(exceptTr) {
     document.querySelectorAll("tr.aumento-row.is-editing").forEach(function (tr) {
-      if (tr !== activeTr) setRowEditing(tr, false);
+      if (tr !== exceptTr) setRowEditing(tr, false);
     });
   }
 
@@ -169,26 +169,16 @@
 
   function restoreDisabledState(form) {
     form.querySelectorAll("tr.aumento-row").forEach(function (tr) {
-      tr.querySelectorAll(".aumento-edit").forEach(function (el) {
-        if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
-          el.disabled = !rowEditing(tr);
-        }
-      });
+      setInputsEnabled(tr, rowEditing(tr));
     });
   }
 
   function enableInputsForSubmit(form, step) {
-    form.querySelectorAll(".aumento-edit").forEach(function (el) {
-      if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
-        el.disabled = true;
-      }
+    form.querySelectorAll(".js-aumento-costo-inp, .js-aumento-precio-inp").forEach(function (inp) {
+      inp.disabled = true;
     });
     rowsForSubmit(form, step).forEach(function (tr) {
-      tr.querySelectorAll(".aumento-edit").forEach(function (el) {
-        if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
-          el.disabled = false;
-        }
-      });
+      setInputsEnabled(tr, true);
     });
   }
 
@@ -212,7 +202,6 @@
     form.addEventListener("submit", function (ev) {
       var stepInp = form.querySelector("#formAumentoStep");
       var step = stepInp ? stepInp.value : form.id === "formAumentoConfirm" ? "confirm" : "preview";
-
       enableInputsForSubmit(form, step);
 
       if (form.id !== "formAumento") return;
@@ -251,75 +240,81 @@
     });
   }
 
-  function bindEditButtons(root) {
-    root.querySelectorAll(".js-aumento-editar").forEach(function (btn) {
-      if (btn.dataset.aumentoEditBound === "1") return;
-      btn.dataset.aumentoEditBound = "1";
-      btn.addEventListener("click", function (ev) {
-        ev.preventDefault();
-        var tr = btn.closest("tr.aumento-row");
-        if (!tr) return;
-        if (rowEditing(tr)) {
-          setRowEditing(tr, false);
-          return;
-        }
-        closeOtherEditingRows(tr);
-        resetFilterFormStep();
-        setRowEditing(tr, true);
-      });
-    });
+  function handleEditClick(btn) {
+    var tr = btn.closest("tr.aumento-row");
+    if (!tr) return;
+    if (rowEditing(tr)) {
+      setRowEditing(tr, false);
+      return;
+    }
+    closeAllEditingRows(tr);
+    resetFilterFormStep();
+    setRowEditing(tr, true);
   }
 
-  function bindSaveButtons(root) {
-    root.querySelectorAll(".js-aumento-guardar-fila").forEach(function (btn) {
-      if (btn.dataset.aumentoSaveBound === "1") return;
-      btn.dataset.aumentoSaveBound = "1";
-      btn.addEventListener("click", function (ev) {
-        ev.preventDefault();
-        var tr = btn.closest("tr.aumento-row");
-        var form = tr && tr.closest("form");
-        if (!tr || !form) return;
+  function handleSaveClick(btn) {
+    var tr = btn.closest("tr.aumento-row");
+    var form = tr && tr.closest("form");
+    if (!tr || !form) return;
 
-        if (!rowEditing(tr)) setRowEditing(tr, true);
+    if (!rowEditing(tr)) setRowEditing(tr, true);
 
-        var cb = tr.querySelector(".sel-producto");
-        if (cb) cb.checked = true;
+    var cb = tr.querySelector(".sel-producto");
+    if (cb) cb.checked = true;
 
-        if (form.id === "formAumento") {
-          setFormStep(form, "guardar_manual");
+    if (form.id === "formAumento") {
+      setFormStep(form, "guardar_manual");
+    }
+
+    enableInputsForSubmit(form, form.id === "formAumento" ? "guardar_manual" : "confirm");
+
+    if (typeof form.requestSubmit === "function") form.requestSubmit();
+    else form.submit();
+  }
+
+  function bindClickDelegation() {
+    if (document.documentElement.dataset.aumentoClickBound === "1") return;
+    document.documentElement.dataset.aumentoClickBound = "1";
+
+    document.addEventListener(
+      "click",
+      function (ev) {
+        var target = ev.target;
+        if (!target || !target.closest) return;
+
+        var editBtn = target.closest(".js-aumento-editar");
+        if (editBtn && editBtn.closest(ROOT_SEL)) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          handleEditClick(editBtn);
+          return;
         }
 
-        enableInputsForSubmit(form, form.id === "formAumento" ? "guardar_manual" : "confirm");
-
-        if (typeof form.requestSubmit === "function") form.requestSubmit();
-        else form.submit();
-      });
-    });
+        var saveBtn = target.closest(".js-aumento-guardar-fila");
+        if (saveBtn && saveBtn.closest(ROOT_SEL)) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          handleSaveClick(saveBtn);
+        }
+      },
+      true
+    );
   }
 
   function bind(root) {
     root = root || document;
 
+    bindClickDelegation();
+
     root.querySelectorAll("tr.aumento-row").forEach(function (tr) {
       bindRowCalculations(tr);
-      tr.querySelectorAll(".aumento-edit").forEach(function (el) {
-        if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
-          el.disabled = !rowEditing(tr);
-        }
-      });
+      setInputsEnabled(tr, rowEditing(tr));
     });
-
-    bindEditButtons(root);
-    bindSaveButtons(root);
 
     root.querySelectorAll("form").forEach(function (form) {
       if (!form.querySelector("tr.aumento-row")) return;
       bindFormSubmit(form);
     });
-
-    if (typeof w.sironaPaintIcons === "function") {
-      w.sironaPaintIcons();
-    }
   }
 
   w.sironaInitAumentoEdit = bind;
