@@ -3,6 +3,7 @@
  */
 (function (w) {
   var PCT_PREESTABLECIDO = 30;
+  var DELEGATE_FLAG = "__aumentoDelegated";
 
   function parseNum(raw) {
     var v = String(raw == null ? "" : raw)
@@ -48,7 +49,7 @@
   }
 
   function rowEditing(tr) {
-    return tr && tr.classList.contains("is-editing");
+    return !!(tr && tr.classList.contains("is-editing"));
   }
 
   function syncPctDisplay(tr) {
@@ -112,7 +113,26 @@
     }
     var saveBtn = tr.querySelector(".js-aumento-guardar-fila");
     if (saveBtn) saveBtn.classList.toggle("d-none", !on);
-    if (on) syncPctDisplay(tr);
+    if (on) {
+      syncPctDisplay(tr);
+      var focusInp = tr.querySelector(".js-aumento-costo-inp, .js-aumento-precio-inp");
+      if (focusInp && typeof focusInp.focus === "function") {
+        try {
+          focusInp.focus();
+        } catch (e) {}
+      }
+    }
+  }
+
+  function closeOtherEditingRows(activeTr) {
+    document.querySelectorAll("tr.aumento-row.is-editing").forEach(function (tr) {
+      if (tr !== activeTr) setRowEditing(tr, false);
+    });
+  }
+
+  function resetFilterFormStep() {
+    var stepInp = document.getElementById("formAumentoStep");
+    if (stepInp) stepInp.value = "preview";
   }
 
   function setFormStep(form, step) {
@@ -120,9 +140,47 @@
     if (stepInp) stepInp.value = step;
   }
 
-  function enableAllEditInputs(form) {
+  function rowsForSubmit(form, step) {
+    var rows = [];
+    if (form.id === "formAumento" && step === "guardar_manual") {
+      form.querySelectorAll(".sel-producto:checked").forEach(function (cb) {
+        var tr = cb.closest("tr.aumento-row");
+        if (tr) rows.push(tr);
+      });
+      form.querySelectorAll("tr.aumento-row.is-editing").forEach(function (tr) {
+        if (rows.indexOf(tr) === -1) rows.push(tr);
+      });
+      return rows;
+    }
+    if (form.id === "formAumento") {
+      form.querySelectorAll(".sel-producto:checked").forEach(function (cb) {
+        var tr = cb.closest("tr.aumento-row");
+        if (tr) rows.push(tr);
+      });
+      return rows;
+    }
+    form.querySelectorAll("tr.aumento-row").forEach(function (tr) {
+      rows.push(tr);
+    });
+    return rows;
+  }
+
+  function disableAllEditInputs(form) {
     form.querySelectorAll(".aumento-edit").forEach(function (el) {
-      el.disabled = false;
+      if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
+        el.disabled = true;
+      }
+    });
+  }
+
+  function enableInputsForSubmit(form, step) {
+    disableAllEditInputs(form);
+    rowsForSubmit(form, step).forEach(function (tr) {
+      tr.querySelectorAll(".aumento-edit").forEach(function (el) {
+        if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
+          el.disabled = false;
+        }
+      });
     });
   }
 
@@ -144,15 +202,16 @@
     });
 
     form.addEventListener("submit", function (ev) {
-      enableAllEditInputs(form);
+      var stepInp = form.querySelector("#formAumentoStep");
+      var step = stepInp ? stepInp.value : form.id === "formAumentoConfirm" ? "confirm" : "preview";
+
+      enableInputsForSubmit(form, step);
 
       if (form.id !== "formAumento") return;
 
-      var stepInp = form.querySelector("#formAumentoStep");
-      var step = stepInp ? stepInp.value : "preview";
-
       if (step === "guardar_manual") {
         autoSelectEditingRows(form);
+        enableInputsForSubmit(form, step);
         var any = false;
         form.querySelectorAll(".sel-producto:checked").forEach(function () {
           any = true;
@@ -160,6 +219,7 @@
         if (!any) {
           ev.preventDefault();
           alert("Seleccioná al menos un producto para guardar.");
+          restoreDisabledState(form);
         }
         return;
       }
@@ -171,61 +231,86 @@
       if (!anySel) {
         ev.preventDefault();
         alert("Seleccioná al menos un producto.");
+        restoreDisabledState(form);
         return;
       }
       var pct = (document.getElementById("pct_aumento") || {}).value;
       if (!String(pct || "").trim()) {
         ev.preventDefault();
         alert("Indicá el porcentaje de aumento sobre el costo.");
+        restoreDisabledState(form);
       }
     });
   }
 
-  function bindRowSaveButtons(root) {
-    root.querySelectorAll(".js-aumento-guardar-fila").forEach(function (btn) {
-      if (btn.__aumentoSaveBound) return;
-      btn.__aumentoSaveBound = true;
-      btn.addEventListener("click", function () {
-        var tr = btn.closest("tr.aumento-row");
-        var form = tr && tr.closest("form");
-        if (!tr || !form) return;
-
-        tr.querySelectorAll(".aumento-edit").forEach(function (el) {
-          if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
-            el.disabled = false;
-          }
-        });
-
-        var cb = tr.querySelector(".sel-producto");
-        if (cb) cb.checked = true;
-
-        if (form.id === "formAumento") {
-          setFormStep(form, "guardar_manual");
+  function restoreDisabledState(form) {
+    form.querySelectorAll("tr.aumento-row").forEach(function (tr) {
+      tr.querySelectorAll(".aumento-edit").forEach(function (el) {
+        if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
+          el.disabled = !rowEditing(tr);
         }
-
-        if (typeof form.requestSubmit === "function") form.requestSubmit();
-        else form.submit();
       });
+    });
+  }
+
+  function handleEditClick(btn) {
+    var tr = btn.closest("tr.aumento-row");
+    if (!tr) return;
+    var opening = !rowEditing(tr);
+    if (opening) {
+      closeOtherEditingRows(tr);
+      resetFilterFormStep();
+      setRowEditing(tr, true);
+      return;
+    }
+    setRowEditing(tr, false);
+  }
+
+  function handleSaveRowClick(btn) {
+    var tr = btn.closest("tr.aumento-row");
+    var form = tr && tr.closest("form");
+    if (!tr || !form) return;
+
+    if (!rowEditing(tr)) setRowEditing(tr, true);
+
+    var cb = tr.querySelector(".sel-producto");
+    if (cb) cb.checked = true;
+
+    if (form.id === "formAumento") {
+      setFormStep(form, "guardar_manual");
+    }
+
+    if (typeof form.requestSubmit === "function") form.requestSubmit();
+    else form.submit();
+  }
+
+  function bindDelegated(root) {
+    root = root || document;
+    if (root[DELEGATE_FLAG]) return;
+    root[DELEGATE_FLAG] = true;
+
+    root.addEventListener("click", function (ev) {
+      var editBtn = ev.target.closest(".js-aumento-editar");
+      if (editBtn) {
+        ev.preventDefault();
+        handleEditClick(editBtn);
+        return;
+      }
+      var saveBtn = ev.target.closest(".js-aumento-guardar-fila");
+      if (saveBtn) {
+        ev.preventDefault();
+        handleSaveRowClick(saveBtn);
+      }
     });
   }
 
   function bind(root) {
     root = root || document;
+
+    bindDelegated(root);
+
     root.querySelectorAll("tr.aumento-row").forEach(function (tr) {
       bindRowCalculations(tr);
-    });
-
-    root.querySelectorAll(".js-aumento-editar").forEach(function (btn) {
-      if (btn.__aumentoEditBound) return;
-      btn.__aumentoEditBound = true;
-      btn.addEventListener("click", function () {
-        var tr = btn.closest("tr.aumento-row");
-        if (!tr) return;
-        setRowEditing(tr, !rowEditing(tr));
-      });
-    });
-
-    root.querySelectorAll("tr.aumento-row").forEach(function (tr) {
       tr.querySelectorAll(".aumento-edit").forEach(function (el) {
         if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
           el.disabled = !rowEditing(tr);
@@ -238,16 +323,26 @@
       bindFormSubmit(form);
     });
 
-    bindRowSaveButtons(root);
+    if (w.lucide && typeof w.lucide.createIcons === "function") {
+      try {
+        w.lucide.createIcons();
+      } catch (e) {}
+    }
   }
 
   w.sironaInitAumentoEdit = bind;
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", function () {
-      bind(document);
-    });
-  } else {
+  function boot() {
     bind(document);
   }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+
+  window.addEventListener("pageshow", function (ev) {
+    if (ev.persisted) boot();
+  });
 })(typeof window !== "undefined" ? window : this);

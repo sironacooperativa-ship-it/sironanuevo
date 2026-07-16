@@ -217,7 +217,7 @@
       </div>
     </div>
 
-    <form method="post" action="{% url 'productos_aumento' %}" id="formAumento">
+    <form method="post" action="{% url 'productos_aumento' %}" id="formAumento" autocomplete="off">
       {% csrf_token %}
       <input type="hidden" name="step" value="preview" id="formAumentoStep" />
       <input type="hidden" name="filtro_q" value="{{ q }}" />
@@ -374,5 +374,5 @@
 {% endblock %}
 
 {% block page_scripts %}
-  <script src="{% static 'js/productos-aumento-edit.js' %}?v=3"></script>
+  <script src="{% static 'js/productos-aumento-edit.js' %}?v=4"></script>
 {% endblock %}
