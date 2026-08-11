@@ -603,11 +603,13 @@
               <table class="p-table">
                 <thead>
                   <tr>
-                    <th class="c" style="width: 6%;">N.º</th>
-                    <th style="width: 14%;">Código</th>
-                    <th style="width: 14%;">Marca</th>
+                    <th class="c" style="width: 5%;">N.º</th>
+                    <th style="width: 11%;">Código</th>
+                    <th style="width: 11%;">Marca</th>
                     <th>Descripción</th>
-                    <th class="c" style="width: 12%;">Cant.</th>
+                    <th class="c" style="width: 8%;">Cant.</th>
+                    <th class="num" style="width: 14%;">P. Unit.</th>
+                    <th class="num" style="width: 14%;">Subtotal</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -616,20 +618,26 @@
                       <td class="c">{{ forloop.counter }}</td>
                       <td>{{ ln.texto_codigo }}</td>
                       <td>{{ ln.texto_marca|default:"—" }}</td>
-                      <td>{{ ln.texto_descripcion|truncatechars:52 }}</td>
+                      <td>{{ ln.texto_descripcion|truncatechars:44 }}</td>
                       <td class="c">{{ ln.cantidad }}</td>
+                      <td class="num">{{ ln.precio_unitario|ars }}</td>
+                      <td class="num">{{ ln.subtotal|ars }}</td>
                     </tr>
                   {% empty %}
-                    <tr><td colspan="5" class="muted">Sin líneas</td></tr>
+                    <tr><td colspan="7" class="muted">Sin líneas</td></tr>
                   {% endfor %}
                 </tbody>
               </table>
 
-              <div class="p-lines">
-                <div class="line"><div><b>Total de bultos:</b></div><div class="u"></div></div>
-                <div class="line"><div><b>Observaciones:</b></div><div class="u"></div></div>
-                <div class="line"><div></div><div class="u"></div></div>
-              </div>
+              <table class="p-totals">
+                <tbody>
+                  <tr><td>Subtotal</td><td>{{ venta.subtotal_lineas|ars }}</td></tr>
+                  {% if venta.descuento_monto and venta.descuento_monto > 0 %}
+                    <tr><td>Descuento</td><td>{{ venta.descuento_monto|ars }}</td></tr>
+                  {% endif %}
+                  <tr class="total"><td>TOTAL</td><td>{{ venta.neto|ars }}</td></tr>
+                </tbody>
+              </table>
               <div class="p-foot">Gracias por confiar en nosotros.</div>
             </section>
           </div>
@@ -748,6 +756,8 @@
                   <th style="width: 12%;">Marca</th>
                   <th>Descripción</th>
                   <th class="c" style="width: 9%;">Cant.</th>
+                  <th class="num" style="width: 14%;">P. Unit.</th>
+                  <th class="num" style="width: 14%;">Subtotal</th>
                 </tr>
               </thead>
               <tbody>
@@ -758,15 +768,21 @@
                     <td>{{ ln.texto_marca|default:"—" }}</td>
                     <td>{{ ln.texto_descripcion }}</td>
                     <td class="c">{{ ln.cantidad }}</td>
+                    <td class="num">{{ ln.precio_unitario|ars }}</td>
+                    <td class="num">{{ ln.subtotal|ars }}</td>
                   </tr>
                 {% endfor %}
               </tbody>
             </table>
-            <div class="p-lines">
-              <div class="line"><div><b>Total de bultos:</b></div><div class="u"></div></div>
-              <div class="line"><div><b>Observaciones:</b></div><div class="u"></div></div>
-              <div class="line"><div></div><div class="u"></div></div>
-            </div>
+            <table class="p-totals">
+              <tbody>
+                <tr><td>Subtotal</td><td>{{ venta.subtotal_lineas|ars }}</td></tr>
+                {% if venta.descuento_monto and venta.descuento_monto > 0 %}
+                  <tr><td>Descuento</td><td>{{ venta.descuento_monto|ars }}</td></tr>
+                {% endif %}
+                <tr class="total"><td>TOTAL</td><td>{{ venta.neto|ars }}</td></tr>
+              </tbody>
+            </table>
             <div class="p-foot">Gracias por confiar en nosotros.</div>
           </section>
         </div>

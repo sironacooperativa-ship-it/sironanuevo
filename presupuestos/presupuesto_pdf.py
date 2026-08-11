@@ -1,4 +1,4 @@
-"""PDF de presupuesto (ReportLab): plantilla única Sirona, copias Remito y Duplicado."""
+"""PDF de presupuesto (ReportLab): plantilla única Sirona, copias Original y Duplicado."""
 from __future__ import annotations
 
 from io import BytesIO
@@ -43,7 +43,7 @@ def _titulo_membrete(presupuesto, copia_label: str) -> str:
 
 
 def _append_copia_presupuesto_pdf(story, presupuesto, doc, styles, copia_label: str):
-    """Una hoja completa (mismo contenido; copia Remito / Duplicado)."""
+    """Una hoja completa (mismo contenido; copia Original / Duplicado)."""
     ndoc = _numero_doc(presupuesto)
     doc_type = "ORDEN DE COMPRA" if presupuesto.estado == Presupuesto.Estado.APROBADO else "PRESUPUESTO"
     vend = presupuesto.vendedor
@@ -102,7 +102,7 @@ def _append_copia_presupuesto_pdf(story, presupuesto, doc, styles, copia_label: 
 
 
 def presupuesto_pdf_response(presupuesto) -> HttpResponse:
-    """PDF en dos páginas A4: copia Remito y copia Duplicado (mismo contenido)."""
+    """PDF en dos páginas A4: copia Original y copia Duplicado (mismo contenido)."""
     buf = BytesIO()
     doc = SimpleDocTemplate(
         buf,
@@ -115,7 +115,7 @@ def presupuesto_pdf_response(presupuesto) -> HttpResponse:
     styles = getSampleStyleSheet()
     story: list[Any] = []
     pages_meta: list[Any] = []
-    pages_meta.extend(_append_copia_presupuesto_pdf(story, presupuesto, doc, styles, "Remito"))
+    pages_meta.extend(_append_copia_presupuesto_pdf(story, presupuesto, doc, styles, "Original"))
     story.append(PageBreak())
     pages_meta.extend(_append_copia_presupuesto_pdf(story, presupuesto, doc, styles, "Duplicado"))
 

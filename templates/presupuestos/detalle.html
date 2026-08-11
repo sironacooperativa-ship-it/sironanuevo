@@ -250,7 +250,7 @@
   </div>
 
   <div class="presupuesto-factura-wrap presupuesto-print-hoja1 mb-3 d-none d-print-block">
-    {% include "presupuestos/includes/presupuesto_hoja.html" with copia_label="Remito" %}
+    {% include "presupuestos/includes/presupuesto_hoja.html" with copia_label="Original" %}
   </div>
 
   <div class="presupuesto-factura-wrap d-none d-print-block mb-0">
@@ -259,7 +259,7 @@
 
   <div class="presupuesto-factura-wrap no-print text-center mt-3 mb-2">
     <p class="text-muted small mb-2">
-      Al imprimir o exportar PDF salen <strong>dos hojas</strong>: copia <strong>Remito</strong> y copia <strong>Duplicado</strong>.
+      Al imprimir o exportar PDF salen <strong>dos hojas</strong>: copia <strong>Original</strong> y copia <strong>Duplicado</strong>.
     </p>
     <div class="d-inline-flex flex-wrap gap-2 justify-content-center">
       <button type="button" class="btn btn-outline-dark btn-sm" onclick="window.print()">Imprimir</button>

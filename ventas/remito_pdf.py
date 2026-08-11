@@ -1,10 +1,10 @@
 """PDF tipo pedido/remito (ReportLab): plantilla única Sirona.
 
-Reglas nuevas:
+Reglas:
 - A4 vertical.
 - Máximo 25 productos por página.
-- PEDIDO y REMITO como copias dentro del mismo PDF (cada copia empieza en página nueva).
-- Totales solo en la última página del PEDIDO (no confundir en páginas intermedias).
+- PEDIDO (Original) y REMITO como copias en el mismo PDF (cada copia empieza en página nueva).
+- Totales en la última página de cada copia (mismo contenido comercial).
 """
 from __future__ import annotations
 
@@ -106,7 +106,7 @@ def remito_venta_pdf_response(venta) -> HttpResponse:
     story.extend(st1)
     pages_meta.extend(pm1)
 
-    # Copia 2: Remito (sin totales; solo líneas)
+    # Copia 2: Remito (mismo detalle y totales que el pedido)
     story.append(PageBreak())
     meta_rem = DocMeta(doc_type="REMITO", copy_label="Remito", **meta_base)
     st2, pm2 = build_story_for_commercial_doc(
@@ -114,8 +114,8 @@ def remito_venta_pdf_response(venta) -> HttpResponse:
         styles=styles,
         meta=meta_rem,
         items=items,
-        totals=None,
-        vencimiento_pago=None,
+        totals=totals_pedido,
+        vencimiento_pago=venc,
         observaciones=None,
     )
     story.extend(st2)
