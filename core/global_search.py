@@ -10,8 +10,6 @@ from urllib.parse import urlencode
 from django.db.models import Q
 from django.urls import reverse
 
-from cuentas_compartidas.auth import puede_usar_cuentas_compartidas
-from cuentas_compartidas.models import CancelacionDeuda, OperacionCompartida
 from personas.models import Comprador, Vendedor
 from presupuestos.models import Presupuesto
 from productos.models import Producto
@@ -126,80 +124,6 @@ def _buscar_presupuestos(q: str, q_cf: str, *, vendedor: Vendedor | None, solo_m
     return out
 
 
-def _buscar_gastos_compartidos(q: str, q_cf: str, monto: Decimal | None, fecha: date | None) -> list[dict[str, str]]:
-    op_filt = (
-        Q(concepto__icontains=q)
-        | Q(observaciones__icontains=q)
-        | Q(pagador__nombre__icontains=q)
-        | Q(deudas__deudor__nombre__icontains=q)
-    )
-    if monto is not None:
-        op_filt |= Q(monto_total=monto) | Q(deudas__monto=monto)
-    if fecha is not None:
-        op_filt |= Q(fecha=fecha)
-    if q.isdigit():
-        op_filt |= Q(pk=int(q))
-
-    ops = (
-        OperacionCompartida.objects.filter(op_filt)
-        .select_related("pagador")
-        .distinct()
-        .order_by("-fecha", "-id")[:MAX_PER_GROUP]
-    )
-    dash = reverse("cuentas_dashboard")
-    out = []
-    for op in ops:
-        out.append(
-            _item(
-                "Gastos compartidos",
-                f"{op.get_tipo_display()}: {op.concepto}",
-                f"{op.fecha:%d/%m/%Y} · pagó {op.pagador.nombre}",
-                reverse("cuentas_operacion_detalle", kwargs={"pk": op.pk}),
-            )
-        )
-
-    can_filt = (
-        Q(detalle__icontains=q)
-        | Q(deuda__deudor__nombre__icontains=q)
-        | Q(deuda__operacion__pagador__nombre__icontains=q)
-        | Q(deuda__operacion__concepto__icontains=q)
-    )
-    if monto is not None:
-        can_filt |= Q(monto=monto)
-    if fecha is not None:
-        can_filt |= Q(fecha=fecha)
-
-    cans = (
-        CancelacionDeuda.objects.filter(can_filt)
-        .select_related("deuda", "deuda__deudor", "deuda__operacion", "deuda__operacion__pagador")
-        .order_by("-fecha", "-id")[: max(1, MAX_PER_GROUP - len(out))]
-    )
-    for c in cans:
-        op = c.deuda.operacion
-        out.append(
-            _item(
-                "Gastos compartidos",
-                f"Cancelación: {c.deuda.deudor.nombre} → {op.pagador.nombre}",
-                f"{c.fecha:%d/%m/%Y} · {c.get_medio_display()} · {c.monto}",
-                reverse("cuentas_operacion_detalle", kwargs={"pk": op.pk}),
-            )
-        )
-
-    if not out:
-        params = {"q": q}
-        if fecha is not None:
-            params["al"] = fecha.isoformat()
-        out.append(
-            _item(
-                "Gastos compartidos",
-                "Buscar en cuenta corriente",
-                f"Filtrar movimientos por «{q}»",
-                f"{dash}?{urlencode(params)}",
-            )
-        )
-    return out[:MAX_PER_GROUP]
-
-
 def global_search_results(
     user,
     query: str,
@@ -222,8 +146,5 @@ def global_search_results(
         results.extend(_buscar_compradores(q, q_cf))
 
     results.extend(_buscar_presupuestos(q, q_cf, vendedor=vendedor, solo_mi=solo_mi))
-
-    if puede_usar_cuentas_compartidas(user):
-        results.extend(_buscar_gastos_compartidos(q, q_cf, monto, fecha))
 
     return results[:24]

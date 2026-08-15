@@ -585,13 +585,6 @@
               </div>
             </div>
 
-            {% if request.user.is_staff and perms.cuentas_compartidas.access_cuentas_compartidas %}
-              <a class="sidebar-link app-sidebar-link" href="{% url 'cuentas_dashboard' %}" title="Gastos compartidos entre negocios">
-                <span class="app-sidebar-icon-wrap"><i data-lucide="scale"></i></span>
-                <span class="app-sidebar-label sidebar-label">Gastos compartidos</span>
-              </a>
-            {% endif %}
-
             <div class="sidebar-section-title">Compras</div>
             <div class="sidebar-group" data-group="compras">
               <div class="sidebar-link sidebar-group-trigger" role="button" tabindex="0" aria-expanded="false">
@@ -918,13 +911,6 @@
                   </a>
                 </div>
               </div>
-
-              {% if request.user.is_staff and perms.cuentas_compartidas.access_cuentas_compartidas %}
-                <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'cuentas_dashboard' %}" title="Gastos compartidos entre negocios">
-                  <span class="app-sidebar-icon-wrap"><i data-lucide="scale"></i></span>
-                  <span class="app-sidebar-label">Gastos compartidos</span>
-                </a>
-              {% endif %}
 
               <div class="sidebar-section-title">Compras</div>
               <div class="sidebar-group offcanvas-group" data-group="compras">
@@ -2018,7 +2004,8 @@
     </script>
     <script src="{% static 'js/sirona-offcanvas-nav.js' %}?v=2"></script>
     <script src="{% static 'js/sirona-modal.js' %}?v=3"></script>
-    <script src="{% static 'js/sirona-form-confirm.js' %}?v=5"></script>
+    <script src="{% static 'js/sirona-form-submit-lock.js' %}?v=1"></script>
+    <script src="{% static 'js/sirona-form-confirm.js' %}?v=6"></script>
     <script src="{% static 'js/sirona-form-leave-guard.js' %}?v=1"></script>
     <script src="{% static 'js/sirona-scroll-top.js' %}?v=1"></script>
     {% if request.user.is_authenticated %}
