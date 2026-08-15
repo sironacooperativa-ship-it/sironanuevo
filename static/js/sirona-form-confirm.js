@@ -3,8 +3,11 @@
  * Usa form.submit() nativo (no dispara listeners submit) para evitar bucles.
  */
 (function () {
-  function enviarFormulario(form) {
+  function enviarFormulario(form, submitter) {
     if (!form) return;
+    if (window.SironaFormSubmitLock && typeof window.SironaFormSubmitLock.lock === "function") {
+      window.SironaFormSubmitLock.lock(form, submitter || null);
+    }
     HTMLFormElement.prototype.submit.call(form);
   }
 
@@ -19,7 +22,7 @@
       ev.stopPropagation();
       const msg = (btn.getAttribute("data-sirona-confirm-submit") || "").trim();
       if (!msg || !window.confirm(msg)) return;
-      enviarFormulario(form);
+      enviarFormulario(form, btn);
     },
     true
   );
@@ -34,7 +37,7 @@
       ev.preventDefault();
       if (!window.confirm(msg)) return;
       form.removeAttribute("data-sirona-confirm");
-      enviarFormulario(form);
+      enviarFormulario(form, ev.submitter || null);
     },
     true
   );

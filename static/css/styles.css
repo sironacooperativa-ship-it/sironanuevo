@@ -2857,6 +2857,33 @@ button.btn-icon.btn-ink,
   --bs-btn-hover-color: #1d4ed8;
 }
 
+/* Envío en curso: botones primarios (azules) en gris */
+.btn-primary:disabled,
+.btn-primary.sirona-btn-processing,
+.action-button.primary:disabled,
+.action-button.primary.sirona-btn-processing {
+  --bs-btn-bg: #94a3b8;
+  --bs-btn-border-color: #94a3b8;
+  background-color: #94a3b8 !important;
+  border-color: #94a3b8 !important;
+  color: #fff !important;
+  opacity: 1;
+  box-shadow: none !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn-outline-primary:disabled,
+.btn-outline-primary.sirona-btn-processing {
+  color: #94a3b8 !important;
+  border-color: #cbd5e1 !important;
+  background: #f8fafc !important;
+  opacity: 1;
+  box-shadow: none !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .btn-outline-secondary {
   --bs-btn-color: var(--s-muted);
   --bs-btn-border-color: rgba(100, 116, 139, 0.25);
