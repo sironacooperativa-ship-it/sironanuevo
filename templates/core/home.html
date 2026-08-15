@@ -116,11 +116,16 @@
     <div class="col-12 col-lg-4 order-1 order-lg-2 h-100 d-flex flex-column">
       <div class="stat-card w-100 flex-grow-1">
         <div class="stat-row">
-          <div class="stat-label">Ventas (30 días)</div>
+          <div class="stat-label">Ventas ({{ ventas_mes_label }})</div>
           <span class="stat-ico"><i data-lucide="badge-dollar-sign"></i></span>
         </div>
         <div class="stat-value">{{ kpis_ventas.neto_total|ars }}</div>
         <div class="text-muted small">{{ kpis_ventas.pedidos }} pedidos — {{ kpis_ventas.pendientes }} pendientes</div>
+        {% if ventas_max_mes %}
+          <div class="text-muted small">
+            Máximo mensual: {{ ventas_max_mes.total|ars }} ({{ ventas_max_mes.mes_nombre }} {{ ventas_max_mes.anio }})
+          </div>
+        {% endif %}
       </div>
     </div>
     <div class="col-12 col-lg-4 order-3 order-lg-3 h-100 d-flex flex-column">

@@ -9,8 +9,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import connections, transaction
 from django.db.utils import OperationalError
 from django.http import HttpResponse, JsonResponse
-from django.db.models import Count, Q, Sum, Value
-from django.db.models.functions import Coalesce
+from django.db.models import Count, DecimalField, Q, Sum, Value
+from django.db.models.functions import Coalesce, TruncMonth
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -22,6 +22,8 @@ from .forms import SironaPasswordChangeForm
 from .models import NotaAdmin
 from .money_decimal import q2
 from .security import client_ip, safe_internal_path
+from .fecha_filtros import rango_periodo, trunc_to_month_start
+from core.comision_agg import _MESES_ES
 
 from calendario.models import Evento
 from caja.models import MovimientoCaja
@@ -80,6 +82,35 @@ def _ensure_vendedor_perfil(user) -> Vendedor | None:
         )
 
 
+def _mes_nombre_es(month: int) -> str:
+    return _MESES_ES[month] if 1 <= month <= 12 else str(month)
+
+
+def _ventas_max_mes_record():
+    """Mes calendario con mayor neto de ventas (histórico)."""
+    neto_nonneg = venta_neto_nonneg_expr()
+    dec14_2 = DecimalField(max_digits=14, decimal_places=2)
+    best = (
+        Venta.objects.annotate(mes=TruncMonth("creado_en"))
+        .values("mes")
+        .annotate(
+            neto_total=Coalesce(Sum(neto_nonneg), Value(Decimal("0.00")), output_field=dec14_2),
+        )
+        .order_by("-neto_total", "-mes")
+        .first()
+    )
+    if not best or not best.get("mes"):
+        return None
+    mes_start = trunc_to_month_start(best["mes"])
+    if mes_start is None:
+        return None
+    return {
+        "total": q2(best["neto_total"]),
+        "mes_nombre": _mes_nombre_es(mes_start.month),
+        "anio": mes_start.year,
+    }
+
+
 @login_required
 def home(request):
     # Si el usuario está en modo vendedor, mostrar un inicio reducido con datos propios (también si es staff).
@@ -114,6 +145,7 @@ def home(request):
 
     today = timezone.localdate()
     ult_30 = today - timedelta(days=29)
+    inicio_mes, fin_mes = rango_periodo("mes")
     prox_7 = today + timedelta(days=7)
     prox_30 = today + timedelta(days=30)
     prox_90 = today + timedelta(days=90)
@@ -126,14 +158,15 @@ def home(request):
     pendientes = list(pendientes_qs.order_by("-creado_en", "-id")[:80])
 
     neto_nonneg = venta_neto_nonneg_expr()
-    ventas_30 = Venta.objects.filter(creado_en__date__gte=ult_30)
-    kpis_ventas = ventas_30.aggregate(
+    ventas_mes = Venta.objects.filter(creado_en__date__gte=inicio_mes, creado_en__date__lte=fin_mes)
+    kpis_ventas = ventas_mes.aggregate(
         pedidos=Count("id"),
         neto_total=Coalesce(Sum(neto_nonneg), Value(Decimal("0.00"))),
         pagadas=Count("id", filter=Q(estado=Venta.Estado.PAGADA)),
         pendientes=Count("id", filter=Q(estado=Venta.Estado.PENDIENTE)),
     )
     kpis_ventas["neto_total"] = q2(kpis_ventas["neto_total"])
+    ventas_max_mes = _ventas_max_mes_record()
     compras_30 = Compra.objects.filter(fecha_compra__gte=ult_30)
     kpis_compras = compras_30.aggregate(
         compras=Count("id"),
@@ -241,6 +274,8 @@ def home(request):
             "ventas_pendientes": pendientes,
             "ventas_pendientes_total": ventas_pendientes_total,
             "kpis_ventas": kpis_ventas,
+            "ventas_max_mes": ventas_max_mes,
+            "ventas_mes_label": f"{_mes_nombre_es(today.month)} {today.year}",
             "kpis_compras": kpis_compras,
             "recordatorios": recordatorios,
             "hoy_recordatorios": hoy_recordatorios,
