@@ -33,6 +33,45 @@ def _numero_remito(venta) -> str:
     return str(venta.pk).zfill(8)
 
 
+def _draw_remito_page_footer(canvas, doc, generated: str, pages_str: str) -> None:
+    """Pie de cada página (original y copia): recepción + disclaimer."""
+    left = doc.leftMargin
+    right = doc.leftMargin + doc.width
+    canvas.saveState()
+
+    y_recibo = 18 * mm
+    canvas.setFillColor(colors.HexColor("#16323a"))
+    canvas.setFont("Helvetica-Bold", 8)
+    canvas.drawString(left, y_recibo, "Recibí conforme:")
+
+    canvas.setFont("Helvetica", 8)
+    canvas.setStrokeColor(colors.HexColor("#16323a"))
+    canvas.setLineWidth(0.5)
+    campos = (
+        ("Fecha:", 36 * mm),
+        ("Firma:", 46 * mm),
+        ("Aclaración:", 50 * mm),
+    )
+    cursor = left + 28 * mm
+    for etiqueta, ancho in campos:
+        canvas.drawString(cursor, y_recibo, etiqueta)
+        etiqueta_w = canvas.stringWidth(etiqueta, "Helvetica", 8) + 1.8 * mm
+        x1 = cursor + etiqueta_w
+        x2 = min(x1 + ancho, right)
+        canvas.line(x1, y_recibo - 1, x2, y_recibo - 1)
+        cursor = x2 + 3.5 * mm
+
+    y = 10 * mm
+    canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
+    canvas.setLineWidth(0.6)
+    canvas.line(left, y + 3.5 * mm, right, y + 3.5 * mm)
+    canvas.setFillColor(colors.HexColor("#64748b"))
+    canvas.setFont("Helvetica", 8)
+    footer = f"Documento no válido como factura. | Generado: {generated} | {pages_str}"
+    canvas.drawString(left, y - 2.5 * mm, footer)
+    canvas.restoreState()
+
+
 def remito_venta_pdf_response(venta) -> HttpResponse:
     """Genera PDF con formato moderno de pedido/remito (ver docstring del módulo)."""
     buf = BytesIO()
@@ -43,7 +82,8 @@ def remito_venta_pdf_response(venta) -> HttpResponse:
         rightMargin=18 * mm,
         leftMargin=18 * mm,
         topMargin=12 * mm,
-        bottomMargin=14 * mm,
+        # Espacio para renglón de recepción + disclaimer.
+        bottomMargin=28 * mm,
     )
     styles = getSampleStyleSheet()
     numero = _numero_remito(venta)
@@ -131,16 +171,7 @@ def remito_venta_pdf_response(venta) -> HttpResponse:
             if meta is not None
             else f"Página {pnum}"
         )
-        canvas.saveState()
-        canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
-        canvas.setLineWidth(0.6)
-        y = doc.bottomMargin - 2.5 * mm
-        canvas.line(doc.leftMargin, y, doc.leftMargin + doc.width, y)
-        canvas.setFillColor(colors.HexColor("#64748b"))
-        canvas.setFont("Helvetica", 8)
-        footer = f"Documento no válido como factura. | Generado: {generated} | {pages_str}"
-        canvas.drawString(doc.leftMargin, y - 8, footer)
-        canvas.restoreState()
+        _draw_remito_page_footer(canvas, doc, generated, pages_str)
 
     doc.build(story, onFirstPage=on_page, onLaterPages=on_page)
 
