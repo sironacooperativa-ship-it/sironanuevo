@@ -15,7 +15,7 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import PageBreak, SimpleDocTemplate
+from reportlab.platypus import KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from core.pdf_membrete import emission_datetime_str
 from core.sirona_docs_pdf import (
@@ -31,6 +31,63 @@ from core.sirona_docs_pdf import (
 def _numero_remito(venta) -> str:
     """Número correlativo de remito (mismo criterio que el pedido, 8 dígitos)."""
     return str(venta.pk).zfill(8)
+
+
+def _recibo_conforme_block(doc_width: float, styles) -> list:
+    """Bloque visible debajo de los totales (original y copia) para firmar al entregar."""
+    titulo = Paragraph(
+        '<para leading="13"><font size="10" color="#16323a"><b>Recibí conforme</b></font></para>',
+        styles["Normal"],
+    )
+    campos = Table(
+        [
+            [
+                Paragraph('<font size="9"><b>Fecha:</b></font>', styles["Normal"]),
+                Paragraph('<font size="9">_______________</font>', styles["Normal"]),
+                Paragraph('<font size="9"><b>Firma:</b></font>', styles["Normal"]),
+                Paragraph('<font size="9">_______________</font>', styles["Normal"]),
+                Paragraph('<font size="9"><b>Aclaración:</b></font>', styles["Normal"]),
+                Paragraph('<font size="9">_______________</font>', styles["Normal"]),
+            ]
+        ],
+        colWidths=[
+            doc_width * 0.10,
+            doc_width * 0.20,
+            doc_width * 0.10,
+            doc_width * 0.20,
+            doc_width * 0.14,
+            doc_width * 0.26,
+        ],
+    )
+    campos.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 1),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+            ]
+        )
+    )
+    caja = Table(
+        [[titulo], [campos]],
+        colWidths=[doc_width],
+    )
+    caja.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
+                ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#16323a")),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (0, 0), 6),
+                ("BOTTOMPADDING", (0, -1), (-1, -1), 8),
+                ("TOPPADDING", (0, 1), (-1, 1), 2),
+            ]
+        )
+    )
+    return [Spacer(1, 8 * mm), KeepTogether([caja])]
 
 
 def _draw_remito_page_footer(canvas, doc, generated: str, pages_str: str) -> None:
@@ -144,6 +201,7 @@ def remito_venta_pdf_response(venta) -> HttpResponse:
         observaciones=None,
     )
     story.extend(st1)
+    story.extend(_recibo_conforme_block(doc.width, styles))
     pages_meta.extend(pm1)
 
     # Copia 2: Remito (mismo detalle y totales que el pedido)
@@ -159,6 +217,7 @@ def remito_venta_pdf_response(venta) -> HttpResponse:
         observaciones=None,
     )
     story.extend(st2)
+    story.extend(_recibo_conforme_block(doc.width, styles))
     pages_meta.extend(pm2)
 
     generated = emission_datetime_str()
