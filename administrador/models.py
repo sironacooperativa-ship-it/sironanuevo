@@ -31,7 +31,7 @@ class RegistroActividad(models.Model):
     ruta = models.CharField(max_length=512)
     consulta = models.CharField(max_length=512, blank=True, default="")
     codigo_estado = models.PositiveSmallIntegerField(default=0)
-    descripcion = models.CharField(max_length=255, blank=True, default="")
+    descripcion = models.TextField(blank=True, default="")
 
     class Meta:
         ordering = ["-fecha_hora", "-id"]
@@ -53,16 +53,15 @@ class RegistroActividad(models.Model):
     @classmethod
     def registrar_http(cls, request, response) -> None:
         """Registra una petición ya autenticada (llamar solo si request.user.is_authenticated)."""
-        from .actividad import describir_actividad
+        from .actividad_detalle import descripcion_detallada
 
         user = request.user
-        descripcion = ""
         path = (request.path or "").rstrip("/") or "/"
+        consulta = (request.META.get("QUERY_STRING") or "")[:512]
         if request.method == "POST" and path.endswith("/login"):
             descripcion = "Inicio de sesión"
-        consulta = (request.META.get("QUERY_STRING") or "")[:512]
-        if not descripcion:
-            descripcion = describir_actividad(request.method or "?", path, consulta, "").texto
+        else:
+            descripcion = descripcion_detallada(request, response)
         cls.objects.create(
             usuario=user,
             nombre_usuario=user.get_username()[:150],
@@ -71,7 +70,7 @@ class RegistroActividad(models.Model):
             ruta=path[:512],
             consulta=consulta,
             codigo_estado=getattr(response, "status_code", 0) or 0,
-            descripcion=descripcion[:255],
+            descripcion=descripcion[:500],
         )
 
     @classmethod

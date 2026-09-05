@@ -5,7 +5,7 @@
     <div>
       <h1 class="app-page-title mb-0">Historial de actividad</h1>
       <div class="text-muted small">
-        Qué hizo cada usuario: altas, ediciones, cobros, inicios de sesión.
+        Detalle de lo que hace cada usuario: pedidos, presupuestos, duplicados, ediciones, cobros y bajas.
         {% if usuario_sel %}
           Filtrado por <strong>{{ usuario_sel.username }}</strong>.
         {% endif %}
@@ -89,7 +89,7 @@
                 {% endif %}
               </td>
               <td class="th-nota-cel">
-                <span class="fw-semibold">{{ r.accion_texto }}</span>
+                <span class="fw-semibold text-break">{{ r.accion_texto }}</span>
               </td>
               <td class="text-nowrap"><span class="status-pill status-inactive admin-act-met-pill">{{ r.metodo }}</span></td>
               <td class="small nota-cel-pagina-wrap">

@@ -320,27 +320,30 @@ def describir_actividad(
     consulta: str = "",
     descripcion: str = "",
 ) -> AccionInfo:
-    desc = (descripcion or "").strip()
-    if desc in {"Inicio de sesión", "Cierre de sesión"}:
-        return AccionInfo(desc, "sesion", True)
-
     ruta = _norm_path(path)
     write = _is_write(method)
-    for rx, grupo, gtxt, ptxt in _COMPILED:
+    grupo = ""
+    texto_ruta = ""
+    for rx, g, gtxt, ptxt in _COMPILED:
         m = rx.match(ruta)
         if not m:
             continue
+        grupo = g
         plantilla = ptxt if write else gtxt
-        texto = _fmt(plantilla, m.groupdict())
+        texto_ruta = _fmt(plantilla, m.groupdict())
         if ruta == "/ventas" and not write:
             extra = _detalle_historial_ventas(consulta)
             if extra:
-                texto = extra
-        return AccionInfo(texto, grupo, write or grupo == "sesion")
+                texto_ruta = extra
+        break
+    if not grupo:
+        grupo = grupo_de_ruta(ruta)
 
-    grupo = grupo_de_ruta(ruta)
+    desc = (descripcion or "").strip()
     if desc:
-        return AccionInfo(desc, grupo or "", write)
+        return AccionInfo(desc, grupo or "", write or grupo == "sesion")
+    if texto_ruta:
+        return AccionInfo(texto_ruta, grupo, write or grupo == "sesion")
     gtxt, ptxt = _FALLBACK_SECCION.get(grupo, ("Navegó en el sistema", "Guardó un cambio"))
     return AccionInfo(ptxt if write else gtxt, grupo, write)
 

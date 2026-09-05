@@ -3870,6 +3870,13 @@ h2.h6 {
   min-height: 24px;
 }
 
+.presu-lista-modern .admin-actividad-tabla .th-nota,
+.presu-lista-modern .admin-actividad-tabla .th-nota-cel {
+  min-width: 16rem;
+  max-width: 36rem;
+  white-space: normal;
+}
+
 .presu-lista-modern .vendedor-ranking--yo > td {
   background: #eff6ff;
 }

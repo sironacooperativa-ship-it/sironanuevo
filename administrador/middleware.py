@@ -26,6 +26,17 @@ def _omitir_ruta(path: str) -> bool:
 class RegistroActividadMiddleware(MiddlewareMixin):
     """Registra peticiones HTTP de usuarios autenticados (excepto estáticos)."""
 
+    def process_request(self, request):
+        try:
+            user = getattr(request, "user", None)
+            if user is not None and getattr(user, "is_authenticated", False):
+                if (request.method or "").upper() in {"POST", "PUT", "PATCH", "DELETE"}:
+                    from .actividad_detalle import snapshot_para_request
+
+                    request._sirona_act_snap = snapshot_para_request(request)
+        except Exception:
+            request._sirona_act_snap = None
+
     def process_response(self, request, response):
         if _omitir_ruta(request.path):
             return response
