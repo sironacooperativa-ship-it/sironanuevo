@@ -44,21 +44,32 @@ class RegistroActividad(models.Model):
     def __str__(self) -> str:
         return f"{self.nombre_usuario} {self.fecha_hora} {self.metodo} {self.ruta}"
 
+    @property
+    def accion_texto(self) -> str:
+        from .actividad import describir_actividad
+
+        return describir_actividad(self.metodo, self.ruta, self.consulta, self.descripcion).texto
+
     @classmethod
     def registrar_http(cls, request, response) -> None:
         """Registra una petición ya autenticada (llamar solo si request.user.is_authenticated)."""
+        from .actividad import describir_actividad
+
         user = request.user
         descripcion = ""
-        path = (request.path or "").rstrip("/")
+        path = (request.path or "").rstrip("/") or "/"
         if request.method == "POST" and path.endswith("/login"):
             descripcion = "Inicio de sesión"
+        consulta = (request.META.get("QUERY_STRING") or "")[:512]
+        if not descripcion:
+            descripcion = describir_actividad(request.method or "?", path, consulta, "").texto
         cls.objects.create(
             usuario=user,
             nombre_usuario=user.get_username()[:150],
             ip=_client_ip(request),
             metodo=(request.method or "?")[:10],
             ruta=path[:512],
-            consulta=(request.META.get("QUERY_STRING") or "")[:512],
+            consulta=consulta,
             codigo_estado=getattr(response, "status_code", 0) or 0,
             descripcion=descripcion[:255],
         )

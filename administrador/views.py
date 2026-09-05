@@ -20,10 +20,12 @@ from django.utils import timezone
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
+from core.export_utils import parse_export, pdf_response, xlsx_response
 from core.fecha_filtros import fecha_filtro_value_iso, parse_fecha_param
 from core.context_processors import invalidate_vendor_sidebar_cache_for_user
 from core.models import NotaAdmin
 
+from .actividad import GRUPOS, describir_actividad, q_grupo
 from .forms import UsuarioCrearForm, UsuarioEditarForm, UsuarioPasswordForm
 from .models import RegistroActividad
 
@@ -105,8 +107,10 @@ def _conversaciones_admin(*, usuarios: list, marcar_leidos: bool) -> list[dict]:
     return conversaciones
 
 
-@admin_required
-def actividad_list(request):
+_ACTIVIDAD_EXPORT_MAX = 3000
+
+
+def _actividad_filtrada(request):
     qs = RegistroActividad.objects.select_related("usuario").all()
     uid = (request.GET.get("usuario") or "").strip()
     if uid.isdigit():
@@ -119,25 +123,83 @@ def actividad_list(request):
         qs = qs.filter(fecha_hora__date__lte=hasta)
     qpath = (request.GET.get("q") or "").strip()
     if qpath:
-        qs = qs.filter(ruta__icontains=qpath)
+        qs = qs.filter(
+            Q(ruta__icontains=qpath)
+            | Q(descripcion__icontains=qpath)
+            | Q(nombre_usuario__icontains=qpath)
+        )
+    grupo = (request.GET.get("grupo") or "").strip()
+    if grupo:
+        qs = qs.filter(q_grupo(grupo))
+    solo_raw = request.GET.get("solo")
+    solo_acciones = True if solo_raw is None else solo_raw.strip() in ("1", "on", "true", "si")
+    if solo_acciones:
+        qs = qs.filter(
+            Q(metodo__in=["POST", "PUT", "PATCH", "DELETE"])
+            | Q(descripcion__in=["Inicio de sesión", "Cierre de sesión"])
+            | Q(ruta__in=["/login", "/logout", "/login/", "/logout/"])
+        )
+    filtros = {
+        "usuario": uid,
+        "desde": fecha_filtro_value_iso(request.GET.get("desde")),
+        "hasta": fecha_filtro_value_iso(request.GET.get("hasta")),
+        "q": qpath,
+        "grupo": grupo,
+        "solo": "1" if solo_acciones else "0",
+    }
+    return qs, filtros
+
+
+def _actividad_fila_export(r: RegistroActividad) -> list[object]:
+    fh = timezone.localtime(r.fecha_hora) if r.fecha_hora else None
+    info = describir_actividad(r.metodo, r.ruta, r.consulta, r.descripcion)
+    return [
+        fh.strftime("%d/%m/%Y %H:%M:%S") if fh else "",
+        r.nombre_usuario,
+        info.texto,
+        r.metodo,
+        r.ruta,
+        f"?{r.consulta}" if r.consulta else "",
+        r.codigo_estado or "",
+        r.ip or "",
+    ]
+
+
+@admin_required
+def actividad_list(request):
+    qs, filtros = _actividad_filtrada(request)
+    exp = parse_export(request)
+    if exp in ("xlsx", "pdf"):
+        headers = ["Fecha y hora", "Usuario", "Acción", "Mét.", "Ruta", "Consulta", "HTTP", "IP"]
+        rows = [_actividad_fila_export(r) for r in qs[:_ACTIVIDAD_EXPORT_MAX]]
+        if exp == "xlsx":
+            return xlsx_response("historial_actividad", [("Actividad", headers, rows)])
+        return pdf_response(
+            "historial_actividad",
+            "Historial de actividad",
+            [("Registros", headers, rows)],
+            body_fontsize=7,
+        )
+
     paginator = Paginator(qs, 50)
     page = paginator.get_page(request.GET.get("page") or 1)
     qcopy = request.GET.copy()
     qcopy.pop("page", None)
+    qcopy.pop("export", None)
     querystring = qcopy.urlencode()
+    usuario_sel = None
+    if filtros["usuario"].isdigit():
+        usuario_sel = User.objects.filter(pk=int(filtros["usuario"])).first()
     return render(
         request,
         "administrador/actividad_list.html",
         {
             "page_obj": page,
             "usuarios_filtro": User.objects.order_by("username"),
-            "filtros": {
-                "usuario": uid,
-                "desde": fecha_filtro_value_iso(request.GET.get("desde")),
-                "hasta": fecha_filtro_value_iso(request.GET.get("hasta")),
-                "q": qpath,
-            },
+            "grupos_filtro": GRUPOS,
+            "filtros": filtros,
             "querystring": querystring,
+            "usuario_sel": usuario_sel,
         },
     )
 

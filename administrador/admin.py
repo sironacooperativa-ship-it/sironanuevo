@@ -5,7 +5,11 @@ from .models import RegistroActividad
 
 @admin.register(RegistroActividad)
 class RegistroActividadAdmin(admin.ModelAdmin):
-    list_display = ("fecha_hora", "nombre_usuario", "metodo", "ruta", "codigo_estado", "descripcion")
+    list_display = ("fecha_hora", "nombre_usuario", "accion_col", "metodo", "ruta", "codigo_estado")
+
+    @admin.display(description="Acción")
+    def accion_col(self, obj):
+        return obj.accion_texto
     list_filter = ("metodo", "codigo_estado")
     search_fields = ("nombre_usuario", "ruta", "descripcion", "ip")
     readonly_fields = (

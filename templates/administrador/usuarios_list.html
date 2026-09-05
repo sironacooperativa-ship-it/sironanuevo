@@ -168,6 +168,14 @@
                   >
                     <i data-lucide="key" aria-hidden="true"></i>
                   </a>
+                  <a
+                    class="btn-icon btn-view"
+                    href="{% url 'admin_actividad_list' %}?usuario={{ u.pk }}"
+                    title="Historial de actividad"
+                    aria-label="Historial de actividad de {{ u.username }}"
+                  >
+                    <i data-lucide="history" aria-hidden="true"></i>
+                  </a>
                 </div>
               </td>
             </tr>
