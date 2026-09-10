@@ -66,8 +66,13 @@
             {{ form.habilitado }}
             <span class="form-check-label small">Producto habilitado</span>
           </label>
+          <label class="form-check producto-modal-switch-item" title="El producto se muestra en rojo en el sistema y en las listas de precio">
+            {{ form.oferta }}
+            <span class="form-check-label small">Oferta</span>
+          </label>
         </div>
         {% if form.habilitado.errors %}<div class="text-danger small mt-1">{{ form.habilitado.errors }}</div>{% endif %}
+        {% if form.oferta.errors %}<div class="text-danger small mt-1">{{ form.oferta.errors }}</div>{% endif %}
       </div>
 
       {% if listas_extra_opciones %}

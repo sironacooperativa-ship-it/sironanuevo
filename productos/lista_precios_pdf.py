@@ -125,6 +125,7 @@ def _payload_producto_png(p: Producto, precio: Decimal, *, incluir_laboratorio: 
         "laboratorio": p.laboratorio if incluir_laboratorio else "",
         "precio": format_monto_ars(precio),
         "stock": int(p.stock or 0),
+        "oferta": bool(p.oferta),
     }
 
 
@@ -281,26 +282,26 @@ def lista_precios_pdf_file_response(*, lista: ListaPrecios, incluir_laboratorio:
 
     t = Table(data, colWidths=col_w, repeatRows=1)
     # Minimalista (sin "dashboard"): solo tabla limpia con encabezado sutil.
-    t.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F1F5F9")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#0F172A")),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ("LINEBELOW", (0, 0), (-1, 0), 0.75, colors.HexColor("#CBD5E1")),
-                ("LINEABOVE", (0, 0), (-1, 0), 0.75, colors.HexColor("#CBD5E1")),
-                ("LINEBELOW", (0, 1), (-1, -1), 0.25, colors.HexColor("#E2E8F0")),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 6),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-                ("TOPPADDING", (0, 0), (-1, -1), 5),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-                ("ALIGN", (0, 1), (0, -1), "LEFT"),
-                ("ALIGN", (-1, 1), (-1, -1), "RIGHT"),
-            ]
-        )
-    )
+    style_cmds = [
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F1F5F9")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#0F172A")),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("LINEBELOW", (0, 0), (-1, 0), 0.75, colors.HexColor("#CBD5E1")),
+        ("LINEABOVE", (0, 0), (-1, 0), 0.75, colors.HexColor("#CBD5E1")),
+        ("LINEBELOW", (0, 1), (-1, -1), 0.25, colors.HexColor("#E2E8F0")),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ("ALIGN", (0, 1), (0, -1), "LEFT"),
+        ("ALIGN", (-1, 1), (-1, -1), "RIGHT"),
+    ]
+    for idx, (p, _precio) in enumerate(filas, start=1):
+        if getattr(p, "oferta", False):
+            style_cmds.append(("TEXTCOLOR", (0, idx), (-1, idx), colors.HexColor("#DC2626")))
+    t.setStyle(TableStyle(style_cmds))
     story.append(t)
     doc.build(story)
     buffer.seek(0)
@@ -408,9 +409,10 @@ def lista_precios_xlsx_response(*, lista: ListaPrecios, incluir_laboratorio: boo
                 )
                 if row % 2 == 1:
                     cell.fill = zebra_fill
+                font_color = "DC2626" if getattr(p, "oferta", False) else "0F172A"
+                cell.font = Font(bold=(col == last_col), color=font_color)
                 if col == last_col:
                     cell.number_format = '"$" #,##0.00'
-                    cell.font = Font(bold=True, color="0F172A")
             row += 1
     else:
         for col in range(1, last_col + 1):

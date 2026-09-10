@@ -157,7 +157,7 @@
         ctx.fillStyle = "#f8fafc";
         ctx.fillRect(0, y - 8, w, rowH);
       }
-      ctx.fillStyle = "#1e1e1e";
+      ctx.fillStyle = p.oferta ? "#dc2626" : "#1e1e1e";
       drawClippedText(p.codigo, colCodigo, textBaseline, { top: y - 8, height: rowH });
       drawClippedText(p.tipo, colTipo, textBaseline, { top: y - 8, height: rowH });
       drawClippedText(p.descripcion, colDesc, textBaseline, { top: y - 8, height: rowH });

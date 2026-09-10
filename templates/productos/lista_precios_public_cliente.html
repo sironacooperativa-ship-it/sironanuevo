@@ -52,6 +52,10 @@
       .lp-cli-desc {
         font-weight: 500;
       }
+      .lp-cli-desc.producto-en-oferta,
+      .lp-cli-table tbody tr.producto-en-oferta .lp-cli-price {
+        color: #dc2626;
+      }
       .lp-cli-sub {
         font-size: 0.82rem;
         color: #64748b;
@@ -143,9 +147,9 @@
             <tbody>
               {% if es_farmacia %}
                 {% for p in productos %}
-                  <tr>
+                  <tr{% if p.oferta %} class="producto-en-oferta"{% endif %}>
                     <td>
-                      <div class="lp-cli-desc">{{ p.descripcion }}</div>
+                      <div class="lp-cli-desc{% if p.oferta %} producto-en-oferta{% endif %}">{{ p.descripcion }}</div>
                       <div class="lp-cli-sub font-monospace">
                         Código {{ p.codigo }}{% if ver_marca and p.laboratorio %} · {{ p.laboratorio }}{% endif %}
                       </div>
@@ -159,9 +163,9 @@
                 {% endfor %}
               {% else %}
                 {% for it in items %}
-                  <tr>
+                  <tr{% if it.producto.oferta %} class="producto-en-oferta"{% endif %}>
                     <td>
-                      <div class="lp-cli-desc">{{ it.producto.descripcion }}</div>
+                      <div class="lp-cli-desc{% if it.producto.oferta %} producto-en-oferta{% endif %}">{{ it.producto.descripcion }}</div>
                       <div class="lp-cli-sub font-monospace">
                         Código {{ it.producto.codigo }}{% if ver_marca and it.producto.laboratorio %} · {{ it.producto.laboratorio }}{% endif %}
                       </div>

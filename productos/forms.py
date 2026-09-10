@@ -34,6 +34,7 @@ class ProductoForm(forms.ModelForm):
             "porcentaje_ganancia",
             "precio_venta",
             "habilitado",
+            "oferta",
         ]
         widgets = {
             "tipo": forms.Select(attrs={"class": "form-select form-select-sm rounded-3"}),
@@ -59,6 +60,7 @@ class ProductoForm(forms.ModelForm):
             "habilitado": forms.CheckboxInput(
                 attrs={"class": "form-check-input", "role": "switch"}
             ),
+            "oferta": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
 
     def clean(self):

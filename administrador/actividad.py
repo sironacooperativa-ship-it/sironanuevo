@@ -187,6 +187,7 @@ _REGLAS: list[tuple[str, str, str, str]] = [
     (r"^/productos/(?P<id>\d+)/toggle-lista$", "productos", "Cambió lista de producto #{id}", "Cambió lista de producto #{id}"),
     (r"^/productos/acciones-masa$", "productos", "Abrió acciones masivas", "Aplicó acciones masivas a productos"),
     (r"^/productos/aumento$", "productos", "Abrió aumentos de precios", "Aplicó aumentos de precios"),
+    (r"^/productos/precios$", "productos", "Vió precios de productos", "Vió precios de productos"),
     (r"^/productos/vencimientos$", "productos", "Vió vencimientos de productos", "Vió vencimientos de productos"),
     (r"^/productos/importar-excel$", "productos", "Abrió importación de productos", "Importó productos desde Excel"),
     (r"^/productos/importar-excel/resumen$", "productos", "Vió resumen de importación", "Vió resumen de importación"),

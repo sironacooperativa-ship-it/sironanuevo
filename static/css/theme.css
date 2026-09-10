@@ -1950,6 +1950,11 @@ h2.h6 {
   overflow: hidden;
 }
 
+.table-card--productos .table-productos .productos-desc-title.producto-en-oferta,
+.table-card--productos .table-productos tr.producto-en-oferta .productos-desc-title {
+  color: #dc2626;
+}
+
 .table-card--productos .table-productos .productos-desc-meta {
   font-size: 0.75rem;
   line-height: 1.25;

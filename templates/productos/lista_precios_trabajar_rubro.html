@@ -157,7 +157,7 @@
                   <div class="prod-cell">
                     <span class="prod-thumb" aria-hidden="true"><i data-lucide="tag"></i></span>
                     <span class="prod-meta">
-                      <span class="prod-desc">{{ it.producto.descripcion }}</span>
+                      <span class="prod-desc{% if it.producto.oferta %} producto-en-oferta{% endif %}">{{ it.producto.descripcion }}</span>
                       <span class="prod-sub">Código: <span class="prod-code">{{ it.producto.codigo }}</span>{% if it.producto.laboratorio %} • Marca: {{ it.producto.laboratorio }}{% endif %}</span>
                     </span>
                   </div>

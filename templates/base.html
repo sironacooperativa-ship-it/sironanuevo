@@ -19,8 +19,8 @@
       rel="stylesheet"
     />
     <!-- theme: ios-2026r29 -->
-    <link href="{% static 'css/theme.css' %}?v=ios-2026r48" rel="stylesheet" />
-    <link href="{% static 'css/styles.css' %}?v=saas-2026r33" rel="stylesheet" />
+    <link href="{% static 'css/theme.css' %}?v=ios-2026r49" rel="stylesheet" />
+    <link href="{% static 'css/styles.css' %}?v=saas-2026r34" rel="stylesheet" />
     <link href="{% static 'css/ui-force-productos.css' %}?v=3" rel="stylesheet" />
     <link href="{% static 'css/sirona-calc.css' %}" rel="stylesheet" />
     <style>
@@ -470,6 +470,10 @@
                   <span class="app-sidebar-icon-wrap"><i data-lucide="list"></i></span>
                   <span class="app-sidebar-label sidebar-label">Productos</span>
                 </a>
+                <a class="sidebar-link app-sidebar-link" href="{% url 'productos_precios' %}" title="Precios">
+                  <span class="app-sidebar-icon-wrap"><i data-lucide="badge-dollar-sign"></i></span>
+                  <span class="app-sidebar-label sidebar-label">Precios</span>
+                </a>
                 <a class="sidebar-link app-sidebar-link" href="{% url 'productos_listas_precios' %}" title="Listas de precios">
                   <span class="app-sidebar-icon-wrap"><i data-lucide="tags"></i></span>
                   <span class="app-sidebar-label sidebar-label">Listas de precios</span>
@@ -796,6 +800,10 @@
                   <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'productos_list' %}">
                     <span class="app-sidebar-icon-wrap"><i data-lucide="list"></i></span>
                     <span class="app-sidebar-label">Productos</span>
+                  </a>
+                  <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'productos_precios' %}">
+                    <span class="app-sidebar-icon-wrap"><i data-lucide="badge-dollar-sign"></i></span>
+                    <span class="app-sidebar-label">Precios</span>
                   </a>
                   <a class="app-sidebar-link sirona-offcanvas-nav-link sidebar-link" href="{% url 'productos_listas_precios' %}">
                     <span class="app-sidebar-icon-wrap"><i data-lucide="tags"></i></span>
@@ -2017,7 +2025,7 @@
         window.SIRONA_STOCK_QUICK_ADD_URL = "{% url 'stock_home' %}quick-add";
       </script>
       <script src="{% static 'js/sirona-stock-cero-decision.js' %}?v=1"></script>
-      <script src="{% static 'js/sirona-select-search-menu.js' %}?v=3"></script>
+      <script src="{% static 'js/sirona-select-search-menu.js' %}?v=4"></script>
       <script src="{% static 'js/sirona-global-search.js' %}?v=1"></script>
       <script src="{% static 'js/sirona-calc.js' %}?v=4"></script>
       <script src="{% static 'js/sirona-scroll-restore.js' %}?v=1"></script>

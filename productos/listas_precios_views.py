@@ -307,10 +307,14 @@ def lista_precios_trabajar(request, pk: int):
                     if p.precio_venta != pr:
                         p.precio_venta = pr
                         p.precio_venta_editado = True
+                        p.precio_actualizado_en = timezone.now()
                         to_update.append(p)
                         actualizados += 1
                 if to_update:
-                    Producto.objects.bulk_update(to_update, ["precio_venta", "precio_venta_editado"])
+                    Producto.objects.bulk_update(
+                        to_update,
+                        ["precio_venta", "precio_venta_editado", "precio_actualizado_en"],
+                    )
             if actualizados:
                 invalidar_cache_catalogo_por_cambio_precios(lista.pk)
             messages.success(request, f"Se actualizaron {actualizados} precio(s) de Farmacia.")

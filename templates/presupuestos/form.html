@@ -401,6 +401,7 @@
         function syncBtn() {
           const p = sel.value ? byId[sel.value] : null;
           btn.textContent = p ? productLabel(p) : "— Producto —";
+          btn.classList.toggle("producto-en-oferta", !!(p && p.oferta));
         }
 
         function positionMenu() {

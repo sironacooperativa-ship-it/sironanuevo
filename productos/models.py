@@ -5,6 +5,7 @@ from decimal import Decimal
 from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.utils import timezone
 from django.utils.text import slugify
 
 from core.money_decimal import redondear_precio_mostrador_ars
@@ -28,6 +29,8 @@ class Producto(models.Model):
     )
     precio_venta = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     precio_venta_editado = models.BooleanField(default=False)
+    precio_actualizado_en = models.DateTimeField(null=True, blank=True, db_index=True)
+    oferta = models.BooleanField(default=False, db_index=True)
     habilitado = models.BooleanField(default=True)
     en_lista_precios = models.BooleanField(default=False)
     deshabilitado_por_stock = models.BooleanField(default=False, db_index=True)
@@ -60,6 +63,11 @@ class Producto(models.Model):
         precio = Decimal(self.precio_venta or 0)
         pct = (precio - costo) * (Decimal("100.0") / costo)
         return pct.quantize(Decimal("0.01"))
+
+    @property
+    def ganancia(self) -> Decimal:
+        """Margen en pesos: precio de venta menos costo."""
+        return (Decimal(self.precio_venta or 0) - Decimal(self.costo or 0)).quantize(Decimal("0.01"))
 
     def clean(self):
         super().clean()
@@ -137,6 +145,30 @@ class Producto(models.Model):
         if not self.precio_venta_editado:
             self.precio_venta = self.calcular_precio_venta()
 
+        prev_vals = None
+        if self.pk is not None and not self._state.adding:
+            prev_vals = (
+                type(self).objects.filter(pk=self.pk).values("stock", "precio_venta").first()
+            )
+
+        uf = kwargs.get("update_fields")
+        track_precio = uf is None or bool(
+            set(uf) & {"precio_venta", "costo", "porcentaje_ganancia"}
+        )
+        if track_precio:
+            precio_nuevo = Decimal(self.precio_venta or 0)
+            if self._state.adding or not prev_vals:
+                if not self.precio_actualizado_en:
+                    self.precio_actualizado_en = timezone.now()
+                    if uf is not None:
+                        kwargs["update_fields"] = sorted(set(uf) | {"precio_actualizado_en"})
+            else:
+                precio_prev = Decimal(prev_vals["precio_venta"] or 0)
+                if precio_prev != precio_nuevo:
+                    self.precio_actualizado_en = timezone.now()
+                    if uf is not None:
+                        kwargs["update_fields"] = sorted(set(uf) | {"precio_actualizado_en"})
+
         # Ya no se deshabilita solo al quedar en stock 0: el usuario elige (vigente o deshabilitar).
         if self.stock is not None and self.stock < 0:
             # Stock negativo (p. ej. mercadería externa): no forzar habilitado/listas desde acá.
@@ -146,10 +178,8 @@ class Producto(models.Model):
             paso_a_positivo = False
             if self._state.adding:
                 paso_a_positivo = True
-            elif self.pk is not None:
-                prev = (
-                    type(self).objects.filter(pk=self.pk).values_list("stock", flat=True).first()
-                )
+            elif prev_vals is not None:
+                prev = prev_vals["stock"]
                 if prev is not None and prev <= 0:
                     paso_a_positivo = True
             if paso_a_positivo:

@@ -7101,3 +7101,21 @@ button.btn-icon.venta-despacho-ico.venta-despacho-ico-btn.venta-despacho-ico--de
   }
 }
 
+/* Productos en oferta: rojo en listados, pickers y listas de precio */
+.producto-en-oferta,
+.producto-en-oferta .productos-desc-title,
+.producto-en-oferta .prod-desc,
+.producto-en-oferta .lp-cli-desc,
+.producto-en-oferta .name,
+.producto-en-oferta .sirona-pick-item-desc,
+.producto-en-oferta .sirona-pick-item-code,
+.table-card--productos .table-productos .productos-desc-title.producto-en-oferta,
+.pricing-table .prod-desc.producto-en-oferta,
+.lp-cli-desc.producto-en-oferta,
+.sirona-select-search-item.producto-en-oferta,
+.venta-nueva-line-product.producto-en-oferta,
+.form-select.producto-en-oferta {
+  color: #dc2626 !important;
+}
+
+

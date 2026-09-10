@@ -40,7 +40,7 @@
           {% for p in productos %}
             <tr>
               <td class="col-muted"><span class="persona-cod">{{ p.codigo }}</span></td>
-              <td class="col-muted presu-col-ellipsis" title="{{ p.descripcion }}">{{ p.descripcion }}</td>
+              <td class="col-muted presu-col-ellipsis{% if p.oferta %} producto-en-oferta{% endif %}" title="{{ p.descripcion }}">{{ p.descripcion }}</td>
               <td class="text-end col-money fw-semibold">{{ p.stock }}</td>
             </tr>
           {% empty %}

@@ -182,7 +182,7 @@
                     <tr>
                       <td>
                         <div class="prod-meta">
-                          <div class="prod-desc">{{ p.descripcion }}</div>
+                          <div class="prod-desc{% if p.oferta %} producto-en-oferta{% endif %}">{{ p.descripcion }}</div>
                           <div class="prod-sub">Código: <span class="prod-code">{{ p.codigo }}</span>{% if p.laboratorio %} • Marca: {{ p.laboratorio }}{% endif %}</div>
                         </div>
                       </td>
@@ -217,7 +217,7 @@
                     <tr>
                       <td>
                         <div class="prod-meta">
-                          <div class="prod-desc">{{ it.producto.descripcion }}</div>
+                          <div class="prod-desc{% if it.producto.oferta %} producto-en-oferta{% endif %}">{{ it.producto.descripcion }}</div>
                           <div class="prod-sub">Código: <span class="prod-code">{{ it.producto.codigo }}</span>{% if it.producto.laboratorio %} • Marca: {{ it.producto.laboratorio }}{% endif %}</div>
                         </div>
                       </td>

@@ -24,6 +24,7 @@ def _rows_to_payload(rows) -> list[dict]:
                 "descripcion": row["descripcion"],
                 "precio": str(q2(row["precio_venta"])),
                 "stock": row["stock"],
+                "oferta": bool(row.get("oferta")),
             }
         )
     return out
@@ -41,7 +42,7 @@ def _cached(key: str, ttl: int, builder):
 
 
 def _cache_key_catalogo_lista(lista_id: int) -> str:
-    return f"sirona:cat:lista:{lista_id}:v1"
+    return f"sirona:cat:lista:{lista_id}:v2"
 
 
 def invalidar_cache_catalogo_lista(lista_id: int) -> None:
@@ -49,6 +50,7 @@ def invalidar_cache_catalogo_lista(lista_id: int) -> None:
 
 
 def invalidar_cache_catalogo_todos() -> None:
+    cache.delete("sirona:cat:todos:v2")
     cache.delete("sirona:cat:todos:v1")
 
 
@@ -73,11 +75,11 @@ def invalidar_cache_catalogo_por_cambio_precios(
 def productos_payload_todos(*, use_cache: bool = True) -> list[dict]:
     def build():
         qs = Producto.objects.filter(habilitado=True).order_by("descripcion", "codigo")
-        return _rows_to_payload(qs.values("id", "codigo", "descripcion", "precio_venta", "stock"))
+        return _rows_to_payload(qs.values("id", "codigo", "descripcion", "precio_venta", "stock", "oferta"))
 
     if not use_cache:
         return build()
-    return _cached("sirona:cat:todos:v1", _CATALOGO_CACHE_TTL, build)
+    return _cached("sirona:cat:todos:v2", _CATALOGO_CACHE_TTL, build)
 
 
 def productos_payload_desde_ids(ids: set[int] | list[int]) -> list[dict]:
@@ -85,7 +87,7 @@ def productos_payload_desde_ids(ids: set[int] | list[int]) -> list[dict]:
     if not id_set:
         return []
     qs = Producto.objects.filter(pk__in=id_set).order_by("descripcion", "codigo")
-    return _rows_to_payload(qs.values("id", "codigo", "descripcion", "precio_venta", "stock"))
+    return _rows_to_payload(qs.values("id", "codigo", "descripcion", "precio_venta", "stock", "oferta"))
 
 
 def productos_payload_para_lineas(lineas: list[dict]) -> list[dict]:
@@ -109,6 +111,7 @@ def productos_payload_para_lineas(lineas: list[dict]) -> list[dict]:
             "descripcion": str(ln.get("descripcion") or "Producto"),
             "precio": str(ln.get("precio_unitario") or "0.00"),
             "stock": int(ln.get("stock") or 0),
+            "oferta": False,
         }
     return list(by_id.values())
 
@@ -121,7 +124,7 @@ def productos_payload_para_lista(lista: ListaPrecios, *, use_cache: bool = True)
             qs = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
                 "descripcion", "codigo"
             )
-            return _rows_to_payload(qs.values("id", "codigo", "descripcion", "precio_venta", "stock"))
+            return _rows_to_payload(qs.values("id", "codigo", "descripcion", "precio_venta", "stock", "oferta"))
         items = (
             ListaPrecioItem.objects.filter(lista=lista, producto__habilitado=True)
             .select_related("producto")
@@ -134,6 +137,7 @@ def productos_payload_para_lista(lista: ListaPrecios, *, use_cache: bool = True)
                 "descripcion": item.producto.descripcion,
                 "precio": str(q2(item.precio_venta)),
                 "stock": item.producto.stock,
+                "oferta": bool(item.producto.oferta),
             }
             for item in items
         ]

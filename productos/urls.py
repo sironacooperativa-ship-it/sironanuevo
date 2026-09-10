@@ -8,6 +8,7 @@ urlpatterns = [
     path("picker.json", views.productos_picker_json, name="productos_picker_json"),
     path("", views.productos_list, name="productos_list"),
     path("aumento/", views.productos_aumento, name="productos_aumento"),
+    path("precios/", views.productos_precios, name="productos_precios"),
     path("vencimientos/", views.productos_vencimientos, name="productos_vencimientos"),
     path("nuevo/", views.producto_create, name="producto_create"),
     path("<int:pk>/inline/", views.producto_inline_update, name="producto_inline_update"),

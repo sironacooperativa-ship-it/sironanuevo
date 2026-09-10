@@ -449,7 +449,7 @@
           {% for p in productos %}
             <tr
               id="producto-row-{{ p.pk }}"
-              class="app-table-row producto-row-inline productos-tbody-row {% if not p.habilitado %}opacity-50{% endif %}{% if p.stock == 0 %} productos-row--zero-stock{% endif %}"
+              class="app-table-row producto-row-inline productos-tbody-row {% if not p.habilitado %}opacity-50{% endif %}{% if p.stock == 0 %} productos-row--zero-stock{% endif %}{% if p.oferta %} producto-en-oferta{% endif %}"
             >
               <td class="text-center align-middle productos-td-cb col-hide-mobile">
                 <input
@@ -466,10 +466,13 @@
                   form="producto-inline-{{ p.pk }}"
                   value="{% if p.fecha_vencimiento %}{{ p.fecha_vencimiento|date:'Y-m-d' }}{% endif %}"
                 />
+                {% if p.oferta %}
+                  <input type="hidden" name="oferta" value="1" form="producto-inline-{{ p.pk }}" />
+                {% endif %}
               </td>
               <td class="productos-td-saas productos-td-desc align-middle">
                 <div class="productos-desc-stack min-w-0">
-                  <span class="producto-view productos-desc-title" title="{{ p.descripcion }}">{{ p.descripcion }}</span>
+                  <span class="producto-view productos-desc-title{% if p.oferta %} producto-en-oferta{% endif %}" title="{{ p.descripcion }}">{{ p.descripcion }}</span>
                   <div class="productos-desc-meta">
                     <span class="productos-desc-code font-monospace">Código: {{ p.codigo }}</span>
                     <span class="productos-desc-sep" aria-hidden="true"> • </span>

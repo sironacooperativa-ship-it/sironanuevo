@@ -103,7 +103,7 @@
                 {% for p in productos %}
                   <tr class="{% if p.deshabilitado_por_stock %}table-danger{% endif %}">
                     <td>
-                      <div class="name">{{ p.descripcion }}</div>
+                      <div class="name{% if p.oferta %} producto-en-oferta{% endif %}">{{ p.descripcion }}</div>
                       <div class="stock-prod-sub">
                         <span class="prod-code">{{ p.codigo }}</span>
                       </div>

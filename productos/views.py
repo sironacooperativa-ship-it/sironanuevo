@@ -884,6 +884,79 @@ def productos_vencimientos(request):
     )
 
 
+PRECIOS_SORT_FIELDS = {
+    "descripcion": "descripcion",
+    "codigo": "codigo",
+    "costo": "costo",
+    "margen": "margen_monto",
+    "precio": "precio_venta",
+    "actualizado": "precio_actualizado_en",
+}
+
+
+@login_required
+def productos_precios(request):
+    q = (request.GET.get("q") or "").strip()
+    qs = Producto.objects.annotate(
+        margen_monto=ExpressionWrapper(
+            F("precio_venta") - F("costo"),
+            output_field=DecimalField(max_digits=12, decimal_places=2),
+        )
+    )
+    if q:
+        qs = qs.filter(
+            Q(descripcion__icontains=q) | Q(codigo__icontains=q) | Q(laboratorio__icontains=q)
+        )
+
+    ord_key = (request.GET.get("ord") or "").strip()
+    dir_raw = (request.GET.get("dir") or "").strip().lower()
+    if dir_raw not in ("asc", "desc"):
+        dir_raw = "asc"
+    if ord_key in PRECIOS_SORT_FIELDS:
+        prefix = "-" if dir_raw == "desc" else ""
+        qs = qs.order_by(f"{prefix}{PRECIOS_SORT_FIELDS[ord_key]}", "descripcion", "id")
+        sort_ord, sort_dir = ord_key, dir_raw
+    else:
+        qs = qs.order_by("descripcion", "codigo")
+        sort_ord, sort_dir = "", "asc"
+
+    paginator = Paginator(qs, 100)
+    page_obj = paginator.get_page((request.GET.get("page") or "").strip() or 1)
+
+    sort_links: dict[str, str] = {}
+    for key in PRECIOS_SORT_FIELDS:
+        params = request.GET.copy()
+        cur_o = (request.GET.get("ord") or "").strip()
+        cur_d = (request.GET.get("dir") or "asc").strip().lower()
+        if cur_d not in ("asc", "desc"):
+            cur_d = "asc"
+        if cur_o == key:
+            params["ord"] = key
+            params["dir"] = "desc" if cur_d == "asc" else "asc"
+        else:
+            params["ord"] = key
+            params["dir"] = "asc"
+        params.pop("page", None)
+        sort_links[key] = params.urlencode()
+
+    qcopy = request.GET.copy()
+    qcopy.pop("page", None)
+
+    return render(
+        request,
+        "productos/precios.html",
+        {
+            "productos": list(page_obj),
+            "q": q,
+            "page_obj": page_obj,
+            "querystring": qcopy.urlencode(),
+            "sort_ord": sort_ord,
+            "sort_dir": sort_dir,
+            "sort_links": sort_links,
+        },
+    )
+
+
 @login_required
 @require_http_methods(["GET", "POST"])
 def productos_aumento(request):
@@ -1413,8 +1486,7 @@ def producto_update(request, pk: int):
                         producto=producto, lista_id=rubro_ids[0]
                     ).update(precio_venta=nuevo_precio)
             lista_ids = listas_precio_ids_del_producto(producto)
-            if lista_ids:
-                invalidar_cache_catalogo_por_cambio_precios(*lista_ids)
+            invalidar_cache_catalogo_por_cambio_precios(*lista_ids)
             messages.success(request, f"Producto actualizado: {producto.codigo}")
             if request.GET.get("modal") == "1":
                 return HttpResponse(
@@ -2140,21 +2212,21 @@ def productos_export_pdf(request):
         col_w = [tw * 0.15, tw * 0.18, tw * 0.45, tw * 0.22]
 
     t = Table(data, colWidths=col_w, repeatRows=1)
-    t.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0097B2")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cccccc")),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f0f9fb")]),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("ALIGN", (0, 1), (0, -1), "LEFT"),
-                ("ALIGN", (-1, 1), (-1, -1), "RIGHT"),
-            ]
-        )
-    )
+    style_cmds = [
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0097B2")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cccccc")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f0f9fb")]),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("ALIGN", (0, 1), (0, -1), "LEFT"),
+        ("ALIGN", (-1, 1), (-1, -1), "RIGHT"),
+    ]
+    for idx, p in enumerate(productos, start=1):
+        if getattr(p, "oferta", False):
+            style_cmds.append(("TEXTCOLOR", (0, idx), (-1, idx), colors.HexColor("#DC2626")))
+    t.setStyle(TableStyle(style_cmds))
     story.append(t)
     doc.build(story)
     buffer.seek(0)

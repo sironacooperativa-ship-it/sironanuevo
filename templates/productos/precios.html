@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% load money %}
+{% load static %}
+{% block title %}Precios{% endblock %}
+{% block extra_head %}
+  <style>
+    .precios-search-bar {
+      max-width: 28rem;
+    }
+    .precios-th-sort {
+      color: #64748b;
+      font-weight: 500;
+      text-decoration: none;
+    }
+    .precios-th-sort:hover,
+    .precios-th-sort:focus {
+      color: #0f172a;
+    }
+    .precios-margen-pct {
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+    .producto-en-oferta .precios-margen-pct {
+      color: #f87171;
+    }
+  </style>
+{% endblock %}
+{% block content %}
+  <span id="sidebarCurrentNode" class="d-none" data-parent-url="{% url 'productos_precios' %}">Precios</span>
+
+  <section class="page-header-card inventory-header">
+    <div class="header-left">
+      <span class="header-ico" aria-hidden="true"><i data-lucide="badge-dollar-sign"></i></span>
+      <div class="min-w-0">
+        <h1 class="header-title">Precios</h1>
+        <p class="header-subtitle">
+          Costo, margen y precio de venta de todos los productos. Los productos en oferta se muestran en rojo.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="modern-filter-card" aria-label="Buscar productos">
+    <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
+      <div class="precios-search-bar flex-grow-1">
+        <label class="form-label small text-muted mb-1" for="precios-filter-q">Buscar</label>
+        <input
+          id="precios-filter-q"
+          class="form-control form-control-sm rounded-3"
+          type="search"
+          name="q"
+          value="{{ q }}"
+          placeholder="Código, descripción o marca"
+          autocomplete="off"
+        />
+      </div>
+      {% if sort_ord %}
+        <input type="hidden" name="ord" value="{{ sort_ord }}" />
+        <input type="hidden" name="dir" value="{{ sort_dir }}" />
+      {% endif %}
+      <div class="d-flex gap-2 align-items-end">
+        <button class="btn btn-primary btn-sm text-white px-3" type="submit">Buscar</button>
+        <a class="btn btn-outline-secondary btn-sm px-3" href="{% url 'productos_precios' %}">Limpiar</a>
+      </div>
+    </form>
+  </section>
+
+  <div class="table-card table-card--productos presu-lista-modern">
+    <div class="table-responsive presu-lista-table-wrap">
+      <table class="modern-table app-table table-productos">
+        <thead class="productos-thead-saas">
+          <tr>
+            <th scope="col">
+              <a class="app-th-sort precios-th-sort" href="?{{ sort_links.descripcion }}" title="Ordenar por descripción">
+                Producto{% if sort_ord == "descripcion" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}
+              </a>
+            </th>
+            <th scope="col" class="text-end">
+              <a class="app-th-sort precios-th-sort" href="?{{ sort_links.costo }}" title="Ordenar por costo">
+                Costo{% if sort_ord == "costo" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}
+              </a>
+            </th>
+            <th scope="col" class="text-end">
+              <a class="app-th-sort precios-th-sort" href="?{{ sort_links.margen }}" title="Ordenar por ganancia">
+                Margen{% if sort_ord == "margen" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}
+              </a>
+            </th>
+            <th scope="col" class="text-end">
+              <a class="app-th-sort precios-th-sort" href="?{{ sort_links.precio }}" title="Ordenar por precio de venta">
+                Precio de venta{% if sort_ord == "precio" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}
+              </a>
+            </th>
+            <th scope="col" class="text-end">
+              <a class="app-th-sort precios-th-sort" href="?{{ sort_links.actualizado }}" title="Ordenar por última actualización de precio">
+                Actualizado el{% if sort_ord == "actualizado" %}<span class="ms-1 producto-th-sort-caret" aria-hidden="true">{% if sort_dir == "asc" %}↑{% else %}↓{% endif %}</span>{% endif %}
+              </a>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in productos %}
+            <tr class="app-table-row productos-tbody-row {% if not p.habilitado %}opacity-50{% endif %}{% if p.oferta %} producto-en-oferta{% endif %}">
+              <td class="productos-td-saas productos-td-desc align-middle">
+                <div class="productos-desc-stack min-w-0">
+                  <span class="productos-desc-title{% if p.oferta %} producto-en-oferta{% endif %}" title="{{ p.descripcion }}">
+                    {{ p.descripcion }}
+                    {% if p.oferta %}<span class="badge rounded-pill text-bg-danger ms-1" style="font-size: 0.65rem;">Oferta</span>{% endif %}
+                  </span>
+                  <div class="productos-desc-meta">
+                    <span class="productos-desc-code font-monospace">Código: {{ p.codigo }}</span>
+                    {% if p.laboratorio %}
+                      <span class="productos-desc-sep" aria-hidden="true"> • </span>
+                      <span>Marca: {{ p.laboratorio }}</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </td>
+              <td class="text-end text-nowrap col-monto">{{ p.costo|ars }}</td>
+              <td class="text-end text-nowrap col-monto">
+                <div>{{ p.ganancia|ars }}</div>
+                <div class="precios-margen-pct">
+                  {% if p.porcentaje_ganancia_calculado is not None %}
+                    {{ p.porcentaje_ganancia_calculado }}%
+                  {% else %}
+                    {{ p.porcentaje_ganancia }}%
+                  {% endif %}
+                </div>
+              </td>
+              <td class="text-end text-nowrap col-monto fw-semibold">{{ p.precio_venta|ars }}</td>
+              <td class="text-end text-nowrap small">
+                {% if p.precio_actualizado_en %}
+                  {{ p.precio_actualizado_en|date:"d/m/Y" }}
+                  <span class="text-muted">{{ p.precio_actualizado_en|date:"H:i" }}</span>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="table-empty">
+                {% if q %}No hay productos que coincidan con «{{ q }}».{% else %}No hay productos cargados.{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "includes/pagination_footer.html" %}
+  </div>
+{% endblock %}
+{% block page_scripts %}
+  {{ block.super }}
+  <script src="{% static 'js/sirona-productos-q-picker.js' %}?v=3"></script>
+  <script>
+    (function () {
+      if (window.SironaProductosQPicker) {
+        SironaProductosQPicker.attach({
+          dataFetchUrl: "{% url 'productos_picker_json' %}",
+          inputId: "precios-filter-q",
+        });
+      }
+    })();
+  </script>
+{% endblock %}

@@ -216,6 +216,9 @@
     var code = escapeHtml(p && p.codigo ? p.codigo : "");
     var desc = escapeHtml(p && p.descripcion ? p.descripcion : "Producto");
     var stock = p && p.stock != null ? escapeHtml(String(p.stock)) : "—";
+    if (p && (p.oferta === true || p.oferta === 1 || p.oferta === "1")) {
+      btn.classList.add("producto-en-oferta");
+    }
     if (descOnly) {
       btn.innerHTML = '<span class="sirona-pick-item-desc sirona-pick-item-desc--solo">' + desc + "</span>";
     } else {

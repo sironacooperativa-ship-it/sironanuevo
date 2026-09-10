@@ -91,7 +91,7 @@
             {% for row in rows %}
               <tr class="aumento-row" data-producto-id="{{ row.producto.pk }}">
                 <td class="font-monospace small">{{ row.producto.codigo }}</td>
-                <td class="small">{{ row.producto.descripcion }}</td>
+                <td class="small{% if row.producto.oferta %} producto-en-oferta{% endif %}">{{ row.producto.descripcion }}</td>
                 <td class="text-end small">{{ row.costo_anterior|ars }}</td>
                 <td class="text-end small col-money">
                   <span class="aumento-view fw-semibold">{{ row.nuevo_costo|ars }}</span>
@@ -290,7 +290,7 @@
                     <input type="checkbox" class="form-check-input sel-producto" name="sel" value="{{ p.pk }}" />
                   </td>
                   <td class="font-monospace small">{{ p.codigo }}</td>
-                  <td class="small">{{ p.descripcion }}</td>
+                  <td class="small{% if p.oferta %} producto-en-oferta{% endif %}">{{ p.descripcion }}</td>
                   <td class="small text-muted">{{ p.get_tipo_display }}</td>
                   <td class="text-end small col-money">
                     <span class="aumento-view">{{ p.costo|ars }}</span>

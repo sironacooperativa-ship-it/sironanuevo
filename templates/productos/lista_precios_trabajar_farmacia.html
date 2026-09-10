@@ -103,7 +103,7 @@
                       <div class="prod-cell">
                         <span class="prod-thumb" aria-hidden="true"><i data-lucide="package"></i></span>
                         <span class="prod-meta">
-                          <span class="prod-desc">{{ p.descripcion }}</span>
+                          <span class="prod-desc{% if p.oferta %} producto-en-oferta{% endif %}">{{ p.descripcion }}</span>
                           <span class="prod-sub">Código: <span class="prod-code">{{ p.codigo }}</span>{% if p.laboratorio %} • Marca: {{ p.laboratorio }}{% endif %}</span>
                         </span>
                       </div>
