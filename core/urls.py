@@ -1,9 +1,12 @@
 from django.urls import path
 
-from . import views
+from . import views, app_bridge
 
 
 urlpatterns = [
+    path("app-bridge/start/", app_bridge.start, name="app_bridge_start"),
+    path("app-bridge/authorize/", app_bridge.authorize, name="app_bridge_authorize"),
+    path("app-bridge/callback/", app_bridge.callback, name="app_bridge_callback"),
     path("", views.home, name="home"),
     path("health/", views.health, name="health"),
     path("warmup/", views.warmup, name="warmup"),

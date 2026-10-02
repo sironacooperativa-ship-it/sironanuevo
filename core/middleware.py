@@ -29,6 +29,7 @@ class VendedorAccessMiddleware:
                 or path.startswith("/sesion/")
                 or path.startswith("/health/")
                 or path.startswith("/warmup/")
+                or path.startswith("/app-bridge/")
             ):
                 if cerrar_sesion_pendiente_si_corresponde(request):
                     return HttpResponseRedirect(resolve_url("login"))
@@ -43,6 +44,7 @@ class VendedorAccessMiddleware:
                 or path.startswith("/admin/")
                 or path.startswith("/health/")
                 or path.startswith("/warmup/")
+                or path.startswith("/app-bridge/")
             ):
                 return self.get_response(request)
 
@@ -68,3 +70,4 @@ class VendedorAccessMiddleware:
                 return HttpResponseRedirect(resolve_url("vendedor_home"))
 
         return self.get_response(request)
+

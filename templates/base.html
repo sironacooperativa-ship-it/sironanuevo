@@ -202,6 +202,7 @@
 
             <div class="sirona-topbar-right">
               <div class="d-flex align-items-center gap-2 flex-nowrap">
+                {% if anele_bridge_enabled %}<a class="btn btn-outline-light btn-sm" href="{% url 'app_bridge_start' %}" aria-label="Ir a Grupo Anele">Grupo Anele ↗</a>{% endif %}
                 <div class="dropdown sirona-profile-dropdown">
                   <button
                     class="btn sirona-profile-btn dropdown-toggle"
@@ -368,6 +369,7 @@
 
             <div class="sirona-topbar-right">
               <div class="d-flex align-items-center gap-2 flex-nowrap">
+                {% if anele_bridge_enabled %}<a class="btn btn-outline-light btn-sm" href="{% url 'app_bridge_start' %}" aria-label="Ir a Grupo Anele">Grupo Anele ↗</a>{% endif %}
                 <div class="dropdown sirona-profile-dropdown">
                   <button
                     class="btn sirona-profile-btn dropdown-toggle"
