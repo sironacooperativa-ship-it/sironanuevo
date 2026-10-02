@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import date, datetime, timedelta
 import calendar
 
@@ -380,4 +382,3 @@ def calendario_export_pdf(request):
         "calendario/exportar_pdf.html",
         {"meses_opciones": _meses_export_opciones()},
     )
-
