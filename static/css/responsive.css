@@ -5,6 +5,13 @@ main.app-main.page-shell { width:100%; min-width:0; max-width:1680px; padding:24
 .table-responsive { max-width:100%; }
 .page-header { flex-wrap:wrap; gap:12px; }
 @media (min-width:992px) { :root { --sidebar-w:224px; } }
+@media(max-width:1199.98px) {
+ body.app-authenticated .app-shell.app-shell--with-sidebar { padding-left:0!important; }
+ body.app-authenticated .app-sidebar-fixed, body.app-authenticated aside.sidebar { display:none!important; }
+}
+@media(pointer:coarse) {
+ .ui-force-productos .table-actions .btn-icon { width:42px!important; min-width:42px!important; height:42px!important; }
+}
 @media (max-width:991.98px) {
  body.app-authenticated main.app-main.page-shell { padding:18px!important; }
  .ui-force-productos .table-actions .btn-icon { width:42px!important; min-width:42px!important; height:42px!important; }
