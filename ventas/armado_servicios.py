@@ -95,7 +95,7 @@ def agregar_lineas_armado_colectivo(venta_ids: list[int]) -> list[LineaArmadoCol
     if not venta_ids:
         return []
     lineas = (
-        VentaLinea.objects.filter(venta_id__in=venta_ids)
+        VentaLinea.objects.filter(venta_id__in=venta_ids, venta__eliminado_en__isnull=True)
         .select_related("producto")
         .order_by("producto__descripcion", "producto__codigo", "id")
     )

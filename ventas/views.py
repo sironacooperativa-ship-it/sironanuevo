@@ -54,7 +54,7 @@ from .despacho_servicios import (
 from .remito_pdf import remito_venta_pdf_response
 from .servicios import (
     crear_venta_confirmada,
-    eliminar_venta_admin,
+    enviar_venta_a_papelera,
     merge_stock_confirmacion_venta_locked,
     parse_stock_venta_json_from_post,
     sincronizar_productos_lista_elegida_en_venta,
@@ -1009,7 +1009,7 @@ def venta_historial(request):
         meses_ganancia, totales_ganancia = _historial_ganancia_meses_desde_ventas(ventas_g)
     else:
         page = (request.GET.get("page") or "").strip()
-        paginator = Paginator(ventas, 80)
+        paginator = Paginator(ventas, 30)
         page_obj = paginator.get_page(page or 1)
         ventas_page = list(page_obj)
 
@@ -1065,7 +1065,7 @@ def venta_eliminar(request, pk: int):
         return _redirect_despues()
     nid = venta.pk
     try:
-        eliminar_venta_admin(venta)
+        enviar_venta_a_papelera(venta)
     except ValidationError as exc:
         messages.error(request, "; ".join(getattr(exc, "messages", [str(exc)])))
         return _redirect_despues()
@@ -1080,7 +1080,7 @@ def venta_eliminar(request, pk: int):
         detalle = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
         messages.error(request, "No se pudo eliminar el pedido." + detalle)
         return _redirect_despues()
-    messages.success(request, f"Pedido #{nid} eliminado (stock y caja/calendario revertidos si correspondía).")
+    messages.success(request, f"Pedido #{nid} enviado a la papelera. Podés restaurarlo desde Papelera.")
     return _redirect_despues()
 
 
@@ -1777,3 +1777,28 @@ def venta_actualizar_despacho(request, pk: int):
     if ajax:
         return JsonResponse(venta_despacho_json_payload(venta))
     return _redirect_response()
+
+
+@staff_required
+@require_http_methods(['GET'])
+def venta_papelera(request):
+    return render(request, 'papelera.html', {
+        'titulo': 'Papelera de ventas',
+        'page_obj': Paginator(Venta.all_objects.filter(eliminado_en__isnull=False).select_related('vendedor', 'comprador').order_by('-eliminado_en', '-pk'), 50).get_page(request.GET.get('page')),
+        'restaurar_url': 'venta_restaurar',
+        'volver_url': 'ventas_historial',
+    })
+
+
+@staff_required
+@require_http_methods(['POST'])
+def venta_restaurar(request, pk: int):
+    from .servicios import cambiar_papelera_venta
+    get_object_or_404(Venta.all_objects, pk=pk, eliminado_en__isnull=False)
+    try:
+        cambiar_papelera_venta(pk, restaurar=True)
+    except ValidationError as exc:
+        messages.error(request, '; '.join(exc.messages))
+    else:
+        messages.success(request, f'Pedido #{pk} restaurado con sus productos, pagos y calendario.')
+    return redirect('venta_papelera')

@@ -365,3 +365,47 @@ def eliminar_venta_admin(venta: Venta) -> None:
         deleted, _ = Venta.objects.filter(pk=vid).delete()
         if not deleted:
             raise ValidationError("El pedido ya no existe o no pudo borrarse.")
+
+
+def cambiar_papelera_venta(pk: int, *, restaurar: bool) -> None:
+    """Conserva los registros y sus vínculos; stock y visibilidad cambian juntos."""
+    from django.utils import timezone
+    from .models import ArmadoColectivoGuardado
+
+    with transaction.atomic():
+        v = Venta.all_objects.select_for_update().get(pk=pk)
+        if (v.eliminado_en is None) == restaurar:
+            return  # Repetir la acción no vuelve a modificar stock.
+        if not restaurar and v.despacho_despachado:
+            raise ValidationError("Un pedido despachado no puede enviarse a la papelera.")
+        if not restaurar and v.comision_liquidacion_pago_id:
+            raise ValidationError("El pedido tiene una comisión ya liquidada. Primero debe corregirse esa liquidación.")
+        cantidades = defaultdict(int)
+        for ln in v.lineas.all():
+            if ln.producto_id:
+                cantidades[ln.producto_id] += ln.cantidad
+            elif restaurar:
+                raise ValidationError("No se puede restaurar: uno de los productos ya no existe.")
+        productos = list(Producto.objects.select_for_update().filter(pk__in=cantidades).order_by('pk'))
+        if restaurar:
+            for p in productos:
+                if p.stock < cantidades[p.pk]:
+                    raise ValidationError(f"Stock insuficiente para {p.codigo}: disponible {p.stock}, necesario {cantidades[p.pk]}.")
+        for p in productos:
+            qs = Producto.objects.filter(pk=p.pk)
+            if restaurar:
+                qs = qs.filter(stock__gte=cantidades[p.pk])
+            if not qs.update(stock=F('stock') + cantidades[p.pk] * (-1 if restaurar else 1)):
+                raise ValidationError(f"El stock de {p.codigo} cambió. Volvé a intentar la restauración.")
+        v.eliminado_en = None if restaurar else timezone.now()
+        v.save(update_fields=['eliminado_en'])
+        Evento.all_objects.filter(tipo=Evento.Tipo.PEDIDO, titulo=f"Pago pendiente — Pedido #{v.pk}").update(eliminado_en=v.eliminado_en)
+        # Mantener la composición permite recuperar también los vínculos del armado.
+        ArmadoColectivoGuardado.objects.filter(ventas__pk=v.pk).update(
+            requiere_revision=True,
+            nota_revision=f"El pedido #{v.pk} fue {'restaurado' if restaurar else 'enviado a la papelera'}. Revisá el armado antes de despachar.",
+        )
+
+
+def enviar_venta_a_papelera(venta: Venta) -> None:
+    cambiar_papelera_venta(venta.pk, restaurar=False)
