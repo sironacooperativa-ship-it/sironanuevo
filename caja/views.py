@@ -10,6 +10,7 @@ from django.db.models.functions import Coalesce, TruncMonth
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
+from django.utils import timezone
 
 from core.export_utils import parse_export, pdf_response, xlsx_response
 from core.money_decimal import q2
@@ -18,8 +19,8 @@ from personas.models import Vendedor
 from ventas.models import Venta
 from ventas.servicios import revertir_cobro_pedido_desde_movimiento_caja
 
-from .forms import MovimientoCajaForm
-from .models import MovimientoCaja
+from .forms import ActualizarSaldoForm, ArqueoCajaForm, MovimientoCajaForm
+from .models import ArqueoCaja, MovimientoCaja
 
 
 _MESES_ES = (
@@ -40,65 +41,131 @@ _MESES_ES = (
 # Libro diario (listado): filas por “hoja” en pantalla y en exportación.
 _LIBRO_CAJA_FILAS_POR_HOJA = 30
 
+_DEC14 = DecimalField(max_digits=14, decimal_places=2)
+_ZERO_DEC = Value(Decimal("0.00"), output_field=_DEC14)
+
+
+def _delta_caja_expr():
+    return Case(
+        When(es_arqueo=True, then=Value(Decimal("0.00"), output_field=_DEC14)),
+        When(tipo=MovimientoCaja.Tipo.ARQUEO, then=Value(Decimal("0.00"), output_field=_DEC14)),
+        When(tipo=MovimientoCaja.Tipo.INGRESO, then=F("monto")),
+        default=ExpressionWrapper(
+            Value(0) - F("monto"), output_field=_DEC14
+        ),
+        output_field=_DEC14,
+    )
+
+
+def _saldo_antes_de(qs, fecha, pk, delta_expr):
+    """Saldo del queryset inmediatamente antes de (fecha, pk), respetando arqueos."""
+    previo = Q(fecha__lt=fecha) | Q(fecha=fecha, pk__lt=pk)
+    ultimo = (
+        qs.select_related(None).filter(es_arqueo=True)
+        .filter(previo)
+        .order_by("-fecha", "-pk")
+        .only("saldo_arqueo", "fecha", "pk")
+        .first()
+    )
+    if ultimo:
+        extra = qs.filter(previo).filter(
+            Q(fecha__gt=ultimo.fecha) | Q(fecha=ultimo.fecha, pk__gt=ultimo.pk)
+        )
+        s = extra.aggregate(s=Coalesce(Sum(delta_expr), _ZERO_DEC)).get("s") or Decimal("0.00")
+        return q2(q2(ultimo.saldo_arqueo) + q2(s))
+    s = qs.filter(previo).aggregate(s=Coalesce(Sum(delta_expr), _ZERO_DEC)).get("s") or Decimal("0.00")
+    return q2(s)
+
+
+def _saldo_caja_al(hasta: date) -> Decimal:
+    qs = MovimientoCaja.objects.filter(fecha__lte=hasta)
+    delta_expr = _delta_caja_expr()
+    ultimo = qs.filter(es_arqueo=True).order_by("-fecha", "-pk").only("saldo_arqueo", "fecha", "pk").first()
+    if ultimo:
+        extra = qs.filter(Q(fecha__gt=ultimo.fecha) | Q(fecha=ultimo.fecha, pk__gt=ultimo.pk))
+        s = extra.aggregate(s=Coalesce(Sum(delta_expr), _ZERO_DEC)).get("s") or Decimal("0.00")
+        return q2(q2(ultimo.saldo_arqueo) + q2(s))
+    ing = (
+        qs.filter(tipo=MovimientoCaja.Tipo.INGRESO).aggregate(s=Sum("monto"))["s"] or Decimal("0.00")
+    )
+    egr = (
+        qs.filter(tipo=MovimientoCaja.Tipo.EGRESO).aggregate(s=Sum("monto"))["s"] or Decimal("0.00")
+    )
+    return q2(ing - egr)
+
+
+def _saldos_libro_por_medio(hasta: date) -> dict[str, Decimal]:
+    acc: dict[str, Decimal] = {code: Decimal("0.00") for code, _lbl in MovimientoCaja.MedioPago.choices}
+    qs = MovimientoCaja.objects.filter(fecha__lte=hasta)
+    ultimo = (
+        qs.filter(es_arqueo=True)
+        .select_related("arqueo")
+        .order_by("-fecha", "-pk")
+        .first()
+    )
+    if ultimo:
+        detalle = getattr(ultimo, "arqueo", None)
+        if detalle is not None:
+            acc[MovimientoCaja.MedioPago.EFECTIVO] = q2(detalle.saldo_efectivo)
+            acc[MovimientoCaja.MedioPago.TRANSFERENCIA] = q2(detalle.saldo_transferencia)
+            acc[MovimientoCaja.MedioPago.MERCADOPAGO] = q2(detalle.saldo_mercadopago)
+            acc[MovimientoCaja.MedioPago.CHEQUE] = q2(detalle.saldo_cheque)
+            acc[MovimientoCaja.MedioPago.OTRO] = q2(detalle.saldo_otro)
+        else:
+            acc[MovimientoCaja.MedioPago.OTRO] = q2(ultimo.saldo_arqueo)
+        movs = qs.filter(Q(fecha__gt=ultimo.fecha) | Q(fecha=ultimo.fecha, pk__gt=ultimo.pk)).exclude(
+            es_arqueo=True
+        )
+    else:
+        movs = qs.exclude(es_arqueo=True)
+    for m in movs.only("medio_pago", "tipo", "monto", "es_arqueo"):
+        acc[m.medio_pago] = q2(acc.get(m.medio_pago, Decimal("0.00")) + m.delta)
+    acc["total"] = q2(sum(acc[code] for code, _lbl in MovimientoCaja.MedioPago.choices))
+    return acc
+
+
+def _aplicar_saldo_movimiento(saldo: Decimal, m: MovimientoCaja) -> Decimal:
+    if m.es_arqueo and m.saldo_arqueo is not None:
+        return q2(m.saldo_arqueo)
+    return q2(saldo + m.delta)
+
 
 def _libro_diario_rows_con_saldo(qs, delta_expr, movimientos_orden_visual: list[MovimientoCaja]) -> list[dict]:
     """
     `movimientos_orden_visual`: orden en pantalla (ej. más reciente primero).
-    Cada fila lleva el saldo **después** de aplicar ese movimiento en el orden cronológico real.
+    Cada fila lleva el saldo real de caja, incluso cuando el listado está filtrado.
     """
     if not movimientos_orden_visual:
         return []
     chrono = sorted(movimientos_orden_visual, key=lambda m: (m.fecha, m.pk))
     first = chrono[0]
-    saldo_previo = (
-        qs.filter(Q(fecha__lt=first.fecha) | Q(fecha=first.fecha, pk__lt=first.pk))
-        .aggregate(
-            s=Coalesce(
-                Sum(delta_expr),
-                Value(
-                    Decimal("0.00"),
-                    output_field=DecimalField(max_digits=14, decimal_places=2),
-                ),
-            )
-        )
-        .get("s")
-        or Decimal("0.00")
-    )
-    saldo = q2(saldo_previo)
+    last = chrono[-1]
+    libro = MovimientoCaja.objects.all()
+    saldo = _saldo_antes_de(libro, first.fecha, first.pk, delta_expr)
+    intervalo = libro.filter(
+        Q(fecha__gt=first.fecha) | Q(fecha=first.fecha, pk__gte=first.pk)
+    ).filter(
+        Q(fecha__lt=last.fecha) | Q(fecha=last.fecha, pk__lte=last.pk)
+    ).only('fecha', 'tipo', 'monto', 'es_arqueo', 'saldo_arqueo').order_by('fecha', 'pk')
     by_id: dict[int, Decimal] = {}
-    for m in chrono:
-        saldo = q2(saldo + m.delta)
+    for m in intervalo:
+        saldo = _aplicar_saldo_movimiento(saldo, m)
         by_id[m.pk] = saldo
     return [{"m": m, "saldo": by_id[m.pk]} for m in movimientos_orden_visual]
 
 
 def _resumen_caja_dashboard(hoy: date) -> dict:
-    """Saldo acumulado hasta hoy; ingresos/egresos del mes; ganancia neta por ventas cobradas en el mes (fecha del cobro en caja)."""
-    ing_hasta = (
-        MovimientoCaja.objects.filter(fecha__lte=hoy, tipo=MovimientoCaja.Tipo.INGRESO).aggregate(
-            s=Sum("monto")
-        )["s"]
-        or Decimal("0.00")
-    )
-    egr_hasta = (
-        MovimientoCaja.objects.filter(fecha__lte=hoy, tipo=MovimientoCaja.Tipo.EGRESO).aggregate(
-            s=Sum("monto")
-        )["s"]
-        or Decimal("0.00")
-    )
-    saldo_al_dia = q2(ing_hasta - egr_hasta)
+    """Saldo acumulado hasta hoy (con arqueos); ingresos/egresos del mes; ganancia neta por ventas cobradas en el mes."""
+    saldo_al_dia = _saldo_caja_al(hoy)
 
     inicio_mes = hoy.replace(day=1)
+    qs_mes = MovimientoCaja.objects.filter(fecha__gte=inicio_mes, fecha__lte=hoy).exclude(es_arqueo=True)
     ing_mes = (
-        MovimientoCaja.objects.filter(
-            fecha__gte=inicio_mes, fecha__lte=hoy, tipo=MovimientoCaja.Tipo.INGRESO
-        ).aggregate(s=Sum("monto"))["s"]
+        qs_mes.filter(tipo=MovimientoCaja.Tipo.INGRESO).aggregate(s=Sum("monto"))["s"]
         or Decimal("0.00")
     )
     egr_mes = (
-        MovimientoCaja.objects.filter(
-            fecha__gte=inicio_mes, fecha__lte=hoy, tipo=MovimientoCaja.Tipo.EGRESO
-        ).aggregate(s=Sum("monto"))["s"]
+        qs_mes.filter(tipo=MovimientoCaja.Tipo.EGRESO).aggregate(s=Sum("monto"))["s"]
         or Decimal("0.00")
     )
     dec14 = DecimalField(max_digits=14, decimal_places=2)
@@ -242,11 +309,7 @@ def caja_list(request):
         qs = qs.filter(fecha__lte=d_hasta)
 
     # Delta en DB para poder sumar sin traer todo.
-    delta_expr = Case(
-        When(tipo=MovimientoCaja.Tipo.INGRESO, then=F("monto")),
-        default=ExpressionWrapper(Value(0) - F("monto"), output_field=DecimalField(max_digits=14, decimal_places=2)),
-        output_field=DecimalField(max_digits=14, decimal_places=2),
-    )
+    delta_expr = _delta_caja_expr()
 
     movimientos_qs = qs.order_by("-fecha", "-id")
     page = (request.GET.get("page") or "").strip()
@@ -270,8 +333,11 @@ def caja_list(request):
         "total_egreso": q2(totales.get("total_egreso")),
     }
 
-    hoy = date.today()
+    hoy = timezone.localdate()
     resumen_caja = _resumen_caja_dashboard(hoy)
+    ultimo_arqueo = (
+        MovimientoCaja.objects.filter(es_arqueo=True).order_by("-fecha", "-pk").first()
+    )
     filtros_activos = any(
         (request.GET.get(k) or "").strip()
         for k in ("operacion", "tipo", "medio_pago", "vendedor", "desde", "hasta")
@@ -279,11 +345,10 @@ def caja_list(request):
 
     if exp in ("xlsx", "pdf"):
         movs_chrono = list(qs.order_by("fecha", "id"))
-        saldo = Decimal("0.00")
-        saldos_by_id: dict[int, Decimal] = {}
-        for m in movs_chrono:
-            saldo = q2(saldo + m.delta)
-            saldos_by_id[m.pk] = saldo
+        saldos_by_id = {
+            row['m'].pk: row['saldo']
+            for row in _libro_diario_rows_con_saldo(qs, delta_expr, movs_chrono)
+        }
         movs_recientes = list(reversed(movs_chrono))
         headers = [
             "Fecha",
@@ -351,8 +416,100 @@ def caja_list(request):
             "vendedores_filtro": Vendedor.objects.order_by("apellido", "nombre", "codigo"),
             "totales": totales,
             "resumen_caja": resumen_caja,
+            "ultimo_arqueo": ultimo_arqueo,
             "filtros_activos": filtros_activos,
             "mov_ids_cobro_pedido": mov_ids_cobro_pedido,
+        },
+    )
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def caja_arqueo(request):
+    """Cierre parcial: declara saldos al día y el libro sigue desde esos números."""
+    hoy = timezone.localdate()
+    fecha = parse_fecha_param(request.GET.get("fecha") or "") if request.method == "GET" else None
+    if request.method == "POST":
+        form = ArqueoCajaForm(request.POST)
+        if form.is_valid():
+            fecha_arq = form.cleaned_data["fecha"]
+            saldos = {
+                "efectivo": form.cleaned_data["saldo_efectivo"],
+                "transferencia": form.cleaned_data["saldo_transferencia"],
+                "mercadopago": form.cleaned_data["saldo_mercadopago"],
+                "cheque": form.cleaned_data["saldo_cheque"],
+                "otro": form.cleaned_data["saldo_otro"],
+            }
+            total = q2(sum(saldos.values()))
+            etiqueta = f"Arqueo al día {fecha_arq.strftime('%d/%m/%Y')}"
+            obs = (form.cleaned_data.get("observaciones") or "").strip()
+            operacion = etiqueta if not obs else f"{etiqueta} — {obs}"[:255]
+            with transaction.atomic():
+                mov = MovimientoCaja(
+                    fecha=fecha_arq,
+                    operacion=operacion,
+                    tipo=MovimientoCaja.Tipo.ARQUEO,
+                    monto=total,
+                    medio_pago=MovimientoCaja.MedioPago.OTRO,
+                    es_arqueo=True,
+                    saldo_arqueo=total,
+                    creado_por=request.user,
+                )
+                mov.full_clean()
+                mov.save()
+                ArqueoCaja.objects.create(
+                    fecha=fecha_arq,
+                    movimiento=mov,
+                    saldo_efectivo=saldos["efectivo"],
+                    saldo_transferencia=saldos["transferencia"],
+                    saldo_mercadopago=saldos["mercadopago"],
+                    saldo_cheque=saldos["cheque"],
+                    saldo_otro=saldos["otro"],
+                    observaciones=obs,
+                    creado_por=request.user,
+                )
+            messages.success(
+                request,
+                f"{etiqueta} registrado. El libro diario sigue contabilizando desde {total}.",
+            )
+            return redirect("caja_list")
+        fecha = form.data.get("fecha")
+        fecha = parse_fecha_param(fecha) if fecha else hoy
+    else:
+        if fecha is None:
+            fecha = hoy
+        libro = _saldos_libro_por_medio(fecha)
+        form = ArqueoCajaForm(
+            initial={
+                "fecha": fecha.strftime("%Y-%m-%d"),
+                "saldo_efectivo": str(libro[MovimientoCaja.MedioPago.EFECTIVO]),
+                "saldo_transferencia": str(libro[MovimientoCaja.MedioPago.TRANSFERENCIA]),
+                "saldo_mercadopago": str(libro[MovimientoCaja.MedioPago.MERCADOPAGO]),
+                "saldo_cheque": str(libro[MovimientoCaja.MedioPago.CHEQUE]),
+                "saldo_otro": str(libro[MovimientoCaja.MedioPago.OTRO]),
+            }
+        )
+        libro_ref = libro
+        return render(
+            request,
+            "caja/arqueo.html",
+            {
+                "form": form,
+                "fecha_arqueo": fecha,
+                "libro": libro_ref,
+                "libro_total": libro_ref["total"],
+            },
+        )
+
+    libro = _saldos_libro_por_medio(fecha or hoy)
+    return render(
+        request,
+        "caja/arqueo.html",
+        {
+            "form": form,
+            "fecha_arqueo": fecha or hoy,
+            "libro": libro,
+            "libro_total": libro["total"],
         },
     )
 
@@ -426,7 +583,7 @@ def caja_create(request):
             messages.success(request, f"Movimiento de caja guardado (#{mov.pk}).")
             return redirect("caja_list")
     else:
-        form = MovimientoCajaForm(initial={"fecha": date.today().strftime("%Y-%m-%d")})
+        form = MovimientoCajaForm(initial={"fecha": timezone.localdate().strftime("%Y-%m-%d")})
 
     tpl = "caja/form_fragment.html" if modal else "caja/form.html"
     return render(request, tpl, {"form": form, "modo": "nuevo"})
@@ -439,6 +596,9 @@ def caja_edit(request, pk: int):
         MovimientoCaja.objects.select_related("vendedor", "venta", "cuenta_bancaria"),
         pk=pk,
     )
+    if mov.es_arqueo:
+        messages.info(request, "Un arqueo no se edita. Si hace falta, eliminalo y cargá uno nuevo.")
+        return redirect("caja_detail", pk=mov.pk)
     venta_cobro = Venta.objects.filter(pago_movimiento_id=mov.pk).select_related("vendedor").first()
 
     if request.method == "POST":
@@ -474,7 +634,7 @@ def caja_edit(request, pk: int):
 def caja_detail(request, pk: int):
     mov = get_object_or_404(
         MovimientoCaja.objects.select_related(
-            "vendedor", "venta", "compra_registro", "cuenta_bancaria"
+            "vendedor", "venta", "compra_registro", "cuenta_bancaria", "arqueo"
         ),
         pk=pk,
     )
@@ -500,3 +660,23 @@ def caja_delete(request, pk: int):
             messages.error(request, msg)
     return redirect("caja_list")
 
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def caja_actualizar_saldo(request):
+    from core.money_decimal import format_monto_ars
+    from .saldos import actualizar_saldo_caja
+
+    form = ActualizarSaldoForm(request.POST if request.method == 'POST' else None)
+    if request.method == 'POST' and form.is_valid():
+        movimiento = actualizar_saldo_caja(
+            saldo=form.cleaned_data['saldo_actual'], usuario=request.user,
+            observaciones=form.cleaned_data['observaciones'],
+        )
+        messages.success(request, f"Saldo actualizado a {format_monto_ars(movimiento.saldo_arqueo)}. Los movimientos siguientes se calcularán desde este importe.")
+        return redirect('caja_list')
+    hoy = timezone.localdate()
+    return render(request, 'caja/actualizar_saldo.html', {
+        'form': form, 'hoy': hoy, 'saldo_libro': _saldo_caja_al(hoy),
+    })
