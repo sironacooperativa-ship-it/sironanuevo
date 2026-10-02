@@ -24,6 +24,7 @@ class VendedorAccessMiddleware:
             path = request.path or "/"
             if not (
                 path.startswith("/static/")
+                or path == "/sw.js"
                 or path.startswith("/login/")
                 or path.startswith("/logout/")
                 or path.startswith("/sesion/")
@@ -38,6 +39,7 @@ class VendedorAccessMiddleware:
             path = request.path or "/"
             if (
                 path.startswith("/static/")
+                or path == "/sw.js"
                 or path.startswith("/login/")
                 or path.startswith("/logout/")
                 or path.startswith("/sesion/")
