@@ -178,3 +178,52 @@ body.app-authenticated main.app-main.page-shell { max-width:none; padding:18px 2
  .app-main .table-card--productos .productos-desc-title,
  .app-main .table-card--productos .productos-desc-meta { white-space:normal; overflow-wrap:anywhere; }
 }
+
+/* Barra superior: controles centrados y búsqueda flexible en PC. */
+.app-body #sironaTopbar .sirona-topbar-inner,
+.app-body #sironaTopbar .sirona-topbar-actions,
+.app-body #sironaTopbar .sirona-topbar-right > div { align-items:center!important; }
+.app-body #sironaTopbar .app-icon-btn,
+.app-body #sironaTopbar .sirona-anele-link,
+.app-body #sironaTopbar .sirona-profile-btn { height:40px!important; min-height:40px!important; display:inline-flex; align-items:center; justify-content:center; margin-top:0!important; margin-bottom:0!important; }
+.app-body #sironaTopbar .app-icon-btn { width:40px!important; padding:8px!important; }
+.app-body #sironaTopbar .app-icon-btn svg { width:20px!important; height:20px!important; display:block; }
+.app-body #sironaTopbar .sirona-topbar-actions { height:40px!important; padding:0!important; }
+.app-body #sironaTopbar .sirona-profile-btn { padding-block:4px!important; }
+@media(min-width:1200px) {
+ .app-body #sironaTopbar .sirona-topbar-left { flex:0 0 auto!important; max-width:290px; }
+ .app-body #sironaTopbar .sirona-topbar-cluster { display:contents!important; }
+ .app-body #sironaTopbar .sirona-topbar-trailing { flex:1 1 0!important; width:auto!important; min-width:0!important; gap:12px; }
+ .app-body #sironaTopbar .sirona-topbar-center { display:flex!important; flex:1 1 0!important; min-width:0!important; max-width:none!important; }
+ .app-body #sironaTopbar .sirona-topbar-search-wrap { width:100%!important; max-width:none!important; }
+ .app-body #sironaTopbar .sirona-topbar-search { width:100%!important; height:40px!important; }
+ .app-body #sironaTopbar .sirona-topbar-right { flex:0 0 auto!important; }
+}
+@media(max-width:767.98px) {
+ .app-body #sironaTopbar .app-icon-btn,
+ .app-body #sironaTopbar .sirona-anele-link,
+ .app-body #sironaTopbar .sirona-profile-btn { height:32px!important; min-height:32px!important; }
+ .app-body #sironaTopbar .app-icon-btn { width:30px!important; padding:4px!important; }
+ .app-body #sironaTopbar .app-icon-btn svg { width:17px!important; height:17px!important; }
+ .app-body #sironaTopbar .sirona-topbar-actions { height:32px!important; }
+}
+/* Calculadora: visor amplio y teclado físico, manteniendo operaciones y paleta. */
+#sironaCalc .sirona-calc { padding:16px; border-radius:18px; }
+#sironaCalc .sirona-calc-top { margin-bottom:10px; }
+#sironaCalc .sirona-calc-mode { font-size:.75rem; text-transform:uppercase; letter-spacing:.12em; }
+#sironaCalc .sirona-calc-display-wrap { padding:10px 12px; border-radius:8px; box-shadow:inset 0 2px 6px rgba(0,0,0,.12); }
+#sironaCalc .sirona-calc-display { font-family:Consolas,'Courier New',monospace; font-size:2.2rem; line-height:1.2; border:0; border-radius:0; padding:10px 0 4px; box-shadow:none; background:transparent; }
+#sironaCalc .sirona-calc-history { min-height:22px; }
+#sironaCalc .sirona-calc-mem { grid-template-columns:repeat(5,minmax(0,1fr)); gap:6px; margin:14px 0 10px; }
+#sironaCalc .sirona-calc-mem-btn { min-height:34px; padding:6px 2px; border-radius:6px; }
+#sironaCalc .sirona-calc-keys { gap:8px!important; grid-auto-rows:52px; margin-top:0; }
+#sironaCalc button.sirona-calc-key { border-radius:8px; box-shadow:0 3px 0 rgba(0,0,0,.13),0 4px 5px rgba(0,0,0,.06); font-size:1.25rem; }
+#sironaCalc button.sirona-calc-key:active { transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.13); }
+#sironaCalc button.sirona-calc-key-fn { font-size:1rem; }
+#sironaCalc button.sirona-calc-key-eq { font-size:1.6rem; }
+@media(max-width:360px) { #sironaCalc .sirona-calc { padding:12px; } #sironaCalc .sirona-calc-keys { gap:6px!important; grid-auto-rows:46px; } }
+.app-main .ventas-hist-tabs { overflow-x:auto; max-width:100%; }
+#sironaCalc button.sirona-calc-key-op { background:linear-gradient(180deg,#f3f4f6 0%,#e5e7eb 100%); }
+#sironaCalc button.sirona-calc-key-fn { background:linear-gradient(180deg,#f5f5f7 0%,#e8e8ec 100%); }
+#sironaCalc button.sirona-calc-key-eq { background:linear-gradient(180deg,#0a84ff 0%,#0070e0 100%); color:#fff; }
+.app-main .ventas-hist-tabs { overflow-y:hidden; }
