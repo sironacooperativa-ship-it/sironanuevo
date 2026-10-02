@@ -7,7 +7,6 @@
   <div class="app-page-header mb-3">
     <h1 class="app-page-title mb-1">Historial de ventas</h1>
     <div class="d-flex flex-wrap gap-2 align-items-center">
-      {% if request.user.is_staff or request.user.is_superuser %}<a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'venta_papelera' %}">Papelera</a>{% endif %}
       <a class="btn btn-primary btn-sm rounded-pill" href="{% url 'venta_nueva' %}">Nueva venta</a>
       <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'ventas_comisiones' %}">Comisiones</a>
     </div>
@@ -124,41 +123,7 @@
           {% endif %}
         </span>
       </div>
-      <ul class="nav nav-tabs ventas-hist-tabs px-2 border-bottom-0 gap-1 flex-nowrap" role="tablist">
-        <li class="nav-item text-nowrap" role="presentation">
-          <a
-            class="nav-link py-2 px-3 {% if filtros.pestana == 'a_pagar' %}active{% endif %}"
-            href="?{{ querystring_a_pagar }}"
-            role="tab"
-            {% if filtros.pestana == "a_pagar" %}aria-current="page"{% endif %}
-          >
-            Pedidos a pagar
-            <span class="badge rounded-pill text-bg-secondary ms-1">{{ n_ventas_a_pagar }}</span>
-          </a>
-        </li>
-        <li class="nav-item text-nowrap" role="presentation">
-          <a
-            class="nav-link py-2 px-3 {% if filtros.pestana == 'pagos' %}active{% endif %}"
-            href="?{{ querystring_pagos }}"
-            role="tab"
-            {% if filtros.pestana == "pagos" %}aria-current="page"{% endif %}
-          >
-            Pedidos pagos
-            <span class="badge rounded-pill text-bg-secondary ms-1">{{ n_ventas_pagos }}</span>
-          </a>
-        </li>
-        <li class="nav-item text-nowrap" role="presentation">
-          <a
-            class="nav-link py-2 px-3 {% if filtros.pestana == 'ganancia' %}active{% endif %}"
-            href="?{{ querystring_ganancia }}"
-            role="tab"
-            {% if filtros.pestana == "ganancia" %}aria-current="page"{% endif %}
-          >
-            Ganancia por pedido
-            <span class="badge rounded-pill text-bg-secondary ms-1">{{ n_ventas_ganancia }}</span>
-          </a>
-        </li>
-      </ul>
+      {% include "ventas/historial_tabs.html" %}
     </div>
     {% if filtros.pestana == "ganancia" %}
       {% if totales_ganancia %}

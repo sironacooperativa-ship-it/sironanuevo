@@ -3,11 +3,22 @@
 {% block title %}{{ titulo }}{% endblock %}
 {% block content %}
 <div class="app-page-header mb-3">
-  <h1 class="app-page-title">{{ titulo }}</h1>
+  {% if restaurar_url == 'venta_restaurar' %}
+  <h1 class="app-page-title">Historial de ventas</h1>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <a class="btn btn-primary btn-sm rounded-pill" href="{% url 'venta_nueva' %}">Nueva venta</a>
+    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'ventas_comisiones' %}">Comisiones</a>
+  </div>
+  {% else %}<h1 class="app-page-title">{{ titulo }}</h1>{% endif %}
   <p class="text-muted">Los registros permanecen aquí hasta que los restaures. Conservan sus productos e importes originales.</p>
-  <a class="btn btn-outline-secondary btn-sm" href="{% url volver_url %}">Volver al listado</a>
+  {% if restaurar_url != 'venta_restaurar' %}<a class="btn btn-outline-secondary btn-sm" href="{% url volver_url %}">Volver al listado</a>{% endif %}
 </div>
-<div class="card app-card"><div class="table-responsive">
+<div class="card app-card">
+{% if restaurar_url == 'venta_restaurar' %}<div class="table-card-header flex-column align-items-stretch gap-0 pb-0">
+  <div class="d-flex align-items-center justify-content-between mb-2"><h2 class="table-card-title mb-0">Pedidos eliminados</h2><span class="table-card-count">{{ page_obj.paginator.count }} resultado(s)</span></div>
+  {% include "ventas/historial_tabs.html" %}
+</div>{% endif %}
+<div class="table-responsive">
 <table class="table align-middle mb-0">
   <thead><tr><th>Número</th><th>Vendedor</th><th>Comprador</th><th>Estado</th><th>Total</th><th>Eliminado</th><th></th></tr></thead>
   <tbody>{% for registro in page_obj %}
