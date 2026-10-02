@@ -1,0 +1,40 @@
+/* Ajustes finales de proporción, sin alterar las tablas contables. */
+body { font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+main.app-main.page-shell { width:100%; min-width:0; max-width:1680px; padding:24px!important; }
+.app-shell { min-width:0; }
+.table-responsive { max-width:100%; }
+.page-header { flex-wrap:wrap; gap:12px; }
+@media (min-width:992px) { :root { --sidebar-w:224px; } }
+@media (max-width:991.98px) {
+ body.app-authenticated main.app-main.page-shell { padding:18px!important; }
+ .ui-force-productos .table-actions .btn-icon { width:42px!important; min-width:42px!important; height:42px!important; }
+ .nav-tabs { flex-wrap:nowrap; overflow-x:auto; max-width:100%; }
+ .nav-tabs .nav-link { white-space:nowrap; }
+}
+@media (max-width:575.98px) {
+ body.app-authenticated main.app-main.page-shell { padding:12px!important; }
+ .page-header h1, h1.h3 { font-size:1.45rem; }
+ input.form-control, select.form-select, textarea.form-control { font-size:16px; }
+ .btn, .form-control, .form-select { min-height:42px; }
+ .card-body { padding:14px; }
+ .row { --bs-gutter-x:1rem; }
+}
+
+.sirona-install-panel { position:fixed; bottom:calc(12px + env(safe-area-inset-bottom)); right:12px; z-index:1050; display:flex; gap:4px; padding:6px; border-radius:12px; background:white; box-shadow:0 6px 28px #17324d33; }
+.sirona-install-panel[hidden] { display:none; }
+
+.sirona-filters-toggle { display:none; }
+@media(min-width:768px) and (max-width:991.98px) {
+ .sirona-topbar-trailing .sirona-topbar-center { display:none!important; }
+ .sirona-topbar-cluster, .sirona-topbar-trailing { flex:0 0 auto!important; width:auto!important; }
+ .sirona-topbar-left { flex:1 1 auto!important; min-width:0; }
+ .ventas-historial-modern.presu-lista-modern .ventas-historial-tabla { min-width:1050px!important; width:1050px!important; max-width:none!important; }
+ .table-responsive.venta-hist-table-wrap { overflow-x:auto!important; }
+ .ventas-historial-tabla .th-vend, .ventas-historial-tabla .th-compra,
+ .ventas-historial-tabla .td-vend, .ventas-historial-tabla .td-compra { display:table-cell!important; }
+}
+@media(max-width:767.98px) {
+ .sirona-filters-toggle { display:block; width:100%; text-align:left; }
+ .sirona-filter-content:not(.is-open) { display:none; }
+ .app-list-filters:has(.sirona-filters-toggle) { background:transparent; }
+}
