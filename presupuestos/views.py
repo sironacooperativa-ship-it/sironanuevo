@@ -475,7 +475,12 @@ def _filtrar_presupuestos_queryset(request):
 
 @login_required
 def presupuesto_lista(request):
+    from django.core.paginator import Paginator
     items, filtros_ctx = _filtrar_presupuestos_queryset(request)
+    page_obj = Paginator(items, 30).get_page(request.GET.get("page"))
+    items = list(page_obj.object_list)
+    query = request.GET.copy()
+    query.pop("page", None)
     compradores = Comprador.objects.order_by("apellido", "nombre", "codigo")
     vendedores = Vendedor.objects.order_by("apellido", "nombre", "codigo")
     for pr in items:
@@ -490,6 +495,8 @@ def presupuesto_lista(request):
         "presupuestos/lista.html",
         {
             "presupuestos": items,
+            "page_obj": page_obj,
+            "pagination_query": query.urlencode(),
             "filtros": filtros_ctx,
             "compradores_filtro": compradores,
             "vendedores_filtro": vendedores,
@@ -704,6 +711,9 @@ def presupuesto_nuevo(request):
 def presupuesto_editar(request, pk: int):
     presupuesto = get_object_or_404(Presupuesto, pk=pk)
     es_admin = is_staff_user(request.user)
+    if presupuesto.venta_id and presupuesto.venta.eliminado_en is not None:
+        messages.warning(request, "El pedido generado está en la papelera. Restauralo antes de editar este presupuesto.")
+        return redirect("presupuesto_lista")
     if presupuesto.estado != Presupuesto.Estado.ACTIVO and not es_admin:
         messages.warning(request, "Solo administradores pueden editar presupuestos aprobados.")
         return redirect("presupuesto_lista")
@@ -936,12 +946,13 @@ def presupuesto_eliminar(request, pk: int):
             except TypeError:
                 qs = qs.select_for_update()
             pr = qs.get(pk=presupuesto.pk)
-            pr.delete()
+            pr.eliminado_en = timezone.now()
+            pr.save(update_fields=["eliminado_en"])
     except Exception as exc:
         detalle = f" Detalle: {exc}" if getattr(request.user, "is_staff", False) else ""
         messages.error(request, "No se pudo eliminar el presupuesto." + detalle)
         return redirect("presupuesto_lista")
-    messages.success(request, f"Presupuesto #{nid} eliminado.")
+    messages.success(request, f"Presupuesto #{nid} enviado a la papelera. Podés restaurarlo desde Papelera.")
     return redirect("presupuesto_lista")
 
 
@@ -1173,3 +1184,35 @@ def presupuestos_aprobar_masivo(request):
         messages.warning(request, " ".join(partes) if partes else "Nada para aprobar.")
 
     return redirect(lista_url)
+
+
+def _papelera_presupuestos_usuario(user):
+    qs = Presupuesto.all_objects.filter(eliminado_en__isnull=False)
+    if not is_staff_user(user):
+        v = _get_vendedor_from_user(user)
+        qs = qs.filter(vendedor=v, estado=Presupuesto.Estado.ACTIVO) if v else qs.none()
+    return qs
+
+
+@login_required
+@require_http_methods(['GET'])
+def presupuesto_papelera(request):
+    from django.core.paginator import Paginator
+    portal = request.path.startswith('/vendedor/')
+    return render(request, 'papelera.html', {
+        'titulo': 'Papelera de presupuestos',
+        'page_obj': Paginator(_papelera_presupuestos_usuario(request.user).select_related('vendedor', 'comprador').order_by('-eliminado_en', '-pk'), 50).get_page(request.GET.get('page')),
+        'restaurar_url': 'vendedor_presupuesto_restaurar' if portal else 'presupuesto_restaurar',
+        'volver_url': 'vendedor_presupuestos_list' if portal else 'presupuesto_lista',
+    })
+
+
+@login_required
+@require_http_methods(['POST'])
+def presupuesto_restaurar(request, pk: int):
+    with transaction.atomic():
+        pr = get_object_or_404(_papelera_presupuestos_usuario(request.user).select_for_update(), pk=pk)
+        pr.eliminado_en = None
+        pr.save(update_fields=['eliminado_en'])
+    messages.success(request, f'Presupuesto #{pk} restaurado.')
+    return redirect('vendedor_presupuesto_papelera' if request.path.startswith('/vendedor/') else 'presupuesto_papelera')

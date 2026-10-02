@@ -2,11 +2,16 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from core.papelera import ActivosManager
 
 from core.money_decimal import q2 as _q2
 
 
 class Presupuesto(models.Model):
+    eliminado_en = models.DateTimeField(null=True, blank=True, db_index=True)
+    objects = ActivosManager()
+    all_objects = models.Manager()
+
     class Estado(models.TextChoices):
         ACTIVO = "ACT", "Pendiente de aprobar"
         APROBADO = "APR", "Aprobado (pedido generado)"
@@ -164,7 +169,9 @@ def presupuesto_tiene_alerta_catalogo(presupuesto: Presupuesto) -> bool:
     """Presupuesto activo con al menos una línea cuyo precio difiere del catálogo."""
     if presupuesto.estado != Presupuesto.Estado.ACTIVO:
         return False
-    for ln in presupuesto.lineas.select_related("producto"):
+    lineas = (presupuesto.lineas.all() if "lineas" in getattr(presupuesto, "_prefetched_objects_cache", {})
+              else presupuesto.lineas.select_related("producto"))
+    for ln in lineas:
         if ln.linea_superada_por_catalogo_producto():
             return True
     return False
