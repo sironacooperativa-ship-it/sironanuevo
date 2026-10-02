@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 
 from django.conf import settings
-from django.core.cache import cache
+from django.core.cache import cache as default_cache, caches
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Exists, F, OuterRef, Q
 
@@ -11,6 +11,10 @@ from core.models import NotaAdmin
 from core.authz import is_staff_user
 from personas.models import Vendedor
 from presupuestos.models import Presupuesto, PresupuestoLinea
+
+# Solo contadores visuales: nunca sesiones, permisos, límites de acceso o saldos.
+# Evita viajes a PostgreSQL para leer/escribir la caché en cada navegación.
+cache = caches["ui"] if "ui" in settings.CACHES else default_cache
 
 # Conteos del layout (badges): TTL corto en memoria (por proceso en Render).
 _VENDOR_CTX_CACHE_TTL = int(os.environ.get("SIRONA_VENDOR_CONTEXT_CACHE_SECONDS", "20"))
