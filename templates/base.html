@@ -1914,7 +1914,7 @@
           const btnHamb = document.getElementById("btnHamburgerMenu");
 
           function isDesktopNav() {
-            return window.matchMedia && window.matchMedia("(min-width: 992px)").matches;
+            return window.matchMedia && window.matchMedia("(min-width: 1200px)").matches;
           }
 
           function syncBtns() {
@@ -1962,7 +1962,7 @@
           if (!document.body.classList.contains("sidebar-hidden")) revealActiveInSidebar();
 
           if (window.matchMedia) {
-            const mqDesk = window.matchMedia("(min-width: 992px)");
+            const mqDesk = window.matchMedia("(min-width: 1200px)");
             function onDeskBreakpointChange() {
               syncBtns();
               if (mqDesk.matches) {
