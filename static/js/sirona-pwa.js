@@ -12,7 +12,10 @@
  var button = document.querySelector('.sirona-filters-toggle');
  var content = document.getElementById('sironaListFilters');
  if (!button || !content) return;
- var active = Array.from(content.querySelectorAll('input[name],select[name]')).some(function (input) { return input.name !== 'pestana' && input.type !== 'hidden' && input.value !== ''; });
+ var active = Array.from(content.querySelectorAll('input[name],select[name]')).some(function (input) {
+   if (input.name === 'custom_periodo' && content.querySelector('[name="periodo"]').value !== 'custom') return false;
+   return input.name !== 'pestana' && input.type !== 'hidden' && input.value !== '';
+ });
  if (active) { content.classList.add('is-open'); button.setAttribute('aria-expanded','true'); }
  button.addEventListener('click', function () { var open = content.classList.toggle('is-open'); button.setAttribute('aria-expanded', String(open)); });
 })();

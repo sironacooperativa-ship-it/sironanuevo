@@ -183,6 +183,14 @@ else:
         }
     }
 
+# Los contadores visuales toleran el TTL de 20 segundos por proceso.
+# La caché predeterminada sigue compartida para controles de acceso y catálogo.
+CACHES["ui"] = {
+    "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    "LOCATION": "sirona-ui-counts",
+    "OPTIONS": {"MAX_ENTRIES": 1000},
+}
+
 # Logs a consola (Render)
 LOGGING = {
     "version": 1,
