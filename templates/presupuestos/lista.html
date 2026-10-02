@@ -8,11 +8,13 @@
       Mismo criterio que <strong>Pedidos</strong> (vendedor, productos, descuento). Al <strong>aprobar</strong> se genera un pedido pendiente de pago (stock descontado, calendario).
       El cobro y el desglose por pedido se gestionan en <strong>Pedidos</strong> y en la ficha del vendedor.
     </p>
+    <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'presupuesto_papelera' %}">Papelera</a>
     <a class="btn btn-primary btn-sm rounded-pill" href="{% url 'presupuesto_nuevo' %}">Nuevo presupuesto</a>
   </div>
 
   <div class="card app-card border-0 shadow-sm app-list-filters mb-3">
-    <div class="card-body">
+    <button class="btn btn-outline-secondary sirona-filters-toggle" type="button" aria-controls="sironaListFilters" aria-expanded="false">Filtros y búsqueda</button>
+    <div class="card-body sirona-filter-content" id="sironaListFilters">
       <div class="small text-muted fw-semibold text-uppercase mb-2 app-filtro-seccion-tit">Búsqueda de pedidos</div>
       <form method="get" class="row g-2 align-items-end">
         <div class="col-12 col-md-6 col-lg-2">
@@ -239,7 +241,7 @@
                     {% endif %}
                   {% endif %}
                   {% if user.is_staff or vendedor_perfil_pk and vendedor_perfil_pk == p.vendedor_id %}
-                    <form method="post" action="{% url 'presupuesto_eliminar' p.pk %}" class="d-inline m-0 presu-accion-form" data-sirona-confirm="¿Eliminar el presupuesto #{{ p.pk }}?">
+                    <form method="post" action="{% url 'presupuesto_eliminar' p.pk %}" class="d-inline m-0 presu-accion-form" data-sirona-confirm="¿Enviar a la papelera el presupuesto #{{ p.pk }}?">
                       {% csrf_token %}
                       <button type="submit" class="btn-icon btn-delete" title="Eliminar" aria-label="Eliminar">
                         <i data-lucide="trash-2" aria-hidden="true"></i>
@@ -309,4 +311,10 @@
       }
     })();
   </script>
+{% if page_obj.paginator.num_pages > 1 %}
+<nav aria-label="Páginas de presupuestos" class="d-flex gap-3 align-items-center justify-content-center my-3">
+{% if page_obj.has_previous %}<a class="btn btn-outline-primary" href="?{{ pagination_query }}&page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}
+<span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+{% if page_obj.has_next %}<a class="btn btn-outline-primary" href="?{{ pagination_query }}&page={{ page_obj.next_page_number }}">Siguiente</a>{% endif %}
+</nav>{% endif %}
 {% endblock %}

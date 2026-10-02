@@ -1,7 +1,14 @@
 from django.db import models
 
 
+from core.papelera import ActivosManager
+
+
 class Evento(models.Model):
+    eliminado_en = models.DateTimeField(null=True, blank=True, db_index=True)
+    objects = ActivosManager()
+    all_objects = models.Manager()
+
     class Tipo(models.TextChoices):
         MANUAL = "MAN", "Manual"
         PEDIDO = "PED", "Pedido"

@@ -2,7 +2,10 @@ from django.contrib import admin
 from django.urls import include, path
 
 
+from core.pwa import service_worker
+
 urlpatterns = [
+    path("sw.js", service_worker, name="service_worker"),
     path("admin/", admin.site.urls),
     path("", include("core.urls")),
     path("demo/", include("core.demo_urls")),

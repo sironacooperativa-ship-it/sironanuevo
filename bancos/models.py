@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.db import models
 from collections import defaultdict
+from core.papelera import BancoActivoManager
 
 
 class CuentaBancaria(models.Model):
@@ -38,6 +39,9 @@ class CuentaBancaria(models.Model):
 
 
 class MovimientoCuentaBancaria(models.Model):
+    objects = BancoActivoManager()
+    all_objects = models.Manager()
+
     class Origen(models.TextChoices):
         CAJA = "CAJ", "Caja (transferencia / MP)"
         GASTO = "GAS", "Gasto"

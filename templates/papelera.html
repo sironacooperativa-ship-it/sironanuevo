@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="app-page-header mb-3">
+  <h1 class="app-page-title">{{ titulo }}</h1>
+  <p class="text-muted">Los registros permanecen aquí hasta que los restaures. Conservan sus productos e importes originales.</p>
+  <a class="btn btn-outline-secondary btn-sm" href="{% url volver_url %}">Volver al listado</a>
+</div>
+<div class="card app-card"><div class="table-responsive">
+<table class="table align-middle mb-0">
+  <thead><tr><th>Número</th><th>Vendedor</th><th>Comprador</th><th>Estado</th><th>Total</th><th>Eliminado</th><th></th></tr></thead>
+  <tbody>{% for registro in page_obj %}
+  <tr><td>#{{ registro.pk }}</td><td>{{ registro.vendedor }}</td><td>{{ registro.comprador|default:"—" }}</td><td>{{ registro.get_estado_display }}</td><td>{{ registro.neto|ars }}</td><td>{{ registro.eliminado_en|date:"d/m/Y H:i" }}</td>
+  <td><form method="post" action="{% url restaurar_url registro.pk %}">{% csrf_token %}<button type="submit" class="btn btn-success btn-sm">Restaurar</button></form></td></tr>
+  {% empty %}<tr><td colspan="7" class="text-center text-muted py-4">La papelera está vacía.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+{% if page_obj.has_other_pages %}<div class="d-flex gap-3 mt-3">
+{% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}
+<span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+{% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">Siguiente</a>{% endif %}
+</div>{% endif %}
+{% endblock %}

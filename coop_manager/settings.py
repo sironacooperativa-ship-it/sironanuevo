@@ -45,6 +45,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "core.performance.PerformanceLogMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -215,4 +216,3 @@ LOGGING = {
 # Demo / mockup mode (solo UI). No debe tocar DB ni hacer llamadas reales.
 # Se activa con la env var solicitada por el usuario.
 DEMO_MODE = os.environ.get("VITE_DEMO_MODE", "").strip().lower() in {"1", "true", "yes", "on"}
-

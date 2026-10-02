@@ -22,7 +22,7 @@
       <dl class="row mb-0">
         <dt class="col-sm-3">Fecha</dt><dd class="col-sm-9">{{ mov.fecha|date:"d/m/y" }}</dd>
         <dt class="col-sm-3">Operación</dt><dd class="col-sm-9">{{ mov.operacion }}</dd>
-        <dt class="col-sm-3">Tipo</dt><dd class="col-sm-9">{{ mov.get_tipo_display }}</dd>
+        <dt class="col-sm-3">Tipo</dt><dd class="col-sm-9">{% if mov.es_arqueo %}Actualización de saldo{% else %}{{ mov.get_tipo_display }}{% endif %}</dd>
         <dt class="col-sm-3">Monto</dt><dd class="col-sm-9">{{ mov.monto|ars }}</dd>
         <dt class="col-sm-3">Medio de pago</dt><dd class="col-sm-9">{{ mov.get_medio_pago_display }}</dd>
         {% if mov.cuenta_bancaria %}

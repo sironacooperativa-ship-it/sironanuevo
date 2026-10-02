@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from core.papelera import ActivosManager
 
 from core.money_decimal import q2 as _q2
 
@@ -49,6 +50,10 @@ class ComisionLiquidacionPago(models.Model):
 
 
 class Venta(models.Model):
+    eliminado_en = models.DateTimeField(null=True, blank=True, db_index=True)
+    objects = ActivosManager()
+    all_objects = models.Manager()
+
     class Estado(models.TextChoices):
         PENDIENTE = "PEN", "Pendiente de pago"
         PAGADA = "PAG", "Pagada"

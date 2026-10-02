@@ -7,13 +7,15 @@
   <div class="app-page-header mb-3">
     <h1 class="app-page-title mb-1">Historial de ventas</h1>
     <div class="d-flex flex-wrap gap-2 align-items-center">
+      {% if request.user.is_staff or request.user.is_superuser %}<a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'venta_papelera' %}">Papelera</a>{% endif %}
       <a class="btn btn-primary btn-sm rounded-pill" href="{% url 'venta_nueva' %}">Nueva venta</a>
       <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'ventas_comisiones' %}">Comisiones</a>
     </div>
   </div>
 
   <div class="card app-card border-0 shadow-sm app-list-filters mb-3">
-    <div class="card-body">
+    <button class="btn btn-outline-secondary sirona-filters-toggle" type="button" aria-controls="sironaListFilters" aria-expanded="false">Filtros y búsqueda</button>
+    <div class="card-body sirona-filter-content" id="sironaListFilters">
       <form method="get" class="row g-2 align-items-end">
         <input type="hidden" name="pestana" value="{{ filtros.pestana }}" />
         <div class="col-12 col-md-6 col-lg-2">
@@ -248,7 +250,7 @@
                                   class="btn-icon btn-delete btn-sm"
                                   title="Eliminar pedido"
                                   aria-label="Eliminar pedido"
-                                  data-sirona-confirm-submit="¿Eliminar el pedido #{{ v.pk }}? Se revierte stock y, si estaba pagado, el ingreso en caja."
+                                  data-sirona-confirm-submit="¿Enviar a la papelera el pedido #{{ v.pk }}? Podrás restaurarlo desde Papelera."
                                 >
                                   <i data-lucide="trash-2" aria-hidden="true"></i>
                                 </button>
@@ -541,7 +543,7 @@
                         class="btn-icon btn-delete"
                         title="Eliminar pedido"
                         aria-label="Eliminar pedido"
-                        data-sirona-confirm-submit="¿Eliminar el pedido #{{ v.pk }}? Se revierte stock y, si estaba pagado, el ingreso en caja."
+                        data-sirona-confirm-submit="¿Enviar a la papelera el pedido #{{ v.pk }}? Podrás restaurarlo desde Papelera."
                       >
                         <i data-lucide="trash-2" aria-hidden="true"></i>
                       </button>

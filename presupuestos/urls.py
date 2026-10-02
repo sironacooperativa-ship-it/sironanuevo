@@ -3,6 +3,8 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path("papelera/", views.presupuesto_papelera, name="presupuesto_papelera"),
+    path("<int:pk>/restaurar/", views.presupuesto_restaurar, name="presupuesto_restaurar"),
     path("", views.presupuesto_lista, name="presupuesto_lista"),
     path("catalogo-precios/", views.presupuesto_catalogo_precios, name="presupuesto_catalogo_precios"),
     path("nuevo/", views.presupuesto_nuevo, name="presupuesto_nuevo"),

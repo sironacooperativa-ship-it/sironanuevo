@@ -29,6 +29,15 @@ class ProveedorAdmin(admin.ModelAdmin):
 
 @admin.register(Comprador)
 class CompradorAdmin(admin.ModelAdmin):
-    list_display = ("codigo", "apellido", "nombre", "dni", "telefono", "mail", "actualizado_en")
+    list_display = (
+        "codigo",
+        "apellido",
+        "nombre",
+        "dni",
+        "telefono",
+        "mail",
+        "plazo_pago_dias",
+        "actualizado_en",
+    )
     search_fields = ("codigo", "apellido", "nombre", "dni", "mail")
 
