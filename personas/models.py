@@ -1,4 +1,5 @@
 import re
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
@@ -152,6 +153,12 @@ class Comprador(PersonaBase):
         on_delete=models.SET_NULL,
         related_name="clientes_asignados",
     )
+    plazo_pago_dias = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Plazo de pago (días)",
+        help_text="Ejemplo: 20. Al armar un pedido o presupuesto se calcula la fecha límite; después se puede editar.",
+    )
 
     class Meta(PersonaBase.Meta):
         verbose_name = "Comprador"
@@ -160,4 +167,25 @@ class Comprador(PersonaBase):
     @classmethod
     def _prefijo_codigo(cls) -> str:
         return "CO"
+
+    def fecha_vencimiento_desde_plazo(self, fecha_base: date | None = None) -> date | None:
+        if self.plazo_pago_dias is None:
+            return None
+        return (fecha_base or date.today()) + timedelta(days=int(self.plazo_pago_dias))
+
+    @classmethod
+    def fecha_vencimiento_pago_para(
+        cls,
+        comprador_id: int | None,
+        fecha_manual: date | None,
+        fecha_base: date | None = None,
+    ) -> date | None:
+        if fecha_manual:
+            return fecha_manual
+        if not comprador_id:
+            return None
+        dias = cls.objects.filter(pk=comprador_id).values_list("plazo_pago_dias", flat=True).first()
+        if dias is None:
+            return None
+        return (fecha_base or date.today()) + timedelta(days=int(dias))
 

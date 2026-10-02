@@ -113,10 +113,13 @@ class ProveedorForm(_BasePersonaForm):
 class CompradorForm(_BasePersonaForm):
     class Meta(_BasePersonaForm.Meta):
         model = Comprador
-        fields = _BasePersonaForm.Meta.fields + ["vendedor_asignado"]
+        fields = _BasePersonaForm.Meta.fields + ["vendedor_asignado", "plazo_pago_dias"]
         widgets = {
             **_BasePersonaForm.Meta.widgets,
             "vendedor_asignado": forms.Select(attrs={"class": "form-select"}),
+            "plazo_pago_dias": forms.NumberInput(
+                attrs={"class": "form-control", "min": "0", "step": "1", "placeholder": "20"}
+            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -128,6 +131,11 @@ class CompradorForm(_BasePersonaForm):
         self.fields["vendedor_asignado"].help_text = (
             "Debe ser el mismo registro vinculado al usuario del vendedor (Administración → Usuarios), "
             "para que vea estos clientes en el portal."
+        )
+        self.fields["plazo_pago_dias"].required = False
+        self.fields["plazo_pago_dias"].label = "Plazo de pago (días)"
+        self.fields["plazo_pago_dias"].help_text = (
+            "Ejemplo: 20. En pedidos y presupuestos se calcula sola la fecha límite; después se puede cambiar."
         )
 
     def clean(self):
