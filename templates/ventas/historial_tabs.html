@@ -1,0 +1,40 @@
+      <ul class="nav nav-tabs ventas-hist-tabs px-2 border-bottom-0 gap-1 flex-nowrap" role="tablist">
+        <li class="nav-item text-nowrap" role="presentation">
+          <a
+            class="nav-link py-2 px-3 {% if filtros.pestana == 'a_pagar' %}active{% endif %}"
+            href="{% url 'ventas_historial' %}?{% if querystring_a_pagar %}{{ querystring_a_pagar }}{% else %}pestana=a_pagar{% endif %}"
+            role="tab"
+            {% if filtros.pestana == "a_pagar" %}aria-current="page"{% endif %}
+          >
+            Pedidos a pagar
+            {% if n_ventas_a_pagar != None %}<span class="badge rounded-pill text-bg-secondary ms-1">{{ n_ventas_a_pagar }}</span>{% endif %}
+          </a>
+        </li>
+        <li class="nav-item text-nowrap" role="presentation">
+          <a
+            class="nav-link py-2 px-3 {% if filtros.pestana == 'pagos' %}active{% endif %}"
+            href="{% url 'ventas_historial' %}?{% if querystring_pagos %}{{ querystring_pagos }}{% else %}pestana=pagos{% endif %}"
+            role="tab"
+            {% if filtros.pestana == "pagos" %}aria-current="page"{% endif %}
+          >
+            Pedidos pagos
+            {% if n_ventas_pagos != None %}<span class="badge rounded-pill text-bg-secondary ms-1">{{ n_ventas_pagos }}</span>{% endif %}
+          </a>
+        </li>
+        <li class="nav-item text-nowrap" role="presentation">
+          <a
+            class="nav-link py-2 px-3 {% if filtros.pestana == 'ganancia' %}active{% endif %}"
+            href="{% url 'ventas_historial' %}?{% if querystring_ganancia %}{{ querystring_ganancia }}{% else %}pestana=ganancia{% endif %}"
+            role="tab"
+            {% if filtros.pestana == "ganancia" %}aria-current="page"{% endif %}
+          >
+            Ganancia por pedido
+            {% if n_ventas_ganancia != None %}<span class="badge rounded-pill text-bg-secondary ms-1">{{ n_ventas_ganancia }}</span>{% endif %}
+          </a>
+        </li>
+        {% if request.user.is_staff or request.user.is_superuser %}
+        <li class="nav-item text-nowrap" role="presentation">
+          <a class="nav-link py-2 px-3 {% if restaurar_url == 'venta_restaurar' %}active{% endif %}" href="{% url 'venta_papelera' %}" role="tab" {% if restaurar_url == 'venta_restaurar' %}aria-current="page"{% endif %}>Pedidos eliminados</a>
+        </li>
+        {% endif %}
+      </ul>
