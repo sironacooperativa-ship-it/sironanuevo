@@ -268,12 +268,14 @@ def vendedor_presupuesto_eliminar(request, pk: int):
             except TypeError:
                 qs = qs.select_for_update()
             pr = qs.get(pk=presupuesto.pk)
-            pr.delete()
+            from django.utils import timezone
+            pr.eliminado_en = timezone.now()
+            pr.save(update_fields=["eliminado_en"])
     except Exception:
         messages.error(request, "No se pudo eliminar el presupuesto.")
         return redirect("vendedor_presupuestos_list")
 
-    messages.success(request, f"Presupuesto #{nid} eliminado.")
+    messages.success(request, f"Presupuesto #{nid} enviado a la papelera.")
     return redirect("vendedor_presupuestos_list")
 
 

@@ -1,9 +1,12 @@
 from django.urls import path
 
 from . import views
+from presupuestos import views as presupuesto_views
 
 
 urlpatterns = [
+    path("presupuestos/papelera/", presupuesto_views.presupuesto_papelera, name="vendedor_presupuesto_papelera"),
+    path("presupuesto/<int:pk>/restaurar/", presupuesto_views.presupuesto_restaurar, name="vendedor_presupuesto_restaurar"),
     path("", views.vendedor_home, name="vendedor_home"),
     path("catalogo-precios/", views.vendedor_catalogo_precios, name="vendedor_catalogo_precios"),
     path("presupuesto/<int:pk>/", views.vendedor_presupuesto_ver, name="vendedor_presupuesto_ver"),
