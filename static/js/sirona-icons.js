@@ -1,10 +1,13 @@
 (function () {
   var pending = false;
+  var observer;
 
   function paintIcons() {
     pending = false;
     var L = typeof lucide !== "undefined" ? lucide : window.lucide;
+    if (!document.querySelector("[data-lucide]:not(svg)")) return;
     if (L && typeof L.createIcons === "function") {
+      if (observer) observer.disconnect();
       L.createIcons({
         attrs: {
           "stroke-width": 1.75,
@@ -12,6 +15,7 @@
           height: 18,
         },
       });
+      if (observer) observer.observe(document.documentElement, { childList: true, subtree: true });
     }
   }
 
@@ -31,7 +35,7 @@
   });
 
   if (window.MutationObserver) {
-    new MutationObserver(function (mutations) {
+    observer = new MutationObserver(function (mutations) {
       for (var i = 0; i < mutations.length; i += 1) {
         var nodes = mutations[i].addedNodes;
         for (var j = 0; j < nodes.length; j += 1) {
@@ -39,14 +43,15 @@
           if (node.nodeType !== 1) continue;
           if (
             node.matches &&
-            (node.matches("[data-lucide]") || node.querySelector("[data-lucide]"))
+            (node.matches("[data-lucide]:not(svg)") || node.querySelector("[data-lucide]:not(svg)"))
           ) {
             schedulePaint();
             return;
           }
         }
       }
-    }).observe(document.documentElement, { childList: true, subtree: true });
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
   }
 })();
 
