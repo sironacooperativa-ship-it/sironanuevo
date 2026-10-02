@@ -1,0 +1,172 @@
+/* Rediseño compacto: sólo geometría y tipografía; conserva la paleta vigente. */
+body.app-authenticated { font-size:14px; line-height:1.4; }
+body.app-authenticated main.app-main.page-shell { max-width:none; padding:18px 20px!important; }
+.app-main .app-page-header, .app-main .page-header { display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; margin-bottom:14px!important; }
+.app-main .app-page-header > h1, .app-main .page-header > h1 { flex:1 1 240px; margin:0!important; }
+.app-main h1, .app-main .app-page-title { font-size:1.5rem!important; line-height:1.2; letter-spacing:-.025em; }
+.app-main h2, .app-main .h2 { font-size:1.2rem; line-height:1.25; }
+.app-main h3, .app-main .h3 { font-size:1.08rem; line-height:1.3; }
+.app-main .card-title, .app-main .table-card-title { font-size:1rem; line-height:1.3; }
+.app-main .card, .app-main .table-card { border-radius:12px!important; }
+.app-main .card-body { padding:14px 16px; }
+.app-main .card-header { padding:10px 16px; }
+.app-main .card-footer { padding:10px 16px; }
+.app-main .row { --bs-gutter-x:1rem; --bs-gutter-y:.75rem; }
+.app-main .app-list-filters { margin-bottom:12px!important; }
+.app-main .form-label { font-size:.78rem; line-height:1.3; margin-bottom:4px; }
+.app-main .form-control, .app-main .form-select { border-radius:8px; min-height:34px; padding-top:6px; padding-bottom:6px; }
+.app-main .btn { font-size:.82rem; border-radius:8px; padding:6px 10px; line-height:1.3; }
+.app-main .nav-tabs { gap:2px; margin-bottom:12px!important; }
+.app-main .nav-tabs .nav-link { padding:8px 12px; font-size:.84rem; }
+.app-main .table { margin-bottom:0; }
+.app-main .table:not(.calendar-table) > :not(caption) > * > * { padding:6px 8px!important; vertical-align:middle; line-height:1.3; }
+.app-main .modern-table thead th, .app-main .table thead th { font-size:.68rem!important; letter-spacing:.035em!important; line-height:1.3; }
+.app-main .modern-table tbody td, .app-main .report-table tbody td { font-size:.82rem; }
+.app-main .table-actions { gap:4px!important; }
+.app-main .ui-force-productos .table-actions-cell { min-width:0!important; max-width:none!important; width:auto!important; }
+.app-main .table-actions .btn-icon { border-radius:7px!important; }
+.app-main .ventas-hist-cell-sub, .app-main .cli-cell-sub { margin-top:2px; font-size:.7rem; line-height:1.2; }
+.app-main .ventas-historial-modern.presu-lista-modern .ventas-historial-tabla { table-layout:auto!important; }
+.app-main .presu-lista:not(.personas-compradores-tabla):not(.personas-vendedores-tabla) { table-layout:auto!important; }
+.app-main .ventas-historial-tabla colgroup { display:none; }
+.app-main .ventas-historial-tabla th, .app-main .ventas-historial-tabla td { width:auto!important; }
+.app-main .ventas-historial-tabla .th-pedido, .app-main .ventas-historial-tabla .col-ped { min-width:110px; }
+.app-main .ventas-historial-tabla .table-actions-cell { white-space:nowrap; }
+.app-sidebar-fixed .nav-link, aside.sidebar .nav-link { padding-top:8px!important; padding-bottom:8px!important; font-size:.85rem; }
+.sirona-explanation { display:none!important; }
+.sirona-topbar-inner { gap:10px!important; }
+.sirona-topbar-left { min-width:0!important; }
+.sirona-topbar-left .navbar-brand { min-width:0; margin-right:0; }
+.sirona-topbar-actions { gap:4px!important; }
+.sirona-anele-link { flex:0 0 auto; padding:6px 9px!important; font-size:12px!important; line-height:1.2!important; min-width:0!important; white-space:nowrap; }
+@media (max-width:1199.98px) {
+ body.app-authenticated main.app-main.page-shell { padding:16px!important; }
+ .sirona-topbar-trailing .sirona-topbar-center { display:none!important; }
+ .sirona-topbar-cluster, .sirona-topbar-trailing { flex:0 0 auto!important; width:auto!important; }
+ .sirona-topbar-left { flex:1 1 auto!important; }
+}
+@media(min-width:768px) and (max-width:991.98px) {
+ .app-main .ventas-historial-modern.presu-lista-modern .ventas-historial-tabla { min-width:860px!important; width:100%!important; }
+}
+@media(max-width:767.98px) {
+ body.app-authenticated main.app-main.page-shell { padding:12px!important; }
+ .app-main .app-page-header, .app-main .page-header { gap:8px; margin-bottom:12px!important; }
+ .app-main .app-page-header > h1, .app-main .page-header > h1 { flex-basis:100%; font-size:1.3rem!important; }
+ .app-main .card-body { padding:12px; }
+ .app-main .card-header, .app-main .card-footer { padding:10px 12px; }
+ .app-main .form-control, .app-main .form-select { font-size:16px; min-height:40px; }
+ .app-main .btn { min-height:38px; display:inline-flex; align-items:center; justify-content:center; }
+ .app-main .nav-tabs .nav-link { padding:9px 10px; }
+ .app-main .ventas-historial-modern .ventas-historial-tabla tbody tr { padding:10px 12px!important; margin-bottom:8px!important; }
+ .app-main .ventas-historial-modern .ventas-historial-tabla tbody td { padding:4px 0!important; }
+ .sirona-topbar-inner { padding-inline:10px!important; gap:6px!important; flex-wrap:nowrap!important; }
+ .sirona-topbar-left { flex:1 1 auto!important; overflow:hidden; }
+ .sirona-topbar-left .navbar-brand { overflow:hidden; }
+ .sirona-app-title { font-size:14px!important; white-space:nowrap; min-width:0; overflow:hidden; }
+ .sirona-app-title-sub { display:none!important; }
+ .sirona-topbar-cluster { margin-left:auto!important; }
+ .sirona-topbar-actions { padding:4px!important; gap:3px!important; }
+ .sirona-topbar-actions .btn { min-width:30px!important; width:30px!important; height:32px!important; padding:4px!important; }
+ .sirona-topbar-actions .sirona-anele-link { width:auto!important; min-width:58px!important; padding:5px 6px!important; }
+ .sirona-topbar-actions svg { width:17px!important; height:17px!important; }
+}
+@media(pointer:coarse) {
+ .app-main .table-actions .btn-icon { width:38px!important; min-width:38px!important; height:38px!important; }
+ .app-main .table-actions { gap:5px!important; }
+}
+@media print { .sirona-explanation { display:block!important; } }
+/* Filas de venta: dos bloques contables en paralelo en celular. */
+.app-main .ventas-hist-comision-stack { gap:3px!important; }
+.app-main .ventas-hist-comision-pedido { min-height:0; margin-top:0!important; }
+.app-main .ventas-hist-comision-pedido label { font-size:.68rem; line-height:1.15; }
+@media(max-width:767.98px) {
+ .app-main .ventas-historial-modern .ventas-historial-tabla tbody tr { display:grid!important; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); column-gap:12px; row-gap:3px; }
+ .app-main .ventas-historial-modern .ventas-historial-tabla tbody td { min-width:0; }
+ .app-main .ventas-historial-tabla .ventas-hist-td-ped,
+ .app-main .ventas-historial-tabla .ventas-hist-td-vend,
+ .app-main .ventas-historial-tabla .ventas-hist-td-acciones { grid-column:1 / -1; }
+ .app-main .ventas-historial-tabla .ventas-hist-td-comision,
+ .app-main .ventas-historial-tabla .ventas-hist-td-caja { align-self:start; margin:2px 0!important; }
+ .app-main .ventas-historial-tabla .ventas-hist-td-caja { text-align:right!important; }
+ .app-main .ventas-hist-td-acciones { margin-top:4px!important; }
+ .app-main .ventas-hist-comision-stack { gap:2px!important; }
+ .app-main .ventas-hist-td-comision::before, .app-main .ventas-hist-td-caja::before { margin-bottom:2px; }
+ .app-main .table-card .card-header { padding:10px 12px!important; }
+ .app-main .table-card .nav-tabs { margin-bottom:0!important; }
+}
+/* Evitar acciones apiladas que agrandaban cada fila en tablet. */
+.app-main .table-actions { flex-direction:row!important; flex-wrap:nowrap!important; width:auto!important; }
+.app-main .ventas-hist-legend { display:none!important; }
+@media(min-width:768px) {
+ .app-main .ventas-historial-tabla .table-actions-cell { min-width:150px!important; }
+ .app-main .ventas-hist-comision-stack { margin-block:0!important; }
+ .app-main .table-actions .btn-icon, .app-main .table-actions .venta-despacho-ico-btn { min-height:30px; }
+}
+@media(min-width:768px) and (max-width:1199.98px) {
+ .app-main .app-list-filters form.row { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px 12px; }
+ .app-main .app-list-filters form.row > [class*="col-"] { width:100%!important; padding:0; }
+ .app-main .app-list-filters form.row > .col-12.d-flex { grid-column:1 / -1; }
+}
+.app-body .app-main .ventas-historial-modern.presu-lista-modern .ventas-historial-tabla .table-actions,
+.app-body .app-main .ui-force-productos .table-actions { display:flex!important; flex-direction:row!important; flex-wrap:nowrap!important; width:max-content!important; gap:4px!important; }
+@media(min-width:768px) {
+ .app-body .app-main .ventas-historial-tabla .table-actions-cell { min-width:164px!important; }
+ .app-body .app-main .ui-force-productos .table-actions .btn-icon,
+ .app-body .app-main .ventas-historial-tabla .table-actions .venta-despacho-ico-btn { width:32px!important; min-width:32px!important; height:32px!important; min-height:32px!important; padding:0!important; }
+}
+/* Marca completa y controles sin superposición en la barra móvil. */
+@media(max-width:767.98px) {
+ .sirona-topbar-left .sirona-app-title { max-width:none!important; width:auto!important; }
+ .sirona-topbar-left .sirona-app-title > :first-child { font-size:0!important; }
+ .sirona-topbar-left .sirona-app-title > :first-child::after { content:'SIRONA'; font-size:13px; }
+}
+.app-main .app-filtro-seccion-tit { display:none; }
+@media(min-width:768px) {
+ .app-main #presu-tabla-lista .presu-col-ellipsis { min-width:170px; }
+ .app-main #presu-tabla-lista .presu-col-ellipsis:not(.presu-col-cliente) { min-width:150px; }
+ .app-main #presu-tabla-lista .presu-actions-sticky { position:static; box-shadow:none; }
+}
+@media(max-width:767.98px) {
+ .app-main #presu-tabla-lista { display:block!important; min-width:0!important; width:100%!important; }
+ .app-main #presu-tabla-lista thead { display:none; }
+ .app-main #presu-tabla-lista tbody { display:block; }
+ .app-main #presu-tabla-lista tbody tr { display:grid; grid-template-columns:28px minmax(0,1fr) auto; gap:4px 8px; padding:10px 12px; margin:0 0 8px; border:1px solid var(--s-border); border-radius:10px; }
+ .app-main #presu-tabla-lista tbody td { display:block!important; width:auto!important; min-width:0!important; max-width:none!important; padding:3px 0!important; border:0; text-align:left!important; }
+ .app-main #presu-tabla-lista tbody td:has(input[type="checkbox"]) { grid-column:1; grid-row:1; }
+ .app-main #presu-tabla-lista tbody td.presu-col-fecha { grid-column:2 / -1; grid-row:1; }
+ .app-main #presu-tabla-lista tbody td.presu-col-ellipsis:not(.presu-col-cliente) { grid-column:1 / -1; grid-row:3; }
+ .app-main #presu-tabla-lista tbody td.presu-col-ellipsis:not(.presu-col-cliente)::before { content:'Vendedor: '; font-size:.72rem; font-weight:500; }
+ .app-main #presu-tabla-lista tbody td.presu-col-cliente { grid-column:1 / -1; grid-row:2; }
+ .app-main #presu-tabla-lista tbody td.col-presu-neto { grid-column:1 / -1; grid-row:4; font-weight:650; }
+ .app-main #presu-tabla-lista tbody td.col-presu-neto::before { content:'Neto: '; font-weight:500; font-size:.72rem; }
+ .app-main #presu-tabla-lista tbody td.table-actions-cell { grid-column:1 / -1; grid-row:5; position:static; box-shadow:none; }
+ .app-main #presu-tabla-lista tbody td[colspan] { grid-column:1 / -1; }
+ .app-main #presu-tabla-lista .presu-cell-title { white-space:normal; }
+ .app-main #presu-tabla-lista .table-actions { justify-content:flex-start!important; }
+}
+.app-main .page-header-card { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px 16px; padding:14px 16px!important; margin-bottom:12px!important; }
+.app-main .page-header-card .header-left { gap:10px; min-width:0; flex:1 1 240px; }
+.app-main .page-header-card .header-ico { width:36px; height:36px; flex:0 0 36px; }
+.app-main .page-header-card .header-title { margin:0; font-size:1.5rem; }
+.app-main .page-header-card .productos-header-actions { display:flex; flex-wrap:wrap; gap:6px; flex:0 1 450px; justify-content:flex-end; }
+.app-main .page-header-card .productos-header-actions .action-button { min-height:34px; padding:6px 10px; font-size:.82rem; }
+@media(max-width:767.98px) {
+ .app-main .page-header-card { padding:12px!important; }
+ .app-main .page-header-card .header-title { font-size:1.3rem!important; }
+ .app-main .page-header-card .productos-header-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); flex-basis:100%; width:100%; }
+ .app-main .page-header-card .productos-header-actions .action-button { min-height:38px; width:100%; }
+}
+@media(pointer:coarse) and (min-width:768px) {
+ .app-body .app-main .ui-force-productos .table-actions .btn-icon,
+ .app-body .app-main .ventas-historial-tabla .table-actions .venta-despacho-ico-btn { width:38px!important; min-width:38px!important; height:38px!important; min-height:38px!important; }
+}
+.app-main .page-header-card { flex-direction:row!important; min-height:0!important; height:auto!important; }
+@media(max-width:767.98px) {
+ .app-main .page-header-card .header-left { flex:1 1 100%!important; }
+}
+.sirona-product-filter-toggle { display:none!important; }
+@media(max-width:767.98px) {
+ .sirona-product-filter-toggle { display:flex!important; width:100%; justify-content:flex-start!important; }
+ .sirona-compact-filter-form:not(.is-open) { display:none!important; }
+ .sirona-compact-filter-form.is-open { margin-top:12px; }
+}
