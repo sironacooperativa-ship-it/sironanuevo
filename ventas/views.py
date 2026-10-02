@@ -44,6 +44,7 @@ from productos.models import ListaPrecios, Producto
 from .forms import VentaCabeceraEditForm, VentaPagoForm
 from .models import ComisionLiquidacionPago, Venta, VentaLinea
 from .comision_constancia_pdf_sirona import comision_constancia_pdf_response
+from .comisiones_detalle_pdf import comisiones_detalle_pdf_response
 from .despacho_servicios import (
     DESPACHO_HISTORIAL_DIAS,
     archivar_lineas_pedido_despachado,
@@ -311,17 +312,18 @@ def venta_nueva(request):
     )
 
 
-def _ventas_lista_base_queryset(request):
+def _ventas_lista_base_queryset(request, *, params=None):
     """
     Listado de ventas con filtros de período / vendedor / comprador / producto.
     No aplica filtro por estado (lo agrega `_filtrar_ventas_queryset`).
     """
-    periodo = (request.GET.get("periodo") or "").strip()
+    params = request.GET if params is None else params
+    periodo = (params.get("periodo") or "").strip()
     if periodo in ("7d", "30d", "mes", "mes_ant"):
         fecha_desde, fecha_hasta = rango_periodo(periodo)
     else:
-        fecha_desde = parse_fecha_dashboard(request.GET.get("fecha_desde"))
-        fecha_hasta = parse_fecha_dashboard(request.GET.get("fecha_hasta"))
+        fecha_desde = parse_fecha_dashboard(params.get("fecha_desde"))
+        fecha_hasta = parse_fecha_dashboard(params.get("fecha_hasta"))
 
     # Nota: para el historial no necesitamos las líneas; evitamos prefetch para bajar memoria/tiempo.
     qs = Venta.objects.select_related("vendedor", "comprador", "pago_movimiento").order_by("-creado_en", "-id")
@@ -330,22 +332,22 @@ def _ventas_lista_base_queryset(request):
     if fecha_hasta:
         qs = qs.filter(creado_en__date__lte=fecha_hasta)
 
-    vid = (request.GET.get("vendedor") or "").strip()
+    vid = (params.get("vendedor") or "").strip()
     if vid.isdigit():
         qs = qs.filter(vendedor_id=int(vid))
 
-    cid = (request.GET.get("comprador") or "").strip()
+    cid = (params.get("comprador") or "").strip()
     if cid.isdigit():
         qs = qs.filter(comprador_id=int(cid))
 
-    pid = (request.GET.get("producto") or "").strip()
+    pid = (params.get("producto") or "").strip()
     if pid.isdigit():
         qs = qs.filter(lineas__producto_id=int(pid)).distinct()
 
     filtros = {
         "periodo": periodo,
-        "fecha_desde": fecha_filtro_value_iso(request.GET.get("fecha_desde")),
-        "fecha_hasta": fecha_filtro_value_iso(request.GET.get("fecha_hasta")),
+        "fecha_desde": fecha_filtro_value_iso(params.get("fecha_desde")),
+        "fecha_hasta": fecha_filtro_value_iso(params.get("fecha_hasta")),
         "vendedor": vid,
         "comprador": cid,
         "producto": pid,
@@ -496,6 +498,8 @@ def venta_comisiones(request):
     """
     ventas_qs, filtros_base = _comisiones_ventas_base_queryset(request)
     ventas_list = list(ventas_qs.order_by("-creado_en", "-id"))
+    if parse_export(request) == "pdf":
+        return comisiones_detalle_pdf_response(ventas_list, filtros_base, request.GET)
 
     nest: dict[tuple[int, int], dict[int, list[Venta]]] = defaultdict(lambda: defaultdict(list))
     for v in ventas_list:
@@ -545,8 +549,7 @@ def venta_comisiones(request):
             }
         )
 
-    base_liq, _ = _ventas_lista_base_queryset(request)
-    liq_base_qs = base_liq.filter(
+    liq_base_qs = ventas_qs.filter(
         estado=Venta.Estado.PAGADA,
         aplica_comision=True,
         comision_porcentaje__gt=0,
@@ -586,6 +589,7 @@ def venta_comisiones(request):
                 "fecha_hasta": fecha_filtro_value_iso(request.GET.get("fecha_hasta")),
                 "periodo": (request.GET.get("periodo") or "").strip(),
                 "estado": (request.GET.get("estado") or "").strip().upper(),
+                "estado_comision": (request.GET.get("estado_comision") or "").strip(),
                 "vendedor": (filtros_base.get("vendedor") or "").strip(),
             },
             "filtros_base": filtros_base,
@@ -604,6 +608,11 @@ def _comisiones_ventas_base_queryset(request):
     estado = (request.GET.get("estado") or "").strip().upper()
     if estado in (Venta.Estado.PENDIENTE, Venta.Estado.PAGADA):
         qs = qs.filter(estado=estado)
+    estado_comision = (request.GET.get("estado_comision") or "").strip()
+    if estado_comision == "sin_pagar":
+        qs = qs.filter(estado=Venta.Estado.PAGADA, comision_liquidacion_pago_id__isnull=True)
+    elif estado_comision == "pagadas":
+        qs = qs.filter(comision_liquidacion_pago_id__isnull=False)
     return (
         qs.filter(aplica_comision=True, comision_porcentaje__gt=0).select_related(
             "vendedor", "comision_liquidacion_pago"
@@ -613,7 +622,7 @@ def _comisiones_ventas_base_queryset(request):
 
 
 def _ventas_comision_liquidables_vendedor(request, vid: int):
-    ventas, _ = _ventas_lista_base_queryset(request)
+    ventas, _ = _ventas_lista_base_queryset(request, params=request.POST if request.method == "POST" else request.GET)
     return ventas.filter(
         vendedor_id=vid,
         estado=Venta.Estado.PAGADA,
