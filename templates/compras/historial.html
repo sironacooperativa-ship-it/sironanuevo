@@ -100,7 +100,7 @@
         <tbody>
           {% for c in compras %}
             <tr class="{% if c.anulada %}compra-fila-anulada{% endif %}">
-              <td class="col-ped col-id-num">#{{ c.pk }}</td>
+              <td class="col-ped col-id-num">#{{ c.pk }}{% if c.origen_anele_id %}<br/><a href="https://grupo-anele.onrender.com/?invoice={{ c.origen_anele_id }}" class="small">Grupo Anele · Factura {{ c.origen_anele_datos.number }}</a><br/><span class="small">{{ c.origen_anele_datos.pharmacyName }}</span>{% endif %}</td>
               <td class="col-muted">{{ c.fecha_compra|date:"d/m/Y" }}</td>
               <td class="col-muted presu-col-ellipsis" title="{{ c.proveedor.apellido }}, {{ c.proveedor.nombre }}">
                 {{ c.proveedor.apellido }}, {{ c.proveedor.nombre }}

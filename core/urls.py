@@ -1,9 +1,10 @@
 from django.urls import path
 
-from . import views, app_bridge
+from . import views, app_bridge, purchase_bridge
 
 
 urlpatterns = [
+    path("app-bridge/purchases/", purchase_bridge.receive, name="app_bridge_purchases"),
     path("app-bridge/start/", app_bridge.start, name="app_bridge_start"),
     path("app-bridge/authorize/", app_bridge.authorize, name="app_bridge_authorize"),
     path("app-bridge/callback/", app_bridge.callback, name="app_bridge_callback"),

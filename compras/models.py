@@ -4,6 +4,9 @@ from caja.models import MovimientoCaja
 
 
 class Compra(models.Model):
+    origen_anele_id = models.UUIDField(null=True, blank=True, unique=True, editable=False)
+    origen_anele_datos = models.JSONField(default=dict, blank=True, editable=False)
+
     class Modo(models.TextChoices):
         PRODUCTOS = "PRO", "Productos (detalle)"
         FACTURA = "FAC", "Factura sin detalle"
