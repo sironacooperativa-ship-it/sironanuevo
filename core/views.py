@@ -453,8 +453,8 @@ def sesion_cerrar_al_cerrar_ventana(request):
     if request.user.is_authenticated:
         action = (request.POST.get("action") or "pending").strip().lower()
         if action == "cancel":
-            request.session.pop("logout_pending_at", None)
-            request.session.modified = True
+            if "logout_pending_at" in request.session:
+                request.session.pop("logout_pending_at")
             return HttpResponse(status=204)
         request.session["logout_pending_at"] = timezone.now().isoformat()
         request.session.modified = True
