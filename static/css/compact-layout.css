@@ -170,3 +170,11 @@ body.app-authenticated main.app-main.page-shell { max-width:none; padding:18px 2
  .sirona-compact-filter-form:not(.is-open) { display:none!important; }
  .sirona-compact-filter-form.is-open { margin-top:12px; }
 }
+
+/* Productos: ancho natural compacto, sin estirar descripción con espacio vacío. */
+@media(min-width:768px) {
+ .app-body .app-main .table-card--productos { width:100%!important; max-width:780px!important; }
+ .app-main .table-card--productos table.table-productos { width:100%!important; min-width:0!important; table-layout:fixed!important; }
+ .app-main .table-card--productos .productos-desc-title,
+ .app-main .table-card--productos .productos-desc-meta { white-space:normal; overflow-wrap:anywhere; }
+}
