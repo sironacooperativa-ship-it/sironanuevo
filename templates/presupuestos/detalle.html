@@ -163,7 +163,7 @@
           method="post"
           action="{% url 'presupuesto_eliminar' presupuesto.pk %}"
           class="d-inline"
-          data-sirona-confirm="¿Eliminar el presupuesto #{{ presupuesto.pk }}?"
+          data-sirona-confirm="¿Enviar a la papelera el presupuesto #{{ presupuesto.pk }}?"
         >
           {% csrf_token %}
           <button type="submit" class="btn btn-outline-danger btn-sm px-2" title="Eliminar" aria-label="Eliminar">
