@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}Actualizar precios · Anele{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/cotizacion-anele.css' %}">{% endblock %}
+{% block content %}{% if sync_error %}<div class="alert alert-warning">{{ sync_error }}</div><a class="btn btn-primary" href="">Volver a intentar</a> <a class="btn btn-outline-secondary" href="{% url 'productos_costos' %}">Costos</a>{% else %}
+<div id="anele-sync"><main>
+<div class="pagehead"><div><h1>Costos desde G*Anele</h1><p id="source"></p></div><div class="actions"><a class="btn btn-outline-secondary" href="{% url 'productos_costos' %}">Costos</a><button id="reset" class="secondary">Reiniciar revisión</button></div></div>
+<nav aria-label="Actualización de precios"><button data-tab="update" class="active">Actualizar costos</button><button data-tab="quote">Cotización Anele</button><button data-tab="result">Resultado <span id="resultcount">0</span></button></nav>
+<div class="notice" id="notice"></div><div id="message" role="status" hidden></div>
+<section id="update">
+ <div class="stats" id="stats"></div>
+ <div class="toolbar"><div><h2 id="reviewtitle">Revisar productos existentes</h2><small id="reviewhint">Seleccioná las correspondencias que querés actualizar.</small></div><div class="filters"><input id="search" type="search" placeholder="Buscar producto…" aria-label="Buscar producto"><select id="filter" aria-label="Filtrar coincidencias"><option value="all">Todos</option><option value="review">Para revisar</option><option value="none">Sin coincidencia compatible</option><option value="price">Sin precio</option></select></div></div>
+ <div id="rows" class="cards"></div>
+ <div class="sticky"><span id="selection">0 seleccionados</span><button id="apply">Ver confirmación</button></div>
+</section>
+<section id="quote" hidden>
+ <div class="toolbar"><div><h2>Cotización de Anele</h2><small>Precios unitarios finales en ARS</small></div><div class="actions"><button id="quoteconfirm" hidden disabled>Cotización aprobada</button><button id="add" hidden>Agregar productos a Sirona</button></div></div>
+ <div class="notice subtle">Se conservan las ofertas y la sucursal elegida en Anele. Las altas nuevas requieren una cotización aprobada.</div>
+ <div id="quoterows" class="quotelist"></div>
+</section>
+<section id="result" hidden><div class="toolbar"><div><h2>Actualización aplicada</h2><small id="resultsummary">Todavía no aplicaste cambios.</small></div><button id="export" class="secondary" hidden>Descargar resultado</button></div><div id="resultrows"></div></section>
+</main>
+<dialog id="editor"><form id="editform" data-sirona-no-submit-lock><div class="dialoghead"><div><small>Correspondencia con Sirona</small><h2 id="edittitle"></h2></div><button type="button" id="closeedit" class="plain" aria-label="Cerrar revisión">✕</button></div><div class="quoteinfo" id="quoteinfo"></div><label>Producto de Sirona<select id="target" aria-label="Producto de Sirona"></select></label><div id="matchinfo"></div><div id="newfields" hidden><label>Descripción completa<input id="newname" placeholder="Producto, dosis y presentación"></label><label>Laboratorio<input id="newlab"></label></div><div class="prices"><label>Costo anterior<div id="oldcost" class="value"></div></label><label>Costo de cotización<div id="newcost" class="value"></div></label><label>Ganancia sobre costo (%)<input id="margin" type="number" min="-100" step="0.01" required></label><label>Precio de venta ($)<input id="price" type="number" min="0" step="0.01" required></label></div><small id="effective"></small><label class="check"><input id="correspondence" type="checkbox" required>Confirmo que es el mismo producto y presentación</label><label class="check" id="listwrap" hidden><input id="pricelist" type="checkbox" checked>Sumar a la lista de precios de Sirona</label><div class="dialogactions"><button type="button" id="skip" class="secondary">Dejar sin seleccionar</button><button id="saveedit" type="submit">Guardar revisión y seleccionar</button></div></form></dialog>
+<dialog id="confirm"><div class="dialoghead"><div><small>Último paso · se guardará en Sirona</small><h2>Confirmar actualización de precios</h2></div><button id="closeconfirm" class="plain" aria-label="Cerrar confirmación">✕</button></div><div id="confirmrows"></div><div class="dialogactions"><button id="cancelconfirm" class="secondary">Volver a revisar</button><button id="confirmapply">Confirmar y guardar en Sirona</button></div></dialog>
+<form id="csrf-sync" hidden>{% csrf_token %}</form></div>{{ sync_data|json_script:"sync-data" }}{% endif %}{% endblock %}
+{% block page_scripts %}{% if sync_data %}<script src="{% static 'js/cotizacion-anele-engine.js' %}"></script><script src="{% static 'js/cotizacion-anele.js' %}"></script>{% endif %}{% endblock %}

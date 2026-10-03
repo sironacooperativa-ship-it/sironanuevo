@@ -347,3 +347,19 @@ class ListaPrecioItem(models.Model):
     def __str__(self) -> str:
         return f"{self.lista} · {self.producto.codigo}"
 
+
+
+class CotizacionAneleRevision(models.Model):
+    import uuid
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    usuario = models.ForeignKey("auth.User", on_delete=models.PROTECT)
+    datos = models.JSONField()
+    creado_en = models.DateTimeField(auto_now_add=True)
+    aplicado_en = models.DateTimeField(null=True, blank=True)
+    resultado = models.JSONField(default=dict)
+
+
+class CotizacionAneleVinculo(models.Model):
+    clave = models.CharField(max_length=64, unique=True)
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    actualizado_en = models.DateTimeField(auto_now=True)

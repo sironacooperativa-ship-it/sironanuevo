@@ -1,0 +1,14 @@
+{% extends 'base.html' %}{% load money static %}
+{% block title %}Costos{% endblock %}
+{% block content %}
+<div class="app-page-header"><h1 class="app-page-title">Costos</h1><div class="d-flex flex-wrap gap-2"><a class="btn btn-outline-secondary" href="{% url 'productos_list' %}">Productos</a><a class="btn btn-outline-secondary" href="{% url 'productos_export_costos_excel' %}">Descargar Excel</a><a id="anele-price-button" class="btn btn-primary" href="{% url 'productos_cotizacion_anele' %}">Actualizar precios · cotización</a></div></div>
+<div id="anele-price-status" class="small text-muted mb-3" role="status"></div>
+<div class="mb-3"><input type="search" id="cost-search" class="form-control" placeholder="Buscar producto o laboratorio" aria-label="Buscar producto o laboratorio" style="max-width:28rem"></div>
+<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Producto / laboratorio</th><th class="text-end">Costo</th><th class="text-end">Ganancia</th><th class="text-end">Venta</th></tr></thead><tbody id="cost-products">{% for p in productos %}<tr><td><a href="{% url 'producto_update' p.pk %}">{{ p.descripcion }}</a><div class="small text-muted">{{ p.codigo }}{% if p.laboratorio %} · {{ p.laboratorio }}{% endif %}{% if not p.habilitado %} · Deshabilitado{% endif %}</div></td><td class="text-end text-nowrap">{{ p.costo|ars }}</td><td class="text-end">{{ p.porcentaje_ganancia }}%</td><td class="text-end text-nowrap">{{ p.precio_venta|ars }}</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}
+{% block page_scripts %}<script>
+document.getElementById('cost-search').addEventListener('input',function(){const value=this.value.toLocaleLowerCase();document.querySelectorAll('#cost-products tr').forEach(r=>r.hidden=!r.textContent.toLocaleLowerCase().includes(value));});
+{% if anele_enabled %}fetch("{% url 'productos_cotizacion_metadata' %}",{credentials:'same-origin'}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error);document.getElementById('anele-price-button').textContent='Actualizar precios · cotización '+d.date.split('-').reverse().join('/');document.getElementById('anele-price-status').textContent=d.number+' · '+(d.state==='vigente'?'Vigente':d.state==='proceso'?'En proceso':'Anterior');}).catch(e=>{document.getElementById('anele-price-status').textContent=e.message;});{% endif %}
+</script>{% endblock %}
+
+

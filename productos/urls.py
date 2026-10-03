@@ -1,9 +1,13 @@
 from django.urls import path
 
-from . import listas_precios_views, views
+from . import listas_precios_views, views, cotizacion_views
 
 
 urlpatterns = [
+    path("costos/", cotizacion_views.costs, name="productos_costos"),
+    path("cotizacion/", cotizacion_views.review, name="productos_cotizacion_anele"),
+    path("cotizacion/metadata.json", cotizacion_views.metadata, name="productos_cotizacion_metadata"),
+    path("cotizacion/aplicar/", cotizacion_views.apply, name="productos_cotizacion_aplicar"),
     path("stock-cero-resolver/", views.producto_stock_cero_resolver, name="producto_stock_cero_resolver"),
     path("picker.json", views.productos_picker_json, name="productos_picker_json"),
     path("", views.productos_list, name="productos_list"),
