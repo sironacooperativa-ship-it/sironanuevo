@@ -24,8 +24,8 @@ class ComisionesLoteTests(TestCase):
         return Venta.objects.create(vendedor=vendedor,estado=kwargs.pop('estado','PAG'),subtotal_lineas=Decimal(neto),aplica_comision=True,comision_porcentaje=Decimal(5),**kwargs)
     def pagar(self,ids,**extra):
         return self.client.post(reverse('ventas_comision_liquidacion_pagar'),{'vendedor':self.vendedor.pk,'liquidar_modo':'seleccion','venta_id':ids,**extra})
-    def test_filtro_sin_pagar_excluye_pagadas_otro_vendedor_y_cliente_pendiente(self):
-        response=self.client.get(reverse('ventas_comisiones'),{'vendedor':self.vendedor.pk,'estado_comision':'sin_pagar'})
+    def test_filtro_liquidables_excluye_pagadas_otro_vendedor_y_cliente_pendiente(self):
+        response=self.client.get(reverse('ventas_comisiones'),{'vendedor':self.vendedor.pk,'estado_comision':'liquidables'})
         self.assertEqual(response.status_code,200)
         pedidos=response.context['pendiente_liquidar_global'][0]['ventas_liquidables']
         self.assertEqual({v.pk for v in pedidos},{self.a.pk,self.b.pk})
@@ -67,4 +67,70 @@ class ComisionesLoteTests(TestCase):
         self.assertIsNone(self.a.comision_liquidacion_pago_id)
     def test_casillas_vacias_no_registra_pago(self):
         self.pagar([])
+        self.assertEqual(MovimientoCaja.objects.count(),0)
+
+    def detalle_ids(self,response):
+        return {v.pk for m in response.context['meses_detalle'] for b in m['por_vendedor'] for v in b['pedidos']}
+    def test_impagas_independiente_de_cobro_pedido(self):
+        response=self.client.get(reverse('ventas_comisiones'),{'vendedor':self.vendedor.pk,'estado_comision':'sin_pagar'})
+        self.assertEqual(self.detalle_ids(response),{self.a.pk,self.b.pk,self.sin_cobrar.pk})
+        self.assertContains(response,'Impaga al vendedor')
+        self.assertContains(response,'Pago pedido')
+        self.assertContains(response,'Pago comisión')
+    def test_pagadas_segun_liquidacion_no_estado_pedido(self):
+        Venta.objects.filter(pk=self.pagada.pk).update(estado='PEN')
+        response=self.client.get(reverse('ventas_comisiones'),{'vendedor':self.vendedor.pk,'estado_comision':'pagadas'})
+        self.assertEqual(self.detalle_ids(response),{self.pagada.pk})
+        self.assertEqual(response.context['pendiente_liquidar_global'],[])
+        self.assertContains(response,'Pagada al vendedor')
+    def test_cobrar_pedido_no_paga_comision(self):
+        from .servicios import venta_registrar_cobro_caja
+        mov=MovimientoCaja(fecha=timezone.localdate(),medio_pago=MovimientoCaja.MedioPago.EFECTIVO)
+        venta_registrar_cobro_caja(venta=self.sin_cobrar,mov=mov,user=self.admin)
+        self.sin_cobrar.refresh_from_db()
+        self.assertEqual(self.sin_cobrar.estado,'PAG')
+        self.assertFalse(self.sin_cobrar.comision_pagada)
+        self.assertEqual(ComisionLiquidacionPago.objects.count(),1)
+        response=self.client.get(reverse('venta_detalle',args=[self.sin_cobrar.pk]))
+        self.assertContains(response,'Pedido cobrado')
+        self.assertContains(response,'Impaga al vendedor')
+    def test_pagar_comision_no_cambia_cobro_pedido(self):
+        estado=self.a.estado;mov=self.a.pago_movimiento_id
+        self.pagar([self.a.pk]);self.a.refresh_from_db()
+        self.assertEqual(self.a.estado,estado)
+        self.assertEqual(self.a.pago_movimiento_id,mov)
+        self.assertTrue(self.a.comision_pagada)
+    def test_fechas_personalizadas_prevalecen_periodo_rapido(self):
+        antiguo=timezone.now()-timedelta(days=70)
+        Venta.objects.filter(pk=self.a.pk).update(creado_en=antiguo)
+        fecha=timezone.localtime(antiguo).date().isoformat()
+        params={'vendedor':self.vendedor.pk,'estado_comision':'sin_pagar','periodo':'mes','fecha_desde':fecha,'fecha_hasta':fecha}
+        response=self.client.get(reverse('ventas_comisiones'),params)
+        self.assertEqual(self.detalle_ids(response),{self.a.pk})
+        self.assertEqual(response.context['f']['periodo'],'')
+        self.pagar([self.a.pk],**{k:v for k,v in params.items() if k!='vendedor'})
+        self.a.refresh_from_db();self.assertTrue(self.a.comision_pagada)
+    def test_historial_respeta_vendedor_periodo_y_estado(self):
+        antiguo=timezone.now()-timedelta(days=70)
+        antigua=self.venta(self.vendedor,1000,comision_liquidacion_pago=self.liq)
+        Venta.objects.filter(pk=antigua.pk).update(creado_en=antiguo)
+        params={'vendedor':self.vendedor.pk,'estado_comision':'pagadas','fecha_desde':timezone.localdate().isoformat()}
+        response=self.client.get(reverse('ventas_comisiones_historial'),params)
+        filas=response.context['filas']
+        self.assertEqual(len(filas),1)
+        self.assertEqual(filas[0]['total_liquidado'],Decimal('10.00'))
+        self.assertEqual({v.pk for item in filas[0]['liquidaciones'] for v in item['ventas']},{self.pagada.pk})
+        self.assertEqual(filas[0]['pendientes'],[])
+        params['estado_comision']='sin_pagar'
+        response=self.client.get(reverse('ventas_comisiones_historial'),params)
+        self.assertEqual(response.context['filas'][0]['liquidaciones'],[])
+        self.assertEqual({v.pk for v in response.context['filas'][0]['pendientes']},{self.a.pk,self.b.pk,self.sin_cobrar.pk})
+    def test_formulario_mensual_solo_paga_seleccionadas(self):
+        response=self.client.get(reverse('ventas_comisiones'))
+        self.assertNotContains(response,'value="todos"')
+        self.assertContains(response,'name="liquidar_modo" value="seleccion"')
+    def test_pdf_impagas_incluye_cliente_pendiente_sin_pagar(self):
+        response=self.client.get(reverse('ventas_comisiones'),{'vendedor':self.vendedor.pk,'estado_comision':'sin_pagar','export':'pdf'})
+        self.assertEqual(response.status_code,200)
+        self.assertTrue(response.content.startswith(b'%PDF'))
         self.assertEqual(MovimientoCaja.objects.count(),0)

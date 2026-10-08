@@ -1,5 +1,12 @@
 (function () {
   function init() {
+    document.querySelectorAll('form[method="get"]').forEach(function(form) {
+      var period = form.querySelector('[name="periodo"]');
+      var dates = Array.from(form.querySelectorAll('[name="fecha_desde"], [name="fecha_hasta"]'));
+      if (!period) return;
+      period.addEventListener('change', function() { if (period.value) dates.forEach(function(d) { d.value = ''; }); });
+      dates.forEach(function(d) { d.addEventListener('change', function() { if (d.value) period.value = ''; }); });
+    });
     document.querySelectorAll('form[data-comision-lote]').forEach(function (form) {
       var all = form.querySelector('[data-comision-todas]');
       var checks = Array.from(form.querySelectorAll('input[name="venta_id"]'));
@@ -10,11 +17,13 @@
         var cents = selected.reduce(function (total, c) { return total + Math.round(Number(c.dataset.comisionMonto) * 100); }, 0);
         var money = (cents / 100).toLocaleString('es-AR', {style:'currency',currency:'ARS'});
         summary.textContent = selected.length + ' seleccionadas · ' + money;
-        all.checked = selected.length === checks.length;
-        all.indeterminate = selected.length > 0 && selected.length < checks.length;
+        if (all) {
+          all.checked = checks.length > 0 && selected.length === checks.length;
+          all.indeterminate = selected.length > 0 && selected.length < checks.length;
+        }
         button.disabled = selected.length === 0 || cents <= 0;
       }
-      all.addEventListener('change', function () { checks.forEach(function (c) { c.checked = all.checked; }); update(); });
+      if (all) all.addEventListener('change', function () { checks.forEach(function (c) { c.checked = all.checked; }); update(); });
       checks.forEach(function (c) { c.addEventListener('change', update); });
       form.addEventListener('submit', function (ev) {
         if (!checks.some(function (c) { return c.checked; })) { ev.preventDefault(); return; }

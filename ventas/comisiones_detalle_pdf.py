@@ -21,17 +21,17 @@ def comisiones_detalle_pdf_response(ventas, filtros, params):
     head = ParagraphStyle('comision_cabecera', parent=cell, fontName='Helvetica-Bold', textColor=colors.white)
     p = lambda value: Paragraph(escape(str(value)), cell)
     story = list(platypus_membrete('Detalle de comisiones', doc.width, styles))
-    estados = {'sin_pagar': 'Sin pagar al vendedor (pedidos cobrados)', 'pagadas': 'Pagadas al vendedor'}
+    estados = {'sin_pagar': 'Impagas al vendedor', 'liquidables': 'Impagas de pedidos cobrados', 'pagadas': 'Pagadas al vendedor'}
     info = estados.get(params.get('estado_comision'), 'Todas las comisiones')
     vendedor = (ventas[0].vendedor if ventas else 'ID ' + str(filtros['vendedor'])) if filtros.get('vendedor') else 'Todos'
     story += [Paragraph(escape(f'Vendedor: {vendedor} | {info}'), styles['Normal'])]
-    periodo = {'7d':'Últimos 7 días', '30d':'Últimos 30 días', 'mes':'Mes actual', 'mes_ant':'Mes anterior'}.get(params.get('periodo'), 'Personalizado / todos')
+    periodo = {'7d':'Últimos 7 días', '30d':'Últimos 30 días', 'mes':'Mes actual', 'mes_ant':'Mes anterior'}.get(filtros.get('periodo'), 'Personalizado / todos')
     fechas = f"Desde: {filtros.get('fecha_desde') or '-'} | Hasta: {filtros.get('fecha_hasta') or '-'}"
     story += [Paragraph(escape(f'Período: {periodo} | {fechas}'), styles['Normal']), Spacer(1, 8)]
     headers = ['Pedido', 'Fecha', 'Vendedor', 'Comprador', 'Neto', '%', 'Comisión', 'Estado comisión']
     data = [[Paragraph(escape(h), head) for h in headers]]
     for v in ventas:
-        estado = 'Pagada al vendedor' if v.comision_liquidacion_pago_id else ('Sin pagar al vendedor' if v.estado == 'PAG' else 'Cliente aún no pagó')
+        estado = v.comision_estado_label + (' · Pedido cobrado' if v.estado == 'PAG' else ' · Pedido pendiente de cobro')
         data.append([p(f'#{v.pk}'), p(timezone.localtime(v.creado_en).strftime('%d/%m/%Y')),
                      p(v.vendedor), p(v.comprador or '-'), p(format_monto_ars(v.neto)),
                      p(v.comision_porcentaje), p(format_monto_ars(v.monto_comision)), p(estado)])

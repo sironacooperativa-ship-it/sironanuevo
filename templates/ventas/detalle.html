@@ -425,11 +425,27 @@
         </div>
       </div>
 
+      {% if venta.aplica_comision and venta.monto_comision > 0 %}
+      <div class="border rounded p-3 mb-3">
+        <h2 class="h6 mb-2">Pago de comisión al vendedor</h2>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <strong>{{ venta.monto_comision|ars }}</strong>
+          {% if venta.comision_pagada %}
+            <span class="badge text-bg-success">Pagada al vendedor</span>
+            <a href="{% url 'ventas_comision_constancia_pdf' venta.comision_liquidacion_pago_id %}">Liquidación #{{ venta.comision_liquidacion_pago_id }}</a>
+            <span class="small">{{ venta.comision_liquidacion_pago.fecha_liquidacion|date:"d/m/Y" }}</span>
+          {% else %}
+            <span class="badge text-bg-warning">Impaga al vendedor</span>
+            <a href="{% url 'ventas_comisiones' %}?vendedor={{ venta.vendedor_id }}&estado_comision=sin_pagar">Ver comisiones</a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
       <div class="border rounded p-3 bg-light">
-        <h2 class="h6 mb-3">Estado de pago</h2>
+        <h2 class="h6 mb-3">Pago del pedido</h2>
         {% if venta.estado == "PAG" and venta.pago_movimiento %}
           <p class="mb-2">
-            <span class="badge text-bg-success">Pagada</span>
+            <span class="badge text-bg-success">Pedido cobrado</span>
           </p>
           <ul class="list-unstyled small mb-0">
             <li><strong>Fecha de cobro:</strong> {{ venta.pago_movimiento.fecha|date:"d/m/Y" }}</li>

@@ -73,6 +73,7 @@ def _venta_detalle_queryset():
             "comprador",
             "pago_movimiento",
             "pago_movimiento__cuenta_bancaria",
+            "comision_liquidacion_pago",
             "creado_por",
         )
         .prefetch_related("lineas__producto")
@@ -492,7 +493,7 @@ def _filtrar_ventas_queryset(request, *, historial_pestana: bool = False):
 @require_http_methods(["GET"])
 def venta_comisiones(request):
     """
-    Comisiones por pedido (pagadas en verde, pendientes en negro), agrupadas por mes calendario del pedido.
+    Comisiones por pedido, con cobro del cliente y pago al vendedor independientes.
     La liquidación puede incluir todas las comisiones pendientes del vendedor (pedidos pagos, filtros actuales)
     o solo las pedidos marcados; la constancia PDF replica el estilo de pedidos Sirona.
     """
@@ -503,7 +504,7 @@ def venta_comisiones(request):
 
     nest: dict[tuple[int, int], dict[int, list[Venta]]] = defaultdict(lambda: defaultdict(list))
     for v in ventas_list:
-        t = v.creado_en
+        t = timezone.localtime(v.creado_en)
         nest[(t.year, t.month)][int(v.vendedor_id)].append(v)
 
     _meses_es = (
@@ -587,7 +588,7 @@ def venta_comisiones(request):
             "f": {
                 "fecha_desde": fecha_filtro_value_iso(request.GET.get("fecha_desde")),
                 "fecha_hasta": fecha_filtro_value_iso(request.GET.get("fecha_hasta")),
-                "periodo": (request.GET.get("periodo") or "").strip(),
+                "periodo": filtros_base.get("periodo", ""),
                 "estado": (request.GET.get("estado") or "").strip().upper(),
                 "estado_comision": (request.GET.get("estado_comision") or "").strip(),
                 "vendedor": (filtros_base.get("vendedor") or "").strip(),
@@ -602,14 +603,24 @@ def venta_comisiones(request):
     )
 
 
+def _comisiones_periodo_queryset(request, *, params=None):
+    params = (request.GET if params is None else params).copy()
+    # Las fechas escritas prevalecen sobre un período rápido que quedó seleccionado.
+    if parse_fecha_dashboard(params.get("fecha_desde")) or parse_fecha_dashboard(params.get("fecha_hasta")):
+        params["periodo"] = ""
+    return _ventas_lista_base_queryset(request, params=params)
+
+
 def _comisiones_ventas_base_queryset(request):
     """Pedidos con comisión aplicable, con filtros de listado (fechas, vendedor, etc.) sin pestaña historial."""
-    qs, filtros = _ventas_lista_base_queryset(request)
+    qs, filtros = _comisiones_periodo_queryset(request)
     estado = (request.GET.get("estado") or "").strip().upper()
     if estado in (Venta.Estado.PENDIENTE, Venta.Estado.PAGADA):
         qs = qs.filter(estado=estado)
     estado_comision = (request.GET.get("estado_comision") or "").strip()
     if estado_comision == "sin_pagar":
+        qs = qs.filter(comision_liquidacion_pago_id__isnull=True)
+    elif estado_comision == "liquidables":
         qs = qs.filter(estado=Venta.Estado.PAGADA, comision_liquidacion_pago_id__isnull=True)
     elif estado_comision == "pagadas":
         qs = qs.filter(comision_liquidacion_pago_id__isnull=False)
@@ -622,7 +633,7 @@ def _comisiones_ventas_base_queryset(request):
 
 
 def _ventas_comision_liquidables_vendedor(request, vid: int):
-    ventas, _ = _ventas_lista_base_queryset(request, params=request.POST if request.method == "POST" else request.GET)
+    ventas, _ = _comisiones_periodo_queryset(request, params=request.POST if request.method == "POST" else request.GET)
     return ventas.filter(
         vendedor_id=vid,
         estado=Venta.Estado.PAGADA,
@@ -705,7 +716,7 @@ def comision_liquidacion_pagar(request):
                 ventas_list = list(qs)
 
             if not ventas_list:
-                messages.warning(request, "No hay comisiones pagadas pendientes de liquidar para ese vendedor.")
+                messages.warning(request, "No hay comisiones impagas de pedidos cobrados para ese vendedor.")
                 return redirect(redir)
             total = q2(sum(v.monto_comision for v in ventas_list))
             if total <= 0:
@@ -760,34 +771,15 @@ def comision_liquidacion_pagar(request):
 @login_required
 @require_http_methods(["GET"])
 def venta_comisiones_historial(request):
-    liq_qs = ComisionLiquidacionPago.objects.select_related("vendedor", "movimiento_caja").order_by(
-        "-creado_en", "-id"
-    )
-    vid_f = (request.GET.get("vendedor") or "").strip()
-    if vid_f.isdigit():
-        liq_qs = liq_qs.filter(vendedor_id=int(vid_f))
-    liquidaciones = list(liq_qs[:500])
-    liq_ids = [x.pk for x in liquidaciones]
+    base, filtros_base = _comisiones_ventas_base_queryset(request)
+    vid_f = filtros_base["vendedor"]
     ventas_por_liq: dict[int, list[Venta]] = defaultdict(list)
-    if liq_ids:
-        for v in (
-            Venta.objects.filter(comision_liquidacion_pago_id__in=liq_ids)
-            .select_related("vendedor")
-            .order_by("comision_liquidacion_pago_id", "id")
-        ):
-            ventas_por_liq[int(v.comision_liquidacion_pago_id)].append(v)
-
-    base_liq, _ = _ventas_lista_base_queryset(request)
-    pendientes = list(
-        base_liq.filter(
-            estado=Venta.Estado.PAGADA,
-            aplica_comision=True,
-            comision_porcentaje__gt=0,
-            comision_liquidacion_pago_id__isnull=True,
-        )
-        .select_related("vendedor")
-        .order_by("vendedor__apellido", "vendedor__nombre", "-id")
-    )
+    for v in base.filter(comision_liquidacion_pago_id__isnull=False).order_by("creado_en", "id"):
+        ventas_por_liq[int(v.comision_liquidacion_pago_id)].append(v)
+    liquidaciones = list(ComisionLiquidacionPago.objects.filter(pk__in=ventas_por_liq.keys())
+                         .select_related("vendedor", "movimiento_caja").order_by("-creado_en", "-id"))
+    pendientes = list(base.filter(comision_liquidacion_pago_id__isnull=True)
+                     .order_by("vendedor__apellido", "vendedor__nombre", "-id"))
 
     por_vendedor_hist: dict[int, dict[str, object]] = {}
     for liq in liquidaciones:
@@ -801,8 +793,9 @@ def venta_comisiones_historial(request):
             }
             por_vendedor_hist[vid] = bucket
         ventas_li = ventas_por_liq.get(liq.pk, [])
-        bucket["liquidaciones"].append({"liq": liq, "ventas": ventas_li})
-        bucket["total_liquidado"] = q2(bucket["total_liquidado"] + liq.total)
+        total_periodo = q2(sum(v.monto_comision for v in ventas_li))
+        bucket["liquidaciones"].append({"liq": liq, "ventas": ventas_li, "total_periodo": total_periodo})
+        bucket["total_liquidado"] = q2(bucket["total_liquidado"] + total_periodo)
 
     por_vendedor_pend: dict[int, list[Venta]] = defaultdict(list)
     for v in pendientes:
@@ -832,7 +825,8 @@ def venta_comisiones_historial(request):
         "ventas/comisiones_historial.html",
         {
             "filas": filas,
-            "f": {"vendedor": vid_f},
+            "f": {**filtros_base, "estado": (request.GET.get("estado") or "").strip().upper(),
+                  "estado_comision": (request.GET.get("estado_comision") or "").strip()},
             "vendedores_opciones": Vendedor.objects.filter(habilitado=True).order_by(
                 "apellido", "nombre", "codigo"
             ),

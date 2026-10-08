@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% load money %}
+{% load money static %}
 {% block title %}Historial comisiones{% endblock %}
 {% block content %}
   <div class="app-page-header mb-3">
     <h1 class="app-page-title mb-1">Historial de comisiones</h1>
-    <p class="text-muted small mb-2">Por vendedor: liquidaciones realizadas (fecha y detalle) y comisiones de pedidos ya cobrados que siguen pendientes de liquidar al vendedor.</p>
+    
     <div class="d-flex flex-wrap gap-2">
       <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'ventas_comisiones' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}">Volver a comisiones</a>
       <a class="btn btn-outline-secondary btn-sm rounded-pill" href="{% url 'ventas_historial' %}">Historial de ventas</a>
@@ -13,23 +13,59 @@
 
   <div class="card app-card border-0 shadow-sm app-list-filters mb-3">
     <div class="card-body">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-12 col-md-6 col-lg-4">
-          <label class="form-label small text-muted mb-0">Vendedor</label>
-          <select name="vendedor" class="form-select form-select-sm">
-            <option value="" {% if not f.vendedor %}selected{% endif %}>Todos</option>
-            {% for ven in vendedores_opciones %}
-              <option value="{{ ven.pk }}" {% if f.vendedor == ven.pk|stringformat:"s" %}selected{% endif %}>
-                {{ ven.codigo }} — {{ ven.apellido }}, {{ ven.nombre }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-12 col-md-6 d-flex gap-2 flex-wrap">
-          <button type="submit" class="btn btn-sm btn-outline-dark rounded-pill">Filtrar</button>
-          <a class="btn btn-sm btn-outline-secondary rounded-pill" href="{% url 'ventas_comisiones_historial' %}">Limpiar</a>
-        </div>
-      </form>
+        <form method="get" class="row g-2 align-items-end" data-sirona-no-submit-lock>
+          <div class="col-12 col-md-3">
+            <label class="form-label small text-muted mb-0">Vendedor</label>
+            <select name="vendedor" class="form-select form-select-sm">
+              <option value="" {% if not f.vendedor %}selected{% endif %}>Todos</option>
+              {% for ven in vendedores_opciones %}
+                <option value="{{ ven.pk }}" {% if f.vendedor == ven.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ ven.codigo }} — {{ ven.apellido }}, {{ ven.nombre }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label small text-muted mb-0">Período rápido</label>
+            <select name="periodo" class="form-select form-select-sm">
+              <option value="" {% if not f.periodo %}selected{% endif %}>Personalizado / todos</option>
+              <option value="7d" {% if f.periodo == "7d" %}selected{% endif %}>Últimos 7 días</option>
+              <option value="30d" {% if f.periodo == "30d" %}selected{% endif %}>Últimos 30 días</option>
+              <option value="mes" {% if f.periodo == "mes" %}selected{% endif %}>Mes actual</option>
+              <option value="mes_ant" {% if f.periodo == "mes_ant" %}selected{% endif %}>Mes anterior</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label small text-muted mb-0">Estado pedido</label>
+            <select name="estado" class="form-select form-select-sm">
+              <option value="" {% if not f.estado %}selected{% endif %}>Todos</option>
+              <option value="PEN" {% if f.estado == "PEN" %}selected{% endif %}>Pendiente de pago</option>
+              <option value="PAG" {% if f.estado == "PAG" %}selected{% endif %}>Cobrado al cliente</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-3">
+            <label class="form-label small text-muted mb-0">Estado comisión</label>
+            <select name="estado_comision" class="form-select form-select-sm">
+              <option value="" {% if not f.estado_comision %}selected{% endif %}>Todas</option>
+              <option value="sin_pagar" {% if f.estado_comision == "sin_pagar" %}selected{% endif %}>Impagas al vendedor</option>
+              <option value="liquidables" {% if f.estado_comision == "liquidables" %}selected{% endif %}>Impagas · pedidos cobrados</option>
+              <option value="pagadas" {% if f.estado_comision == "pagadas" %}selected{% endif %}>Pagadas al vendedor</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label small text-muted mb-0">Desde · fecha del pedido</label>
+            <input type="date" aria-label="Desde (fecha del pedido)" name="fecha_desde" class="form-control form-control-sm" value="{{ f.fecha_desde }}" />
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label small text-muted mb-0">Hasta · fecha del pedido</label>
+            <input type="date" aria-label="Hasta (fecha del pedido)" name="fecha_hasta" class="form-control form-control-sm" value="{{ f.fecha_hasta }}" />
+          </div>
+          <div class="col-12 d-flex gap-2 flex-wrap">
+            <button type="submit" class="btn btn-sm btn-outline-dark rounded-pill">Filtrar</button>
+
+            <a class="btn btn-sm btn-outline-secondary rounded-pill" href="{% url 'ventas_comisiones_historial' %}">Limpiar</a>
+          </div>
+        </form>
     </div>
   </div>
 
@@ -44,11 +80,11 @@
 
           <div class="row g-3 mb-3">
             <div class="col-md-6">
-              <div class="small text-muted">Total liquidado (hist.)</div>
+              <div class="small text-muted">Comisiones pagadas · filtros actuales</div>
               <div class="fw-semibold">{{ fila.total_liquidado|ars }}</div>
             </div>
             <div class="col-md-6">
-              <div class="small text-muted">Pendiente de liquidar al vendedor</div>
+              <div class="small text-muted">Comisiones impagas · filtros actuales</div>
               <div class="fw-semibold">{{ fila.total_pendiente_liquidar|ars }}</div>
             </div>
           </div>
@@ -61,7 +97,7 @@
                   <tr>
                     <th scope="col"># Liq.</th>
                     <th scope="col">Fecha</th>
-                    <th scope="col" class="text-end col-money">Monto</th>
+                    <th scope="col" class="text-end col-money">Comisión · filtros actuales</th>
                     <th scope="col">Caja</th>
                     <th scope="col" class="text-end">Constancia</th>
                   </tr>
@@ -78,7 +114,7 @@
                             {{ liq.creado_en|date:"d/m/Y" }}
                           {% endif %}
                         </td>
-                        <td class="text-end col-money">{{ liq.total|ars }}</td>
+                        <td class="text-end col-money">{{ item.total_periodo|ars }}{% if item.total_periodo != liq.total %}<div class="small text-muted">Liquidación completa: {{ liq.total|ars }}</div>{% endif %}</td>
                         <td class="small">
                           {% if liq.movimiento_caja_id %}
                             <a href="{% url 'caja_detail' liq.movimiento_caja_id %}">Mov. #{{ liq.movimiento_caja_id }}</a>
@@ -112,13 +148,13 @@
           {% endif %}
 
           {% if fila.pendientes %}
-            <h3 class="h6 text-muted mb-2">Pedidos cobrados — comisión aún no liquidada</h3>
+            <h3 class="h6 text-muted mb-2">Comisiones impagas</h3>
             <div class="table-responsive presu-lista-table-wrap">
               <table class="modern-table table-sm">
                 <thead>
                   <tr>
                     <th scope="col">Pedido</th>
-                    <th scope="col">Fecha</th>
+                    <th scope="col">Fecha pedido</th><th scope="col">Pago pedido</th>
                     <th scope="col" class="text-end col-money">Comisión</th>
                   </tr>
                 </thead>
@@ -127,7 +163,7 @@
                     <tr>
                       <td><a href="{% url 'venta_detalle' v.pk %}">#{{ v.pk }}</a></td>
                       <td class="col-muted small">{{ v.creado_en|date:"d/m/Y" }}</td>
-                      <td class="text-end col-money text-success">{{ v.monto_comision|ars }}</td>
+                      <td>{% if v.estado == "PAG" %}Cobrado al cliente{% else %}Pendiente de cobro{% endif %}</td><td class="text-end col-money">{{ v.monto_comision|ars }}</td>
                     </tr>
                   {% endfor %}
                 </tbody>
@@ -140,4 +176,5 @@
   {% else %}
     <div class="alert alert-light border">No hay datos de liquidaciones ni pendientes para mostrar.</div>
   {% endif %}
+<script src="{% static 'js/comisiones-lote.js' %}" defer></script>
 {% endblock %}

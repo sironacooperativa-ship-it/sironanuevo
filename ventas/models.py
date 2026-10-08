@@ -165,6 +165,15 @@ class Venta(models.Model):
         return n if n > 0 else Decimal("0.00")
 
     @property
+    def comision_pagada(self) -> bool:
+        """El cobro del pedido no registra el pago de la comisión."""
+        return self.comision_liquidacion_pago_id is not None
+
+    @property
+    def comision_estado_label(self) -> str:
+        return "Pagada al vendedor" if self.comision_pagada else "Impaga al vendedor"
+
+    @property
     def monto_comision(self) -> Decimal:
         if not self.aplica_comision:
             return Decimal("0.00")
