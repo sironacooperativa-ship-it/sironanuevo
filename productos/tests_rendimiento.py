@@ -9,6 +9,30 @@ from .stock_cero import consumir_prompt_stock_cero
 
 
 class RendimientoTests(TestCase):
+    def test_paginacion_conserva_productos_y_exportacion_completa(self):
+        import io
+        from openpyxl import load_workbook
+        from .views import _retorno_params_desde_post
+        user=get_user_model().objects.create_user('paginacion',is_staff=True)
+        self.client.force_login(user)
+        for i in range(61):
+            Producto.objects.create(descripcion=f'Producto pagina {i}',stock=3,en_lista_precios=True)
+        url=reverse('productos_list')
+        first=self.client.get(url,{'lista':'all'})
+        second=self.client.get(url,{'lista':'all','page':'2'})
+        ids=[p.pk for p in first.context['productos']]+[p.pk for p in second.context['productos']]
+        self.assertEqual(len(first.context['productos']),50)
+        self.assertEqual(len(second.context['productos']),11)
+        self.assertEqual(set(ids),set(Producto.objects.values_list('pk',flat=True)))
+        for value,expected in [('25',25),('100',61),('999999',50),('abc',50)]:
+            response=self.client.get(url,{'lista':'all','page_size':value})
+            self.assertEqual(len(response.context['productos']),expected)
+        export=self.client.get(url,{'lista':'all','page_size':'25','page':'2','export':'xlsx'})
+        workbook=load_workbook(io.BytesIO(export.content),read_only=True)
+        self.assertEqual(sum(1 for _ in workbook.active.rows),62)
+        request=RequestFactory().post('/',{'retorno_query':'lista=all&page=2&page_size=25'})
+        self.assertEqual(_retorno_params_desde_post(request)['page_size'],'25')
+
     def test_sesion_sin_prompt_no_se_modifica(self):
         request=RequestFactory().get('/')
         request.session=SessionStore()

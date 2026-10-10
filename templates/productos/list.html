@@ -278,6 +278,7 @@
 
   <section class="modern-filter-card" aria-label="Filtros">
       <form class="productos-filtros-toolbar" method="get">
+        <input type="hidden" name="page_size" value="{{ page_size }}" />
         <div>
           <label class="form-label small text-muted mb-1" for="productos-filter-q">Buscar</label>
           <input
@@ -681,6 +682,17 @@
       <div class="d-flex flex-wrap gap-2 align-items-center">
         <span class="text-muted small me-1">Exportar listado:</span>
         {% include "includes/export_buttons.html" %}
+        <form method="get" class="d-flex align-items-center gap-2">
+          {% for name, value in pagination_filters %}
+            <input type="hidden" name="{{ name }}" value="{{ value }}" />
+          {% endfor %}
+          <label class="text-muted small text-nowrap" for="productos-page-size">Filas por página</label>
+          <select id="productos-page-size" name="page_size" class="form-select form-select-sm w-auto" onchange="this.form.requestSubmit()">
+            <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+            <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+            <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+          </select>
+        </form>
         {% if page_obj and page_obj.paginator.num_pages > 1 %}
           <div class="ms-auto d-flex flex-wrap align-items-center gap-2 small">
             <span class="text-muted">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>

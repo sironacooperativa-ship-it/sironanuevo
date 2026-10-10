@@ -5,15 +5,23 @@
   function paintIcons() {
     pending = false;
     var L = typeof lucide !== "undefined" ? lucide : window.lucide;
-    if (!document.querySelector("[data-lucide]:not(svg)")) return;
+    var fresh = document.querySelectorAll("[data-lucide]:not(svg)");
+    if (!fresh.length) return;
     if (L && typeof L.createIcons === "function") {
       if (observer) observer.disconnect();
+      fresh.forEach(function (el) {
+        el.setAttribute("data-sirona-icon-pending", el.getAttribute("data-lucide"));
+      });
       L.createIcons({
+        nameAttr: "data-sirona-icon-pending",
         attrs: {
           "stroke-width": 1.75,
           width: 18,
           height: 18,
         },
+      });
+      document.querySelectorAll("[data-sirona-icon-pending]").forEach(function (el) {
+        el.removeAttribute("data-sirona-icon-pending");
       });
       if (observer) observer.observe(document.documentElement, { childList: true, subtree: true });
     }

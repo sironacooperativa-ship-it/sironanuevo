@@ -101,7 +101,7 @@ def _annotate_precio_lista_vista(qs, lista_modo: str, lista_obj: ListaPrecios | 
 
 # Claves GET permitidas al volver a /productos/ (retorno_query o retorno_*).
 _REDIR_PRODUCTOS_LIST_KEYS = frozenset(
-    {"q", "tipo", "proveedor", "lista", "estado", "ingreso", "page", "ord", "dir"}
+    {"q", "tipo", "proveedor", "lista", "estado", "ingreso", "page", "page_size", "ord", "dir"}
 )
 
 # Orden en listado: clave en URL -> campo en modelo
@@ -794,7 +794,9 @@ def productos_list(request):
     kpi["margen_prom"] = q2(kpi.get("margen_prom") or Decimal("0.00"))
 
     page = (request.GET.get("page") or "").strip()
-    paginator = Paginator(productos, 100)
+    page_size_raw = request.GET.get("page_size", "50")
+    page_size = int(page_size_raw) if page_size_raw in ("25", "50", "100") else 50
+    paginator = Paginator(productos, page_size)
     page_obj = paginator.get_page(page or 1)
     productos_page = list(page_obj)
     qcopy = request.GET.copy()
@@ -833,6 +835,8 @@ def productos_list(request):
             "proveedor_sel_label": proveedor_sel_label,
             "lista_es_farmacia_sel": lista_modo == "farmacia",
             "page_obj": page_obj,
+            "page_size": page_size,
+            "pagination_filters": [(k, v) for k, values in qcopy.lists() if k != "page_size" for v in values],
             "querystring": querystring,
             "kpi": kpi,
         },
