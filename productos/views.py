@@ -721,14 +721,6 @@ def _aplicar_snapshot_excel_a_producto(producto: Producto, snap: dict) -> None:
 
 @login_required
 def productos_list(request):
-    farmacia = _lista_precios_farmacia()
-    raw_lista = _get_lista_param_get(request)
-    estado = _get_param_last_nonempty(request, "estado")
-    if farmacia is not None and raw_lista == "" and not _estado_muestra_deshabilitados(estado):
-        q = request.GET.copy()
-        q["lista"] = str(farmacia.pk)
-        return redirect(reverse("productos_list") + "?" + q.urlencode())
-
     productos, filtros_ctx = _filtrar_productos_queryset(request)
     q = filtros_ctx["q"]
     tipo = filtros_ctx["tipo"]

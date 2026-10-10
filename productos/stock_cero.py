@@ -70,9 +70,10 @@ def encolar_prompt_stock_cero(request, producto_ids: list[int]) -> None:
 
 def consumir_prompt_stock_cero(request) -> list[dict]:
     key = "stock_cero_prompt"
-    ids = request.session.pop(key, []) if request.method == "GET" else list(request.session.get(key) or [])
-    if request.method == "GET":
-        request.session.modified = True
+    if request.method == "GET" and key in request.session:
+        ids = request.session.pop(key)
+    else:
+        ids = list(request.session.get(key) or [])
     return payload_productos_stock_cero(ids)
 
 
