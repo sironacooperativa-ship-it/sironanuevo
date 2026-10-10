@@ -1628,7 +1628,8 @@
               inpModal.focus();
             } catch (e) {}
             try {
-              if (window.lucide && typeof lucide.createIcons === "function") lucide.createIcons();
+              if (typeof window.sironaPaintIcons === "function") window.sironaPaintIcons();
+              else if (window.lucide && typeof lucide.createIcons === "function") lucide.createIcons();
             } catch (e) {}
           });
           modalEl.addEventListener("hidden.bs.modal", function () {
@@ -2020,7 +2021,7 @@
       })();
     </script>
     <script src="{% static 'js/sirona-offcanvas-nav.js' %}?v=2"></script>
-    <script src="{% static 'js/sirona-modal.js' %}?v=3"></script>
+    <script src="{% static 'js/sirona-modal.js' %}?v=4"></script>
     <script src="{% static 'js/sirona-form-submit-lock.js' %}?v=1"></script>
     <script src="{% static 'js/sirona-form-confirm.js' %}?v=6"></script>
     <script src="{% static 'js/sirona-form-leave-guard.js' %}?v=1"></script>

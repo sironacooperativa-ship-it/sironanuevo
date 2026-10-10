@@ -78,7 +78,8 @@
         }
         if (typeof lucide !== "undefined") {
           try {
-            lucide.createIcons();
+            if (typeof window.sironaPaintIcons === "function") window.sironaPaintIcons();
+            else lucide.createIcons();
           } catch (e) {}
         }
       })

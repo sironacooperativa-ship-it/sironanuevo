@@ -69,6 +69,15 @@
     var catalogLoaded = productos.length > 0;
     var catalogLoading = false;
     var pendingOpen = false;
+    var searchIndex = [];
+    var lastRenderedQuery = null;
+    function indexProducts() {
+      searchIndex = productos.map(function (p) {
+        return normalizeSearch((p.codigo || "") + " " + (p.descripcion || ""));
+      });
+      lastRenderedQuery = null;
+    }
+    indexProducts();
 
     inpQ.setAttribute("role", "combobox");
     inpQ.setAttribute("aria-autocomplete", "list");
@@ -95,11 +104,12 @@
 
     function renderList() {
       var q = normalizeSearch(inpQ.value);
-      var items = q
-        ? productos.filter(function (p) {
-            return normalizeSearch((p.codigo || "") + " " + (p.descripcion || "")).indexOf(q) !== -1;
-          })
-        : productos;
+      if (q === lastRenderedQuery) return;
+      var items = [];
+      for (var i = 0; i < productos.length && items.length < 400; i++) {
+        if (!q || searchIndex[i].indexOf(q) !== -1) items.push(productos[i]);
+      }
+      lastRenderedQuery = q;
       list.innerHTML = "";
 
       items.slice(0, 400).forEach(function (p) {
@@ -162,6 +172,7 @@
         })
         .then(function (data) {
           productos = (data && data.productos) || [];
+          indexProducts();
           catalogLoaded = true;
           catalogLoading = false;
           if (pendingOpen || !menu.hidden) {

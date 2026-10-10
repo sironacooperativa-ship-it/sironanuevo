@@ -868,6 +868,8 @@
       }
       function bindRow(row) {
         if (!row) return;
+        if (row.getAttribute("data-inline-bound") === "1") return;
+        row.setAttribute("data-inline-bound", "1");
         var costoIn = row.querySelector('input[name="costo"]');
         var pctIn = row.querySelector('input[name="porcentaje_ganancia"]');
         var precioIn = row.querySelector('input[name="precio_venta"]');
@@ -905,7 +907,6 @@
           });
         }
       }
-      document.querySelectorAll("tr.producto-row-inline").forEach(bindRow);
 
       document.querySelectorAll(".js-producto-editar").forEach(function (btn) {
         btn.addEventListener("click", function () {
@@ -925,6 +926,7 @@
           });
           var row = document.getElementById(id);
           if (row) {
+            bindRow(row);
             row.classList.add("is-editing");
             syncProductosInlineEditingTable();
             updateRow(row);
@@ -1047,7 +1049,7 @@
     Código automático: <code>ME/AC/OT</code> + 4 dígitos.
   </p>
 
-  <script src="{% static 'js/sirona-productos-q-picker.js' %}?v=3"></script>
+  <script src="{% static 'js/sirona-productos-q-picker.js' %}?v=4"></script>
   <script>
     (function () {
       if (window.SironaProductosQPicker) {
