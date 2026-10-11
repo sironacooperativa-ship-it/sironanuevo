@@ -49,33 +49,21 @@
           <label class="form-label small text-muted mb-0">Vendedor</label>
           <select name="vendedor" class="form-select form-select-sm">
             <option value="">Todos</option>
-            {% for v in vendedores_filtro %}
-              <option value="{{ v.pk }}" {% if filtros.vendedor == v.pk|stringformat:"s" %}selected{% endif %}>
-                {{ v.codigo }} — {{ v.apellido }}, {{ v.nombre }}
-              </option>
-            {% endfor %}
+            {{ opciones_vendedores }}
           </select>
         </div>
         <div class="col-12 col-md-6 col-lg-2">
           <label class="form-label small text-muted mb-0">Comprador</label>
           <select name="comprador" class="form-select form-select-sm">
             <option value="">Todos</option>
-            {% for c in compradores_filtro %}
-              <option value="{{ c.pk }}" {% if filtros.comprador == c.pk|stringformat:"s" %}selected{% endif %}>
-                {{ c.codigo }} — {{ c.apellido }}, {{ c.nombre }}
-              </option>
-            {% endfor %}
+            {{ opciones_compradores }}
           </select>
         </div>
         <div class="col-12 col-md-6 col-lg-2">
           <label class="form-label small text-muted mb-0">Producto (en el pedido)</label>
           <select name="producto" class="form-select form-select-sm">
             <option value="">Todos</option>
-            {% for p in productos_filtro %}
-              <option value="{{ p.pk }}" {% if filtros.producto == p.pk|stringformat:"s" %}selected{% endif %}>
-                {{ p.codigo }} — {{ p.descripcion|truncatechars:28 }}
-              </option>
-            {% endfor %}
+            {{ opciones_productos }}
           </select>
         </div>
         <div class="col-12 d-flex gap-2 flex-wrap">
@@ -555,6 +543,6 @@
 {% block page_scripts %}
   <script src="{% static 'js/sirona-despacho-historial.js' %}?v=5"></script>
   {% if filtros.pestana == "a_pagar" and filtros.vendedor %}
-    <script src="{% static 'js/ventas-historial-pago-masivo.js' %}?v=1"></script>
+    <script src="{% static 'js/ventas-historial-pago-masivo.js' %}?v=2"></script>
   {% endif %}
 {% endblock %}

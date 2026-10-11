@@ -1,8 +1,9 @@
 from django.urls import path
 
-from . import despacho_views, views
+from . import despacho_views, views, pago_popup
 
 urlpatterns = [
+    path("comprobante-pago/<int:pk>/", pago_popup.comprobante, name="venta_pago_comprobante"),
     path("papelera/", views.venta_papelera, name="venta_papelera"),
     path("<int:pk>/restaurar/", views.venta_restaurar, name="venta_restaurar"),
     path("", views.venta_historial, name="ventas_historial"),

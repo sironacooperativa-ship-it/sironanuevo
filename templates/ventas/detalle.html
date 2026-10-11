@@ -451,6 +451,12 @@
             <li><strong>Fecha de cobro:</strong> {{ venta.pago_movimiento.fecha|date:"d/m/Y" }}</li>
             <li><strong>Medio:</strong> {{ venta.pago_movimiento.get_medio_pago_display }}</li>
             <li><strong>Monto:</strong> {{ venta.pago_movimiento.monto|ars }}</li>
+            {% if venta.pago_movimiento.detalle_pago_pedido.detalle %}
+              <li><strong>Detalle:</strong> {{ venta.pago_movimiento.detalle_pago_pedido.detalle }}</li>
+            {% endif %}
+            {% if venta.pago_movimiento.detalle_pago_pedido.comprobante_id %}
+              <li><a href="{% url 'venta_pago_comprobante' venta.pago_movimiento.detalle_pago_pedido.comprobante_id %}">Descargar comprobante</a></li>
+            {% endif %}
             {% if venta.pago_movimiento.banco %}
               <li><strong>Banco / texto:</strong> {{ venta.pago_movimiento.banco }}</li>
             {% endif %}

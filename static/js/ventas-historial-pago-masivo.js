@@ -65,7 +65,9 @@
       const params = new URLSearchParams();
       ids.forEach((id) => params.append("venta_id", id));
       if (retorno) params.set("retorno", retorno);
-      w.location.href = base + "?" + params.toString();
+      const url = base + "?" + params.toString();
+      if (typeof w.sironaOpenPago === "function") w.sironaOpenPago(url);
+      else w.location.href = url;
     });
 
     refresh();

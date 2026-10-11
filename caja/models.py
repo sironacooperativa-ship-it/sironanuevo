@@ -87,7 +87,9 @@ class MovimientoCaja(models.Model):
         if es_corte:
             return
 
-        if self.medio_pago in (self.MedioPago.TRANSFERENCIA, self.MedioPago.MERCADOPAGO):
+        if self.medio_pago in (self.MedioPago.TRANSFERENCIA, self.MedioPago.MERCADOPAGO) and not (
+            (self.venta_id and self.tipo == self.Tipo.INGRESO) or getattr(self, "_cobro_pedido", False)
+        ):
             if not self.banco.strip():
                 raise ValidationError({"banco": "Indicá el banco o si es MercadoPago."})
             if not self.cuenta_bancaria_id:

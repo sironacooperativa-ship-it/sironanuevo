@@ -37,6 +37,11 @@ body.app-authenticated main.app-main.page-shell { max-width:none; padding:18px 2
 .sirona-topbar-inner { gap:10px!important; }
 .sirona-topbar-left { min-width:0!important; }
 .sirona-topbar-left .navbar-brand { min-width:0; margin-right:0; }
+:root { --topbar-h:82px; }
+.sirona-topbar { padding-block:0; }
+.sirona-topbar .brand-logo { width:64px; height:64px; max-height:none; flex-shrink:0; object-fit:contain; }
+@media(max-width:1023px) { :root { --topbar-h:74px; } .sirona-topbar .brand-logo { width:56px; height:56px; } }
+@media(max-width:767px) { :root { --topbar-h:68px; } .sirona-topbar .brand-logo { width:50px; height:50px; } }
 .sirona-topbar-actions { gap:4px!important; }
 .sirona-anele-link { flex:0 0 auto; padding:6px 9px!important; font-size:12px!important; line-height:1.2!important; min-width:0!important; white-space:nowrap; }
 @media (max-width:1199.98px) {

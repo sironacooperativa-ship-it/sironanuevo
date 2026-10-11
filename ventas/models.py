@@ -377,6 +377,19 @@ class ArmadoColectivoLineaGuardada(models.Model):
         return f"{self.codigo} x{self.cantidad_total}"
 
 
+class PagoPedidoComprobante(models.Model):
+    nombre = models.CharField(max_length=255)
+    tipo = models.CharField(max_length=40)
+    contenido = models.BinaryField()
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+
+class PagoPedidoDetalle(models.Model):
+    movimiento = models.OneToOneField("caja.MovimientoCaja", on_delete=models.CASCADE, related_name="detalle_pago_pedido")
+    detalle = models.TextField(blank=True)
+    comprobante = models.ForeignKey(PagoPedidoComprobante, null=True, blank=True, on_delete=models.SET_NULL)
+
+
 class ArmadoColectivoAsignacion(models.Model):
     linea = models.ForeignKey(
         ArmadoColectivoLineaGuardada,

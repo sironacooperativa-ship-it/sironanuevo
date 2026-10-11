@@ -59,6 +59,28 @@ class VentaCabeceraEditForm(forms.ModelForm):
 
 
 class VentaPagoForm(forms.ModelForm):
+    detalle = forms.CharField(required=False, max_length=4000, widget=forms.Textarea(attrs={"class": "form-control", "rows": 2, "placeholder": "Banco, referencia u otros datos"}))
+    comprobante = forms.FileField(required=False, widget=forms.ClearableFileInput(attrs={"class": "form-control", "accept": ".pdf,.png,.jpg,.jpeg,.webp"}))
+
+    def clean_comprobante(self):
+        archivo = self.cleaned_data.get("comprobante")
+        if not archivo:
+            return None
+        if archivo.size > 10 * 1024 * 1024:
+            raise forms.ValidationError("El comprobante debe pesar hasta 10 MB.")
+        cabecera = archivo.read(16)
+        archivo.seek(0)
+        if cabecera.startswith(b"%PDF-"):
+            archivo.tipo_validado = "application/pdf"
+        elif cabecera.startswith(b"\x89PNG\r\n\x1a\n"):
+            archivo.tipo_validado = "image/png"
+        elif cabecera.startswith(b"\xff\xd8\xff"):
+            archivo.tipo_validado = "image/jpeg"
+        elif cabecera.startswith(b"RIFF") and cabecera[8:12] == b"WEBP":
+            archivo.tipo_validado = "image/webp"
+        else:
+            raise forms.ValidationError("Adjuntá un PDF o una imagen PNG, JPG o WebP.")
+        return archivo
     fecha = forms.DateField(
         input_formats=list(DATE_INPUT_FORMATS),
         widget=date_input_widget(),
@@ -92,3 +114,5 @@ class VentaPagoForm(forms.ModelForm):
             "banco", "cuenta"
         )
         self.fields["cuenta_bancaria"].required = False
+        # El cobro de un pedido permite identificar la transferencia más tarde.
+        self.instance._cobro_pedido = True

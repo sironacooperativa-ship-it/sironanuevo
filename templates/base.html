@@ -105,7 +105,7 @@
     <script src="{% static 'js/money-ars.js' %}"></script>
     {% block extra_head %}{% endblock %}
 <link rel="stylesheet" href="{% static 'css/responsive.css' %}?v=2">
-<link rel="stylesheet" href="{% static 'css/compact-layout.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'css/compact-layout.css' %}?v=4">
   </head>
   <body
     class="app-body{% if request.user.is_authenticated %} app-authenticated{% else %} app-guest{% endif %}"
@@ -430,27 +430,6 @@
 
       {% if not vendor_mode %}
         <aside class="sidebar" aria-label="Sidebar">
-          <div class="d-flex align-items-center justify-content-between gap-2 px-1">
-            <a class="sidebar-brand" href="{% url 'home' %}">
-              <img class="sidebar-logo" src="{% static 'img/sirona-logo.png' %}" alt="Sirona" />
-              <span class="sidebar-brand-text">
-                <span class="sidebar-brand-title">Sirona</span>
-                <span class="sidebar-brand-subtitle">Sistema de gestión</span>
-              </span>
-            </a>
-            <button
-              type="button"
-              class="btn app-icon-btn sidebar-collapse-btn d-none d-lg-inline-flex"
-              id="btnSidebarCollapse"
-              aria-label="Colapsar sidebar"
-              title="Colapsar sidebar"
-            >
-              <span class="sirona-hamb-ico sirona-side-ico" aria-hidden="true">
-                <i data-lucide="menu" class="app-lucide-toolbar sirona-side-ico--menu"></i>
-                <i data-lucide="x" class="app-lucide-toolbar sirona-side-ico--close"></i>
-              </span>
-            </button>
-          </div>
           <nav class="sidebar-nav" aria-label="Navegación principal">
             <a class="sidebar-link app-sidebar-link" href="{% url 'home' %}" title="Inicio">
               <span class="app-sidebar-icon-wrap"><i data-lucide="home"></i></span>
@@ -2050,6 +2029,7 @@
   <button class="btn btn-light" type="button" id="sironaInstallClose" aria-label="Cerrar sugerencia de instalación">×</button>
 </div>
 <script src="{% static 'js/sirona-pwa.js' %}?v=3" defer></script>
+<script src="{% static 'js/ventas-pago-popup.js' %}?v=1" defer></script>
 <script src="{% static 'js/compact-layout.js' %}?v=1" defer></script>
 </body>
 </html>
