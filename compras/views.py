@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from ventas.filtros_html import opciones_productos, opciones_personas
 from django.db import DatabaseError, transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
@@ -122,6 +123,8 @@ def compra_historial(request):
             "filtros": filtros_ctx,
             "productos_filtro": productos,
             "proveedores_filtro": proveedores,
+            "opciones_productos": opciones_productos(productos, filtros_ctx.get("producto", ""), longitud=32),
+            "opciones_proveedores": opciones_personas(proveedores, filtros_ctx.get("proveedor", "")),
             "es_admin_compras": is_staff_user(request.user),
             "page_obj": page_obj,
             "querystring": querystring,

@@ -45,22 +45,14 @@
           <label class="form-label small text-muted mb-0">Proveedor</label>
           <select name="proveedor" class="form-select form-select-sm">
             <option value="">Todos</option>
-            {% for p in proveedores_filtro %}
-              <option value="{{ p.pk }}" {% if filtros.proveedor == p.pk|stringformat:"s" %}selected{% endif %}>
-                {{ p.codigo }} — {{ p.apellido }}, {{ p.nombre }}
-              </option>
-            {% endfor %}
+            {{ opciones_proveedores }}
           </select>
         </div>
         <div class="col-12 col-md-6 col-lg-2">
           <label class="form-label small text-muted mb-0">Producto</label>
           <select name="producto" class="form-select form-select-sm">
             <option value="">Todos</option>
-            {% for p in productos_filtro %}
-              <option value="{{ p.pk }}" {% if filtros.producto == p.pk|stringformat:"s" %}selected{% endif %}>
-                {{ p.codigo }} — {{ p.descripcion|truncatechars:32 }}
-              </option>
-            {% endfor %}
+            {{ opciones_productos }}
           </select>
         </div>
         <div class="col-12 col-lg-2 d-flex gap-2 flex-wrap align-items-end">

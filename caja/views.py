@@ -85,12 +85,10 @@ def _saldo_caja_al(hasta: date) -> Decimal:
         extra = qs.filter(Q(fecha__gt=ultimo.fecha) | Q(fecha=ultimo.fecha, pk__gt=ultimo.pk))
         s = extra.aggregate(s=Coalesce(Sum(delta_expr), _ZERO_DEC)).get("s") or Decimal("0.00")
         return q2(q2(ultimo.saldo_arqueo) + q2(s))
-    ing = (
-        qs.filter(tipo=MovimientoCaja.Tipo.INGRESO).aggregate(s=Sum("monto"))["s"] or Decimal("0.00")
-    )
-    egr = (
-        qs.filter(tipo=MovimientoCaja.Tipo.EGRESO).aggregate(s=Sum("monto"))["s"] or Decimal("0.00")
-    )
+    totales = qs.aggregate(ing=Sum("monto", filter=Q(tipo=MovimientoCaja.Tipo.INGRESO)),
+                           egr=Sum("monto", filter=Q(tipo=MovimientoCaja.Tipo.EGRESO)))
+    ing = totales["ing"] or Decimal("0.00")
+    egr = totales["egr"] or Decimal("0.00")
     return q2(ing - egr)
 
 
@@ -118,8 +116,9 @@ def _saldos_libro_por_medio(hasta: date) -> dict[str, Decimal]:
         )
     else:
         movs = qs.exclude(es_arqueo=True)
-    for m in movs.only("medio_pago", "tipo", "monto", "es_arqueo"):
-        acc[m.medio_pago] = q2(acc.get(m.medio_pago, Decimal("0.00")) + m.delta)
+    for fila in movs.order_by().values("medio_pago").annotate(delta=Sum(_delta_caja_expr())):
+        medio = fila["medio_pago"]
+        acc[medio] = q2(acc.get(medio, Decimal("0.00")) + q2(fila["delta"]))
     acc["total"] = q2(sum(acc[code] for code, _lbl in MovimientoCaja.MedioPago.choices))
     return acc
 
@@ -160,14 +159,10 @@ def _resumen_caja_dashboard(hoy: date) -> dict:
 
     inicio_mes = hoy.replace(day=1)
     qs_mes = MovimientoCaja.objects.filter(fecha__gte=inicio_mes, fecha__lte=hoy).exclude(es_arqueo=True)
-    ing_mes = (
-        qs_mes.filter(tipo=MovimientoCaja.Tipo.INGRESO).aggregate(s=Sum("monto"))["s"]
-        or Decimal("0.00")
-    )
-    egr_mes = (
-        qs_mes.filter(tipo=MovimientoCaja.Tipo.EGRESO).aggregate(s=Sum("monto"))["s"]
-        or Decimal("0.00")
-    )
+    totales_mes = qs_mes.aggregate(ing=Sum("monto", filter=Q(tipo=MovimientoCaja.Tipo.INGRESO)),
+                                   egr=Sum("monto", filter=Q(tipo=MovimientoCaja.Tipo.EGRESO)))
+    ing_mes = totales_mes["ing"] or Decimal("0.00")
+    egr_mes = totales_mes["egr"] or Decimal("0.00")
     dec14 = DecimalField(max_digits=14, decimal_places=2)
     gan_mes = (
         Venta.objects.filter(

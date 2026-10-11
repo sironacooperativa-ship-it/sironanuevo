@@ -551,16 +551,12 @@ def venta_comisiones(request):
             }
         )
 
-    liq_base_qs = ventas_qs.filter(
-        estado=Venta.Estado.PAGADA,
-        aplica_comision=True,
-        comision_porcentaje__gt=0,
-        comision_liquidacion_pago_id__isnull=True,
-    ).select_related("vendedor", "comprador")
-
     by_vid: dict[int, list[Venta]] = defaultdict(list)
-    for v in liq_base_qs.order_by("-creado_en", "-id"):
-        by_vid[int(v.vendedor_id)].append(v)
+    # The detail already fetched this exact filtered set with its relations.
+    for v in ventas_list:
+        if (v.estado == Venta.Estado.PAGADA and v.aplica_comision
+                and v.comision_porcentaje > 0 and v.comision_liquidacion_pago_id is None):
+            by_vid[int(v.vendedor_id)].append(v)
 
     pendiente_liquidar_global: list[dict[str, object]] = []
     for vid, ventas_liquidables in sorted(

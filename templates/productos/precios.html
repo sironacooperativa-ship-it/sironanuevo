@@ -7,6 +7,25 @@
     .precios-search-bar {
       max-width: 28rem;
     }
+    .app-body .app-main .table-card--productos.precios-table-card { max-width: none !important; }
+    .app-main .table-card--productos.precios-table-card table.table-productos {
+      table-layout: auto !important;
+      min-width: 900px !important;
+      width: 100% !important;
+    }
+    .precios-table-card th:first-child { width: 100%; }
+    .precios-table-card th:not(:first-child),
+    .precios-table-card td:not(:first-child) { width: auto !important; white-space: nowrap; }
+    .app-main .precios-table-card .productos-desc-title,
+    .app-main .precios-table-card .productos-desc-meta {
+      white-space: nowrap !important;
+      overflow: visible !important;
+      text-overflow: clip !important;
+      max-width: none !important;
+      -webkit-line-clamp: unset !important;
+      display: block !important;
+    }
+    .precios-table-card .productos-desc-stack { max-width: none !important; }
     .precios-th-sort {
       color: #64748b;
       font-weight: 500;
@@ -65,7 +84,7 @@
     </form>
   </section>
 
-  <div class="table-card table-card--productos presu-lista-modern">
+  <div class="table-card table-card--productos presu-lista-modern precios-table-card">
     <div class="table-responsive presu-lista-table-wrap">
       <table class="modern-table app-table table-productos">
         <thead class="productos-thead-saas">

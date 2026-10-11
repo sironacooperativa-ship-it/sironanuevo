@@ -797,6 +797,8 @@ def productos_list(request):
     page_size_raw = request.GET.get("page_size", "50")
     page_size = int(page_size_raw) if page_size_raw in ("25", "50", "100") else 50
     paginator = Paginator(productos, page_size)
+    # The KPI already counts this same filtered queryset, including DISTINCT.
+    paginator.count = int(kpi["productos"])
     page_obj = paginator.get_page(page or 1)
     productos_page = list(page_obj)
     qcopy = request.GET.copy()
