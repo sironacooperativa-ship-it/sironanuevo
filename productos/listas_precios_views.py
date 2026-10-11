@@ -18,6 +18,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import urlencode
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.cache import never_cache
 
 from core.authz import staff_required
 from core.money_decimal import format_monto_ars, q2
@@ -675,6 +676,25 @@ def lista_precios_export_png(request, pk: int):
             "export_params": export_params,
         },
     )
+
+
+@require_http_methods(["GET"])
+@never_cache
+def lista_precios_public_farmacia(request):
+    lista = ListaPrecios.objects.filter(es_farmacia=True).order_by("id").first()
+    if lista is None:
+        raise Http404("No existe lista Farmacia.")
+    # El PDF utiliza exactamente las mismas reglas de inclusión y orden.
+    if request.GET.get("formato") == "pdf":
+        return lista_precios_pdf_file_response(lista=lista)
+    productos = Producto.objects.filter(habilitado=True, en_lista_precios=True).order_by(
+        *_order_by_lista_precios(None)
+    ).values("codigo", "tipo", "descripcion", "precio_venta", "oferta")
+    tipos = dict(Producto.Tipo.choices)
+    filas = [dict(p, tipo_nombre=tipos.get(p["tipo"], p["tipo"]), precio=format_monto_ars(p["precio_venta"])) for p in productos]
+    return render(request, "productos/lista_precios_public_rapida.html", {
+        "lista": lista, "filas": filas, "emitido_en": timezone.localtime(),
+    })
 
 
 @require_http_methods(["GET"])

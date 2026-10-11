@@ -65,6 +65,11 @@ urlpatterns = [
         name="lista_precios_export_png",
     ),
     path(
+        "listas-precio/public/farmacia/",
+        listas_precios_views.lista_precios_public_farmacia,
+        name="lista_precios_public_farmacia",
+    ),
+    path(
         "listas-precio/public/farmacia/png/",
         listas_precios_views.lista_precios_public_farmacia_png,
         name="lista_precios_public_farmacia_png",
