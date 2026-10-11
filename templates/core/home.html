@@ -3,6 +3,15 @@
 {% block title %}Inicio{% endblock %}
 {% block extra_head %}
   <style>
+    .home-summary-panels { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; align-items:stretch; }
+    .home-summary-panels .stat-card { display:flex; flex-direction:column; min-width:0; height:100%; margin:0; }
+    .home-summary-panels .stat-row { min-height:44px; align-items:center; margin-bottom:8px; }
+    .home-summary-panels .stat-label { flex:1; min-width:0; }
+    .home-summary-panels .stat-ico { flex-shrink:0; }
+    .home-summary-panels .stat-value { font-size:clamp(1.1rem,1.7vw,1.5rem); line-height:1.25; margin-bottom:8px; overflow-wrap:anywhere; }
+    @media(max-width:1099.98px) { .home-summary-panels { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media(max-width:479.98px) { .home-summary-panels { grid-template-columns:1fr; gap:12px; } }
+
     .home-kpi-row {
       --home-kpi-card-min-h: 10.75rem;
     }
@@ -83,11 +92,9 @@
     </div>
   </div>
 
-  <div class="row g-3 mb-3 align-items-stretch home-kpi-row">
-    <div class="col-12 col-lg-4 order-2 order-lg-1 h-100 d-flex flex-column">
-      <div class="row g-3 flex-grow-1 w-100 mx-0 align-items-stretch flex-fill">
-        <div class="col-6 d-flex align-items-stretch">
-          <div class="stat-card w-100 h-100">
+  <div class="home-summary-panels mb-3">
+
+          <div class="stat-card">
             <div class="stat-row">
               <div class="stat-label">Productos habilitados</div>
               <span class="stat-ico"><i data-lucide="package"></i></span>
@@ -95,9 +102,8 @@
             <div class="stat-value">{{ resumen.productos_habilitados }}</div>
             <div class="text-muted small">Totales activos</div>
           </div>
-        </div>
-        <div class="col-6 d-flex align-items-stretch">
-          <a class="stat-card w-100 h-100 text-decoration-none text-body d-block" href="{% url 'stock_home' %}?estado=alertas" title="Ver productos con alertas de stock">
+
+          <a class="stat-card text-decoration-none text-body" href="{% url 'stock_home' %}?estado=alertas" title="Ver productos con alertas de stock">
             <div class="stat-row">
               <div class="stat-label">Alertas stock</div>
               <span class="stat-ico stat-ico--danger" aria-hidden="true"><i data-lucide="alert-triangle"></i></span>
@@ -110,11 +116,8 @@
               {% if stock_alertas_count %} · <span class="text-primary">Ver listado</span>{% endif %}
             </div>
           </a>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-lg-4 order-1 order-lg-2 h-100 d-flex flex-column">
-      <div class="stat-card w-100 flex-grow-1">
+
+      <div class="stat-card">
         <div class="stat-row">
           <div class="stat-label">Ventas ({{ ventas_mes_label }})</div>
           <span class="stat-ico"><i data-lucide="badge-dollar-sign"></i></span>
@@ -127,9 +130,8 @@
           </div>
         {% endif %}
       </div>
-    </div>
-    <div class="col-12 col-lg-4 order-3 order-lg-3 h-100 d-flex flex-column">
-      <div class="stat-card w-100 flex-grow-1">
+
+      <div class="stat-card">
         <div class="stat-row">
           <div class="stat-label">Compras (30 días)</div>
           <span class="stat-ico stat-ico--orange"><i data-lucide="shopping-cart"></i></span>
@@ -137,7 +139,6 @@
         <div class="stat-value">{{ kpis_compras.monto_total|ars }}</div>
         <div class="text-muted small">{{ kpis_compras.compras }} compras registradas</div>
       </div>
-    </div>
   </div>
 
   <div class="card-table home-pedidos-pendiente home-pend-modern mb-3">
