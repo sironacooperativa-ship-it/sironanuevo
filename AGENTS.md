@@ -9,9 +9,16 @@ Este checkout es un entorno aislado. Usar el checkout existente en `/workspace/s
 - Usar siempre `bash devtools/manage.sh ...`: selecciona settings aislados, elimina DATABASE_URL y fuerza SQLite temporal en `/tmp/sirona-dev-<uid>/db.sqlite3`. Tests usan SQLite en memoria. Media y estáticos generados también quedan fuera del checkout.
 - No ejecutar los comandos de Render, restauraciones, migraciones ni comandos administrativos con los settings originales. No crear usuarios persistentes sin un pedido explícito; los tests pueden generar fixtures sintéticos.
 - No poner secretos, `.env`, bases, backups, credenciales ni datos reales en Git. No copiar claves de Render al entorno.
-- Esta integración solo autoriza configuración de desarrollo y CI, sin cambios funcionales.
+- Esta actualización solo autoriza documentación de continuidad; no modificar app ni migraciones.
 - Cambios futuros pedidos por Juan: ejecutar instalación/pip check, Django check y todas las pruebas con SQLite aislado antes de push a `main`. Si falla algo, no hacer push. Revisar diff y preservar cambios ajenos; nunca force push.
-- El servicio existente `sironanuevo-1` seguirá conectado a `main`, con Render configurado por Juan en «After CI Checks Pass». Después del push, comprobar GitHub Actions para el SHA exacto. Render se encarga del despliegue tras CI; no crear servicios ni ejecutar despliegues manuales. Un CI correcto no prueba que Render haya desplegado correctamente.
+- Los cambios pedidos por Juan pueden publicarse por push a `main` tras pasar las pruebas locales; después deben pasar CI para que Render despliegue automáticamente. No hace falta clave de Render en el entorno ni en Git.
+- Juan verificó en navegador que el servicio existente `sironanuevo-1` (`srv-d7f9u2tckfvc73dq2v00`), conectado a `main`, tiene Auto-Deploy = «After CI Checks Pass». Después del push, comprobar GitHub Actions para el SHA exacto. Render se encarga del despliegue tras CI; no crear servicios ni ejecutar despliegues manuales. Un CI correcto no prueba que Render haya desplegado correctamente.
+
+## Verificaciones de continuidad
+
+- Juan confirmó en navegador que Django CI del commit `2c16fb6f560f8c3928afd96bd1f538ed5a308fb5` pasó en 25 segundos: https://github.com/sironacooperativa-ship-it/sironanuevo/actions/runs/43686460542.
+- Juan guardó `api.github.com` como dominio permitido. Si la API sigue respondiendo 403 en una instancia, distinguir el acceso de esa instancia del resultado de CI confirmado en navegador; no solicitar claves de Render para consultar GitHub.
+- El siguiente push de documentación permite comprobar el disparo automático con esa configuración activada. Verificar CI del nuevo SHA y distinguirlo del despliegue efectivo de Render.
 
 ## Comandos desde la raíz del repositorio
 
