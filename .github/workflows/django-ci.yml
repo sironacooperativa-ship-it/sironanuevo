@@ -1,0 +1,32 @@
+name: Django CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  django:
+    name: Python 3.12 / SQLite
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: ""
+      DJANGO_SETTINGS_MODULE: devtools.settings
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies, pip check and Django check
+        run: bash devtools/install.sh
+      - name: Django tests with temporary SQLite
+        run: bash devtools/manage.sh test --noinput --verbosity 2
