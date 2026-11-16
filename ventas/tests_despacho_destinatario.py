@@ -23,7 +23,7 @@ class DestinatarioDespachoTests(TestCase):
         self.venta.refresh_from_db()
         self.assertEqual(self.venta.despacho_destinatario, 'Pérez, Ana')
         self.assertTrue(self.venta.despacho_armado)
-        self.assertContains(self.client.get(reverse('ventas_historial')), 'Despachado a: Pérez, Ana')
+        self.assertContains(self.client.get(reverse('ventas_historial')), 'Pérez, Ana')
 
     def test_otro_requiere_nombre_y_no_modifica_estado_si_es_invalido(self):
         for datos in ({}, {'destinatario': 'otro', 'otro': '  '}, {'destinatario': '999999'}, {'destinatario': 'otro', 'otro': 'x' * 221}):

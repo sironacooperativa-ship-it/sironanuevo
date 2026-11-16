@@ -277,7 +277,7 @@
             <th scope="col" class="col-ped th-pedido">Pedido / fecha</th>
             <th scope="col" class="th-vend presu-col-ellipsis">Vendedor</th>
             <th scope="col" class="th-compra presu-col-ellipsis d-none d-md-table-cell">Comprador</th>
-            <th scope="col" class="small">Despacho</th>
+            <th scope="col" class="small">Despachado a</th>
             <th scope="col" class="text-center th-comision col-comision-switch small col-hide-sm">
               <span class="d-block">Comisión</span>
               <span class="fw-normal text-muted" style="font-size: 0.7rem">vendedor 5%</span>
@@ -327,7 +327,7 @@
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td class="ventas-hist-td-despacho small" data-label="Despacho"><span class="venta-despacho-resumen">{% if v.despacho_despachado and not v.despacho_destinatario %}<span class="d-block text-muted">Despachado a</span><button type="button" class="btn btn-link btn-sm p-0 text-start" data-destinatario-url="{% url 'venta_actualizar_despacho' v.pk %}" aria-label="Indicar destinatario del pedido {{ v.pk }}">No especificado</button>{% else %}{{ v.despacho_resumen }}{% endif %}</span></td>
+              <td class="ventas-hist-td-despacho small" data-label="Despachado a"><span class="venta-despacho-resumen">{% if v.despacho_despachado and not v.despacho_destinatario %}<button type="button" class="btn btn-link btn-sm p-0 text-start" data-destinatario-url="{% url 'venta_actualizar_despacho' v.pk %}" aria-label="Indicar destinatario del pedido {{ v.pk }}">No especificado</button>{% else %}{{ v.despacho_resumen }}{% endif %}</span></td>
               <td class="text-center align-middle comision-cel col-comision-switch py-2 col-hide-sm ventas-hist-td-comision" data-label="Comisión vendedor">
                 <form
                   method="post"

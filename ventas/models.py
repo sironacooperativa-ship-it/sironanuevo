@@ -159,7 +159,7 @@ class Venta(models.Model):
     def despacho_resumen(self):
         if not self.despacho_despachado:
             return "Sin despachar"
-        return "Despachado a: " + (self.despacho_destinatario or "No especificado")
+        return self.despacho_destinatario or "No especificado"
 
     class Meta:
         ordering = ["-creado_en", "-id"]
