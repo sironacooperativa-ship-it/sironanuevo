@@ -84,6 +84,11 @@
     var form = formForRow(row);
     if (!row || !form || row.getAttribute("data-despacho-saving") === "1") return;
 
+    if (changed.classList.contains("venta-despacho-despachado") && changed.checked) {
+      changed.checked = false;
+      window.SironaDestinatario.open(form.action);
+      return;
+    }
     syncCheckboxes(changed);
 
     var armado = row.querySelector(".venta-despacho-armado");

@@ -115,39 +115,7 @@
   if (btnDespachar && despForm) {
     btnDespachar.addEventListener("click", function (ev) {
       ev.preventDefault();
-      if (
-        !window.confirm(
-          "¿Marcar todos los pedidos de este armado como despachados? Quedarán archivados y no se podrán editar."
-        )
-      ) {
-        return;
-      }
-
-      btnDespachar.disabled = true;
-      fetch(despForm.action, {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          Accept: "application/json",
-          "X-CSRFToken": csrfToken(),
-        },
-        body: new FormData(despForm),
-      })
-        .then(function (r) {
-          return r.json().then(function (data) {
-            if (!r.ok) throw new Error((data && data.error) || "Error al despachar");
-            return data;
-          });
-        })
-        .then(function (data) {
-          publishDespachoSync(data.ventas);
-          window.location.reload();
-        })
-        .catch(function () {
-          btnDespachar.disabled = false;
-          window.alert("No se pudieron marcar los pedidos como despachados. Intentá de nuevo.");
-        });
+      window.SironaDestinatario.open(despForm.action);
     });
   }
 

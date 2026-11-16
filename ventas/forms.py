@@ -116,3 +116,27 @@ class VentaPagoForm(forms.ModelForm):
         self.fields["cuenta_bancaria"].required = False
         # El cobro de un pedido permite identificar la transferencia más tarde.
         self.instance._cobro_pedido = True
+
+
+class DespachoDestinatarioForm(forms.Form):
+    destinatario = forms.ChoiceField(label="¿A quién se despachó?", widget=forms.Select(attrs={"class": "form-select"}))
+    otro = forms.CharField(label="Nombre de la persona", max_length=220, required=False, widget=forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from personas.models import Vendedor
+        self.vendedores = {str(v.pk): v for v in Vendedor.objects.all()}
+        self.fields["destinatario"].choices = [("", "Seleccioná una persona")] + [(pk, str(v)) for pk, v in self.vendedores.items()] + [("otro", "Otro")]
+
+    def clean(self):
+        data = super().clean()
+        seleccion = data.get("destinatario")
+        if seleccion == "otro":
+            if not data.get("otro", "").strip():
+                self.add_error("otro", "Indicá a quién se despachó.")
+            else:
+                data["nombre_destinatario"] = data["otro"].strip()
+        elif seleccion in self.vendedores:
+            v = self.vendedores[seleccion]
+            data["nombre_destinatario"] = f"{v.apellido}, {v.nombre}"
+        return data

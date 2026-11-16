@@ -18,6 +18,7 @@
       venta_id: data.venta_id,
       estado: data.estado || "no_armado",
       label: data.label || "",
+      despacho_resumen: data.despacho_resumen || "",
       despacho_armado: !!data.despacho_armado,
       despacho_despachado: !!data.despacho_despachado,
       despacho_despachado_en: data.despacho_despachado_en || null,
@@ -86,6 +87,9 @@
   function applyToHistorialButton(btn, data) {
     if (!btn || !data) return;
     var estado = data.estado || "no_armado";
+    var row = btn.closest("tr");
+    var resumen = row && row.querySelector(".venta-despacho-resumen");
+    if (resumen && data.despacho_resumen) resumen.textContent = data.despacho_resumen;
     btn.setAttribute("data-despacho-estado", estado);
     if (data.label) {
       btn.setAttribute("aria-label", "Cambiar estado de despacho: " + data.label);

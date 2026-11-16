@@ -49,7 +49,7 @@ def marcar_pedidos_armados(venta_ids: list[int]) -> list[dict]:
     return [venta_despacho_json_payload(v) for v in Venta.objects.filter(pk__in=ids)]
 
 
-def marcar_pedidos_despachados(venta_ids: list[int], *, usuario=None) -> list[dict]:
+def marcar_pedidos_despachados(venta_ids: list[int], *, usuario=None, destinatario="") -> list[dict]:
     """
     Marca pedidos como despachados, archiva líneas y devuelve payloads para sincronizar la UI.
     """
@@ -58,6 +58,7 @@ def marcar_pedidos_despachados(venta_ids: list[int], *, usuario=None) -> list[di
         return []
     payloads: list[dict] = []
     update_fields = [
+        "despacho_destinatario",
         "despacho_armado",
         "despacho_despachado",
         "despacho_despachado_en",
@@ -69,6 +70,7 @@ def marcar_pedidos_despachados(venta_ids: list[int], *, usuario=None) -> list[di
     for venta in Venta.objects.filter(pk__in=ids):
         if not venta.despacho_despachado:
             venta.aplicar_estado_despacho(armado=True, despachado=True)
+            venta.despacho_destinatario = destinatario
             if usuario is not None:
                 venta.actualizado_por = usuario
             venta.save(update_fields=update_fields)
@@ -110,6 +112,7 @@ def venta_despacho_json_payload(venta: Venta) -> dict:
             "%d/%m/%Y %H:%M"
         )
     return {
+        "despacho_resumen": venta.despacho_resumen,
         "ok": True,
         "venta_id": venta.pk,
         "estado": venta.despacho_estado,

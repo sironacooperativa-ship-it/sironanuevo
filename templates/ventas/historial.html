@@ -253,8 +253,9 @@
             <col style="width: 2.5rem" />
           {% endif %}
           <col style="width: 138px" />  {# Pedido/fecha #}
-          <col style="width: 22%" />    {# Vendedor (ancha) #}
-          <col style="width: 25%" />    {# Comprador (más ancha) #}
+          <col style="width: 18%" />    {# Vendedor (ancha) #}
+          <col style="width: 19%" />    {# Comprador (más ancha) #}
+          <col style="width: 150px" /> {# Despacho #}
           <col style="width: 132px" />  {# Comisión: switch + monto en fila #}
           <col style="width: 156px" />  {# Ingreso caja (mediana) #}
           <col style="width: 56px" />   {# Estado (muy angosta) #}
@@ -276,6 +277,7 @@
             <th scope="col" class="col-ped th-pedido">Pedido / fecha</th>
             <th scope="col" class="th-vend presu-col-ellipsis">Vendedor</th>
             <th scope="col" class="th-compra presu-col-ellipsis d-none d-md-table-cell">Comprador</th>
+            <th scope="col" class="small">Despacho</th>
             <th scope="col" class="text-center th-comision col-comision-switch small col-hide-sm">
               <span class="d-block">Comisión</span>
               <span class="fw-normal text-muted" style="font-size: 0.7rem">vendedor 5%</span>
@@ -325,6 +327,7 @@
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
+              <td class="ventas-hist-td-despacho small" data-label="Despacho"><span class="venta-despacho-resumen">{% if v.despacho_despachado and not v.despacho_destinatario %}<span class="d-block text-muted">Despachado a</span><button type="button" class="btn btn-link btn-sm p-0 text-start" data-destinatario-url="{% url 'venta_actualizar_despacho' v.pk %}" aria-label="Indicar destinatario del pedido {{ v.pk }}">No especificado</button>{% else %}{{ v.despacho_resumen }}{% endif %}</span></td>
               <td class="text-center align-middle comision-cel col-comision-switch py-2 col-hide-sm ventas-hist-td-comision" data-label="Comisión vendedor">
                 <form
                   method="post"
@@ -508,7 +511,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="{% if filtros.pestana == 'a_pagar' and filtros.vendedor %}8{% else %}7{% endif %}" class="table-empty">No hay ventas con los filtros actuales.</td>
+              <td colspan="{% if filtros.pestana == 'a_pagar' and filtros.vendedor %}9{% else %}8{% endif %}" class="table-empty">No hay ventas con los filtros actuales.</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -541,7 +544,7 @@
 {% endblock %}
 
 {% block page_scripts %}
-  <script src="{% static 'js/sirona-despacho-historial.js' %}?v=5"></script>
+  <script src="{% static 'js/sirona-despacho-historial.js' %}?v=6"></script>
   {% if filtros.pestana == "a_pagar" and filtros.vendedor %}
     <script src="{% static 'js/ventas-historial-pago-masivo.js' %}?v=2"></script>
   {% endif %}

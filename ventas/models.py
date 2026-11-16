@@ -153,6 +153,14 @@ class Venta(models.Model):
         help_text="Momento en que se marcó como despachado (para archivar al historial).",
     )
 
+    despacho_destinatario = models.CharField(max_length=220, blank=True, default="")
+
+    @property
+    def despacho_resumen(self):
+        if not self.despacho_despachado:
+            return "Sin despachar"
+        return "Despachado a: " + (self.despacho_destinatario or "No especificado")
+
     class Meta:
         ordering = ["-creado_en", "-id"]
 
@@ -218,6 +226,7 @@ class Venta(models.Model):
             self.despacho_despachado_en = tz.now()
         elif not despachado:
             self.despacho_despachado_en = None
+            self.despacho_destinatario = ""
 
     @classmethod
     def parse_estado_despacho_clave(cls, clave: str) -> tuple[bool, bool] | None:

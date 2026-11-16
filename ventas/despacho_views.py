@@ -323,8 +323,9 @@ def armado_colectivo_ver(request, pk: int):
 
 
 @login_required
-@require_http_methods(["POST"])
+@require_http_methods(["GET", "POST"])
 def armado_colectivo_marcar_despachados(request, pk: int):
+    from .forms import DespachoDestinatarioForm
     armado = get_object_or_404(
         ArmadoColectivoGuardado.objects.prefetch_related("ventas"),
         pk=pk,
@@ -334,9 +335,12 @@ def armado_colectivo_marcar_despachados(request, pk: int):
         messages.warning(request, "Este armado no tiene pedidos asociados.")
         return redirect("armado_colectivo_ver", pk=pk)
 
+    form = DespachoDestinatarioForm(request.POST if request.method == "POST" else None)
+    if request.method == "GET" or not form.is_valid():
+        return render(request, "ventas/despacho_destinatario.html", {"form": form, "action": request.path, "titulo": "Despachar pedidos del armado", "colectivo": True}, status=200 if request.method == "GET" else 400)
     ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
     with transaction.atomic():
-        payloads = marcar_pedidos_despachados(venta_ids, usuario=request.user)
+        payloads = marcar_pedidos_despachados(venta_ids, usuario=request.user, destinatario=form.cleaned_data["nombre_destinatario"])
 
     if ajax:
         return JsonResponse({"ok": True, "ventas": payloads})

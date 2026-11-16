@@ -1,0 +1,23 @@
+<div class="modal-header">
+  <h5 class="modal-title">{{ titulo }}</h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+</div>
+<form method="post" action="{{ action }}" id="despacho-destinatario-form">
+  <div class="modal-body">
+    {% csrf_token %}
+    <input type="hidden" name="estado" value="despachado">
+    {% if colectivo %}<p class="small text-muted">Se registrará esta persona para los pedidos aún sin despachar del armado.</p>{% endif %}
+    {{ form.non_field_errors }}
+    <label class="form-label" for="id_destinatario">{{ form.destinatario.label }}</label>
+    {{ form.destinatario }}{{ form.destinatario.errors }}
+    <div class="mt-3" id="despacho-otro-campo">
+      <label class="form-label" for="id_otro">{{ form.otro.label }}</label>
+      {{ form.otro }}{{ form.otro.errors }}
+    </div>
+    <p class="text-danger small mt-2" role="alert" id="despacho-error"></p>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+    <button type="submit" class="btn btn-primary">Guardar despacho</button>
+  </div>
+</form>

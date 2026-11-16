@@ -41,7 +41,7 @@ from productos.stock_cero import encolar_prompt_stock_cero, ids_que_quedaron_en_
 from productos.listas_precios_views import sync_producto_listas_extras_from_post
 from productos.models import ListaPrecios, Producto
 
-from .forms import VentaCabeceraEditForm, VentaPagoForm
+from .forms import VentaCabeceraEditForm, VentaPagoForm, DespachoDestinatarioForm
 from .filtros_html import opciones_productos, opciones_personas
 from .models import ComisionLiquidacionPago, Venta, VentaLinea
 from .comision_constancia_pdf_sirona import comision_constancia_pdf_response
@@ -1601,7 +1601,7 @@ def despachos_historial(request):
 
 
 @login_required
-@require_http_methods(["POST"])
+@require_http_methods(["GET", "POST"])
 def venta_actualizar_despacho(request, pk: int):
     venta = get_object_or_404(Venta, pk=pk)
     next_url = (request.POST.get("next") or "").strip()
@@ -1612,6 +1612,9 @@ def venta_actualizar_despacho(request, pk: int):
             return redirect(next_url)
         return redirect("despachos_lista")
 
+    destinatario_form = DespachoDestinatarioForm(request.POST if request.method == "POST" else None)
+    if request.method == "GET":
+        return render(request, "ventas/despacho_destinatario.html", {"form": destinatario_form, "action": request.path, "titulo": f"Despachar pedido #{venta.pk}"})
     estado_clave = (request.POST.get("estado") or "").strip()
     if estado_clave:
         if not venta.set_estado_despacho_clave(estado_clave):
@@ -1624,9 +1627,14 @@ def venta_actualizar_despacho(request, pk: int):
         despachado = request.POST.get("despacho_despachado") == "1"
         venta.aplicar_estado_despacho(armado=armado, despachado=despachado)
 
+    if venta.despacho_despachado:
+        if not destinatario_form.is_valid():
+            return render(request, "ventas/despacho_destinatario.html", {"form": destinatario_form, "action": request.path, "titulo": f"Despachar pedido #{venta.pk}"}, status=400)
+        venta.despacho_destinatario = destinatario_form.cleaned_data["nombre_destinatario"]
     venta.actualizado_por = request.user
     venta.save(
         update_fields=[
+            "despacho_destinatario",
             "despacho_armado",
             "despacho_despachado",
             "despacho_despachado_en",

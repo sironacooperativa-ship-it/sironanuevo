@@ -4091,7 +4091,7 @@ button.btn-icon.venta-despacho-ico.venta-despacho-ico-btn.venta-despacho-ico--de
   }
 }
 
-@media (max-width: 767.98px) {
+@media (max-width: 991.98px) {
   .ventas-historial-modern .venta-hist-table-wrap {
     overflow-x: visible !important;
     max-height: none;
@@ -7119,3 +7119,44 @@ button.btn-icon.venta-despacho-ico.venta-despacho-ico-btn.venta-despacho-ico--de
 }
 
 
+
+/* Despacho: columna compacta en escritorio y dato apilado en tarjetas móviles. */
+.ventas-historial-tabla .ventas-hist-td-despacho {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+  vertical-align: middle;
+}
+.ventas-hist-td-despacho .venta-despacho-resumen { display: block; }
+@media (max-width: 991.98px) {
+  .ventas-historial-modern .ventas-hist-td-despacho::before {
+    content: attr(data-label);
+    display: block;
+    font-size: .68rem;
+    color: #64748b;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .ventas-historial-modern .ventas-historial-tabla tbody td.d-md-table-cell {
+    display: block !important;
+  }
+}
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .ventas-historial-modern .ventas-historial-tabla tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 20px;
+  }
+  .ventas-historial-modern .ventas-historial-tabla .ventas-hist-td-acciones {
+    grid-column: 1 / -1;
+    display: block !important;
+  }
+  .ventas-historial-modern .ventas-hist-td-acciones .ventas-hist-actions {
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+  }
+}

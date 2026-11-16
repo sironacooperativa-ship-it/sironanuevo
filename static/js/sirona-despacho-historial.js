@@ -192,6 +192,10 @@
       op.addEventListener("click", function () {
         var estado = op.getAttribute("data-estado");
         if (!estado || op.disabled) return;
+        if (estado === "despachado") {
+          window.SironaDestinatario.open(url);
+          return;
+        }
         op.disabled = true;
         guardarEstado(btn, url, estado, parts);
       });
